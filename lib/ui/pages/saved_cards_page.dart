@@ -139,11 +139,63 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Builder methods
+  // ---------------------------------------------------------------------------
+
+  /// Swipe-to-delete background.
+  Widget _buildDismissBackground() {
+    return Container(
+      color: Colors.red,
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 20),
+      child: const Icon(Icons.delete, color: Colors.white),
+    );
+  }
+
+  /// A single saved-card list item with dismiss and send actions.
+  Widget _buildCardItem(SavedCard card) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Dismissible(
+      key: ValueKey(card.id),
+      direction: DismissDirection.endToStart,
+      background: _buildDismissBackground(),
+      onDismissed: (_) {
+        ref.read(savedCardsProvider.notifier).removeCard(card.id);
+      },
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: colorScheme.primaryContainer,
+          child: Icon(
+            card.type.contains('Nfc') ? Icons.nfc : Icons.qr_code,
+            color: colorScheme.primary,
+          ),
+        ),
+        title: Text(
+          card.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text('${card.type} • ${card.value}'),
+        trailing: _isProcessing
+            ? const CircularProgressIndicator()
+            : IconButton(
+                icon: const Icon(Icons.send),
+                onPressed: () => _sendCardData(card),
+                tooltip: 'Send to active instance',
+              ),
+        onTap: () => _sendCardData(card),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // build
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final savedCards = ref.watch(savedCardsProvider);
-
-    // Reverse to show newest first
     final reversedCards = savedCards.reversed.toList();
 
     return Scaffold(
@@ -152,46 +204,8 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
           ? const Center(child: Text('No saved cards yet.'))
           : ListView.builder(
               itemCount: reversedCards.length,
-              itemBuilder: (context, index) {
-                final card = reversedCards[index];
-                return Dismissible(
-                  key: ValueKey(card.id),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  onDismissed: (_) {
-                    ref.read(savedCardsProvider.notifier).removeCard(card.id);
-                  },
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      child: Icon(
-                        card.type.contains('Nfc') ? Icons.nfc : Icons.qr_code,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    title: Text(
-                      card.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text('${card.type} • ${card.value}'),
-                    trailing: _isProcessing
-                        ? const CircularProgressIndicator()
-                        : IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed: () => _sendCardData(card),
-                            tooltip: 'Send to active instance',
-                          ),
-                    onTap: () => _sendCardData(card),
-                  ),
-                );
-              },
+              itemBuilder: (context, index) =>
+                  _buildCardItem(reversedCards[index]),
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddCardDialog,

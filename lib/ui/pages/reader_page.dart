@@ -291,6 +291,276 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Builder methods — extracted from build() to flatten nesting
+  // ---------------------------------------------------------------------------
+
+  /// Animated pill showing NFC scanning status.
+  Widget _buildNfcStatusPill() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final Color bgColor = _isNfcScanning
+        ? colorScheme.primaryContainer
+        : colorScheme.surfaceContainerHighest;
+    final Color fgColor = _isNfcScanning
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurfaceVariant;
+
+    return Center(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.nfc,
+              color: _isNfcScanning
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Text(
+                _nfcStatus,
+                key: ValueKey(_nfcStatus),
+                style: TextStyle(color: fgColor, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// QR camera preview with overlay and processing indicator.
+  Widget _buildQrScanner() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      height: 240,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildCameraPlaceholder(colorScheme),
+          MobileScanner(
+            controller: _cameraController,
+            onDetect: (capture) {
+              for (final barcode in capture.barcodes) {
+                if (barcode.rawValue != null) {
+                  _handleReadData('QR', barcode.rawValue!);
+                  break;
+                }
+              }
+            },
+          ),
+          if (_isProcessing)
+            Container(
+              color: Colors.black54,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ValueListenableBuilder<MobileScannerState>(
+            valueListenable: _cameraController,
+            builder: (context, state, _) {
+              if (!state.isRunning) return const SizedBox.shrink();
+              return _buildScanTargetOverlay();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Placeholder shown while the camera is loading or paused.
+  Widget _buildCameraPlaceholder(ColorScheme colorScheme) {
+    final color = colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.qr_code_scanner, size: 64, color: color),
+          const SizedBox(height: 8),
+          Text('Camera Loading/Paused', style: TextStyle(color: color)),
+        ],
+      ),
+    );
+  }
+
+  /// Scan-target crosshair overlay.
+  Widget _buildScanTargetOverlay() {
+    return Center(
+      child: Container(
+        width: 150,
+        height: 150,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white54, width: 2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  /// Card showing the active instance or a "no instance" warning.
+  Widget _buildInstanceCard(dynamic activeInstance) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: _showInstanceSelectionDialog,
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: activeInstance != null
+            ? colorScheme.primaryContainer
+            : colorScheme.errorContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: activeInstance != null
+              ? _buildActiveInstanceRow(activeInstance)
+              : _buildNoInstanceRow(),
+        ),
+      ),
+    );
+  }
+
+  /// Row content when an instance is selected.
+  Widget _buildActiveInstanceRow(dynamic activeInstance) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final fgColor = colorScheme.onPrimaryContainer;
+
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: fgColor.withValues(alpha: 0.1),
+          child: Icon(_getIconData(activeInstance.icon), color: fgColor),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                activeInstance.name,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: fgColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                activeInstance.url,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: fgColor.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Icon(Icons.arrow_drop_down, color: fgColor),
+      ],
+    );
+  }
+
+  /// Row content when no instance is selected.
+  Widget _buildNoInstanceRow() {
+    final fgColor = Theme.of(context).colorScheme.onErrorContainer;
+
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: fgColor.withValues(alpha: 0.1),
+          child: Icon(Icons.warning, color: fgColor),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            'No active instance selected.\nTap to select.',
+            style: TextStyle(color: fgColor, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Icon(Icons.arrow_drop_down, color: fgColor),
+      ],
+    );
+  }
+
+  /// History header + recent scans list.
+  Widget _buildHistorySection(List<SavedCard> savedCards) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('History', style: Theme.of(context).textTheme.titleLarge),
+            TextButton(
+              onPressed: () => context.go('/history'),
+              child: const Text('View All'),
+            ),
+          ],
+        ),
+        const Divider(),
+        if (savedCards.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(32.0),
+            child: Center(child: Text('No recent scans.')),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: savedCards.length,
+            itemBuilder: (context, index) =>
+                _buildHistoryItem(savedCards[index]),
+          ),
+      ],
+    );
+  }
+
+  /// A single history list item.
+  Widget _buildHistoryItem(SavedCard card) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: CircleAvatar(
+        backgroundColor: colorScheme.secondaryContainer,
+        child: Icon(
+          card.type.contains('Nfc') ? Icons.nfc : Icons.qr_code,
+          color: colorScheme.onSecondaryContainer,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        card.name,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text('${card.type} • ${card.value}'),
+      trailing: IconButton(
+        icon: const Icon(Icons.send, size: 20),
+        onPressed: _isProcessing
+            ? null
+            : () => _handleReadData(card.type, card.value),
+        tooltip: 'Resend to active instance',
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // build
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final activeInstance = ref.watch(activeInstanceProvider);
@@ -304,125 +574,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. NFC Status Pill
-              Center(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _isNfcScanning
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.nfc,
-                        color: _isNfcScanning
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: Text(
-                          _nfcStatus,
-                          key: ValueKey(_nfcStatus),
-                          style: TextStyle(
-                            color: _isNfcScanning
-                                ? Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildNfcStatusPill(),
               const SizedBox(height: 16),
-
-              // 2. QR Scanner Window
-              Container(
-                height: 240,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                  ),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Placeholder icon while camera is loading or inactive
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.qr_code_scanner,
-                            size: 64,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant
-                                .withValues(alpha: 0.5),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Camera Loading/Paused',
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant
-                                  .withValues(alpha: 0.5),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    MobileScanner(
-                      controller: _cameraController,
-                      onDetect: (capture) {
-                        final List<Barcode> barcodes = capture.barcodes;
-                        for (final barcode in barcodes) {
-                          if (barcode.rawValue != null) {
-                            _handleReadData('QR', barcode.rawValue!);
-                            break;
-                          }
-                        }
-                      },
-                    ),
-                    if (_isProcessing)
-                      Container(
-                        color: Colors.black54,
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                    // Optional target overlay
-                    Center(
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white54, width: 2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildQrScanner(),
               const SizedBox(height: 8),
               const Center(
                 child: Text(
@@ -430,180 +584,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
                   style: TextStyle(color: Colors.grey),
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // 3. Selected Instance Card
-              InkWell(
-                onTap: _showInstanceSelectionDialog,
-                borderRadius: BorderRadius.circular(16),
-                child: Card(
-                  margin: EdgeInsets.zero,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  color: activeInstance != null
-                      ? Theme.of(context).colorScheme.primaryContainer
-                      : Theme.of(context).colorScheme.errorContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: activeInstance != null
-                        ? Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimaryContainer
-                                    .withValues(alpha: 0.1),
-                                child: Icon(
-                                  _getIconData(activeInstance.icon),
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      activeInstance.name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onPrimaryContainer,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      activeInstance.url,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onPrimaryContainer
-                                                .withValues(alpha: 0.8),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_drop_down,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
-                              ),
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .onErrorContainer
-                                    .withValues(alpha: 0.1),
-                                child: Icon(
-                                  Icons.warning,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onErrorContainer,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  'No active instance selected.\nTap to select.',
-                                  style: TextStyle(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onErrorContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_drop_down,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onErrorContainer,
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
-              ),
-
+              _buildInstanceCard(activeInstance),
               const SizedBox(height: 32),
-
-              // 4. History
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'History',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  TextButton(
-                    onPressed: () => context.go('/history'),
-                    child: const Text('View All'),
-                  ),
-                ],
-              ),
-              const Divider(),
-
-              if (savedCards.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Center(child: Text('No recent scans.')),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: savedCards.length,
-                  itemBuilder: (context, index) {
-                    final card = savedCards[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.secondaryContainer,
-                        child: Icon(
-                          card.type.contains('Nfc') ? Icons.nfc : Icons.qr_code,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSecondaryContainer,
-                          size: 20,
-                        ),
-                      ),
-                      title: Text(
-                        card.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text('${card.type} • ${card.value}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.send, size: 20),
-                        onPressed: _isProcessing
-                            ? null
-                            : () => _handleReadData(card.type, card.value),
-                        tooltip: 'Resend to active instance',
-                      ),
-                    );
-                  },
-                ),
-
+              _buildHistorySection(savedCards),
               const SizedBox(height: 40),
             ],
           ),

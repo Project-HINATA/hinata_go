@@ -115,6 +115,83 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Builder methods
+  // ---------------------------------------------------------------------------
+
+  /// Swipe-to-delete background.
+  Widget _buildDismissBackground() {
+    return Container(
+      color: Colors.red,
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 20),
+      child: const Icon(Icons.delete, color: Colors.white),
+    );
+  }
+
+  /// A single instance list item.
+  Widget _buildInstanceItem(RemoteInstance instance, bool isActive) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Dismissible(
+      key: ValueKey(instance.id),
+      direction: DismissDirection.endToStart,
+      background: _buildDismissBackground(),
+      onDismissed: (_) {
+        if (isActive) {
+          ref.read(activeInstanceIdProvider.notifier).setActiveId(null);
+        }
+        ref.read(instancesProvider.notifier).removeInstance(instance.id);
+      },
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: isActive
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceContainerHighest,
+          child: Icon(
+            _getIconData(instance.icon),
+            color: isActive ? colorScheme.primary : null,
+          ),
+        ),
+        title: Text(
+          instance.name,
+          style: TextStyle(
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        subtitle: Text(
+          instance.url,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isActive)
+              const Padding(
+                padding: EdgeInsets.only(right: 8.0),
+                child: Icon(Icons.check_circle, color: Colors.green),
+              ),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _showInstanceDialog(instance),
+            ),
+          ],
+        ),
+        onTap: () {
+          ref.read(activeInstanceIdProvider.notifier).setActiveId(instance.id);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${instance.name} is now active')),
+          );
+        },
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // build
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final instances = ref.watch(instancesProvider);
@@ -128,83 +205,7 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
               itemCount: instances.length,
               itemBuilder: (context, index) {
                 final instance = instances[index];
-                final isActive = instance.id == activeId;
-
-                return Dismissible(
-                  key: ValueKey(instance.id),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  onDismissed: (_) {
-                    if (isActive) {
-                      ref
-                          .read(activeInstanceIdProvider.notifier)
-                          .setActiveId(null);
-                    }
-                    ref
-                        .read(instancesProvider.notifier)
-                        .removeInstance(instance.id);
-                  },
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isActive
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        _getIconData(instance.icon),
-                        color: isActive
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                    ),
-                    title: Text(
-                      instance.name,
-                      style: TextStyle(
-                        fontWeight: isActive
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                    subtitle: Text(
-                      instance.url,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isActive)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 8.0),
-                            child: Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                            ),
-                          ),
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => _showInstanceDialog(instance),
-                        ),
-                      ],
-                    ),
-                    onTap: () {
-                      ref
-                          .read(activeInstanceIdProvider.notifier)
-                          .setActiveId(instance.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${instance.name} is now active'),
-                        ),
-                      );
-                    },
-                  ),
-                );
+                return _buildInstanceItem(instance, instance.id == activeId);
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
