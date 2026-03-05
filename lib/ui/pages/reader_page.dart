@@ -353,9 +353,25 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _buildCameraPlaceholder(colorScheme),
+          ValueListenableBuilder<MobileScannerState>(
+            valueListenable: _cameraController,
+            builder: (context, state, _) {
+              if (state.isInitialized &&
+                  !state.isRunning &&
+                  state.error == null) {
+                return _buildCameraPlaceholder(colorScheme);
+              }
+              if (!state.isInitialized && state.error == null) {
+                return _buildCameraPlaceholder(colorScheme);
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           MobileScanner(
             controller: _cameraController,
+            errorBuilder: (context, error) {
+              return _buildCameraPlaceholder(colorScheme, error: error);
+            },
             onDetect: (capture) {
               for (final barcode in capture.barcodes) {
                 if (barcode.rawValue != null) {
@@ -382,16 +398,31 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
-  /// Placeholder shown while the camera is loading or paused.
-  Widget _buildCameraPlaceholder(ColorScheme colorScheme) {
+  /// Placeholder shown while the camera is loading, paused, or errored.
+  Widget _buildCameraPlaceholder(
+    ColorScheme colorScheme, {
+    MobileScannerException? error,
+  }) {
+    if (error == null) {
+      return const SizedBox.shrink();
+    }
+
     final color = colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
+    String message = 'Camera Error';
+    IconData icon = Icons.error_outline;
+
+    if (error.errorCode == MobileScannerErrorCode.permissionDenied) {
+      message = 'Camera Permission Denied';
+      icon = Icons.no_photography;
+    }
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.qr_code_scanner, size: 64, color: color),
+          Icon(icon, size: 64, color: color),
           const SizedBox(height: 8),
-          Text('Camera Loading/Paused', style: TextStyle(color: color)),
+          Text(message, style: TextStyle(color: color)),
         ],
       ),
     );
