@@ -567,7 +567,23 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     final savedCards = ref.watch(savedCardsProvider).reversed.take(5).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('NFC & QR Reader')),
+      appBar: AppBar(
+        title: const Text('NFC & QR Reader'),
+        actions: [
+          ValueListenableBuilder<MobileScannerState>(
+            valueListenable: _cameraController,
+            builder: (context, state, child) {
+              if (!state.isInitialized || !state.isRunning) {
+                return const SizedBox.shrink();
+              }
+              return IconButton(
+                icon: const Icon(Icons.cameraswitch),
+                onPressed: () => _cameraController.switchCamera(),
+              );
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
