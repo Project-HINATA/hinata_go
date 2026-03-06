@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/nfc_manager_android.dart';
+import 'package:sega_nfc/services/nfc_service.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/saved_card.dart';
@@ -109,26 +110,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       await NfcManager.instance.startSession(
         pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso18092},
         onDiscovered: (NfcTag tag) async {
-          final nfcA = NfcAAndroid.from(tag);
-          final nfcF = NfcFAndroid.from(tag);
+          handleNfcTag(tag);
 
-          String type = '';
-          String uid = '';
-
-          if (nfcA != null) {
-            type = 'NfcA';
-            uid = _toHexString(nfcA.tag.id);
-          } else if (nfcF != null) {
-            type = 'NfcF';
-            uid = _toHexString(nfcF.tag.id);
-          } else {
-            type = 'Unknown';
-            uid = _toHexString(NfcAAndroid.from(tag)?.tag.id ?? Uint8List(0));
-          }
-
-          if (type != 'Unknown' && uid.isNotEmpty) {
-            _handleReadData(type, uid);
-          }
+          // if (type != 'Unknown' && uid.isNotEmpty) {
+          //   _handleReadData(type, uid);
+          // }
         },
       );
     } catch (e) {
