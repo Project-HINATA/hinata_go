@@ -1,10 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/nfc_manager_android.dart';
 import 'package:sega_nfc/services/nfc_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -81,13 +79,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     super.dispose();
   }
 
-  String _toHexString(Uint8List bytes) {
-    return bytes
-        .map((e) => e.toRadixString(16).padLeft(2, '0'))
-        .join(':')
-        .toUpperCase();
-  }
-
   Future<void> _startNfc() async {
     if (_isNfcScanning) return;
     try {
@@ -110,11 +101,13 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       await NfcManager.instance.startSession(
         pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso18092},
         onDiscovered: (NfcTag tag) async {
-          handleNfcTag(tag);
-
-          // if (type != 'Unknown' && uid.isNotEmpty) {
-          //   _handleReadData(type, uid);
-          // }
+          final result = await handleNfcTag(tag);
+          if (result != null) {
+            final (type, value) = result;
+            if (type != 'Unknown' && value.isNotEmpty) {
+              _handleReadData(type, value);
+            }
+          }
         },
       );
     } catch (e) {
