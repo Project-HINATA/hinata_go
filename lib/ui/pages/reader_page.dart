@@ -192,7 +192,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
     ref.read(scanLogsProvider.notifier).addLog(newLog);
 
-    // Also auto-save to the 'History' folder in the Card Bag
+    // Also auto-save to the 'History' folder in the Saved Cards
     final newCard = BagCard(
       id: const Uuid().v4(),
       name: card.displayType,
@@ -551,7 +551,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         displaySource = 'NFC (${log.displayType})';
       }
     } else if (log.source == 'Direct') {
-      displaySource = 'Card Bag';
+      displaySource = 'Saved Cards';
     }
 
     IconData sourceIcon = Icons.qr_code;

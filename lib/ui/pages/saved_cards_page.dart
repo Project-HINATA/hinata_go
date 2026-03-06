@@ -320,7 +320,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Card Bag'),
+        title: const Text('Saved Cards'),
         actions: [
           IconButton(
             icon: const Icon(Icons.create_new_folder),

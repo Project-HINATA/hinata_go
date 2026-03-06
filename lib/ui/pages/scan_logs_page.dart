@@ -35,7 +35,7 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Save to Card Bag'),
+              title: const Text('Save to Saved Cards'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -93,7 +93,7 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Saved "${nameController.text}" to bag.',
+                            'Saved "${nameController.text}" to saved cards.',
                           ),
                         ),
                       );
@@ -140,7 +140,7 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
                     displaySource = 'NFC (${log.displayType})';
                   }
                 } else if (log.source == 'Direct') {
-                  displaySource = 'Card Bag';
+                  displaySource = 'Saved Cards';
                 }
 
                 IconData sourceIcon = Icons.qr_code;
@@ -167,7 +167,7 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
                   isThreeLine: true,
                   trailing: IconButton(
                     icon: const Icon(Icons.save_alt),
-                    tooltip: 'Save to Card Bag',
+                    tooltip: 'Save to Saved Cards',
                     onPressed: () => _showSaveToBagDialog(log),
                   ),
                 );
