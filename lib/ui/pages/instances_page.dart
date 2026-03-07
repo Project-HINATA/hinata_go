@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../models/remote_instance.dart';
 import '../../providers/app_state_provider.dart';
+import '../../utils/validators.dart';
+import '../../utils/icon_utils.dart';
 
 class InstancesPage extends ConsumerStatefulWidget {
   const InstancesPage({super.key});
@@ -32,7 +34,7 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
               TextField(
                 controller: nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Name (e.g. Home Server)',
+                  labelText: 'Name (e.g. maimaiDX)',
                 ),
               ),
               const SizedBox(height: 10),
@@ -59,34 +61,46 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
             ),
             FilledButton(
               onPressed: () {
-                if (nameController.text.isNotEmpty &&
-                    urlController.text.isNotEmpty) {
-                  final newInstance = RemoteInstance(
-                    id: isEditing ? existingInstance.id : const Uuid().v4(),
-                    name: nameController.text,
-                    url: urlController.text,
-                    icon: iconController.text.isEmpty
-                        ? 'dns'
-                        : iconController.text,
-                  );
+                final name = nameController.text.trim();
+                final url = urlController.text.trim();
 
-                  if (isEditing) {
-                    ref
-                        .read(instancesProvider.notifier)
-                        .updateInstance(newInstance);
-                  } else {
-                    ref
-                        .read(instancesProvider.notifier)
-                        .addInstance(newInstance);
-                    // auto select if it's the first one
-                    if (ref.read(instancesProvider).length == 1) {
-                      ref
-                          .read(activeInstanceIdProvider.notifier)
-                          .setActiveId(newInstance.id);
-                    }
-                  }
-                  Navigator.pop(context);
+                if (name.isEmpty || url.isEmpty) {
+                  return;
                 }
+                final isValidUrl = Validators.isValidUrl(url);
+
+                if (!isValidUrl) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid URL (http/https)'),
+                    ),
+                  );
+                  return;
+                }
+
+                final newInstance = RemoteInstance(
+                  id: isEditing ? existingInstance.id : const Uuid().v4(),
+                  name: name,
+                  url: url,
+                  icon: iconController.text.trim().isEmpty
+                      ? 'dns'
+                      : iconController.text.trim(),
+                );
+
+                if (isEditing) {
+                  ref
+                      .read(instancesProvider.notifier)
+                      .updateInstance(newInstance);
+                } else {
+                  ref.read(instancesProvider.notifier).addInstance(newInstance);
+                  // auto select if it's the first one
+                  if (ref.read(instancesProvider).length == 1) {
+                    ref
+                        .read(activeInstanceIdProvider.notifier)
+                        .setActiveId(newInstance.id);
+                  }
+                }
+                Navigator.pop(context);
               },
               child: const Text('Save'),
             ),
@@ -94,25 +108,6 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
         );
       },
     );
-  }
-
-  IconData _getIconData(String iconName) {
-    switch (iconName.toLowerCase()) {
-      case 'home':
-        return Icons.home;
-      case 'work':
-        return Icons.work;
-      case 'cloud':
-        return Icons.cloud;
-      case 'computer':
-        return Icons.computer;
-      case 'api':
-        return Icons.api;
-      case 'webhook':
-        return Icons.webhook;
-      default:
-        return Icons.dns;
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -149,7 +144,7 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
               ? colorScheme.primaryContainer
               : colorScheme.surfaceContainerHighest,
           child: Icon(
-            _getIconData(instance.icon),
+            IconUtils.getIconData(instance.icon),
             color: isActive ? colorScheme.primary : null,
           ),
         ),

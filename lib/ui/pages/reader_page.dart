@@ -12,6 +12,7 @@ import '../../models/parsed_card.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
+import '../../utils/icon_utils.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
   const ReaderPage({super.key});
@@ -277,25 +278,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     }
   }
 
-  IconData _getIconData(String iconName) {
-    switch (iconName.toLowerCase()) {
-      case 'home':
-        return Icons.home;
-      case 'work':
-        return Icons.work;
-      case 'cloud':
-        return Icons.cloud;
-      case 'computer':
-        return Icons.computer;
-      case 'api':
-        return Icons.api;
-      case 'webhook':
-        return Icons.webhook;
-      default:
-        return Icons.dns;
-    }
-  }
-
   // Removed _showInstanceSelectionDialog as it is now handled by InstancesPage
 
   // ---------------------------------------------------------------------------
@@ -489,7 +471,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       children: [
         CircleAvatar(
           backgroundColor: fgColor.withValues(alpha: 0.1),
-          child: Icon(_getIconData(activeInstance.icon), color: fgColor),
+          child: Icon(
+            IconUtils.getIconData(activeInstance.icon),
+            color: fgColor,
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
