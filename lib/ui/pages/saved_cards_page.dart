@@ -376,7 +376,7 @@ class _AddCardDialogState extends ConsumerState<_AddCardDialog> {
         showValue: value,
         folderId: _selectedFolderId,
         source: 'Direct',
-        apiType: 'Direct',
+        apiType: 'aime',
         displayType: 'Manual Entry',
       );
       ref.read(bagCardsProvider.notifier).addCard(newCard);

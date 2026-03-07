@@ -15,7 +15,7 @@ class BagCard {
     required this.showValue,
     required this.folderId,
     this.source = 'Direct',
-    this.apiType = 'Direct',
+    this.apiType = 'aime',
     this.displayType = 'Manual Entry',
   });
 
@@ -40,7 +40,7 @@ class BagCard {
       showValue: json['showValue'] as String? ?? json['value'] as String,
       folderId: json['folderId'] as String,
       source: json['source'] as String? ?? 'Direct',
-      apiType: json['apiType'] as String? ?? 'Direct',
+      apiType: json['apiType'] as String? ?? 'aime',
       displayType: json['displayType'] as String? ?? 'Manual Entry',
     );
   }
