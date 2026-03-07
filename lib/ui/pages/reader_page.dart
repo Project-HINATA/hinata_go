@@ -13,6 +13,7 @@ import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
 import '../../utils/icon_utils.dart';
+import '../../utils/qr_handler.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
   const ReaderPage({super.key});
@@ -363,11 +364,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
             },
             onDetect: (capture) {
               for (final barcode in capture.barcodes) {
-                if (barcode.rawValue != null) {
+                final rawValue = barcode.rawValue;
+                if (rawValue != null && QrHandler.isValidQrData(rawValue)) {
                   _handleReadData(
                     ParsedCard(
-                      value: barcode.rawValue!,
-                      showValue: barcode.rawValue!,
+                      value: rawValue,
+                      showValue: rawValue,
                       source: 'QR',
                       apiType: 'aime',
                       displayType: 'QR Code',
