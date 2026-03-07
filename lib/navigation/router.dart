@@ -8,6 +8,7 @@ import '../ui/pages/saved_cards_page.dart';
 import '../ui/pages/settings_page.dart';
 import '../ui/pages/instances_page.dart';
 import '../ui/pages/scan_logs_page.dart';
+import '../ui/widgets/animated_branch_container.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
@@ -18,7 +19,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/reader',
     routes: [
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
+        navigatorContainerBuilder: (context, navigationShell, children) {
+          return AnimatedBranchContainer(
+            currentIndex: navigationShell.currentIndex,
+            children: children,
+          );
+        },
         builder: (context, state, navigationShell) {
           return ScaffoldWithNavBar(navigationShell: navigationShell);
         },

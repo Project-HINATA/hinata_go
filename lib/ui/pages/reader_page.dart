@@ -57,7 +57,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     if (location == '/reader') {
       _startNfc();
       if (enableCamera) _safeStartCamera();
-    } else {
+    } else { 
       _stopNfc();
       _safeStopCamera();
     }
