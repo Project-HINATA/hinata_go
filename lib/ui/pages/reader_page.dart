@@ -137,15 +137,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       await NfcManager.instance.startSession(
         noPlatformSoundsAndroid: true,
         pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso18092},
-        onDiscovered: (NfcTag tag) async {
-          final parsedCard = await handleNfcTag(tag);
-          if (parsedCard != null) {
-            if (parsedCard.apiType != 'Unknown' &&
-                parsedCard.value.isNotEmpty) {
-              _handleReadData(parsedCard);
-            }
-          }
-        },
+        onDiscovered: _onNfcDiscovered,
       );
     } catch (e) {
       if (mounted) {
@@ -168,6 +160,46 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         });
       }
     }
+  }
+
+  Future<void> _onNfcDiscovered(NfcTag tag) async {
+    final parsedCard = await handleNfcTag(tag);
+    if (parsedCard != null) {
+      if (parsedCard.apiType != 'Unknown' && parsedCard.value.isNotEmpty) {
+        _handleReadData(parsedCard);
+      }
+    }
+  }
+
+  void _onQrDetect(BarcodeCapture capture) {
+    for (final barcode in capture.barcodes) {
+      final rawValue = barcode.rawValue;
+      if (rawValue != null && QrHandler.isValidQrData(rawValue)) {
+        _handleReadData(
+          ParsedCard(
+            value: rawValue,
+            showValue: rawValue,
+            source: 'QR',
+            apiType: 'aime',
+            displayType: 'QR Code',
+          ),
+        );
+        break;
+      }
+    }
+  }
+
+  void _onResendHistoryItem(ScanLog log) {
+    if (_isProcessing) return;
+    _handleReadData(
+      ParsedCard(
+        value: log.value,
+        showValue: log.showValue,
+        source: log.source,
+        apiType: log.apiType,
+        displayType: log.displayType,
+      ),
+    );
   }
 
   Future<void> _handleReadData(ParsedCard card) async {
@@ -362,23 +394,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
             errorBuilder: (context, error) {
               return _buildCameraPlaceholder(colorScheme, error: error);
             },
-            onDetect: (capture) {
-              for (final barcode in capture.barcodes) {
-                final rawValue = barcode.rawValue;
-                if (rawValue != null && QrHandler.isValidQrData(rawValue)) {
-                  _handleReadData(
-                    ParsedCard(
-                      value: rawValue,
-                      showValue: rawValue,
-                      source: 'QR',
-                      apiType: 'aime',
-                      displayType: 'QR Code',
-                    ),
-                  );
-                  break;
-                }
-              }
-            },
+            onDetect: _onQrDetect,
           ),
           if (_isProcessing)
             Container(
@@ -597,17 +613,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       ),
       trailing: IconButton(
         icon: const Icon(Icons.send, size: 20),
-        onPressed: _isProcessing
-            ? null
-            : () => _handleReadData(
-                ParsedCard(
-                  value: log.value,
-                  showValue: log.showValue,
-                  source: log.source,
-                  apiType: log.apiType,
-                  displayType: log.displayType,
-                ),
-              ),
+        onPressed: _isProcessing ? null : () => _onResendHistoryItem(log),
         tooltip: 'Resend to active instance',
       ),
     );

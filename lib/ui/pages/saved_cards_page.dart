@@ -65,16 +65,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
                         ),
                       ),
                     ],
-                    onChanged: (val) {
-                      if (val == 'CREATE_NEW') {
-                        Navigator.pop(context);
-                        _showAddFolderDialog();
-                      } else if (val != null) {
-                        setState(() {
-                          _selectedFolderId = val;
-                        });
-                      }
-                    },
+                    onChanged: (val) => _onFolderDropdownChanged(val, setState),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -91,23 +82,10 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
-                  onPressed: () {
-                    if (nameController.text.isNotEmpty &&
-                        valueController.text.isNotEmpty) {
-                      final newCard = BagCard(
-                        id: const Uuid().v4(),
-                        name: nameController.text,
-                        value: valueController.text,
-                        showValue: valueController.text,
-                        folderId: _selectedFolderId,
-                        source: 'Direct',
-                        apiType: 'Direct',
-                        displayType: 'Manual Entry',
-                      );
-                      ref.read(bagCardsProvider.notifier).addCard(newCard);
-                      Navigator.pop(context);
-                    }
-                  },
+                  onPressed: () => _onSaveCard(
+                    nameController.text.trim(),
+                    valueController.text.trim(),
+                  ),
                   child: const Text('Save'),
                 ),
               ],
@@ -136,25 +114,96 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  final newFolder = CardFolder(
-                    id: const Uuid().v4(),
-                    name: nameController.text,
-                  );
-                  ref.read(cardFoldersProvider.notifier).addFolder(newFolder);
-                  setState(() {
-                    _selectedFolderId = newFolder.id;
-                  });
-                  Navigator.pop(context);
-                }
-              },
+              onPressed: () => _onCreateFolder(nameController.text.trim()),
               child: const Text('Create'),
             ),
           ],
         );
       },
     );
+  }
+
+  void _onFolderDropdownChanged(String? val, StateSetter setDialogState) {
+    if (val == 'CREATE_NEW') {
+      Navigator.pop(context);
+      _showAddFolderDialog();
+    } else if (val != null) {
+      setDialogState(() {
+        _selectedFolderId = val;
+      });
+    }
+  }
+
+  void _onSaveCard(String name, String value) {
+    if (name.isNotEmpty && value.isNotEmpty) {
+      final newCard = BagCard(
+        id: const Uuid().v4(),
+        name: name,
+        value: value,
+        showValue: value,
+        folderId: _selectedFolderId,
+        source: 'Direct',
+        apiType: 'Direct',
+        displayType: 'Manual Entry',
+      );
+      ref.read(bagCardsProvider.notifier).addCard(newCard);
+      Navigator.pop(context);
+    }
+  }
+
+  void _onCreateFolder(String name) {
+    if (name.isNotEmpty) {
+      final newFolder = CardFolder(id: const Uuid().v4(), name: name);
+      ref.read(cardFoldersProvider.notifier).addFolder(newFolder);
+      setState(() {
+        _selectedFolderId = newFolder.id;
+      });
+      Navigator.pop(context);
+    }
+  }
+
+  void _performDeleteFolder(String folderId) {
+    ref.read(cardFoldersProvider.notifier).removeFolder(folderId);
+    setState(() {
+      _selectedFolderId = 'history_folder';
+    });
+    Navigator.pop(context);
+  }
+
+  void _onDeleteFolder(CardFolder folder) {
+    if (folder.id == 'history_folder' || folder.id == 'favorites_folder') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot delete default folders.')),
+      );
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Folder?'),
+        content: Text(
+          'Are you sure you want to delete "${folder.name}" and all cards inside it?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => _performDeleteFolder(folder.id),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onSelectFolder(bool selected, String folderId) {
+    if (selected) {
+      setState(() {
+        _selectedFolderId = folderId;
+      });
+    }
   }
 
   Future<void> _sendCardData(BagCard card) async {
@@ -344,54 +393,12 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: GestureDetector(
-                    onLongPress: () {
-                      if (folder.id == 'history_folder' ||
-                          folder.id == 'favorites_folder') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Cannot delete default folders.'),
-                          ),
-                        );
-                        return;
-                      }
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Delete Folder?'),
-                          content: Text(
-                            'Are you sure you want to delete "${folder.name}" and all cards inside it?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () {
-                                ref
-                                    .read(cardFoldersProvider.notifier)
-                                    .removeFolder(folder.id);
-                                setState(() {
-                                  _selectedFolderId = 'history_folder';
-                                });
-                                Navigator.pop(context);
-                              },
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                    onLongPress: () => _onDeleteFolder(folder),
                     child: FilterChip(
                       label: Text(folder.name),
                       selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _selectedFolderId = folder.id;
-                          });
-                        }
-                      },
+                      onSelected: (selected) =>
+                          _onSelectFolder(selected, folder.id),
                     ),
                   ),
                 );

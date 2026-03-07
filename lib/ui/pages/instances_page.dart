@@ -61,46 +61,12 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
             ),
             FilledButton(
               onPressed: () {
-                final name = nameController.text.trim();
-                final url = urlController.text.trim();
-
-                if (name.isEmpty || url.isEmpty) {
-                  return;
-                }
-                final isValidUrl = Validators.isValidUrl(url);
-
-                if (!isValidUrl) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a valid URL (http/https)'),
-                    ),
-                  );
-                  return;
-                }
-
-                final newInstance = RemoteInstance(
-                  id: isEditing ? existingInstance.id : const Uuid().v4(),
-                  name: name,
-                  url: url,
-                  icon: iconController.text.trim().isEmpty
-                      ? 'dns'
-                      : iconController.text.trim(),
+                _onSaveInstance(
+                  existingInstance,
+                  nameController.text.trim(),
+                  urlController.text.trim(),
+                  iconController.text.trim(),
                 );
-
-                if (isEditing) {
-                  ref
-                      .read(instancesProvider.notifier)
-                      .updateInstance(newInstance);
-                } else {
-                  ref.read(instancesProvider.notifier).addInstance(newInstance);
-                  // auto select if it's the first one
-                  if (ref.read(instancesProvider).length == 1) {
-                    ref
-                        .read(activeInstanceIdProvider.notifier)
-                        .setActiveId(newInstance.id);
-                  }
-                }
-                Navigator.pop(context);
               },
               child: const Text('Save'),
             ),
@@ -110,6 +76,53 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
     );
   }
 
+  void _onSaveInstance(
+    RemoteInstance? existingInstance,
+    String name,
+    String url,
+    String iconText,
+  ) {
+    if (name.isEmpty || url.isEmpty) return;
+
+    final isValidUrl = Validators.isValidUrl(url);
+    if (!isValidUrl) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid URL (http/https)')),
+      );
+      return;
+    }
+
+    final newInstance = RemoteInstance(
+      id: existingInstance != null ? existingInstance.id : const Uuid().v4(),
+      name: name,
+      url: url,
+      icon: iconText.isEmpty ? 'dns' : iconText,
+    );
+
+    if (existingInstance != null) {
+      ref.read(instancesProvider.notifier).updateInstance(newInstance);
+    } else {
+      ref.read(instancesProvider.notifier).addInstance(newInstance);
+      if (ref.read(instancesProvider).length == 1) {
+        ref.read(activeInstanceIdProvider.notifier).setActiveId(newInstance.id);
+      }
+    }
+    Navigator.pop(context);
+  }
+
+  void _onDismissInstance(RemoteInstance instance, bool isActive) {
+    if (isActive) {
+      ref.read(activeInstanceIdProvider.notifier).setActiveId(null);
+    }
+    ref.read(instancesProvider.notifier).removeInstance(instance.id);
+  }
+
+  void _onTapInstance(RemoteInstance instance) {
+    ref.read(activeInstanceIdProvider.notifier).setActiveId(instance.id);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${instance.name} is now active')));
+  }
   // ---------------------------------------------------------------------------
   // Builder methods
   // ---------------------------------------------------------------------------
@@ -132,12 +145,7 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
       key: ValueKey(instance.id),
       direction: DismissDirection.endToStart,
       background: _buildDismissBackground(),
-      onDismissed: (_) {
-        if (isActive) {
-          ref.read(activeInstanceIdProvider.notifier).setActiveId(null);
-        }
-        ref.read(instancesProvider.notifier).removeInstance(instance.id);
-      },
+      onDismissed: (_) => _onDismissInstance(instance, isActive),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: isActive
@@ -173,12 +181,7 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
             ),
           ],
         ),
-        onTap: () {
-          ref.read(activeInstanceIdProvider.notifier).setActiveId(instance.id);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${instance.name} is now active')),
-          );
-        },
+        onTap: () => _onTapInstance(instance),
       ),
     );
   }
