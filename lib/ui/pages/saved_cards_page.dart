@@ -9,6 +9,7 @@ import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
+import '../../utils/snackbar_utils.dart';
 
 class SavedCardsPage extends ConsumerStatefulWidget {
   const SavedCardsPage({super.key});
@@ -55,7 +56,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
 
   void _onDeleteFolder(CardFolder folder) {
     if (folder.id == 'history_folder' || folder.id == 'favorites_folder') {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showQuickSnackBar(
         const SnackBar(content: Text('Cannot delete default folders.')),
       );
       return;
@@ -124,7 +125,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     if (activeInstance == null) {
-      scaffoldMessenger.showSnackBar(
+      scaffoldMessenger.showQuickSnackBar(
         const SnackBar(
           content: Text(
             'No active instance set. Please select one in Instances tab.',
@@ -132,7 +133,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
         ),
       );
     } else {
-      scaffoldMessenger.showSnackBar(
+      scaffoldMessenger.showQuickSnackBar(
         SnackBar(
           content: Text('Sending ${card.name} to ${activeInstance.name}...'),
         ),
@@ -148,11 +149,11 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
       if (!mounted) return;
 
       if (success) {
-        scaffoldMessenger.showSnackBar(
+        scaffoldMessenger.showQuickSnackBar(
           const SnackBar(content: Text('Success: Data sent.')),
         );
       } else {
-        scaffoldMessenger.showSnackBar(
+        scaffoldMessenger.showQuickSnackBar(
           const SnackBar(content: Text('Failed: Could not send data.')),
         );
       }

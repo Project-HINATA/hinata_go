@@ -15,6 +15,7 @@ import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
 import '../../utils/icon_utils.dart';
 import '../../utils/qr_handler.dart';
+import '../../utils/snackbar_utils.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
   const ReaderPage({super.key});
@@ -257,13 +258,13 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     ref.read(bagCardsProvider.notifier).addCard(newCard);
 
     if (activeInstance == null) {
-      scaffoldMessenger.showSnackBar(
+      scaffoldMessenger.showQuickSnackBar(
         const SnackBar(
           content: Text('Card read, but no active instance set to send data.'),
         ),
       );
     } else {
-      scaffoldMessenger.showSnackBar(
+      scaffoldMessenger.showQuickSnackBar(
         SnackBar(content: Text('Sending data to ${activeInstance.name}...')),
       );
 
@@ -277,11 +278,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       if (!mounted) return;
 
       if (success) {
-        scaffoldMessenger.showSnackBar(
+        scaffoldMessenger.showQuickSnackBar(
           const SnackBar(content: Text('Success: Data sent.')),
         );
       } else {
-        scaffoldMessenger.showSnackBar(
+        scaffoldMessenger.showQuickSnackBar(
           const SnackBar(content: Text('Failed: Could not send data.')),
         );
       }

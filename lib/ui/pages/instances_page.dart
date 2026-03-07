@@ -6,6 +6,7 @@ import '../../models/remote_instance.dart';
 import '../../providers/app_state_provider.dart';
 import '../../utils/validators.dart';
 import '../../utils/icon_utils.dart';
+import '../../utils/snackbar_utils.dart';
 
 class InstancesPage extends ConsumerStatefulWidget {
   const InstancesPage({super.key});
@@ -31,9 +32,9 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
 
   void _onTapInstance(RemoteInstance instance) {
     ref.read(activeInstanceIdProvider.notifier).setActiveId(instance.id);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${instance.name} is now active')));
+    ScaffoldMessenger.of(context).showQuickSnackBar(
+      SnackBar(content: Text('${instance.name} is now active')),
+    );
   }
   // ---------------------------------------------------------------------------
   // Builder methods
@@ -165,7 +166,7 @@ class _InstanceDialogState extends ConsumerState<_InstanceDialog> {
 
     final isValidUrl = Validators.isValidUrl(url);
     if (!isValidUrl) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showQuickSnackBar(
         const SnackBar(content: Text('Please enter a valid URL (http/https)')),
       );
       return;

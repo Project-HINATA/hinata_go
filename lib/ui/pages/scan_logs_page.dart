@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../models/bag_card.dart';
 import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
+import '../../utils/snackbar_utils.dart';
 
 class ScanLogsPage extends ConsumerStatefulWidget {
   const ScanLogsPage({super.key});
@@ -90,7 +91,7 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
                         displayType: log.displayType,
                       );
                       ref.read(bagCardsProvider.notifier).addCard(newCard);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.of(context).showQuickSnackBar(
                         SnackBar(
                           content: Text(
                             'Saved "${nameController.text}" to saved cards.',
