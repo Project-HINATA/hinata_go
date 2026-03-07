@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nfc_manager/nfc_manager.dart';
@@ -57,7 +58,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     if (location == '/reader') {
       _startNfc();
       if (enableCamera) _safeStartCamera();
-    } else { 
+    } else {
       _stopNfc();
       _safeStopCamera();
     }
@@ -632,7 +633,21 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NFC & QR Reader'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              'assets/logo.svg',
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                Theme.of(context).colorScheme.onSurface,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('HINATA Go'),
+          ],
+        ),
         actions: [
           ValueListenableBuilder<MobileScannerState>(
             valueListenable: _cameraController,
