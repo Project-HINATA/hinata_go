@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:typed_data';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/nfc_manager_android.dart';
@@ -30,17 +31,19 @@ Future<ParsedCard?> handleNfcTag(NfcTag tag) async {
     return await _handleMifareClassic(mifare);
   }
 
-  // Fallback generic check
-  final androidTag = NfcTagAndroid.from(tag);
-  final idArray = androidTag?.id ?? Uint8List(0);
-  final uid = _toHexString(idArray);
-  return ParsedCard(
-    value: uid,
-    showValue: uid,
-    source: 'NFC',
-    apiType: 'nfc',
-    displayType: 'NFC',
-  );
+  return null;
+
+  // // Fallback generic check
+  // final androidTag = NfcTagAndroid.from(tag);
+  // final idArray = androidTag?.id ?? Uint8List(0);
+  // final uid = _toHexString(idArray);
+  // return ParsedCard(
+  //   value: uid,
+  //   showValue: uid,
+  //   source: 'NFC',
+  //   apiType: 'nfc',
+  //   displayType: 'NFC',
+  // );
 }
 
 Future<Uint8List> _felicaReadWithoutEncryption(
@@ -81,7 +84,7 @@ bool _mayAic(Uint8List idm, Uint8List pmm) {
       pmm[7] == 0x00;
 }
 
-Future<ParsedCard> _handleFelica(NfcFAndroid nfcf) async {
+Future<ParsedCard?> _handleFelica(NfcFAndroid nfcf) async {
   final idm = nfcf.tag.id;
   final defaultReturn = ParsedCard(
     value: _toHexString(idm),
@@ -97,7 +100,8 @@ Future<ParsedCard> _handleFelica(NfcFAndroid nfcf) async {
   }
 
   // 2. Check PMm and IDm specific bytes for Amusement IC
-  if (!_mayAic(idm, nfcf.manufacturer)) {
+  final mayAic = _mayAic(idm, nfcf.manufacturer);
+  if (!mayAic) {
     return defaultReturn;
   }
 
@@ -110,31 +114,14 @@ Future<ParsedCard> _handleFelica(NfcFAndroid nfcf) async {
       block: 0,
     );
 
+    log(_toHexString(response));
+
     // Check response length (minimum 13 bytes to contain Status Flags)
     if (response.length < 12) {
-      return defaultReturn;
+      return null;
     }
 
-    // Android NfcF transceive might or might not return the length SoD byte.
-    // However, typical payload: [Response Code 0x07], [IDm 8 bytes], [Status Flag 1], [Status Flag 2], etc.
-    int offset = 0;
-    if (response[0] == 0x07) {
-      offset = 0;
-    } else if (response.length > 1 && response[1] == 0x07) {
-      offset = 1;
-    } else {
-      return defaultReturn;
-    }
-
-    final sf1 = response[offset + 9];
-    final sf2 = response[offset + 10];
-    if (sf1 != 0x00 || sf2 != 0x00) {
-      return defaultReturn;
-    }
-
-    // Extract exactly 16 bytes of block data starting from offset + 12
-    if (response.length < offset + 28) return defaultReturn;
-    final blockData = response.sublist(offset + 12, offset + 28);
+    final blockData = response.sublist(13, 13 + 16);
 
     // Decrypt block using spad0
     final dec = spad0Decrypt(blockData);
@@ -162,8 +149,7 @@ Future<ParsedCard> _handleFelica(NfcFAndroid nfcf) async {
   } catch (e) {
     // Ignore and fallback to generic Felica
   }
-
-  return defaultReturn;
+  return null;
 }
 
 Future<ParsedCard> _handleMifareClassic(MifareClassicAndroid mifare) async {

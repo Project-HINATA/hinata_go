@@ -44,6 +44,7 @@ dependencies:
   package_info_plus: ^9.0.0
   dynamic_color: ^1.8.1
   flutter_svg: ^2.0.17
+  convert: ^3.1.2
 
 dev_dependencies:
   flutter_test:
