@@ -147,7 +147,7 @@ Future<ScannedCard?> _handleFelica(NFCTag tag) async {
   return null;
 }
 
-Future<ScannedCard> _handleMifareClassic(NFCTag tag) async {
+Future<ScannedCard?> _handleMifareClassic(NFCTag tag) async {
   final id = _toUint8List(tag.id);
   int sak = 0x08;
   int atqaInt = 0x0400;
@@ -196,8 +196,5 @@ Future<ScannedCard> _handleMifareClassic(NFCTag tag) async {
   } catch (e) {
     log('Mifare error: $e');
   }
-
-  // Fallback: return as generic
-  final iso = Iso14443(id, sak, atqaInt);
-  return ScannedCard(card: iso, source: 'NFC');
+  return null;
 }
