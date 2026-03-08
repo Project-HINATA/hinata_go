@@ -24,22 +24,6 @@ class ReaderPage extends ConsumerStatefulWidget {
 }
 
 class _ReaderPageState extends ConsumerState<ReaderPage> {
-  @override
-  void initState() {
-    super.initState();
-    // Notify ViewModel that we are visible
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(readerViewModelProvider.notifier).onVisibilityChanged(true);
-    });
-  }
-
-  @override
-  void deactivate() {
-    // Notify ViewModel that we might be hidden (deactivate is called when removed from tree)
-    ref.read(readerViewModelProvider.notifier).onVisibilityChanged(false);
-    super.deactivate();
-  }
-
   void _onQrDetect(BarcodeCapture capture) {
     for (final barcode in capture.barcodes) {
       final rawValue = barcode.rawValue;
@@ -372,6 +356,19 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if the ReaderPage is currently the top-most visible route.
+    // This handles both tab switching (via activeBranchProvider in ViewModel)
+    // and sub-route navigation (like pushing Scan Logs or root-level Card Detail).
+    final isTopRoute = ModalRoute.of(context)?.isCurrent ?? false;
+
+    // Notify ViewModel about our specific visibility in the navigator stack.
+    // Use post-frame callback to avoid updating state during build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(readerViewModelProvider.notifier).setPageVisible(isTopRoute);
+      }
+    });
+
     final activeInstance = ref.watch(activeInstanceProvider);
     final scanLogs = ref.watch(scanLogsProvider).reversed.take(5).toList();
     final enableCamera = ref.watch(settingsProvider).enableCamera;

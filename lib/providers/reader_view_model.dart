@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'settings_provider.dart';
-import 'nfc_provider.dart';
+import 'navigation_provider.dart';
 
 class ReaderViewState {
   final bool isCameraActive;
@@ -29,6 +29,7 @@ final readerViewModelProvider =
 class ReaderViewModel extends Notifier<ReaderViewState>
     with WidgetsBindingObserver {
   late MobileScannerController cameraController;
+  bool _isPageVisible = false;
 
   @override
   ReaderViewState build() {
@@ -43,14 +44,21 @@ class ReaderViewModel extends Notifier<ReaderViewState>
       previous,
       next,
     ) {
-      if (next) {
-        _safeStartCamera();
-      } else {
-        _safeStopCamera();
-      }
+      _coordinateCamera();
     });
 
-    // We need to register ourselves as an observer
+    // Watch for branch changes to coordinate camera visibility
+    // Camera MUST stop if we navigate away from the Reader tab branch
+    ref.listen(activeBranchProvider, (previous, next) {
+      _coordinateCamera();
+    });
+
+    // Watch for scaffold coverage (e.g. root-level dialog or CardDetail)
+    ref.listen(isScaffoldCoveredProvider, (previous, next) {
+      _coordinateCamera();
+    });
+
+    // Register as observer for app lifecycle
     WidgetsBinding.instance.addObserver(this);
 
     // Cleanup on dispose
@@ -63,24 +71,48 @@ class ReaderViewModel extends Notifier<ReaderViewState>
       });
     });
 
+    // Initial coordination
+    Future.microtask(() => _coordinateCamera());
+
     return ReaderViewState();
+  }
+
+  /// Update the internal visibility state of the Reader page.
+  /// This should be called from the UI layer (ReaderPage) based on route focus.
+  void setPageVisible(bool visible) {
+    if (_isPageVisible != visible) {
+      _isPageVisible = visible;
+      _coordinateCamera();
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Note: We don't have BuildContext here, so we can't check 'isCurrent' easily.
-    // However, the Notifier is scoped to the app.
-    // Usually, we only want to manage this if the Reader tab is active.
-    // For now, let's assume if it's alive, it should handle it.
-
+    // If we are resumed, we should ensure the camera is in the correct state
+    // (In case the system killed it or we need to refresh the preview)
     if (state == AppLifecycleState.resumed) {
-      if (ref.read(settingsProvider).enableCamera) {
-        _safeStartCamera();
-      }
-      ref.read(nfcProvider.notifier).startSession();
-    } else if (state == AppLifecycleState.paused) {
+      _coordinateCamera();
+    }
+
+    // NOTE: We deliberately DO NOT stop the camera on 'paused' or 'inactive'
+    // if the Reader page is active/visible, to allow it to persist in the multi-tasking view.
+  }
+
+  /// Master coordination logic for camera.
+  /// Camera should run IF:
+  /// 1. Active branch is Reader (0)
+  /// 2. The main scaffold is not covered by another route (!isScaffoldCovered)
+  /// 3. The Reader page itself is the top-most route in its navigator (isPageVisible)
+  /// 4. Settings allow camera
+  void _coordinateCamera() {
+    final isReaderBranch = ref.read(activeBranchProvider) == 0;
+    final isScaffoldVisible = !ref.read(isScaffoldCoveredProvider);
+    final isEnabled = ref.read(settingsProvider).enableCamera;
+
+    if (isReaderBranch && isScaffoldVisible && _isPageVisible && isEnabled) {
+      _safeStartCamera();
+    } else {
       _safeStopCamera();
-      ref.read(nfcProvider.notifier).stopSession();
     }
   }
 
@@ -88,7 +120,9 @@ class ReaderViewModel extends Notifier<ReaderViewState>
     try {
       if (cameraController.value.isStarting ||
           cameraController.value.isRunning) {
-        return;
+        // Even if running, starting again on Resume can help refresh the preview
+        // if it was temporarily suspended by the OS.
+        if (cameraController.value.isRunning) return;
       }
       cameraController.start();
       state = state.copyWith(isCameraActive: true, cameraError: null);
@@ -105,20 +139,6 @@ class ReaderViewModel extends Notifier<ReaderViewState>
       state = state.copyWith(isCameraActive: false);
     } catch (e) {
       // ignore
-    }
-  }
-
-  // Method to be called by UI when it becomes visible/hidden
-  // to coordinate scanning if the Notifier persists across tabs
-  void onVisibilityChanged(bool isVisible) {
-    if (isVisible) {
-      if (ref.read(settingsProvider).enableCamera) {
-        _safeStartCamera();
-      }
-      ref.read(nfcProvider.notifier).startSession();
-    } else {
-      _safeStopCamera();
-      ref.read(nfcProvider.notifier).stopSession();
     }
   }
 }

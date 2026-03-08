@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
@@ -38,7 +39,7 @@ final nfcProvider = NotifierProvider<NfcNotifier, NfcState>(() {
   return NfcNotifier();
 });
 
-class NfcNotifier extends Notifier<NfcState> {
+class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   bool _isStarting = false;
 
   @override
@@ -54,7 +55,28 @@ class NfcNotifier extends Notifier<NfcState> {
       log('Error getting initial tag: $e');
     });
 
+    // Register as observer for global app lifecycle
+    WidgetsBinding.instance.addObserver(this);
+
+    ref.onDispose(() {
+      WidgetsBinding.instance.removeObserver(this);
+      stopSession();
+    });
+
+    // Start session initially if app is resumed (it usually is when build is called)
+    Future.microtask(() => startSession());
+
     return NfcState();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // NFC is global foreground-wide
+    if (state == AppLifecycleState.resumed) {
+      startSession();
+    } else if (state == AppLifecycleState.paused) {
+      stopSession();
+    }
   }
 
   Future<void> startSession() async {
@@ -158,6 +180,7 @@ class NfcNotifier extends Notifier<NfcState> {
     await ref.read(cardSenderProvider.notifier).sendCard(card);
 
     // 4. Navigate back to reader page if not there
+    // This ensures scanning on other pages (Settings, etc.) returns focus to the reader
     ref.read(routerProvider).go('/reader');
   }
 

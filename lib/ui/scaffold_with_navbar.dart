@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/navigation_provider.dart';
 
-class ScaffoldWithNavBar extends StatelessWidget {
+class ScaffoldWithNavBar extends ConsumerWidget {
   const ScaffoldWithNavBar({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
@@ -37,7 +39,31 @@ class ScaffoldWithNavBar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Check if the current route containing this scaffold is actually the top-most route.
+    // If something (like a dialog or CardDetail) is pushed on the root navigator,
+    // isCurrent will be false, signaling that the scaffold is covered.
+    final bool isScaffoldVisible = ModalRoute.of(context)?.isCurrent ?? false;
+
+    // Update the coverage provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ref.read(isScaffoldCoveredProvider) == isScaffoldVisible) {
+        // isScaffoldCoveredProvider tracks if it's COVERED, so invert visible.
+        ref
+            .read(isScaffoldCoveredProvider.notifier)
+            .setCovered(!isScaffoldVisible);
+      }
+    });
+
+    // Proactively update the active branch index provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ref.read(activeBranchProvider) != navigationShell.currentIndex) {
+        ref
+            .read(activeBranchProvider.notifier)
+            .setIndex(navigationShell.currentIndex);
+      }
+    });
+
     return GestureDetector(
       onHorizontalDragEnd: _handleSwipe,
       behavior: HitTestBehavior.translucent,
