@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
+import '../providers/app_update_provider.dart';
 
 class ScaffoldWithNavBar extends ConsumerWidget {
   const ScaffoldWithNavBar({required this.navigationShell, super.key});
@@ -76,14 +77,20 @@ class ScaffoldWithNavBar extends ConsumerWidget {
               bottomNavigationBar: NavigationBar(
                 selectedIndex: navigationShell.currentIndex,
                 onDestinationSelected: _goBranch,
-                destinations: const [
-                  NavigationDestination(icon: Icon(Icons.nfc), label: 'Reader'),
+                destinations: [
+                  const NavigationDestination(
+                    icon: Icon(Icons.nfc),
+                    label: 'Reader',
+                  ),
                   NavigationDestination(
                     icon: Icon(Icons.credit_card),
                     label: 'Cards',
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.settings),
+                    icon: Badge(
+                      isLabelVisible: ref.watch(appUpdateProvider).hasUpdate,
+                      child: const Icon(Icons.settings),
+                    ),
                     label: 'Settings',
                   ),
                 ],
@@ -98,8 +105,8 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                     selectedIndex: navigationShell.currentIndex,
                     onDestinationSelected: _goBranch,
                     labelType: NavigationRailLabelType.all,
-                    destinations: const [
-                      NavigationRailDestination(
+                    destinations: [
+                      const NavigationRailDestination(
                         icon: Icon(Icons.nfc),
                         label: Text('Reader'),
                       ),
@@ -108,8 +115,13 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                         label: Text('Cards'),
                       ),
                       NavigationRailDestination(
-                        icon: Icon(Icons.settings),
-                        label: Text('Settings'),
+                        icon: Badge(
+                          isLabelVisible: ref
+                              .watch(appUpdateProvider)
+                              .hasUpdate,
+                          child: const Icon(Icons.settings),
+                        ),
+                        label: const Text('Settings'),
                       ),
                     ],
                   ),

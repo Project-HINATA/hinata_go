@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-
 import '../../providers/settings_provider.dart';
+import '../../providers/app_update_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -12,28 +12,10 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  String _appName = 'Loading...';
-  String _appVersion = 'Loading...';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPackageInfo();
-  }
-
-  Future<void> _loadPackageInfo() async {
-    final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() {
-        _appName = info.appName;
-        _appVersion = '${info.version}+${info.buildNumber}';
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    final updateState = ref.watch(appUpdateProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -62,9 +44,37 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const Divider(),
           ListTile(
             title: const Text('About'),
-            subtitle: Text('$_appName v$_appVersion'),
+            subtitle: Text('HINATA Go v${updateState.currentVersion}'),
             leading: const Icon(Icons.info_outline),
+            onTap: () {
+              ref.read(appUpdateProvider.notifier).checkUpdate();
+            },
           ),
+          if (updateState.hasUpdate)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: FilledButton.icon(
+                onPressed: () async {
+                  if (updateState.downloadUrl != null) {
+                    final url = Uri.parse(updateState.downloadUrl!);
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.system_update),
+                label: Text('UPDATE TO ${updateState.latestVersion}'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
