@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'storage_provider.dart';
 import '../models/remote_instance.dart';
-import '../models/bag_card.dart';
+import '../models/card/saved_card.dart';
 import '../models/card_folder.dart';
 import '../models/scan_log.dart';
 
@@ -61,36 +61,37 @@ final activeInstanceProvider = Provider<RemoteInstance?>((ref) {
   }
 });
 
-// --- Bag Cards ---
-final bagCardsProvider = NotifierProvider<BagCardsNotifier, List<BagCard>>(() {
-  return BagCardsNotifier();
-});
+// --- Saved Cards ---
+final savedCardsProvider =
+    NotifierProvider<SavedCardsNotifier, List<SavedCard>>(() {
+      return SavedCardsNotifier();
+    });
 
-class BagCardsNotifier extends Notifier<List<BagCard>> {
+class SavedCardsNotifier extends Notifier<List<SavedCard>> {
   @override
-  List<BagCard> build() {
-    return ref.watch(storageProvider).getBagCards();
+  List<SavedCard> build() {
+    return ref.watch(storageProvider).getSavedCards();
   }
 
-  void addCard(BagCard card) {
+  void addCard(SavedCard card) {
     // Deduplication check: Do not add if a card with same value exists in this folder
     final exists = state.any(
-      (c) => c.value == card.value && c.folderId == card.folderId,
+      (c) => c.card.value == card.card.value && c.folderId == card.folderId,
     );
     if (!exists) {
       state = [...state, card];
-      ref.read(storageProvider).saveBagCards(state);
+      ref.read(storageProvider).saveSavedCards(state);
     }
   }
 
-  void updateCard(BagCard updated) {
+  void updateCard(SavedCard updated) {
     state = state.map((e) => e.id == updated.id ? updated : e).toList();
-    ref.read(storageProvider).saveBagCards(state);
+    ref.read(storageProvider).saveSavedCards(state);
   }
 
   void removeCard(String id) {
     state = state.where((e) => e.id != id).toList();
-    ref.read(storageProvider).saveBagCards(state);
+    ref.read(storageProvider).saveSavedCards(state);
   }
 }
 
@@ -162,13 +163,13 @@ class CardFoldersNotifier extends Notifier<List<CardFolder>> {
     ref.read(storageProvider).saveCardFolders(state);
 
     // Also remove all cards in this folder
-    final cards = ref.read(bagCardsProvider);
+    final cards = ref.read(savedCardsProvider);
     final cardsToRemove = cards
         .where((c) => c.folderId == id)
         .map((c) => c.id)
         .toList();
     for (final cardId in cardsToRemove) {
-      ref.read(bagCardsProvider.notifier).removeCard(cardId);
+      ref.read(savedCardsProvider.notifier).removeCard(cardId);
     }
   }
 }

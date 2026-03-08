@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,8 +10,9 @@ import 'package:hinata_go/services/nfc_service.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/scan_log.dart';
-import '../../models/bag_card.dart';
-import '../../models/parsed_card.dart';
+import '../../models/card/scanned_card.dart';
+import '../../models/card/saved_card.dart';
+import '../../models/card/aime.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
@@ -165,10 +168,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   }
 
   Future<void> _onNfcDiscovered(NfcTag tag) async {
-    final parsedCard = await handleNfcTag(tag);
-    if (parsedCard != null) {
-      if (parsedCard.apiType != 'Unknown' && parsedCard.value.isNotEmpty) {
-        _handleReadData(parsedCard);
+    final scannedCard = await handleNfcTag(tag);
+    if (scannedCard != null) {
+      final card = scannedCard.card;
+      if (card.type != null && (card.value ?? '').isNotEmpty) {
+        _handleReadData(scannedCard);
       }
     }
   }
@@ -177,34 +181,41 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     for (final barcode in capture.barcodes) {
       final rawValue = barcode.rawValue;
       if (rawValue != null && QrHandler.isValidQrData(rawValue)) {
-        _handleReadData(
-          ParsedCard(
-            value: rawValue,
-            showValue: rawValue,
-            source: 'QR',
-            apiType: 'aime',
-            displayType: 'QR Code',
-          ),
+        // QR codes are treated as Aime type
+        final accessCodeBytes = Uint8List.fromList(
+          rawValue.codeUnits.length >= 20
+              ? _hexToBytes(rawValue)
+              : rawValue.codeUnits,
         );
+        final aime = Aime(
+          Uint8List(4), // placeholder id
+          0x08, // placeholder sak
+          0x0004, // placeholder atqa
+          accessCodeBytes,
+        );
+        _handleReadData(ScannedCard(card: aime, source: 'QR'));
         break;
       }
     }
   }
 
-  void _onResendHistoryItem(ScanLog log) {
-    if (_isProcessing) return;
-    _handleReadData(
-      ParsedCard(
-        value: log.value,
-        showValue: log.showValue,
-        source: log.source,
-        apiType: log.apiType,
-        displayType: log.displayType,
-      ),
-    );
+  static Uint8List _hexToBytes(String hex) {
+    final cleanHex = hex.replaceAll(' ', '');
+    final length = cleanHex.length ~/ 2;
+    final bytes = Uint8List(length);
+    for (int i = 0; i < length; i++) {
+      bytes[i] = int.parse(cleanHex.substring(i * 2, i * 2 + 2), radix: 16);
+    }
+    return bytes;
   }
 
-  Future<void> _handleReadData(ParsedCard card) async {
+  void _onResendHistoryItem(ScanLog log) {
+    if (_isProcessing) return;
+    // Re-use the full card from the log
+    _handleReadData(ScannedCard(card: log.card, source: log.source));
+  }
+
+  Future<void> _handleReadData(ScannedCard scannedCard) async {
     if (_isProcessing) return;
 
     setState(() {
@@ -218,7 +229,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     if (enableSecondaryConfirmation) {
       final shouldSend = await showDialog<bool>(
         context: context,
-        builder: (context) => _ConfirmSendDialog(card: card),
+        builder: (context) => _ConfirmSendDialog(card: scannedCard),
       );
       if (!mounted) return;
       if (shouldSend != true) {
@@ -231,31 +242,25 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
     final activeInstance = ref.read(activeInstanceProvider);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final card = scannedCard.card;
 
     // Save to history automatically as a ScanLog
     final newLog = ScanLog(
       id: const Uuid().v4(),
-      value: card.value,
-      showValue: card.showValue,
-      source: card.source,
-      apiType: card.apiType,
-      displayType: card.displayType,
+      source: scannedCard.source,
+      showValue: scannedCard.showValue,
+      card: card,
       timestamp: DateTime.now(),
     );
     ref.read(scanLogsProvider.notifier).addLog(newLog);
 
     // Also auto-save to the 'History' folder in the Saved Cards
-    final newCard = BagCard(
+    final savedCard = SavedCard.fromScanned(
+      scannedCard,
       id: const Uuid().v4(),
-      name: card.displayType,
-      value: card.value,
-      showValue: card.showValue,
       folderId: 'history_folder',
-      source: card.source,
-      apiType: card.apiType,
-      displayType: card.displayType,
     );
-    ref.read(bagCardsProvider.notifier).addCard(newCard);
+    ref.read(savedCardsProvider.notifier).addCard(savedCard);
 
     if (activeInstance == null) {
       scaffoldMessenger.showQuickSnackBar(
@@ -271,8 +276,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       final apiService = ref.read(apiServiceProvider);
       final success = await apiService.sendCardData(
         instance: activeInstance,
-        type: card.apiType,
-        value: card.value,
+        type: card.type ?? 'unknown',
+        value: card.value ?? '',
       );
 
       if (!mounted) return;
@@ -288,15 +293,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       }
     }
 
-    // await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
       setState(() {
         _isProcessing = false;
       });
     }
   }
-
-  // Removed _showInstanceSelectionDialog as it is now handled by InstancesPage
 
   // ---------------------------------------------------------------------------
   // Builder methods — extracted from build() to flatten nesting
@@ -617,8 +619,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     final enableCamera = ref.watch(settingsProvider).enableCamera;
 
     // Stop or start the camera based on settings immediately upon build if on Reader page
-    // Since we are in build, we use post-frame callback or let route listener handle it,
-    // but just checking the flag is enough to hide it. To actually stop the hardware:
     if (!enableCamera && _cameraController.value.isRunning) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _safeStopCamera();
@@ -626,7 +626,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     } else if (enableCamera &&
         !_cameraController.value.isRunning &&
         ModalRoute.of(context)?.isCurrent == true) {
-      // Start only if currently visible
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _safeStartCamera();
       });
@@ -696,7 +695,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 }
 
 class _ConfirmSendDialog extends StatelessWidget {
-  final ParsedCard card;
+  final ScannedCard card;
   const _ConfirmSendDialog({required this.card});
 
   @override
@@ -704,7 +703,7 @@ class _ConfirmSendDialog extends StatelessWidget {
     return AlertDialog(
       title: const Text('Confirm Send'),
       content: Text(
-        'Are you sure you want to send this ${card.displayType} card?\nValue: ${card.value}',
+        'Are you sure you want to send this ${card.card.name} card?\nValue: ${card.showValue}',
       ),
       actions: [
         TextButton(

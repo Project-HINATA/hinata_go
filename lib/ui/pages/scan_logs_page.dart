@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/bag_card.dart';
+import '../../models/card/saved_card.dart';
 import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
 import '../../utils/snackbar_utils.dart';
@@ -58,9 +58,6 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
                           child: Text(folder.name),
                         );
                       }),
-                      // Quick creation from logs isn't perfectly clean without a nested dialog,
-                      // but we can prompt them. For simplicity in context we stick to existing folders
-                      // or we trigger a nested dialog.
                     ],
                     onChanged: (val) {
                       if (val != null) {
@@ -80,17 +77,14 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
                 FilledButton(
                   onPressed: () {
                     if (nameController.text.isNotEmpty) {
-                      final newCard = BagCard(
+                      final newCard = SavedCard(
                         id: const Uuid().v4(),
                         name: nameController.text,
-                        value: log.value,
-                        showValue: log.showValue,
+                        card: log.card,
                         folderId: selectedFolderId,
                         source: log.source,
-                        apiType: log.apiType,
-                        displayType: log.displayType,
                       );
-                      ref.read(bagCardsProvider.notifier).addCard(newCard);
+                      ref.read(savedCardsProvider.notifier).addCard(newCard);
                       ScaffoldMessenger.of(context).showQuickSnackBar(
                         SnackBar(
                           content: Text(

@@ -29,4 +29,23 @@ class Felica extends ICCard {
 
   @override
   String? get value => idString;
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      ...super.toJson(),
+      'pmm': pmmString,
+      'systemCode': systemCode.toList(),
+    };
+  }
+
+  factory Felica.fromJson(Map<String, dynamic> json) {
+    return Felica(
+      ICCard.hexToBytes(json['id'] as String? ?? ''),
+      ICCard.hexToBytes(json['pmm'] as String? ?? ''),
+      Uint16List.fromList(
+        (json['systemCode'] as List<dynamic>?)?.cast<int>() ?? [],
+      ),
+    );
+  }
 }

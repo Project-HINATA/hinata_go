@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/bag_card.dart';
+import '../../models/card/saved_card.dart';
+import '../../models/card/aime.dart';
 import '../../models/card_folder.dart';
 import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
@@ -91,17 +92,15 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     }
   }
 
-  Future<void> _sendCardData(BagCard card) async {
+  Future<void> _sendCardData(SavedCard card) async {
     if (_isProcessing) return;
 
     // Create ScanLog for Direct send
     final newLog = ScanLog(
       id: const Uuid().v4(),
-      value: card.value,
-      showValue: card.showValue,
       source: 'Direct',
-      apiType: card.apiType,
-      displayType: card.displayType,
+      showValue: card.showValue,
+      card: card.card,
       timestamp: DateTime.now(),
     );
     ref.read(scanLogsProvider.notifier).addLog(newLog);
@@ -143,8 +142,8 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
       final apiService = ref.read(apiServiceProvider);
       final success = await apiService.sendCardData(
         instance: activeInstance,
-        type: card.apiType,
-        value: card.value,
+        type: card.card.type ?? 'unknown',
+        value: card.card.value ?? '',
       );
 
       if (!mounted) return;
@@ -187,7 +186,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     );
   }
 
-  Widget _buildCardItem(BagCard card) {
+  Widget _buildCardItem(SavedCard card) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dismissible(
@@ -195,7 +194,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
       direction: DismissDirection.endToStart,
       background: _buildDismissBackground(),
       onDismissed: (_) {
-        ref.read(bagCardsProvider.notifier).removeCard(card.id);
+        ref.read(savedCardsProvider.notifier).removeCard(card.id);
       },
       child: ListTile(
         leading: CircleAvatar(
@@ -230,7 +229,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
   @override
   Widget build(BuildContext context) {
     final folders = ref.watch(cardFoldersProvider);
-    final allCards = ref.watch(bagCardsProvider);
+    final allCards = ref.watch(savedCardsProvider);
     final folderCards = allCards
         .where((c) => c.folderId == _selectedFolderId)
         .toList();
@@ -371,19 +370,39 @@ class _AddCardDialogState extends ConsumerState<_AddCardDialog> {
     final name = _nameController.text.trim();
     final value = _valueController.text.trim();
     if (name.isNotEmpty && value.isNotEmpty) {
-      final newCard = BagCard(
+      // Manual entry is treated as Aime type
+      final accessCodeBytes = _hexToBytes(value);
+      final aime = Aime(
+        Uint8List(4), // placeholder id
+        0x08, // placeholder sak
+        0x0004, // placeholder atqa
+        accessCodeBytes,
+      );
+      final newCard = SavedCard(
         id: const Uuid().v4(),
         name: name,
-        value: value,
-        showValue: value,
+        card: aime,
         folderId: _selectedFolderId,
         source: 'Direct',
-        apiType: 'aime',
-        displayType: 'Manual Entry',
       );
-      ref.read(bagCardsProvider.notifier).addCard(newCard);
+      ref.read(savedCardsProvider.notifier).addCard(newCard);
       Navigator.pop(context);
     }
+  }
+
+  static Uint8List _hexToBytes(String hex) {
+    final cleanHex = hex.replaceAll(' ', '');
+    // If input is pure digits, treat it as access code string
+    if (cleanHex.length.isOdd ||
+        !RegExp(r'^[0-9a-fA-F]+$').hasMatch(cleanHex)) {
+      return Uint8List.fromList(cleanHex.codeUnits);
+    }
+    final length = cleanHex.length ~/ 2;
+    final bytes = Uint8List(length);
+    for (int i = 0; i < length; i++) {
+      bytes[i] = int.parse(cleanHex.substring(i * 2, i * 2 + 2), radix: 16);
+    }
+    return bytes;
   }
 
   @override
@@ -503,7 +522,7 @@ class _AddFolderDialogState extends ConsumerState<_AddFolderDialog> {
 }
 
 class _ConfirmSendDialog extends StatelessWidget {
-  final BagCard card;
+  final SavedCard card;
   const _ConfirmSendDialog({required this.card});
 
   @override

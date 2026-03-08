@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'card.dart';
 import 'felica.dart';
 
 class Aic extends Felica {
@@ -29,6 +30,21 @@ class Aic extends Felica {
 
   @override
   String? get value => "$idString:$accessCodeString";
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {...super.toJson(), 'accessCode': accessCodeString};
+  }
+
+  factory Aic.fromJson(Map<String, dynamic> json) {
+    final felica = Felica.fromJson(json);
+    return Aic(
+      felica.id,
+      felica.pmm,
+      felica.systemCode,
+      ICCard.hexToBytes(json['accessCode'] as String? ?? ''),
+    );
+  }
 }
 
 extension ToAIC on Felica {

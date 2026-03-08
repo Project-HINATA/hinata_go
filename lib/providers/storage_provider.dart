@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/remote_instance.dart';
-import '../models/bag_card.dart';
+import '../models/card/saved_card.dart';
 import '../models/card_folder.dart';
 import '../models/scan_log.dart';
 import 'settings_provider.dart';
@@ -22,7 +22,7 @@ class StorageService {
   StorageService(this._prefs);
 
   static const String _kInstancesKey = 'instances';
-  static const String _kBagCardsKey = 'bag_cards';
+  static const String _kSavedCardsKey = 'saved_cards';
   static const String _kCardFoldersKey = 'card_folders';
   static const String _kScanLogsKey = 'scan_logs';
   static const String _kActiveInstanceIdKey = 'active_instance_id';
@@ -64,23 +64,23 @@ class StorageService {
     }
   }
 
-  // --- Bag Cards ---
-  List<BagCard> getBagCards() {
-    final String? jsonString = _prefs.getString(_kBagCardsKey);
+  // --- Saved Cards ---
+  List<SavedCard> getSavedCards() {
+    final String? jsonString = _prefs.getString(_kSavedCardsKey);
     if (jsonString == null) return [];
     try {
       final List<dynamic> jsonList = jsonDecode(jsonString);
       return jsonList
-          .map((e) => BagCard.fromJson(e as Map<String, dynamic>))
+          .map((e) => SavedCard.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (e) {
       return [];
     }
   }
 
-  Future<void> saveBagCards(List<BagCard> cards) async {
+  Future<void> saveSavedCards(List<SavedCard> cards) async {
     final String jsonString = jsonEncode(cards.map((e) => e.toJson()).toList());
-    await _prefs.setString(_kBagCardsKey, jsonString);
+    await _prefs.setString(_kSavedCardsKey, jsonString);
   }
 
   // --- Card Folders ---
