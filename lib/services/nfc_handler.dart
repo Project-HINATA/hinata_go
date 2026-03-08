@@ -10,6 +10,7 @@ import '../providers/app_state_provider.dart';
 import '../navigation/router.dart';
 import 'api_service.dart';
 import 'nfc_service.dart';
+import 'notification_service.dart';
 
 class NfcState {
   final bool isScanning;
@@ -114,12 +115,32 @@ class NfcHandler extends Notifier<NfcState> {
 
     // 3. Auto-send to active instance
     final activeInstance = ref.read(activeInstanceProvider);
+    final notificationService = ref.read(notificationServiceProvider);
+
     if (activeInstance != null) {
+      notificationService.showInfo(
+        'Sending ${card.name} to ${activeInstance.name}...',
+      );
+
       final apiService = ref.read(apiServiceProvider);
-      await apiService.sendCardData(
+      final success = await apiService.sendCardData(
         instance: activeInstance,
         type: card.type ?? 'unknown',
         value: card.value ?? '',
+      );
+
+      if (success) {
+        notificationService.showSuccess(
+          'Success: Sent to ${activeInstance.name}',
+        );
+      } else {
+        notificationService.showError(
+          'Failed: Could not send to ${activeInstance.name}',
+        );
+      }
+    } else {
+      notificationService.showError(
+        'No active instance set. Data was not sent.',
       );
     }
 

@@ -12,7 +12,7 @@ extension QuickSnackBar on ScaffoldMessengerState {
         content: snackBar.content,
         duration: kSnackBarDuration,
         action: snackBar.action,
-        behavior: snackBar.behavior,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

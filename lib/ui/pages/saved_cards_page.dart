@@ -11,7 +11,7 @@ import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
-import '../../utils/snackbar_utils.dart';
+import '../../services/notification_service.dart';
 
 class SavedCardsPage extends ConsumerStatefulWidget {
   const SavedCardsPage({super.key});
@@ -58,9 +58,9 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
 
   void _onDeleteFolder(CardFolder folder) {
     if (folder.id == 'history_folder' || folder.id == 'favorites_folder') {
-      ScaffoldMessenger.of(context).showQuickSnackBar(
-        const SnackBar(content: Text('Cannot delete default folders.')),
-      );
+      ref
+          .read(notificationServiceProvider)
+          .showError('Cannot delete default folders.');
       return;
     }
     showDialog(
@@ -122,21 +122,15 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     });
 
     final activeInstance = ref.read(activeInstanceProvider);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final notificationService = ref.read(notificationServiceProvider);
 
     if (activeInstance == null) {
-      scaffoldMessenger.showQuickSnackBar(
-        const SnackBar(
-          content: Text(
-            'No active instance set. Please select one in Instances tab.',
-          ),
-        ),
+      notificationService.showError(
+        'No active instance set. Please select one in Instances tab.',
       );
     } else {
-      scaffoldMessenger.showQuickSnackBar(
-        SnackBar(
-          content: Text('Sending ${card.name} to ${activeInstance.name}...'),
-        ),
+      notificationService.showInfo(
+        'Sending ${card.name} to ${activeInstance.name}...',
       );
 
       final apiService = ref.read(apiServiceProvider);
@@ -149,13 +143,9 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
       if (!mounted) return;
 
       if (success) {
-        scaffoldMessenger.showQuickSnackBar(
-          const SnackBar(content: Text('Success: Data sent.')),
-        );
+        notificationService.showSuccess('Success: Data sent.');
       } else {
-        scaffoldMessenger.showQuickSnackBar(
-          const SnackBar(content: Text('Failed: Could not send data.')),
-        );
+        notificationService.showError('Failed: Could not send data.');
       }
     }
 

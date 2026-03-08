@@ -6,6 +6,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'navigation/router.dart';
 import 'providers/storage_provider.dart';
 import 'services/nfc_handler.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,8 +50,11 @@ class MyApp extends ConsumerWidget {
           );
         }
 
+        final notificationService = ref.watch(notificationServiceProvider);
+
         return MaterialApp.router(
           title: 'SEGA NFC',
+          scaffoldMessengerKey: notificationService.messengerKey,
           theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
           darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
           themeMode: ThemeMode.system,

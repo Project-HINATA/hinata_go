@@ -10,7 +10,7 @@ import '../../models/card/iso14443a.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
-import '../../utils/snackbar_utils.dart';
+import '../../services/notification_service.dart';
 
 class CardDetailPage extends ConsumerStatefulWidget {
   final ICCard card;
@@ -56,20 +56,12 @@ class _CardDetailPageState extends ConsumerState<CardDetailPage> {
     setState(() => _isSending = true);
 
     final activeInstance = ref.read(activeInstanceProvider);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final notificationService = ref.read(notificationServiceProvider);
 
     if (activeInstance == null) {
-      if (mounted) {
-        scaffoldMessenger.showQuickSnackBar(
-          const SnackBar(content: Text('No active instance selected.')),
-        );
-      }
+      notificationService.showError('No active instance selected.');
     } else {
-      if (mounted) {
-        scaffoldMessenger.showQuickSnackBar(
-          SnackBar(content: Text('Sending to ${activeInstance.name}...')),
-        );
-      }
+      notificationService.showInfo('Sending to ${activeInstance.name}...');
 
       final apiService = ref.read(apiServiceProvider);
       final success = await apiService.sendCardData(
@@ -80,13 +72,9 @@ class _CardDetailPageState extends ConsumerState<CardDetailPage> {
 
       if (mounted) {
         if (success) {
-          scaffoldMessenger.showQuickSnackBar(
-            const SnackBar(content: Text('Success: Sent.')),
-          );
+          notificationService.showSuccess('Success: Sent.');
         } else {
-          scaffoldMessenger.showQuickSnackBar(
-            const SnackBar(content: Text('Failed to send.')),
-          );
+          notificationService.showError('Failed to send.');
         }
       }
     }
@@ -106,9 +94,9 @@ class _CardDetailPageState extends ConsumerState<CardDetailPage> {
             icon: const Icon(Icons.copy),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: card.value ?? ''));
-              ScaffoldMessenger.of(context).showQuickSnackBar(
-                const SnackBar(content: Text('Value copied to clipboard')),
-              );
+              ref
+                  .read(notificationServiceProvider)
+                  .showSuccess('Value copied to clipboard');
             },
             tooltip: 'Copy Value',
           ),
