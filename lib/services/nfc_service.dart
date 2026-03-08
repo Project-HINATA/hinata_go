@@ -11,12 +11,12 @@ import '../models/card/felica.dart';
 import '../models/card/iso14443a.dart';
 import '../utils/spad0.dart';
 
-String _toHexString(Uint8List bytes) {
-  return bytes
-      .map((e) => e.toRadixString(16).padLeft(2, '0'))
-      .join('')
-      .toUpperCase();
-}
+// String _toHexString(Uint8List bytes) {
+//   return bytes
+//       .map((e) => e.toRadixString(16).padLeft(2, '0'))
+//       .join('')
+//       .toUpperCase();
+// }
 
 Future<ScannedCard?> handleNfcTag(NfcTag tag) async {
   // Try Felica
@@ -36,26 +36,31 @@ Future<ScannedCard?> handleNfcTag(NfcTag tag) async {
 
 Future<Uint8List> _felicaReadWithoutEncryption(
   NfcFAndroid nfcf,
-  Uint8List idm, {
-  required int serviceCode,
-  required int block,
+  Uint8List idm,
+  List<int> blocks, {
+  int serviceCode = 0x000B,
 }) async {
   final command = BytesBuilder();
-  command.addByte(0);
-  command.addByte(0x06); // Command Code
-  command.add(idm); // IDm (8 bytes)
-  command.addByte(0x01); // Number of Services
-  command.add([
-    serviceCode & 0xFF,
-    (serviceCode >> 8) & 0xFF,
-  ]); // Service Code List (Little Endian)
-  command.addByte(0x01); // Number of Blocks
-  command.add([
-    0x80,
-    block & 0xFF,
-  ]); // Block List Element (2-byte block list element)
 
-  return await nfcf.transceive(command.toBytes());
+  command.addByte(0);
+  command.addByte(0x06);
+  command.add(idm);
+
+  command.addByte(1);
+
+  command.addByte(serviceCode & 0xFF);
+  command.addByte((serviceCode >> 8) & 0xFF);
+  command.addByte(blocks.length);
+
+  for (var block in blocks) {
+    command.addByte(0x80);
+    command.addByte(block & 0xFF);
+  }
+
+  Uint8List fullPayload = command.toBytes();
+  fullPayload[0] = fullPayload.length;
+
+  return await nfcf.transceive(fullPayload);
 }
 
 Future _felicaPoll(NfcFAndroid nfcf) async {
@@ -81,7 +86,7 @@ bool _mayAic(Uint8List idm, Uint8List pmm, Uint16List systemCodes) {
       pmm[5] == 0x01 &&
       pmm[6] == 0x43 &&
       pmm[7] == 0x00 &&
-      systemCodes[0] == 0x88B4;
+      (systemCodes[0] == 0x88B4 || systemCodes[0] == 0);
 }
 
 Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
@@ -111,15 +116,8 @@ Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
   }
 
   try {
-    await _felicaPoll(nfcf);
-    final response = await _felicaReadWithoutEncryption(
-      nfcf,
-      idm,
-      serviceCode: 0x000B,
-      block: 0,
-    );
-
-    log(_toHexString(response));
+    _felicaPoll(nfcf); // NFC标签拉起应用时需要
+    final response = await _felicaReadWithoutEncryption(nfcf, idm, [0]);
 
     // Check response length (minimum 13 bytes to contain Status Flags)
     if (response.length < 12) {
@@ -128,14 +126,16 @@ Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
 
     final blockData = response.sublist(13, 13 + 16);
 
+    if (blockData.every((byte) => byte == 0)) {
+      return defaultReturn;
+    }
+
     // Decrypt block using spad0
     final dec = spad0Decrypt(blockData);
 
     // Validate Amusement IC format
-    for (int i = 0; i < 6; i++) {
-      if (dec[i] != 0) {
-        return defaultReturn;
-      }
+    if (dec[5] != 0) {
+      return defaultReturn;
     }
 
     // Checking high 4 bits of 7th byte for 0x50 (AIC_HEADER_VALID)

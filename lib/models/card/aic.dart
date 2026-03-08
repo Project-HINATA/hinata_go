@@ -11,13 +11,13 @@ class Aic extends Felica {
       accessCode.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
 
   String get manufacturer {
-    final prefix = accessCodeString.substring(0, 3);
+    final prefix = accessCodeString.substring(0, 2);
 
     return switch (prefix) {
-      '500' || '501' => 'SEGA',
-      '510' => 'Bandai Namco',
-      '520' => 'KONAMI',
-      '530' => 'Taito',
+      '50' => 'SEGA',
+      '51' => 'Bandai Namco',
+      '52' => 'KONAMI',
+      '53' => 'Taito',
       _ => 'Unknown',
     };
   }
