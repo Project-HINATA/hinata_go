@@ -4,21 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hinata_go/services/nfc_handler.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:hinata_go/services/nfc_service.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../models/scan_log.dart';
 import '../../models/card/scanned_card.dart';
-import '../../models/card/saved_card.dart';
 import '../../models/card/aime.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../services/api_service.dart';
 import '../../utils/icon_utils.dart';
 import '../../utils/qr_handler.dart';
-import '../../utils/snackbar_utils.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
   const ReaderPage({super.key});
@@ -30,10 +25,6 @@ class ReaderPage extends ConsumerStatefulWidget {
 class _ReaderPageState extends ConsumerState<ReaderPage>
     with WidgetsBindingObserver {
   late MobileScannerController _cameraController;
-  late GoRouter _router;
-  bool _isNfcScanning = false;
-  String _nfcStatus = 'Ready to scan NFC tags';
-  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -44,52 +35,26 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       autoStart: false,
     );
     WidgetsBinding.instance.addObserver(this);
-    _startNfc();
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _router = GoRouter.of(context);
-    _router.routerDelegate.addListener(_routeListener);
-  }
-
-  void _routeListener() {
-    final location =
-        _router.routerDelegate.currentConfiguration.last.matchedLocation;
-    final enableCamera = ref.read(settingsProvider).enableCamera;
-
-    if (location == '/reader') {
-      _startNfc();
-      if (enableCamera) _safeStartCamera();
-    } else {
-      _stopNfc();
-      _safeStopCamera();
-    }
+    // Auto-start NFC session if it's not already scanning
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(nfcHandlerProvider.notifier).startSession();
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      final location =
-          _router.routerDelegate.currentConfiguration.last.matchedLocation;
       final enableCamera = ref.read(settingsProvider).enableCamera;
-
-      if (location == '/reader') {
-        _startNfc();
-        if (enableCamera) _safeStartCamera();
-      }
+      if (enableCamera) _safeStartCamera();
     } else if (state == AppLifecycleState.paused) {
-      _stopNfc();
       _safeStopCamera();
     }
   }
 
   @override
   void dispose() {
-    _router.routerDelegate.removeListener(_routeListener);
     WidgetsBinding.instance.removeObserver(this);
-    _stopNfc();
     _safeStopCamera();
     Future.delayed(const Duration(milliseconds: 200), () {
       _cameraController.dispose();
@@ -120,63 +85,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     }
   }
 
-  Future<void> _startNfc() async {
-    if (_isNfcScanning) return;
-    try {
-      NfcAvailability availability = await NfcManager.instance
-          .checkAvailability();
-      if (availability != NfcAvailability.enabled) {
-        if (mounted) {
-          setState(() {
-            _nfcStatus = 'NFC is not available or disabled.';
-          });
-        }
-        return;
-      }
-
-      setState(() {
-        _isNfcScanning = true;
-        _nfcStatus = 'Listening for NFC...';
-      });
-
-      await NfcManager.instance.startSession(
-        noPlatformSoundsAndroid: true,
-        pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso18092},
-        onDiscovered: _onNfcDiscovered,
-      );
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isNfcScanning = false;
-          _nfcStatus = 'NFC Error: $e';
-        });
-      }
-    }
-  }
-
-  void _stopNfc() {
-    if (_isNfcScanning) {
-      try {
-        NfcManager.instance.stopSession();
-      } catch (_) {}
-      if (mounted) {
-        setState(() {
-          _isNfcScanning = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _onNfcDiscovered(NfcTag tag) async {
-    final scannedCard = await handleNfcTag(tag);
-    if (scannedCard != null) {
-      final card = scannedCard.card;
-      if (card.type != null && (card.value ?? '').isNotEmpty) {
-        _handleReadData(scannedCard);
-      }
-    }
-  }
-
   void _onQrDetect(BarcodeCapture capture) {
     for (final barcode in capture.barcodes) {
       final rawValue = barcode.rawValue;
@@ -193,7 +101,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           0x0004, // placeholder atqa
           accessCodeBytes,
         );
-        _handleReadData(ScannedCard(card: aime, source: 'QR'));
+        ref
+            .read(nfcHandlerProvider.notifier)
+            .handleExternalScan(ScannedCard(card: aime, source: 'QR'));
         break;
       }
     }
@@ -210,107 +120,18 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   }
 
   void _onResendHistoryItem(ScanLog log) {
-    if (_isProcessing) return;
-    // Re-use the full card from the log
-    _handleReadData(ScannedCard(card: log.card, source: log.source));
+    ref
+        .read(nfcHandlerProvider.notifier)
+        .handleExternalScan(ScannedCard(card: log.card, source: log.source));
   }
 
-  Future<void> _handleReadData(ScannedCard scannedCard) async {
-    if (_isProcessing) return;
-
-    setState(() {
-      _isProcessing = true;
-    });
-
-    final enableSecondaryConfirmation = ref
-        .read(settingsProvider)
-        .enableSecondaryConfirmation;
-
-    if (enableSecondaryConfirmation) {
-      final shouldSend = await showDialog<bool>(
-        context: context,
-        builder: (context) => _ConfirmSendDialog(card: scannedCard),
-      );
-      if (!mounted) return;
-      if (shouldSend != true) {
-        setState(() {
-          _isProcessing = false;
-        });
-        return;
-      }
-    }
-
-    final activeInstance = ref.read(activeInstanceProvider);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final card = scannedCard.card;
-
-    // Save to history automatically as a ScanLog
-    final newLog = ScanLog(
-      id: const Uuid().v4(),
-      source: scannedCard.source,
-      showValue: scannedCard.showValue,
-      card: card,
-      timestamp: DateTime.now(),
-    );
-    ref.read(scanLogsProvider.notifier).addLog(newLog);
-
-    // Also auto-save to the 'History' folder in the Saved Cards
-    final savedCard = SavedCard.fromScanned(
-      scannedCard,
-      id: const Uuid().v4(),
-      folderId: 'history_folder',
-    );
-    ref.read(savedCardsProvider.notifier).addCard(savedCard);
-
-    if (activeInstance == null) {
-      scaffoldMessenger.showQuickSnackBar(
-        const SnackBar(
-          content: Text('Card read, but no active instance set to send data.'),
-        ),
-      );
-    } else {
-      scaffoldMessenger.showQuickSnackBar(
-        SnackBar(content: Text('Sending data to ${activeInstance.name}...')),
-      );
-
-      final apiService = ref.read(apiServiceProvider);
-      final success = await apiService.sendCardData(
-        instance: activeInstance,
-        type: card.type ?? 'unknown',
-        value: card.value ?? '',
-      );
-
-      if (!mounted) return;
-
-      if (success) {
-        scaffoldMessenger.showQuickSnackBar(
-          const SnackBar(content: Text('Success: Data sent.')),
-        );
-      } else {
-        scaffoldMessenger.showQuickSnackBar(
-          const SnackBar(content: Text('Failed: Could not send data.')),
-        );
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isProcessing = false;
-      });
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Builder methods — extracted from build() to flatten nesting
-  // ---------------------------------------------------------------------------
-
-  /// Animated pill showing NFC scanning status.
   Widget _buildNfcStatusPill() {
+    final nfcState = ref.watch(nfcHandlerProvider);
     final colorScheme = Theme.of(context).colorScheme;
-    final Color bgColor = _isNfcScanning
+    final Color bgColor = nfcState.isScanning
         ? colorScheme.primaryContainer
         : colorScheme.surfaceContainerHighest;
-    final Color fgColor = _isNfcScanning
+    final Color fgColor = nfcState.isScanning
         ? colorScheme.onPrimaryContainer
         : colorScheme.onSurfaceVariant;
 
@@ -322,34 +143,44 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           color: bgColor,
           borderRadius: BorderRadius.circular(30),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.nfc,
-              color: _isNfcScanning
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: Text(
-                _nfcStatus,
-                key: ValueKey(_nfcStatus),
-                style: TextStyle(color: fgColor, fontWeight: FontWeight.bold),
+        child: InkWell(
+          onTap: () {
+            if (nfcState.isScanning) {
+              ref.read(nfcHandlerProvider.notifier).stopSession();
+            } else {
+              ref.read(nfcHandlerProvider.notifier).startSession();
+            }
+          },
+          borderRadius: BorderRadius.circular(30),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.nfc,
+                color: nfcState.isScanning
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+                size: 20,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Text(
+                  nfcState.status,
+                  key: ValueKey(nfcState.status),
+                  style: TextStyle(color: fgColor, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// QR camera preview with overlay and processing indicator.
   Widget _buildQrScanner() {
     final colorScheme = Theme.of(context).colorScheme;
+    final nfcState = ref.watch(nfcHandlerProvider);
 
     return Container(
       height: 240,
@@ -365,13 +196,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           ValueListenableBuilder<MobileScannerState>(
             valueListenable: _cameraController,
             builder: (context, state, _) {
-              if (state.isInitialized &&
-                  !state.isRunning &&
-                  state.error == null) {
-                return _buildCameraPlaceholder(colorScheme);
-              }
-              if (!state.isInitialized && state.error == null) {
-                return _buildCameraPlaceholder(colorScheme);
+              if (!state.isInitialized || !state.isRunning) {
+                return _buildCameraPlaceholder(colorScheme, error: state.error);
               }
               return const SizedBox.shrink();
             },
@@ -383,7 +209,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
             },
             onDetect: _onQrDetect,
           ),
-          if (_isProcessing)
+          if (nfcState.isProcessing)
             Container(
               color: Colors.black54,
               child: const Center(child: CircularProgressIndicator()),
@@ -400,20 +226,15 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
-  /// Placeholder shown while the camera is loading, paused, or errored.
   Widget _buildCameraPlaceholder(
     ColorScheme colorScheme, {
     MobileScannerException? error,
   }) {
-    if (error == null) {
-      return const SizedBox.shrink();
-    }
-
     final color = colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
-    String message = 'Camera Error';
-    IconData icon = Icons.error_outline;
+    String message = error == null ? 'Camera Paused' : 'Camera Error';
+    IconData icon = error == null ? Icons.videocam_off : Icons.error_outline;
 
-    if (error.errorCode == MobileScannerErrorCode.permissionDenied) {
+    if (error?.errorCode == MobileScannerErrorCode.permissionDenied) {
       message = 'Camera Permission Denied';
       icon = Icons.no_photography;
     }
@@ -430,7 +251,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
-  /// Scan-target crosshair overlay.
   Widget _buildScanTargetOverlay() {
     return Center(
       child: Container(
@@ -444,7 +264,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
-  /// Card showing the active instance or a "no instance" warning.
   Widget _buildInstanceCard(dynamic activeInstance) {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
@@ -467,7 +286,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
-  /// Row content when an instance is selected.
   Widget _buildActiveInstanceRow(dynamic activeInstance) {
     final colorScheme = Theme.of(context).colorScheme;
     final fgColor = colorScheme.onPrimaryContainer;
@@ -510,7 +328,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
-  /// Row content when no instance is selected.
   Widget _buildNoInstanceRow() {
     final fgColor = Theme.of(context).colorScheme.onErrorContainer;
 
@@ -532,7 +349,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
-  /// History header + recent scans list.
   Widget _buildHistorySection(List<ScanLog> scanLogs) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -564,9 +380,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
-  /// A single history list item.
   Widget _buildHistoryItem(ScanLog log) {
     final colorScheme = Theme.of(context).colorScheme;
+    final nfcState = ref.watch(nfcHandlerProvider);
 
     String displaySource = log.source;
     if (log.source == 'NFC') {
@@ -600,26 +416,21 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       ),
       trailing: IconButton(
         icon: const Icon(Icons.send, size: 20),
-        onPressed: _isProcessing ? null : () => _onResendHistoryItem(log),
+        onPressed: nfcState.isProcessing
+            ? null
+            : () => _onResendHistoryItem(log),
         tooltip: 'Resend to active instance',
       ),
       onTap: () => context.push('/card_detail', extra: log.card),
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // build
-  // ---------------------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
     final activeInstance = ref.watch(activeInstanceProvider);
     final scanLogs = ref.watch(scanLogsProvider).reversed.take(5).toList();
-
-    // We must rebuild when the setting changes to stop/start camera dynamically
     final enableCamera = ref.watch(settingsProvider).enableCamera;
 
-    // Stop or start the camera based on settings immediately upon build if on Reader page
     if (!enableCamera && _cameraController.value.isRunning) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _safeStopCamera();
@@ -691,31 +502,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ConfirmSendDialog extends StatelessWidget {
-  final ScannedCard card;
-  const _ConfirmSendDialog({required this.card});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Confirm Send'),
-      content: Text(
-        'Are you sure you want to send this ${card.card.name} card?\nValue: ${card.showValue}',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Send'),
-        ),
-      ],
     );
   }
 }
