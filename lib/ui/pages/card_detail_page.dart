@@ -309,22 +309,6 @@ class _HeaderCard extends StatelessWidget {
                 color: colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: colorScheme.onPrimaryContainer,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'TYPE: ${card.type?.toUpperCase() ?? "UNKNOWN"}',
-                style: TextStyle(
-                  color: colorScheme.primaryContainer,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
           ],
         ),
       ),

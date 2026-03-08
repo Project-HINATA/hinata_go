@@ -75,8 +75,16 @@ bool _mayAic(Uint8List idm, Uint8List pmm) {
 Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
   final idm = nfcf.tag.id;
   final pmm = nfcf.manufacturer;
-  final felica = Felica(idm, pmm, Uint16List(0));
+  log(nfcf.systemCode.join(', '));
 
+  final systemCodesU8 = nfcf.systemCode;
+  final systemCodesU16 = Uint16List.fromList(
+    Iterable.generate(systemCodesU8.length ~/ 2, (i) {
+      return (systemCodesU8[i * 2] << 8) | systemCodesU8[i * 2 + 1];
+    }).toList(),
+  );
+
+  final felica = Felica(idm, pmm, systemCodesU16);
   final defaultReturn = ScannedCard(card: felica, source: 'NFC');
 
   // 1. Quick filter: only process if IDm starts with 0x00 or 0x01
