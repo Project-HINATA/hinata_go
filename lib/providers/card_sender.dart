@@ -5,18 +5,37 @@ import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import 'app_state_provider.dart';
 
-final cardSenderProvider = NotifierProvider<CardSender, bool>(() {
+class CardSenderState {
+  final bool isSending;
+  final String?
+  triggerId; // Unique ID of the button/item that triggered the send
+
+  CardSenderState({this.isSending = false, this.triggerId});
+
+  CardSenderState copyWith({bool? isSending, String? triggerId}) {
+    return CardSenderState(
+      isSending: isSending ?? this.isSending,
+      triggerId: triggerId ?? (isSending == false ? null : this.triggerId),
+    );
+  }
+}
+
+final cardSenderProvider = NotifierProvider<CardSender, CardSenderState>(() {
   return CardSender();
 });
 
-class CardSender extends Notifier<bool> {
+class CardSender extends Notifier<CardSenderState> {
   @override
-  bool build() {
-    return false; // isSending
+  CardSenderState build() {
+    return CardSenderState();
   }
 
-  Future<bool> sendCard(ICCard card, {RemoteInstance? targetInstance}) async {
-    if (state) return false;
+  Future<bool> sendCard(
+    ICCard card, {
+    RemoteInstance? targetInstance,
+    String? triggerId,
+  }) async {
+    if (state.isSending) return false;
 
     final activeInstance = targetInstance ?? ref.read(activeInstanceProvider);
     final notificationService = ref.read(notificationServiceProvider);
@@ -27,7 +46,7 @@ class CardSender extends Notifier<bool> {
       return false;
     }
 
-    state = true;
+    state = state.copyWith(isSending: true, triggerId: triggerId);
     try {
       notificationService.showInfo('Sending to ${activeInstance.name}...');
 
@@ -48,7 +67,7 @@ class CardSender extends Notifier<bool> {
       }
       return success;
     } finally {
-      state = false;
+      state = state.copyWith(isSending: false, triggerId: null);
     }
   }
 }

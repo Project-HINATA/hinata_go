@@ -9,6 +9,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../models/scan_log.dart';
 import '../../models/card/scanned_card.dart';
 import '../../models/card/aime.dart';
+import '../../providers/card_sender.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/nfc_provider.dart';
@@ -59,9 +60,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   }
 
   void _onResendHistoryItem(ScanLog log) {
-    ref
-        .read(nfcProvider.notifier)
-        .handleExternalScan(ScannedCard(card: log.card, source: log.source));
+    ref.read(cardSenderProvider.notifier).sendCard(log.card, triggerId: log.id);
   }
 
   Widget _buildNfcStatusPill() {
@@ -311,7 +310,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
   Widget _buildHistoryItem(ScanLog log) {
     final colorScheme = Theme.of(context).colorScheme;
-    final nfcState = ref.watch(nfcProvider);
+    final senderState = ref.watch(cardSenderProvider);
+
+    final isThisCardSending =
+        senderState.isSending && senderState.triggerId == log.id;
+    final isAnyCardSending = senderState.isSending;
 
     String displaySource = log.source;
     if (log.source == 'NFC') {
@@ -343,13 +346,20 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       subtitle: Text(
         '$displaySource • ${log.timestamp.toString().substring(5, 16)}',
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.send, size: 20),
-        onPressed: nfcState.isProcessing
-            ? null
-            : () => _onResendHistoryItem(log),
-        tooltip: 'Resend to active instance',
-      ),
+      trailing: isThisCardSending
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : IconButton(
+              icon: const Icon(Icons.send, size: 20),
+              onPressed: isAnyCardSending
+                  ? null
+                  : () => _onResendHistoryItem(log),
+              tooltip: 'Resend to active instance',
+              color: isAnyCardSending ? colorScheme.outline : null,
+            ),
       onTap: () => context.push('/card_detail', extra: log.card),
     );
   }

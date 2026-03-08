@@ -8,9 +8,9 @@ import '../../models/card/saved_card.dart';
 import '../../models/card/aime.dart';
 import '../../models/card_folder.dart';
 import '../../models/scan_log.dart';
+import '../../providers/card_sender.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../services/api_service.dart';
 import '../../services/notification_service.dart';
 
 class SavedCardsPage extends ConsumerStatefulWidget {
@@ -21,7 +21,6 @@ class SavedCardsPage extends ConsumerStatefulWidget {
 }
 
 class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
-  bool _isProcessing = false;
   String _selectedFolderId = 'favorites_folder'; // Default folder
 
   void _showAddCardDialog() {
@@ -93,8 +92,6 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
   }
 
   Future<void> _sendCardData(SavedCard card) async {
-    if (_isProcessing) return;
-
     // Create ScanLog for Direct send
     final newLog = ScanLog(
       id: const Uuid().v4(),
@@ -117,50 +114,10 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
       if (shouldSend != true) return;
     }
 
-    setState(() {
-      _isProcessing = true;
-    });
-
-    final activeInstance = ref.read(activeInstanceProvider);
-    final notificationService = ref.read(notificationServiceProvider);
-
-    if (activeInstance == null) {
-      notificationService.showError(
-        'No active instance set. Please select one in Instances tab.',
-      );
-    } else {
-      notificationService.showInfo(
-        'Sending ${card.name} to ${activeInstance.name}...',
-      );
-
-      final apiService = ref.read(apiServiceProvider);
-      final success = await apiService.sendCardData(
-        instance: activeInstance,
-        type: card.card.type ?? 'unknown',
-        value: card.card.value ?? '',
-      );
-
-      if (!mounted) return;
-
-      if (success) {
-        notificationService.showSuccess('Success: Data sent.');
-      } else {
-        notificationService.showError('Failed: Could not send data.');
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isProcessing = true;
-      });
-      // Delay slightly to show processing state and prevent spam
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
-    }
+    // Call decentralized card sender provider with triggerId for UI feedback
+    await ref
+        .read(cardSenderProvider.notifier)
+        .sendCard(card.card, triggerId: card.id);
   }
 
   // ---------------------------------------------------------------------------
@@ -179,6 +136,11 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
   Widget _buildCardItem(SavedCard card) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    final senderState = ref.watch(cardSenderProvider);
+    final isThisCardSending =
+        senderState.isSending && senderState.triggerId == card.id;
+    final isAnyCardSending = senderState.isSending;
+
     return Dismissible(
       key: ValueKey(card.id),
       direction: DismissDirection.endToStart,
@@ -196,7 +158,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(card.showValue),
-        trailing: _isProcessing
+        trailing: isThisCardSending
             ? const SizedBox(
                 width: 24,
                 height: 24,
@@ -204,8 +166,9 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
               )
             : IconButton(
                 icon: const Icon(Icons.send_rounded),
-                onPressed: () => _sendCardData(card),
+                onPressed: isAnyCardSending ? null : () => _sendCardData(card),
                 tooltip: 'Quick Send',
+                color: isAnyCardSending ? colorScheme.outline : null,
               ),
         onTap: () => context.push('/card_detail', extra: card.card),
       ),

@@ -105,7 +105,7 @@ class _CardDetailPageState extends ConsumerState<CardDetailPage> {
           _BottomAction(
             onSend: _sendCard,
             onSave: _saveCard,
-            isSending: ref.watch(cardSenderProvider),
+            isSending: ref.watch(cardSenderProvider).isSending,
             isSaving: _isSaving,
           ),
         ],
