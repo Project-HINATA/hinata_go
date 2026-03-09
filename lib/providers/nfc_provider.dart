@@ -66,16 +66,20 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       stopSession();
     });
 
-    // Start session initially if app is resumed (it usually is when build is called)
-    Future.microtask(() => startSession());
+    // Start session initially only on Android. iOS requires manual trigger.
+    if (Platform.isAndroid) {
+      Future.microtask(() => startSession());
+    } else {
+      state = NfcState(status: 'Tap to Scan');
+    }
 
     return NfcState();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // NFC is global foreground-wide
-    if (state == AppLifecycleState.resumed) {
+    // NFC is global foreground-wide. Only auto-resume on Android.
+    if (state == AppLifecycleState.resumed && Platform.isAndroid) {
       startSession();
     } else if (state == AppLifecycleState.paused) {
       stopSession();
@@ -103,7 +107,9 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       _isStarting = false;
       state = state.copyWith(isScanning: true, status: 'Listening for NFC...');
 
-      while (state.isScanning) {
+      // iOS uses a system modal, so we typically do a single poll.
+      // Android uses continuous background scanning.
+      if (Platform.isIOS) {
         try {
           NFCTag tag = await FlutterNfcKit.poll(
             iosAlertMessage: 'Hold your card near the top of your iPhone',
@@ -112,25 +118,42 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           );
           await _onTagDiscovered(tag);
         } catch (e) {
-          if (e.toString().contains('User Canceled') ||
-              e.toString().contains('Session Timeout')) {
-            break;
+          log('iOS NFC poll error or cancel: $e');
+        } finally {
+          stopSession();
+        }
+      } else {
+        // Android continuous loop
+        while (state.isScanning) {
+          try {
+            NFCTag tag = await FlutterNfcKit.poll(
+              readIso18092: true,
+              readIso14443B: false,
+            );
+            await _onTagDiscovered(tag);
+          } catch (e) {
+            if (e.toString().contains('User Canceled') ||
+                e.toString().contains('Session Timeout')) {
+              break;
+            }
           }
-          // Log error but continue polling if still scanning
         }
       }
     } catch (e) {
       _isStarting = false;
       state = state.copyWith(isScanning: false, status: 'Error: $e');
     } finally {
-      if (state.isScanning) {
+      if (state.isScanning && Platform.isAndroid) {
         stopSession();
       }
     }
   }
 
   Future<void> stopSession() async {
-    state = state.copyWith(isScanning: false, status: 'Idle');
+    state = state.copyWith(
+      isScanning: false,
+      status: Platform.isIOS ? 'Tap to Scan' : 'Idle',
+    );
     try {
       await FlutterNfcKit.finish();
     } catch (_) {}

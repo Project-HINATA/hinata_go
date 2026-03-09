@@ -23,6 +23,15 @@ class CameraPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final size = MediaQuery.of(context).size;
+    final holeSize = size.width * 0.6;
+    final holeCenter = Offset(size.width / 2, (size.height / 2) - 140);
+    final holeRect = Rect.fromCenter(
+      center: holeCenter,
+      width: holeSize,
+      height: holeSize,
+    );
+
     final controller = useMemoized(
       () => MobileScannerController(
         detectionSpeed: DetectionSpeed.normal,
@@ -84,11 +93,11 @@ class CameraPage extends HookConsumerWidget {
                   const Center(child: CircularProgressIndicator()),
             ),
           ),
-          const Positioned.fill(child: _ScannerManualOverlay()),
+          Positioned.fill(child: _ScannerManualOverlay(holeRect: holeRect)),
           _buildCloseButton(context),
           _buildCameraSwitch(context, controller),
           _buildTorchButton(context, controller),
-          _buildInstruction(context),
+          _buildInstruction(context, holeRect),
         ],
       ),
     );
@@ -152,9 +161,9 @@ class CameraPage extends HookConsumerWidget {
     );
   }
 
-  Widget _buildInstruction(BuildContext context) {
+  Widget _buildInstruction(BuildContext context, Rect holeRect) {
     return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 400,
+      top: holeRect.bottom + 40, // 40px below the hole
       left: 0,
       right: 0,
       child: const Center(
@@ -162,7 +171,7 @@ class CameraPage extends HookConsumerWidget {
           'Scan QR Code',
           style: TextStyle(
             color: Colors.white38,
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
           ),
@@ -173,7 +182,8 @@ class CameraPage extends HookConsumerWidget {
 }
 
 class _ScannerManualOverlay extends StatelessWidget {
-  const _ScannerManualOverlay();
+  final Rect holeRect;
+  const _ScannerManualOverlay({required this.holeRect});
 
   @override
   Widget build(BuildContext context) {
@@ -183,6 +193,7 @@ class _ScannerManualOverlay extends StatelessWidget {
       painter: _ScannerPainter(
         scrimColor: colorScheme.scrim.withValues(alpha: 0.45),
         borderColor: colorScheme.secondaryContainer,
+        holeRect: holeRect,
       ),
     );
   }
@@ -191,23 +202,17 @@ class _ScannerManualOverlay extends StatelessWidget {
 class _ScannerPainter extends CustomPainter {
   final Color scrimColor;
   final Color borderColor;
+  final Rect holeRect;
 
-  _ScannerPainter({required this.scrimColor, required this.borderColor});
+  _ScannerPainter({
+    required this.scrimColor,
+    required this.borderColor,
+    required this.holeRect,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final screenWidth = size.width;
-    final holeSize = screenWidth * 0.6; // Smaller: 60%
-    final holeRadius = 28.0;
-
-    final holeRect = Rect.fromCenter(
-      center: Offset(
-        size.width / 2,
-        (size.height / 2) - 140,
-      ), // Shifted further UP
-      width: holeSize,
-      height: holeSize,
-    );
+    const holeRadius = 28.0;
 
     // 1. Draw Scrim with Hole (PathFillType.evenOdd prevents corner glitches)
     final path = Path()
@@ -230,5 +235,9 @@ class _ScannerPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ScannerPainter oldDelegate) {
+    return oldDelegate.holeRect != holeRect ||
+        oldDelegate.scrimColor != scrimColor ||
+        oldDelegate.borderColor != borderColor;
+  }
 }
