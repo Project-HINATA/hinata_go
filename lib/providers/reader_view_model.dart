@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class ReaderViewState {
   // Keeping this for now if needed for other UI states, or we can make it empty

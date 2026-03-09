@@ -1,71 +1,15 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../models/card/aime.dart';
 import '../../models/card/scanned_card.dart';
 import '../../providers/nfc_provider.dart';
 import '../../utils/qr_handler.dart';
 
-class CameraPage extends ConsumerStatefulWidget {
+class CameraPage extends HookConsumerWidget {
   const CameraPage({super.key});
-
-  @override
-  ConsumerState<CameraPage> createState() => _CameraPageState();
-}
-
-class _CameraPageState extends ConsumerState<CameraPage> {
-  late MobileScannerController controller;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = MobileScannerController(
-      detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.back,
-      autoStart: false,
-    );
-    _startScanner();
-  }
-
-  Future<void> _startScanner() async {
-    try {
-      await controller.start();
-    } catch (e) {
-      debugPrint('Scanner Error: $e');
-    }
-  }
-
-  bool _isNavigating = false;
-
-  void _onDetect(BarcodeCapture capture) {
-    if (_isNavigating) return;
-
-    for (final barcode in capture.barcodes) {
-      final rawValue = barcode.rawValue;
-      if (rawValue != null && QrHandler.isValidQrData(rawValue)) {
-        _isNavigating = true; // Set flag immediately
-
-        final accessCodeBytes = Uint8List.fromList(
-          rawValue.codeUnits.length >= 20
-              ? _hexToBytes(rawValue)
-              : rawValue.codeUnits,
-        );
-        final aime = Aime(Uint8List(4), 0x08, 0x0004, accessCodeBytes);
-
-        ref
-            .read(nfcProvider.notifier)
-            .handleExternalScan(ScannedCard(card: aime, source: 'QR'));
-
-        if (mounted) {
-          // Stop scanner before popping to prevent further detections
-          controller.stop();
-          Navigator.of(context).pop();
-        }
-        break;
-      }
-    }
-  }
 
   static Uint8List _hexToBytes(String hex) {
     final cleanHex = hex.replaceAll(' ', '');
@@ -78,41 +22,79 @@ class _CameraPageState extends ConsumerState<CameraPage> {
   }
 
   @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = useMemoized(
+      () => MobileScannerController(
+        detectionSpeed: DetectionSpeed.normal,
+        facing: CameraFacing.back,
+        autoStart: false,
+      ),
+    );
 
-  @override
-  Widget build(BuildContext context) {
+    final isNavigatingRef = useRef(false);
+
+    useEffect(() {
+      controller.start().catchError((e) {
+        debugPrint('Scanner Error: $e');
+      });
+      return () => controller.dispose();
+    }, [controller]);
+
+    void onDetect(BarcodeCapture capture) {
+      if (isNavigatingRef.value) return;
+
+      for (final barcode in capture.barcodes) {
+        final rawValue = barcode.rawValue;
+        if (rawValue != null && QrHandler.isValidQrData(rawValue)) {
+          isNavigatingRef.value = true; // Set flag immediately
+
+          final accessCodeBytes = Uint8List.fromList(
+            rawValue.codeUnits.length >= 20
+                ? _hexToBytes(rawValue)
+                : rawValue.codeUnits,
+          );
+          final aime = Aime(Uint8List(4), 0x08, 0x0004, accessCodeBytes);
+
+          ref
+              .read(nfcProvider.notifier)
+              .handleExternalScan(ScannedCard(card: aime, source: 'QR'));
+
+          // Stop scanner before popping to prevent further detections
+          controller.stop();
+          Navigator.of(context).pop();
+          break;
+        }
+      }
+    }
+
+    useListenable(
+      controller,
+    ); // Rebuild when controller state changes (torch, camera facing)
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          _buildScanner(),
+          Positioned.fill(
+            child: MobileScanner(
+              controller: controller,
+              onDetect: onDetect,
+              fit: BoxFit.cover,
+              placeholderBuilder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
+            ),
+          ),
           const Positioned.fill(child: _ScannerManualOverlay()),
-          _buildCloseButton(),
-          _buildCameraSwitch(),
-          _buildTorchButton(),
-          _buildInstruction(),
+          _buildCloseButton(context),
+          _buildCameraSwitch(context, controller),
+          _buildTorchButton(context, controller),
+          _buildInstruction(context),
         ],
       ),
     );
   }
 
-  Widget _buildScanner() {
-    return Positioned.fill(
-      child: MobileScanner(
-        controller: controller,
-        onDetect: _onDetect,
-        fit: BoxFit.cover,
-        placeholderBuilder: (context) =>
-            const Center(child: CircularProgressIndicator()),
-      ),
-    );
-  }
-
-  Widget _buildCloseButton() {
+  Widget _buildCloseButton(BuildContext context) {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 16,
       left: 24,
@@ -127,57 +109,55 @@ class _CameraPageState extends ConsumerState<CameraPage> {
     );
   }
 
-  Widget _buildCameraSwitch() {
+  Widget _buildCameraSwitch(
+    BuildContext context,
+    MobileScannerController controller,
+  ) {
+    final state = controller.value;
+    final isFront = state.cameraDirection == CameraFacing.front;
     return Positioned(
       bottom: MediaQuery.of(context).padding.bottom + 48,
       left: 40,
-      child: ValueListenableBuilder<MobileScannerState>(
-        valueListenable: controller,
-        builder: (context, state, child) {
-          final isFront = state.cameraDirection == CameraFacing.front;
-          return IconButton.filledTonal(
-            isSelected: isFront,
-            onPressed: () => controller.switchCamera(),
-            icon: const Icon(Icons.cameraswitch),
-            style: IconButton.styleFrom(
-              minimumSize: const Size(64, 64),
-              iconSize: 28,
-            ),
-          );
-        },
+      child: IconButton.filledTonal(
+        isSelected: isFront,
+        onPressed: () => controller.switchCamera(),
+        icon: const Icon(Icons.cameraswitch),
+        style: IconButton.styleFrom(
+          minimumSize: const Size(64, 64),
+          iconSize: 28,
+        ),
       ),
     );
   }
 
-  Widget _buildTorchButton() {
+  Widget _buildTorchButton(
+    BuildContext context,
+    MobileScannerController controller,
+  ) {
+    final state = controller.value;
+    final isTorchOn = state.torchState == TorchState.on;
     return Positioned(
       bottom: MediaQuery.of(context).padding.bottom + 48,
       right: 40,
-      child: ValueListenableBuilder<MobileScannerState>(
-        valueListenable: controller,
-        builder: (context, state, child) {
-          final isTorchOn = state.torchState == TorchState.on;
-          return IconButton.filledTonal(
-            isSelected: isTorchOn,
-            onPressed: () => controller.toggleTorch(),
-            icon: const Icon(Icons.flash_off),
-            selectedIcon: const Icon(Icons.flash_on),
-            style: IconButton.styleFrom(
-              minimumSize: const Size(64, 64),
-              iconSize: 28,
-            ),
-          );
-        },
+      child: IconButton.filledTonal(
+        isSelected: isTorchOn,
+        onPressed: () => controller.toggleTorch(),
+        icon: const Icon(Icons.flash_off),
+        selectedIcon: const Icon(Icons.flash_on),
+        style: IconButton.styleFrom(
+          minimumSize: const Size(64, 64),
+          iconSize: 28,
+        ),
       ),
     );
   }
 
-  Widget _buildInstruction() {
+  Widget _buildInstruction(BuildContext context) {
     return Positioned(
       bottom: MediaQuery.of(context).padding.bottom + 400,
       left: 0,
       right: 0,
-      child: Center(
+      child: const Center(
         child: Text(
           'Scan QR Code',
           style: TextStyle(

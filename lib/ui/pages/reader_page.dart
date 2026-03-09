@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,19 +10,14 @@ import '../../providers/app_state_provider.dart';
 import '../../providers/nfc_provider.dart';
 import '../../utils/icon_utils.dart';
 
-class ReaderPage extends ConsumerStatefulWidget {
+class ReaderPage extends HookConsumerWidget {
   const ReaderPage({super.key});
 
-  @override
-  ConsumerState<ReaderPage> createState() => _ReaderPageState();
-}
-
-class _ReaderPageState extends ConsumerState<ReaderPage> {
-  void _onResendHistoryItem(ScanLog log) {
+  void _onResendHistoryItem(WidgetRef ref, ScanLog log) {
     ref.read(cardSenderProvider.notifier).sendCard(log.card, triggerId: log.id);
   }
 
-  Widget _buildNfcStatusPill() {
+  Widget _buildNfcStatusPill(BuildContext context, WidgetRef ref) {
     final nfcState = ref.watch(nfcProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final Color bgColor = nfcState.isScanning
@@ -64,7 +60,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     );
   }
 
-  Widget _buildNfcInfoDisplay() {
+  Widget _buildNfcInfoDisplay(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final nfcState = ref.watch(nfcProvider);
 
@@ -142,7 +138,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     );
   }
 
-  Widget _buildInstanceCard(dynamic activeInstance) {
+  Widget _buildInstanceCard(BuildContext context, dynamic activeInstance) {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: () => context.push('/instances'),
@@ -157,14 +153,14 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: activeInstance != null
-              ? _buildActiveInstanceRow(activeInstance)
-              : _buildNoInstanceRow(),
+              ? _buildActiveInstanceRow(context, activeInstance)
+              : _buildNoInstanceRow(context),
         ),
       ),
     );
   }
 
-  Widget _buildActiveInstanceRow(dynamic activeInstance) {
+  Widget _buildActiveInstanceRow(BuildContext context, dynamic activeInstance) {
     final colorScheme = Theme.of(context).colorScheme;
     final fgColor = colorScheme.onPrimaryContainer;
 
@@ -206,7 +202,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     );
   }
 
-  Widget _buildNoInstanceRow() {
+  Widget _buildNoInstanceRow(BuildContext context) {
     final fgColor = Theme.of(context).colorScheme.onErrorContainer;
 
     return Row(
@@ -227,7 +223,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     );
   }
 
-  Widget _buildHistorySection(List<ScanLog> scanLogs) {
+  Widget _buildHistorySection(
+    BuildContext context,
+    WidgetRef ref,
+    List<ScanLog> scanLogs,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -252,13 +252,14 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: scanLogs.length,
-            itemBuilder: (context, index) => _buildHistoryItem(scanLogs[index]),
+            itemBuilder: (context, index) =>
+                _buildHistoryItem(context, ref, scanLogs[index]),
           ),
       ],
     );
   }
 
-  Widget _buildHistoryItem(ScanLog log) {
+  Widget _buildHistoryItem(BuildContext context, WidgetRef ref, ScanLog log) {
     final colorScheme = Theme.of(context).colorScheme;
     final senderState = ref.watch(cardSenderProvider);
 
@@ -306,7 +307,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
               icon: const Icon(Icons.send, size: 20),
               onPressed: isAnyCardSending
                   ? null
-                  : () => _onResendHistoryItem(log),
+                  : () => _onResendHistoryItem(ref, log),
               tooltip: 'Resend to active instance',
               color: isAnyCardSending ? colorScheme.outline : null,
             ),
@@ -315,7 +316,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final activeInstance = ref.watch(activeInstanceProvider);
     final scanLogs = ref.watch(scanLogsProvider).reversed.take(5).toList();
 
@@ -350,13 +351,13 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildNfcStatusPill(),
+              _buildNfcStatusPill(context, ref),
               const SizedBox(height: 16),
-              _buildNfcInfoDisplay(),
+              _buildNfcInfoDisplay(context, ref),
               const SizedBox(height: 24),
-              _buildInstanceCard(activeInstance),
+              _buildInstanceCard(context, activeInstance),
               const SizedBox(height: 32),
-              _buildHistorySection(scanLogs),
+              _buildHistorySection(context, ref, scanLogs),
               const SizedBox(height: 40),
             ],
           ),
@@ -366,41 +367,34 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   }
 }
 
-class _PulseNfcIcon extends StatefulWidget {
+class _PulseNfcIcon extends HookWidget {
   final bool isScanning;
   const _PulseNfcIcon({required this.isScanning});
 
   @override
-  State<_PulseNfcIcon> createState() => _PulseNfcIconState();
-}
-
-class _PulseNfcIconState extends State<_PulseNfcIcon>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-    _animation = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (!widget.isScanning) {
+    final controller = useAnimationController(
+      duration: const Duration(seconds: 2),
+    );
+
+    useEffect(() {
+      if (isScanning) {
+        controller.repeat(reverse: true);
+      } else {
+        controller.stop();
+      }
+      return null;
+    }, [isScanning]);
+
+    final animation = useMemoized(
+      () => Tween<double>(
+        begin: 1.0,
+        end: 1.1,
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut)),
+      [controller],
+    );
+
+    if (!isScanning) {
       return Icon(
         Icons.nfc,
         size: 72,
@@ -411,7 +405,7 @@ class _PulseNfcIconState extends State<_PulseNfcIcon>
     }
 
     return ScaleTransition(
-      scale: _animation,
+      scale: animation,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(

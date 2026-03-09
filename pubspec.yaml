@@ -35,7 +35,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_nfc_kit: ^3.6.0
-  flutter_riverpod: ^3.2.1
   shared_preferences: ^2.5.4
   mobile_scanner: ^7.2.0
   http: ^1.6.0
@@ -46,6 +45,8 @@ dependencies:
   flutter_svg: ^2.0.17
   convert: ^3.1.2
   url_launcher: ^6.3.2
+  flutter_hooks: ^0.21.3+1
+  hooks_riverpod: ^3.2.1
 
 dev_dependencies:
   flutter_test:

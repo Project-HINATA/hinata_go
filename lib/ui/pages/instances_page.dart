@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/remote_instance.dart';
@@ -8,39 +9,41 @@ import '../../utils/validators.dart';
 import '../../utils/icon_utils.dart';
 import '../../utils/snackbar_utils.dart';
 
-class InstancesPage extends ConsumerStatefulWidget {
+class InstancesPage extends HookConsumerWidget {
   const InstancesPage({super.key});
 
-  @override
-  ConsumerState<InstancesPage> createState() => _InstancesPageState();
-}
-
-class _InstancesPageState extends ConsumerState<InstancesPage> {
-  void _showInstanceDialog([RemoteInstance? existingInstance]) {
+  void _showInstanceDialog(
+    BuildContext context, [
+    RemoteInstance? existingInstance,
+  ]) {
     showDialog(
       context: context,
       builder: (context) => _InstanceDialog(existingInstance: existingInstance),
     );
   }
 
-  void _onDismissInstance(RemoteInstance instance, bool isActive) {
+  void _onDismissInstance(
+    WidgetRef ref,
+    RemoteInstance instance,
+    bool isActive,
+  ) {
     if (isActive) {
       ref.read(activeInstanceIdProvider.notifier).setActiveId(null);
     }
     ref.read(instancesProvider.notifier).removeInstance(instance.id);
   }
 
-  void _onTapInstance(RemoteInstance instance) {
+  void _onTapInstance(
+    BuildContext context,
+    WidgetRef ref,
+    RemoteInstance instance,
+  ) {
     ref.read(activeInstanceIdProvider.notifier).setActiveId(instance.id);
     ScaffoldMessenger.of(context).showQuickSnackBar(
       SnackBar(content: Text('${instance.name} is now active')),
     );
   }
-  // ---------------------------------------------------------------------------
-  // Builder methods
-  // ---------------------------------------------------------------------------
 
-  /// Swipe-to-delete background.
   Widget _buildDismissBackground() {
     return Container(
       color: Colors.red,
@@ -50,15 +53,19 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
     );
   }
 
-  /// A single instance list item.
-  Widget _buildInstanceItem(RemoteInstance instance, bool isActive) {
+  Widget _buildInstanceItem(
+    BuildContext context,
+    WidgetRef ref,
+    RemoteInstance instance,
+    bool isActive,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dismissible(
       key: ValueKey(instance.id),
       direction: DismissDirection.endToStart,
       background: _buildDismissBackground(),
-      onDismissed: (_) => _onDismissInstance(instance, isActive),
+      onDismissed: (_) => _onDismissInstance(ref, instance, isActive),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: isActive
@@ -90,21 +97,17 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
               ),
             IconButton(
               icon: const Icon(Icons.edit),
-              onPressed: () => _showInstanceDialog(instance),
+              onPressed: () => _showInstanceDialog(context, instance),
             ),
           ],
         ),
-        onTap: () => _onTapInstance(instance),
+        onTap: () => _onTapInstance(context, ref, instance),
       ),
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // build
-  // ---------------------------------------------------------------------------
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final instances = ref.watch(instancesProvider);
     final activeId = ref.watch(activeInstanceIdProvider);
 
@@ -116,11 +119,16 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
               itemCount: instances.length,
               itemBuilder: (context, index) {
                 final instance = instances[index];
-                return _buildInstanceItem(instance, instance.id == activeId);
+                return _buildInstanceItem(
+                  context,
+                  ref,
+                  instance,
+                  instance.id == activeId,
+                );
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showInstanceDialog(),
+        onPressed: () => _showInstanceDialog(context),
         icon: const Icon(Icons.add),
         label: const Text('Add Instance'),
       ),
@@ -128,126 +136,110 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
   }
 }
 
-class _InstanceDialog extends ConsumerStatefulWidget {
+class _InstanceDialog extends HookConsumerWidget {
   final RemoteInstance? existingInstance;
   const _InstanceDialog({this.existingInstance});
 
   @override
-  ConsumerState<_InstanceDialog> createState() => _InstanceDialogState();
-}
-
-class _InstanceDialogState extends ConsumerState<_InstanceDialog> {
-  late TextEditingController _nameController;
-  late TextEditingController _urlController;
-  late String _selectedIcon;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(
-      text: widget.existingInstance?.name,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nameController = useTextEditingController(
+      text: existingInstance?.name,
     );
-    _urlController = TextEditingController(text: widget.existingInstance?.url);
-    _selectedIcon = widget.existingInstance?.icon ?? '🐻';
-  }
+    final urlController = useTextEditingController(text: existingInstance?.url);
+    final selectedIconState = useState(existingInstance?.icon ?? '🐻');
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _urlController.dispose();
-    super.dispose();
-  }
+    void onSave() {
+      final name = nameController.text.trim();
+      final url = urlController.text.trim();
 
-  void _onSave() {
-    final name = _nameController.text.trim();
-    final url = _urlController.text.trim();
+      if (name.isEmpty || url.isEmpty) return;
 
-    if (name.isEmpty || url.isEmpty) return;
-
-    final isValidUrl = Validators.isValidUrl(url);
-    if (!isValidUrl) {
-      ScaffoldMessenger.of(context).showQuickSnackBar(
-        const SnackBar(content: Text('Please enter a valid URL (http/https)')),
-      );
-      return;
-    }
-
-    final newInstance = RemoteInstance(
-      id: widget.existingInstance?.id ?? const Uuid().v4(),
-      name: name,
-      url: url,
-      icon: _selectedIcon.isEmpty ? '🐻' : _selectedIcon,
-    );
-
-    if (widget.existingInstance != null) {
-      ref.read(instancesProvider.notifier).updateInstance(newInstance);
-    } else {
-      ref.read(instancesProvider.notifier).addInstance(newInstance);
-      if (ref.read(instancesProvider).length == 1) {
-        ref.read(activeInstanceIdProvider.notifier).setActiveId(newInstance.id);
+      final isValidUrl = Validators.isValidUrl(url);
+      if (!isValidUrl) {
+        ScaffoldMessenger.of(context).showQuickSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid URL (http/https)'),
+          ),
+        );
+        return;
       }
-    }
-    Navigator.pop(context);
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    final isEditing = widget.existingInstance != null;
+      final newInstance = RemoteInstance(
+        id: existingInstance?.id ?? const Uuid().v4(),
+        name: name,
+        url: url,
+        icon: selectedIconState.value.isEmpty ? '🐻' : selectedIconState.value,
+      );
+
+      if (existingInstance != null) {
+        ref.read(instancesProvider.notifier).updateInstance(newInstance);
+      } else {
+        ref.read(instancesProvider.notifier).addInstance(newInstance);
+        if (ref.read(instancesProvider).length == 1) {
+          ref
+              .read(activeInstanceIdProvider.notifier)
+              .setActiveId(newInstance.id);
+        }
+      }
+      Navigator.pop(context);
+    }
+
+    final isEditing = existingInstance != null;
 
     return AlertDialog(
       title: Text(isEditing ? 'Edit Instance' : 'Add Instance'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Name (e.g. maimaiDX)',
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Name (e.g. maimaiDX)',
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _urlController,
-            decoration: const InputDecoration(
-              labelText: 'Webhook URL (http://...)',
+            const SizedBox(height: 10),
+            TextField(
+              controller: urlController,
+              decoration: const InputDecoration(
+                labelText: 'Webhook URL (http://...)',
+              ),
+              keyboardType: TextInputType.url,
             ),
-            keyboardType: TextInputType.url,
-          ),
-          const SizedBox(height: 10),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text('Select Icon:'),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: IconUtils.availableIcons.map((iconName) {
-              final isSelected = iconName == _selectedIcon;
-              return ChoiceChip(
-                label: Text(
-                  IconUtils.getEmoji(iconName),
-                  style: const TextStyle(fontSize: 24),
-                ),
-                selected: isSelected,
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() {
-                      _selectedIcon = iconName;
-                    });
-                  }
-                },
-              );
-            }).toList(),
-          ),
-        ],
+            const SizedBox(height: 10),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Select Icon:'),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: IconUtils.availableIcons.map((iconName) {
+                final isSelected = iconName == selectedIconState.value;
+                return ChoiceChip(
+                  label: Text(
+                    IconUtils.getEmoji(iconName),
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      selectedIconState.value = iconName;
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        FilledButton(onPressed: _onSave, child: const Text('Save')),
+        FilledButton(onPressed: onSave, child: const Text('Save')),
       ],
     );
   }

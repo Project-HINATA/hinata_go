@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../models/card/card.dart';
 import '../models/remote_instance.dart';
 import '../services/api_service.dart';

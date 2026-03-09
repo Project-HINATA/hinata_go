@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Provider to track the current active branch index in the main scaffold.
 /// 0: Reader, 1: Cards, 2: Settings

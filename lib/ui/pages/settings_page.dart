@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/app_update_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
