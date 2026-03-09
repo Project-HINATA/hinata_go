@@ -116,25 +116,23 @@ class ReaderViewModel extends Notifier<ReaderViewState>
     }
   }
 
-  void _safeStartCamera() {
+  Future<void> _safeStartCamera() async {
     try {
       if (cameraController.value.isStarting ||
           cameraController.value.isRunning) {
-        // Even if running, starting again on Resume can help refresh the preview
-        // if it was temporarily suspended by the OS.
-        if (cameraController.value.isRunning) return;
+        return;
       }
-      cameraController.start();
+      await cameraController.start();
       state = state.copyWith(isCameraActive: true, cameraError: null);
     } catch (e) {
       state = state.copyWith(isCameraActive: false);
     }
   }
 
-  void _safeStopCamera() {
+  Future<void> _safeStopCamera() async {
     try {
       if (cameraController.value.isRunning) {
-        cameraController.stop();
+        await cameraController.stop();
       }
       state = state.copyWith(isCameraActive: false);
     } catch (e) {

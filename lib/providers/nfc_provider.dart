@@ -1,5 +1,6 @@
-import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,10 +51,12 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     });
 
     // Pulse the native side to relay the initial tag that launched the app
-    const methodChannel = MethodChannel('moe.neri.hinatago/nfc_launcher');
-    methodChannel.invokeMethod('getInitialTag').catchError((e) {
-      log('Error getting initial tag: $e');
-    });
+    if (!kIsWeb && Platform.isAndroid) {
+      const methodChannel = MethodChannel('moe.neri.hinatago/nfc_launcher');
+      methodChannel.invokeMethod('getInitialTag').catchError((e) {
+        log('Error getting initial tag: $e');
+      });
+    }
 
     // Register as observer for global app lifecycle
     WidgetsBinding.instance.addObserver(this);
