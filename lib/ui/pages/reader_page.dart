@@ -1,21 +1,13 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../models/scan_log.dart';
-import '../../models/card/scanned_card.dart';
-import '../../models/card/aime.dart';
 import '../../providers/card_sender.dart';
 import '../../providers/app_state_provider.dart';
-import '../../providers/settings_provider.dart';
 import '../../providers/nfc_provider.dart';
-import '../../providers/reader_view_model.dart';
 import '../../utils/icon_utils.dart';
-import '../../utils/qr_handler.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
   const ReaderPage({super.key});
@@ -25,40 +17,6 @@ class ReaderPage extends ConsumerStatefulWidget {
 }
 
 class _ReaderPageState extends ConsumerState<ReaderPage> {
-  void _onQrDetect(BarcodeCapture capture) {
-    for (final barcode in capture.barcodes) {
-      final rawValue = barcode.rawValue;
-      if (rawValue != null && QrHandler.isValidQrData(rawValue)) {
-        // QR codes are treated as Aime type
-        final accessCodeBytes = Uint8List.fromList(
-          rawValue.codeUnits.length >= 20
-              ? _hexToBytes(rawValue)
-              : rawValue.codeUnits,
-        );
-        final aime = Aime(
-          Uint8List(4), // placeholder id
-          0x08, // placeholder sak
-          0x0004, // placeholder atqa
-          accessCodeBytes,
-        );
-        ref
-            .read(nfcProvider.notifier)
-            .handleExternalScan(ScannedCard(card: aime, source: 'QR'));
-        break;
-      }
-    }
-  }
-
-  static Uint8List _hexToBytes(String hex) {
-    final cleanHex = hex.replaceAll(' ', '');
-    final length = cleanHex.length ~/ 2;
-    final bytes = Uint8List(length);
-    for (int i = 0; i < length; i++) {
-      bytes[i] = int.parse(cleanHex.substring(i * 2, i * 2 + 2), radix: 16);
-    }
-    return bytes;
-  }
-
   void _onResendHistoryItem(ScanLog log) {
     ref.read(cardSenderProvider.notifier).sendCard(log.card, triggerId: log.id);
   }
@@ -106,88 +64,80 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     );
   }
 
-  Widget _buildQrScanner(ReaderViewModel viewModel) {
+  Widget _buildNfcInfoDisplay() {
     final colorScheme = Theme.of(context).colorScheme;
     final nfcState = ref.watch(nfcProvider);
 
     return Container(
       height: 240,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outlineVariant),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.surfaceContainerHighest,
+            colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ValueListenableBuilder<MobileScannerState>(
-            valueListenable: viewModel.cameraController,
-            builder: (context, state, _) {
-              if (!state.isInitialized || !state.isRunning) {
-                return _buildCameraPlaceholder(colorScheme, error: state.error);
-              }
-              return const SizedBox.shrink();
-            },
+          // Background Animation/Pattern
+          Positioned(
+            right: -20,
+            bottom: -20,
+            child: Icon(
+              Icons.contactless_outlined,
+              size: 180,
+              color: colorScheme.primary.withValues(alpha: 0.03),
+            ),
           ),
-          MobileScanner(
-            controller: viewModel.cameraController,
-            errorBuilder: (context, error) {
-              return _buildCameraPlaceholder(colorScheme, error: error);
-            },
-            onDetect: _onQrDetect,
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _PulseNfcIcon(isScanning: nfcState.isScanning),
+              const SizedBox(height: 20),
+              Text(
+                nfcState.isScanning ? 'Ready to Scan' : 'NFC Inactive',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  nfcState.isScanning
+                      ? 'Hold your card near the NFC reader area of your device.'
+                      : 'NFC service is currently unavailable or disabled.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ),
           if (nfcState.isProcessing)
             Container(
-              color: Colors.black54,
+              color: colorScheme.surface.withValues(alpha: 0.7),
               child: const Center(child: CircularProgressIndicator()),
             ),
-          ValueListenableBuilder<MobileScannerState>(
-            valueListenable: viewModel.cameraController,
-            builder: (context, state, _) {
-              if (!state.isRunning) return const SizedBox.shrink();
-              return _buildScanTargetOverlay();
-            },
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCameraPlaceholder(
-    ColorScheme colorScheme, {
-    MobileScannerException? error,
-  }) {
-    final color = colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
-    String message = error == null ? 'Camera Paused' : 'Camera Error';
-    IconData icon = error == null ? Icons.videocam_off : Icons.error_outline;
-
-    if (error?.errorCode == MobileScannerErrorCode.permissionDenied) {
-      message = 'Camera Permission Denied';
-      icon = Icons.no_photography;
-    }
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 64, color: color),
-          const SizedBox(height: 8),
-          Text(message, style: TextStyle(color: color)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScanTargetOverlay() {
-    return Center(
-      child: Container(
-        width: 150,
-        height: 150,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.white54, width: 2),
-          borderRadius: BorderRadius.circular(12),
-        ),
       ),
     );
   }
@@ -366,23 +316,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if the ReaderPage is currently the top-most visible route.
-    // This handles both tab switching (via activeBranchProvider in ViewModel)
-    // and sub-route navigation (like pushing Scan Logs or root-level Card Detail).
-    final isTopRoute = ModalRoute.of(context)?.isCurrent ?? false;
-
-    // Notify ViewModel about our specific visibility in the navigator stack.
-    // Use post-frame callback to avoid updating state during build.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        ref.read(readerViewModelProvider.notifier).setPageVisible(isTopRoute);
-      }
-    });
-
     final activeInstance = ref.watch(activeInstanceProvider);
     final scanLogs = ref.watch(scanLogsProvider).reversed.take(5).toList();
-    final enableCamera = ref.watch(settingsProvider).enableCamera;
-    final viewModel = ref.read(readerViewModelProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -402,17 +337,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           ],
         ),
         actions: [
-          ValueListenableBuilder<MobileScannerState>(
-            valueListenable: viewModel.cameraController,
-            builder: (context, state, child) {
-              if (!state.isInitialized || !state.isRunning || !enableCamera) {
-                return const SizedBox.shrink();
-              }
-              return IconButton(
-                icon: const Icon(Icons.cameraswitch),
-                onPressed: () => viewModel.cameraController.switchCamera(),
-              );
-            },
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: () => context.push('/camera'),
+            tooltip: 'Scan QR Code',
           ),
         ],
       ),
@@ -423,17 +351,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildNfcStatusPill(),
-              if (enableCamera) ...[
-                const SizedBox(height: 16),
-                _buildQrScanner(viewModel),
-                const SizedBox(height: 8),
-                const Center(
-                  child: Text(
-                    'Point camera at QR Code',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ],
+              const SizedBox(height: 16),
+              _buildNfcInfoDisplay(),
               const SizedBox(height: 24),
               _buildInstanceCard(activeInstance),
               const SizedBox(height: 32),
@@ -441,6 +360,70 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
               const SizedBox(height: 40),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PulseNfcIcon extends StatefulWidget {
+  final bool isScanning;
+  const _PulseNfcIcon({required this.isScanning});
+
+  @override
+  State<_PulseNfcIcon> createState() => _PulseNfcIconState();
+}
+
+class _PulseNfcIconState extends State<_PulseNfcIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isScanning) {
+      return Icon(
+        Icons.nfc,
+        size: 72,
+        color: Theme.of(
+          context,
+        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+      );
+    }
+
+    return ScaleTransition(
+      scale: _animation,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Theme.of(
+            context,
+          ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.nfc,
+          size: 72,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );

@@ -22,7 +22,7 @@ class CardDetailPage extends ConsumerStatefulWidget {
 }
 
 class _CardDetailPageState extends ConsumerState<CardDetailPage> {
-  bool _isSaving = false;
+  final bool _isSaving = false;
 
   Future<void> _saveCard() async {
     final success = await showDialog<bool>(

@@ -26,7 +26,6 @@ class StorageService {
   static const String _kCardFoldersKey = 'card_folders';
   static const String _kScanLogsKey = 'scan_logs';
   static const String _kActiveInstanceIdKey = 'active_instance_id';
-  static const String _kEnableCameraKey = 'enable_camera';
   static const String _kEnableSecondaryConfirmationKey =
       'enable_secondary_confirmation';
 
@@ -125,18 +124,15 @@ class StorageService {
 
   // --- Settings ---
   AppSettings getSettings() {
-    final enableCamera = _prefs.getBool(_kEnableCameraKey) ?? true;
     final enableSecondaryConfirmation =
         _prefs.getBool(_kEnableSecondaryConfirmationKey) ?? false;
 
     return AppSettings(
-      enableCamera: enableCamera,
       enableSecondaryConfirmation: enableSecondaryConfirmation,
     );
   }
 
   Future<void> saveSettings(AppSettings settings) async {
-    await _prefs.setBool(_kEnableCameraKey, settings.enableCamera);
     await _prefs.setBool(
       _kEnableSecondaryConfirmationKey,
       settings.enableSecondaryConfirmation,

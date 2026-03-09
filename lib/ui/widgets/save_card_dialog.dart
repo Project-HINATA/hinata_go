@@ -78,7 +78,7 @@ class _SaveCardDialogState extends ConsumerState<SaveCardDialog> {
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            value: _selectedFolderId,
+            initialValue: _selectedFolderId,
             decoration: const InputDecoration(labelText: 'Folder'),
             items: folders.map((folder) {
               return DropdownMenuItem(

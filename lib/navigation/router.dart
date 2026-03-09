@@ -10,6 +10,7 @@ import '../ui/pages/instances_page.dart';
 import '../ui/pages/scan_logs_page.dart';
 import '../ui/widgets/animated_branch_container.dart';
 import '../ui/pages/card_detail_page.dart';
+import '../ui/pages/camera_page.dart';
 import '../models/card/card.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
@@ -21,6 +22,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/reader',
     routes: [
+      GoRoute(
+        path: '/camera',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CameraPage(),
+      ),
       GoRoute(
         path: '/card_detail',
         parentNavigatorKey: _rootNavigatorKey,

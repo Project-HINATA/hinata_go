@@ -22,14 +22,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       body: ListView(
         children: [
           SwitchListTile(
-            title: const Text('Enable Camera'),
-            subtitle: const Text('Show QR Code scanner on Reader page'),
-            value: settings.enableCamera,
-            onChanged: (val) {
-              ref.read(settingsProvider.notifier).updateEnableCamera(val);
-            },
-          ),
-          SwitchListTile(
             title: const Text('Secondary Confirmation'),
             subtitle: const Text(
               'Ask for confirmation before sending card data',
