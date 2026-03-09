@@ -36,10 +36,16 @@ class _CameraPageState extends ConsumerState<CameraPage> {
     }
   }
 
+  bool _isNavigating = false;
+
   void _onDetect(BarcodeCapture capture) {
+    if (_isNavigating) return;
+
     for (final barcode in capture.barcodes) {
       final rawValue = barcode.rawValue;
       if (rawValue != null && QrHandler.isValidQrData(rawValue)) {
+        _isNavigating = true; // Set flag immediately
+
         final accessCodeBytes = Uint8List.fromList(
           rawValue.codeUnits.length >= 20
               ? _hexToBytes(rawValue)
@@ -52,6 +58,8 @@ class _CameraPageState extends ConsumerState<CameraPage> {
             .handleExternalScan(ScannedCard(card: aime, source: 'QR'));
 
         if (mounted) {
+          // Stop scanner before popping to prevent further detections
+          controller.stop();
           Navigator.of(context).pop();
         }
         break;
