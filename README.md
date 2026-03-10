@@ -1,5 +1,7 @@
 # HINATA Go
 配合 HINATA AimeIO 让你的手机变成刷卡器或扫码游玩舞萌dx，并可以与 HINATA 读卡器等设备协同使用。
+iOS版：[TestFlight](https://testflight.apple.com/join/t8TYcRw6)
+
 
 ## Usage
 **以下配置均已 HINATA 公共刷卡服务器 ( aime-ws.neri.moe ) 为例，请确保你的网络环境可以正常访问 Cloudflare 的服务**
