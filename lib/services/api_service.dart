@@ -126,7 +126,12 @@ class ApiService {
       'for unit $unit: ${card.idString}',
     );
 
-    final connection = Connection(endpoint.host, endpoint.port, endpoint.pass);
+    final connection = Connection(
+      endpoint.host,
+      endpoint.port,
+      endpoint.pass,
+      refreshSession: false,
+    );
 
     try {
       await connection.onConnect().timeout(const Duration(seconds: 10));

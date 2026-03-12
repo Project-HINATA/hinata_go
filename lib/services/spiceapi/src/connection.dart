@@ -124,7 +124,9 @@ class Connection {
   bool isValid() => _socket != null && !_disposed;
 
   Future<Response> request(Request req) async {
-    await onConnect();
+    if (_socket == null) {
+      await onConnect();
+    }
     final response = _awaitResponse(req.id);
     _writeRequest(req);
     final res = await response;

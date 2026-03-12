@@ -201,8 +201,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invalidHinataUrl => '请输入有效的 HTTP/HTTPS 地址';
 
   @override
-  String get invalidSpiceApiEndpoint =>
-      '请输入有效的 SpiceAPI TCP 地址（例如 127.0.0.1:1337）';
+  String get invalidSpiceApiEndpoint => '请输入有效的 SpiceAPI TCP 地址';
 
   @override
   String get editInstance => '编辑实例';
