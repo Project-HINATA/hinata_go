@@ -470,6 +470,30 @@ abstract class AppLocalizations {
   /// **'Webhook URL (http://...)'**
   String get webhookUrl;
 
+  /// No description provided for @instanceType.
+  ///
+  /// In en, this message translates to:
+  /// **'Instance Type'**
+  String get instanceType;
+
+  /// No description provided for @instanceTypeHinataIo.
+  ///
+  /// In en, this message translates to:
+  /// **'HINATA IO'**
+  String get instanceTypeHinataIo;
+
+  /// No description provided for @instanceTypeSpiceApiUnit0.
+  ///
+  /// In en, this message translates to:
+  /// **'SpiceAPI (Unit 0)'**
+  String get instanceTypeSpiceApiUnit0;
+
+  /// No description provided for @instanceTypeSpiceApiUnit1.
+  ///
+  /// In en, this message translates to:
+  /// **'SpiceAPI (Unit 1)'**
+  String get instanceTypeSpiceApiUnit1;
+
   /// No description provided for @selectIcon.
   ///
   /// In en, this message translates to:

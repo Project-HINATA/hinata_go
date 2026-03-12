@@ -211,6 +211,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get webhookUrl => 'Webhook URL (http://...)';
 
   @override
+  String get instanceType => 'Instance Type';
+
+  @override
+  String get instanceTypeHinataIo => 'HINATA IO';
+
+  @override
+  String get instanceTypeSpiceApiUnit0 => 'SpiceAPI (Unit 0)';
+
+  @override
+  String get instanceTypeSpiceApiUnit1 => 'SpiceAPI (Unit 1)';
+
+  @override
   String get selectIcon => 'Select Icon:';
 
   @override

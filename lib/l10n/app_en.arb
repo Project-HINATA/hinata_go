@@ -92,6 +92,10 @@
   "editInstance": "Edit Instance",
   "nameExample": "Name (e.g. maimaiDX)",
   "webhookUrl": "Webhook URL (http://...)",
+  "instanceType": "Instance Type",
+  "instanceTypeHinataIo": "HINATA IO",
+  "instanceTypeSpiceApiUnit0": "SpiceAPI (Unit 0)",
+  "instanceTypeSpiceApiUnit1": "SpiceAPI (Unit 1)",
   "selectIcon": "Select Icon:",
   "confirmSendToActiveInstance": "Send this {cardName} card to the active instance?",
   "@confirmSendToActiveInstance": {

@@ -56,24 +56,23 @@ class CardSender extends Notifier<CardSenderState> {
             'Sending to ${activeInstance.name}...',
       );
 
-      final success = await apiService.sendCardData(
+      final result = await apiService.sendCardData(
         instance: activeInstance,
-        type: card.type ?? 'unknown',
-        value: card.value ?? '',
+        card: card
       );
 
-      if (success) {
+      if (result.success) {
         notificationService.showSuccess(
           l10n?.successSentToInstance(activeInstance.name) ??
               'Success: Sent to ${activeInstance.name}',
         );
       } else {
         notificationService.showError(
-          l10n?.failedSentToInstance(activeInstance.name) ??
-              'Failed: Could not send to ${activeInstance.name}',
+          (l10n?.failedSentToInstance(activeInstance.name) ??
+              'Failed: Could not send to ${activeInstance.name}') + (result.errorMessage != null ? '\n${result.errorMessage}' : ''),
         );
       }
-      return success;
+      return result.success;
     } finally {
       state = state.copyWith(isSending: false, triggerId: null);
     }

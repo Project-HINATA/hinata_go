@@ -204,10 +204,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nameExample => '名称（例如 maimaiDX）';
 
   @override
-  String get webhookUrl => 'Webhook URL（http://...）';
+  String get webhookUrl => 'Webhook URL (http://...)';
 
   @override
-  String get selectIcon => '选择图标：';
+  String get instanceType => '实例类型';
+
+  @override
+  String get instanceTypeHinataIo => 'HINATA IO';
+
+  @override
+  String get instanceTypeSpiceApiUnit0 => 'SpiceAPI (Unit 0)';
+
+  @override
+  String get instanceTypeSpiceApiUnit1 => 'SpiceAPI (Unit 1)';
+
+  @override
+  String get selectIcon => '选择图标:';
 
   @override
   String confirmSendToActiveInstance(Object cardName) {

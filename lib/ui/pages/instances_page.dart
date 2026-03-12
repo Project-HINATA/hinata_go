@@ -139,6 +139,7 @@ class _InstanceDialog extends HookConsumerWidget {
     );
     final urlController = useTextEditingController(text: existingInstance?.url);
     final selectedIconState = useState(existingInstance?.icon ?? '🐻');
+    final selectedTypeState = useState(existingInstance?.type ?? InstanceType.hinataIo);
 
     void onSave() {
       final name = nameController.text.trim();
@@ -159,6 +160,7 @@ class _InstanceDialog extends HookConsumerWidget {
         name: name,
         url: url,
         icon: selectedIconState.value.isEmpty ? '🐻' : selectedIconState.value,
+        type: selectedTypeState.value,
       );
 
       if (existingInstance != null) {
@@ -193,6 +195,30 @@ class _InstanceDialog extends HookConsumerWidget {
               controller: urlController,
               decoration: InputDecoration(labelText: context.l10n.webhookUrl),
               keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<InstanceType>(
+              initialValue: selectedTypeState.value,
+              decoration: InputDecoration(labelText: context.l10n.instanceType),
+              items: [
+                DropdownMenuItem(
+                  value: InstanceType.hinataIo,
+                  child: Text(context.l10n.instanceTypeHinataIo),
+                ),
+                DropdownMenuItem(
+                  value: InstanceType.spiceApiUnit0,
+                  child: Text(context.l10n.instanceTypeSpiceApiUnit0),
+                ),
+                DropdownMenuItem(
+                  value: InstanceType.spiceApiUnit1,
+                  child: Text(context.l10n.instanceTypeSpiceApiUnit1),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  selectedTypeState.value = value;
+                }
+              },
             ),
             const SizedBox(height: 10),
             Align(
