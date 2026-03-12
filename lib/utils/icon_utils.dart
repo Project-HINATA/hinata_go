@@ -1,5 +1,16 @@
 class IconUtils {
-  static const List<String> availableIcons = ['🐻', '🐧', '🐱', '💻'];
+  static const List<String> availableIcons = [
+    '🐻',
+    '🐧',
+    '🐱',
+    '🚰',
+    '💿',
+    '🎹',
+    '🎸',
+    '🥁',
+    '🕺',
+    '💻',
+  ];
 
   static String getEmoji(String iconName) {
     if (availableIcons.contains(iconName)) {
