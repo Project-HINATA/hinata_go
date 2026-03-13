@@ -61,11 +61,13 @@ class SettingsPage extends HookConsumerWidget {
             title: Text(l10n.about),
             subtitle: Text('HINATA Go v${updateState.currentVersion}'),
             leading: const Icon(Icons.info_outline),
-            onTap: () {
-              ref.read(appUpdateProvider.notifier).checkUpdate();
-            },
+            onTap: updateState.isUpdateSupported
+                ? () {
+                    ref.read(appUpdateProvider.notifier).checkUpdate();
+                  }
+                : null,
           ),
-          if (updateState.hasUpdate)
+          if (updateState.isUpdateSupported && updateState.hasUpdate)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: FilledButton.icon(

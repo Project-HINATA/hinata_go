@@ -12,11 +12,12 @@ import android.util.Log
 
 class MainActivity : FlutterActivity() {
     private var pendingTag: Tag? = null
-    private val CHANNEL = "moe.neri.hinatago/nfc_launcher"
+    private val nfcChannel = "moe.neri.hinatago/nfc_launcher"
+    private val appUpdateChannel = "moe.neri.hinatago/app_update"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, nfcChannel).setMethodCallHandler { call, result ->
             if (call.method == "getInitialTag") {
                 pendingTag?.let {
                     Log.d("MainActivity", "Relaying buffered tag to FlutterNfcKit")
@@ -24,6 +25,14 @@ class MainActivity : FlutterActivity() {
                     pendingTag = null // Clear after relay
                 }
                 result.success(null)
+            } else {
+                result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, appUpdateChannel).setMethodCallHandler { call, result ->
+            if (call.method == "isSplitApk") {
+                result.success(isSplitApkInstall())
             } else {
                 result.notImplemented()
             }
@@ -52,6 +61,16 @@ class MainActivity : FlutterActivity() {
                 // Also try to relay immediately in case Flutter is already running
                 FlutterNfcKitPlugin.handleTag(it)
             }
+        }
+    }
+
+    private fun isSplitApkInstall(): Boolean {
+        return try {
+            @Suppress("DEPRECATION")
+            val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
+            !applicationInfo.splitSourceDirs.isNullOrEmpty()
+        } catch (_: Exception) {
+            false
         }
     }
 }

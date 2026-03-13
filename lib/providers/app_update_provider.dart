@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -12,6 +14,10 @@ final appUpdateProvider = NotifierProvider<AppUpdateNotifier, AppUpdateState>(
 );
 
 class AppUpdateNotifier extends Notifier<AppUpdateState> {
+  static const _appUpdateChannel = MethodChannel(
+    AppConstants.appUpdateChannel,
+  );
+
   @override
   AppUpdateState build() {
     _init();
@@ -20,12 +26,18 @@ class AppUpdateNotifier extends Notifier<AppUpdateState> {
 
   Future<void> _init() async {
     final packageInfo = await PackageInfo.fromPlatform();
-    state = state.copyWith(currentVersion: packageInfo.version);
+    final isUpdateSupported = await _resolveUpdateSupport();
+    state = state.copyWith(
+      currentVersion: packageInfo.version,
+      isUpdateSupported: isUpdateSupported,
+    );
+
+    if (!isUpdateSupported) return;
     await checkUpdate();
   }
 
   Future<void> checkUpdate() async {
-    if (state.isChecking) return;
+    if (!state.isUpdateSupported || state.isChecking) return;
     state = state.copyWith(isChecking: true);
 
     try {
@@ -75,6 +87,25 @@ class AppUpdateNotifier extends Notifier<AppUpdateState> {
       }
     } catch (e) {
       state = state.copyWith(isChecking: false);
+    }
+  }
+
+  Future<bool> _resolveUpdateSupport() async {
+    if (kIsWeb) return true;
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return false;
+      case TargetPlatform.android:
+        try {
+          final isSplitApk =
+              await _appUpdateChannel.invokeMethod<bool>('isSplitApk') ?? false;
+          return !isSplitApk;
+        } on PlatformException {
+          return true;
+        }
+      default:
+        return true;
     }
   }
 }
