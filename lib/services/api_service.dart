@@ -120,53 +120,70 @@ class ApiService {
       );
     }
 
-    final unit = instance.unit;
     final endpoint = SpiceApiEndpoint.parse(instance.url);
     final pass = instance.password.isNotEmpty ? instance.password : endpoint.pass;
-    
+
     log(
       'Sending SpiceAPI card insert to ${endpoint.host}:${endpoint.port} '
-      'for unit $unit: ${card.idString} via ${instance.type.name}',
+      'for unit ${instance.unit}: ${card.idString} via ${instance.type.name}',
     );
 
     if (instance.type == InstanceType.spiceApiWebSocket) {
-      final connection = ws_spiceapi.Connection(
-        endpoint.host,
-        endpoint.port,
-        pass,
-        refreshSession: false,
-      );
-
-      try {
-        await connection.onConnect().timeout(const Duration(seconds: 10));
-        await ws_spiceapi.cardInsert(
-          connection,
-          unit,
-          cardId,
-        ).timeout(const Duration(seconds: 10));
-        return ApiServiceResult(success: true);
-      } finally {
-        connection.dispose();
-      }
+      return _sendSpiceApiWebSocket(endpoint, pass, instance.unit, cardId);
     } else {
-      final connection = Connection(
-        endpoint.host,
-        endpoint.port,
-        pass,
-        refreshSession: false,
-      );
+      return _sendSpiceApiTcp(endpoint, pass, instance.unit, cardId);
+    }
+  }
 
-      try {
-        await connection.onConnect().timeout(const Duration(seconds: 10));
-        await cardInsert(
-          connection,
-          unit,
-          cardId,
-        ).timeout(const Duration(seconds: 10));
-        return ApiServiceResult(success: true);
-      } finally {
-        connection.dispose();
-      }
+  Future<ApiServiceResult> _sendSpiceApiWebSocket(
+    SpiceApiEndpoint endpoint,
+    String pass,
+    int unit,
+    String cardId,
+  ) async {
+    final connection = ws_spiceapi.Connection(
+      endpoint.host,
+      endpoint.port,
+      pass,
+      refreshSession: false,
+    );
+
+    try {
+      await connection.onConnect().timeout(const Duration(seconds: 10));
+      await ws_spiceapi.cardInsert(
+        connection,
+        unit,
+        cardId,
+      ).timeout(const Duration(seconds: 10));
+      return ApiServiceResult(success: true);
+    } finally {
+      connection.dispose();
+    }
+  }
+
+  Future<ApiServiceResult> _sendSpiceApiTcp(
+    SpiceApiEndpoint endpoint,
+    String pass,
+    int unit,
+    String cardId,
+  ) async {
+    final connection = Connection(
+      endpoint.host,
+      endpoint.port,
+      pass,
+      refreshSession: false,
+    );
+
+    try {
+      await connection.onConnect().timeout(const Duration(seconds: 10));
+      await cardInsert(
+        connection,
+        unit,
+        cardId,
+      ).timeout(const Duration(seconds: 10));
+      return ApiServiceResult(success: true);
+    } finally {
+      connection.dispose();
     }
   }
 

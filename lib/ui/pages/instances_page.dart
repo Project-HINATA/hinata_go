@@ -149,16 +149,8 @@ class _InstanceDialog extends HookConsumerWidget {
     final isSpiceApiType =
         selectedTypeState.value == InstanceType.spiceApi ||
         selectedTypeState.value == InstanceType.spiceApiWebSocket;
-    final urlLabel = selectedTypeState.value == InstanceType.spiceApi
-        ? context.l10n.spiceApiEndpointLabel
-        : selectedTypeState.value == InstanceType.spiceApiWebSocket
-            ? context.l10n.spiceApiWebSocketEndpointLabel
-            : context.l10n.hinataUrlLabel;
-    final invalidUrlMessage = selectedTypeState.value == InstanceType.spiceApi
-        ? context.l10n.invalidSpiceApiEndpoint
-        : selectedTypeState.value == InstanceType.spiceApiWebSocket
-            ? context.l10n.invalidSpiceApiWebSocketEndpoint
-            : context.l10n.invalidHinataUrl;
+    final urlLabel = context.l10n.endpointLabel;
+    final invalidUrlMessage = context.l10n.invalidEndpoint;
 
     void onSave() {
       final name = nameController.text.trim();
@@ -181,7 +173,7 @@ class _InstanceDialog extends HookConsumerWidget {
       final newInstance = RemoteInstance(
         id: existingInstance?.id ?? const Uuid().v4(),
         name: name,
-        url: url,
+        url: Validators.buildValidUrl(url, selectedTypeState.value),
         icon: selectedIconState.value.isEmpty ? '🐻' : selectedIconState.value,
         type: selectedTypeState.value,
         unit: selectedUnitState.value,

@@ -38,18 +38,12 @@ class SpiceApiEndpoint {
       throw const FormatException('SpiceAPI endpoint is empty.');
     }
 
+    // Default to a dummy scheme if none is provided so Uri.tryParse can correctly parse host and port
     final hasScheme = normalized.contains('://');
     final uri = Uri.tryParse(hasScheme ? normalized : 'tcp://$normalized');
+    
     if (uri == null) {
       throw FormatException('Invalid SpiceAPI endpoint: $raw');
-    }
-
-    if (uri.scheme.isNotEmpty &&
-        uri.scheme != 'tcp' &&
-        uri.scheme != 'spiceapi' &&
-        uri.scheme != 'ws' &&
-        uri.scheme != 'wss') {
-      throw FormatException('Unsupported SpiceAPI scheme: ${uri.scheme}');
     }
 
     if (uri.host.isEmpty) {

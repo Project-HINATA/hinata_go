@@ -2,44 +2,61 @@ import '../models/remote_instance.dart';
 import '../services/spiceapi/spiceapi.dart';
 
 class Validators {
-  static bool isValidUrl(String url) {
-    if (url.isEmpty) return false;
-    final uri = Uri.tryParse(url);
-    return uri != null &&
-        (uri.isScheme('http') || uri.isScheme('https')) &&
-        uri.host.isNotEmpty;
+  static String buildValidUrl(String url, InstanceType type) {
+    var normalized = url.trim();
+    if (normalized.isEmpty) return '';
+
+    if (!normalized.contains('://')) {
+      switch (type) {
+        case InstanceType.hinataIo:
+          return 'http://$normalized';
+        case InstanceType.spiceApiWebSocket:
+          return 'ws://$normalized';
+        case InstanceType.spiceApi:
+          return 'tcp://$normalized';
+      }
+    }
+    return normalized;
+  }
+
+  static bool _hasValidSchemeForType(String scheme, InstanceType type) {
+    switch (type) {
+      case InstanceType.hinataIo:
+        return scheme == 'http' || scheme == 'https';
+      case InstanceType.spiceApi:
+        return scheme == 'tcp';
+      case InstanceType.spiceApiWebSocket:
+        return scheme == 'ws' || scheme == 'wss' || scheme == 'http' || scheme == 'https';
+    }
   }
 
   static bool isValidInstanceUrl(String url, InstanceType type) {
-    if (type == InstanceType.hinataIo) {
-      return isValidUrl(url);
-    }
-    
-    if (type == InstanceType.spiceApi) {
-      return isValidSpiceApiUrl(url, allowWs: false);
-    }
+    var normalized = url.trim();
+    if (normalized.isEmpty) return false;
 
-    if (type == InstanceType.spiceApiWebSocket) {
-      return isValidSpiceApiUrl(url, allowWs: true);
-    }
-    
-    return false;
-  }
-
-  static bool isValidSpiceApiUrl(String url, {required bool allowWs}) {
-    try {
-      SpiceApiEndpoint.parse(url);
-      final uri = Uri.tryParse(url);
-      if (uri != null) {
-          if (allowWs) {
-              return uri.isScheme('ws') || uri.isScheme('wss') || uri.isScheme('http') || uri.isScheme('https');
-          } else {
-              return uri.isScheme('tcp') || uri.isScheme('http') || uri.isScheme('https') || !url.contains('://');
-          }
+    if (normalized.contains('://')) {
+      final uri = Uri.tryParse(normalized);
+      if (uri == null) return false;
+      
+      final scheme = uri.scheme.toLowerCase();
+      if (!_hasValidSchemeForType(scheme, type)) {
+        return false;
       }
-      return true;
-    } on FormatException {
-      return false;
+    }
+
+    final validUrl = buildValidUrl(normalized, type);
+    if (validUrl.isEmpty) return false;
+
+    if (type == InstanceType.hinataIo) {
+      final uri = Uri.tryParse(validUrl);
+      return uri != null && uri.host.isNotEmpty;
+    } else {
+      try {
+        SpiceApiEndpoint.parse(validUrl);
+        return true;
+      } on FormatException {
+        return false;
+      }
     }
   }
 }

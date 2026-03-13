@@ -202,15 +202,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidUrl => 'Please enter a valid URL (http/https)';
 
   @override
-  String get invalidHinataUrl => 'Please enter a valid HTTP/HTTPS URL';
-
-  @override
-  String get invalidSpiceApiEndpoint =>
-      'Please enter a valid SpiceAPI TCP endpoint (e.g. 127.0.0.1:1337)';
-
-  @override
-  String get invalidSpiceApiWebSocketEndpoint =>
-      'Please enter a valid SpiceAPI WebSocket endpoint (e.g. ws://127.0.0.1:1337)';
+  String get invalidEndpoint => 'Please enter a valid address';
 
   @override
   String get editInstance => 'Edit Instance';
@@ -222,15 +214,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get webhookUrl => 'Webhook URL (http://...)';
 
   @override
-  String get hinataUrlLabel => 'Server URL (http://... or https://...)';
-
-  @override
-  String get spiceApiEndpointLabel =>
-      'SpiceAPI Endpoint (host:port or tcp://host:port)';
-
-  @override
-  String get spiceApiWebSocketEndpointLabel =>
-      'SpiceAPI Endpoint (ws://host:port or wss://host:port)';
+  String get endpointLabel => 'Address';
 
   @override
   String get instanceType => 'Instance Type';

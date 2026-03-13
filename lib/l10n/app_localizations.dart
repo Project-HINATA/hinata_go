@@ -452,23 +452,11 @@ abstract class AppLocalizations {
   /// **'Please enter a valid URL (http/https)'**
   String get invalidUrl;
 
-  /// No description provided for @invalidHinataUrl.
+  /// No description provided for @invalidEndpoint.
   ///
   /// In en, this message translates to:
-  /// **'Please enter a valid HTTP/HTTPS URL'**
-  String get invalidHinataUrl;
-
-  /// No description provided for @invalidSpiceApiEndpoint.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter a valid SpiceAPI TCP endpoint (e.g. 127.0.0.1:1337)'**
-  String get invalidSpiceApiEndpoint;
-
-  /// No description provided for @invalidSpiceApiWebSocketEndpoint.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter a valid SpiceAPI WebSocket endpoint (e.g. ws://127.0.0.1:1337)'**
-  String get invalidSpiceApiWebSocketEndpoint;
+  /// **'Please enter a valid address'**
+  String get invalidEndpoint;
 
   /// No description provided for @editInstance.
   ///
@@ -488,23 +476,11 @@ abstract class AppLocalizations {
   /// **'Webhook URL (http://...)'**
   String get webhookUrl;
 
-  /// No description provided for @hinataUrlLabel.
+  /// No description provided for @endpointLabel.
   ///
   /// In en, this message translates to:
-  /// **'Server URL (http://... or https://...)'**
-  String get hinataUrlLabel;
-
-  /// No description provided for @spiceApiEndpointLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'SpiceAPI Endpoint (host:port or tcp://host:port)'**
-  String get spiceApiEndpointLabel;
-
-  /// No description provided for @spiceApiWebSocketEndpointLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'SpiceAPI Endpoint (ws://host:port or wss://host:port)'**
-  String get spiceApiWebSocketEndpointLabel;
+  /// **'Address'**
+  String get endpointLabel;
 
   /// No description provided for @instanceType.
   ///
