@@ -138,14 +138,32 @@ class _InstanceDialog extends HookConsumerWidget {
       text: existingInstance?.name,
     );
     final urlController = useTextEditingController(text: existingInstance?.url);
-    final passwordController = useTextEditingController(text: existingInstance?.password);
-    
+    final passwordController = useTextEditingController(
+      text: existingInstance?.password,
+    );
+
     final selectedIconState = useState(existingInstance?.icon ?? '🐻');
     final selectedTypeState = useState(
       existingInstance?.type ?? InstanceType.hinataIo,
     );
     final selectedUnitState = useState(existingInstance?.unit ?? 0);
-    
+
+    // Use hooks to listen to text changes reactively
+    final name = useListenableSelector(
+      nameController,
+      () => nameController.text.trim(),
+    );
+    final url = useListenableSelector(
+      urlController,
+      () => urlController.text.trim(),
+    );
+
+    final isValidUrl = Validators.isValidInstanceUrl(
+      url,
+      selectedTypeState.value,
+    );
+    final isFormValid = name.isNotEmpty && url.isNotEmpty && isValidUrl;
+
     final isSpiceApiType =
         selectedTypeState.value == InstanceType.spiceApi ||
         selectedTypeState.value == InstanceType.spiceApiWebSocket;
@@ -153,22 +171,8 @@ class _InstanceDialog extends HookConsumerWidget {
     final invalidUrlMessage = context.l10n.invalidEndpoint;
 
     void onSave() {
-      final name = nameController.text.trim();
-      final url = urlController.text.trim();
+      if (!isFormValid) return;
       final password = passwordController.text.trim();
-
-      if (name.isEmpty || url.isEmpty) return;
-
-      final isValidUrl = Validators.isValidInstanceUrl(
-        url,
-        selectedTypeState.value,
-      );
-      if (!isValidUrl) {
-        ScaffoldMessenger.of(
-          context,
-        ).showQuickSnackBar(SnackBar(content: Text(invalidUrlMessage)));
-        return;
-      }
 
       final newInstance = RemoteInstance(
         id: existingInstance?.id ?? const Uuid().v4(),
@@ -234,29 +238,33 @@ class _InstanceDialog extends HookConsumerWidget {
             const SizedBox(height: 10),
             TextField(
               controller: urlController,
-              decoration: InputDecoration(labelText: urlLabel),
+              decoration: InputDecoration(
+                labelText: urlLabel,
+                helperText: url.isNotEmpty && !isValidUrl
+                    ? invalidUrlMessage
+                    : null,
+                helperStyle: const TextStyle(color: Colors.orange),
+              ),
               keyboardType: TextInputType.url,
             ),
             if (isSpiceApiType) ...[
               const SizedBox(height: 10),
               TextField(
                 controller: passwordController,
-                decoration: InputDecoration(labelText: context.l10n.spiceApiPassword),
+                decoration: InputDecoration(
+                  labelText: context.l10n.spiceApiPassword,
+                ),
                 obscureText: true,
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<int>(
                 initialValue: selectedUnitState.value,
-                decoration: InputDecoration(labelText: context.l10n.spiceApiUnit),
+                decoration: InputDecoration(
+                  labelText: context.l10n.spiceApiUnit,
+                ),
                 items: const [
-                  DropdownMenuItem(
-                    value: 0,
-                    child: Text('0'),
-                  ),
-                  DropdownMenuItem(
-                    value: 1,
-                    child: Text('1'),
-                  ),
+                  DropdownMenuItem(value: 0, child: Text('0')),
+                  DropdownMenuItem(value: 1, child: Text('1')),
                 ],
                 onChanged: (value) {
                   if (value != null) {
@@ -298,7 +306,10 @@ class _InstanceDialog extends HookConsumerWidget {
           onPressed: () => Navigator.pop(context),
           child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: onSave, child: Text(context.l10n.save)),
+        FilledButton(
+          onPressed: isFormValid ? onSave : null,
+          child: Text(context.l10n.save),
+        ),
       ],
     );
   }
