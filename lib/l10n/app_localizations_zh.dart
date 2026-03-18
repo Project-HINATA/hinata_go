@@ -453,4 +453,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get confirmOverwriteMessage => '此操作将覆盖本地数据且无法恢复。是否确定？';
+
+  @override
+  String get invalidAccessCodeLength => 'Access Code 必须为 20 位数字且不能以 3 开头';
 }

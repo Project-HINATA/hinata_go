@@ -913,6 +913,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This will overwrite your local data irrecoverably. Are you sure?'**
   String get confirmOverwriteMessage;
+
+  /// No description provided for @invalidAccessCodeLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Access code must be 20 digits and not start with 3'**
+  String get invalidAccessCodeLength;
 }
 
 class _AppLocalizationsDelegate

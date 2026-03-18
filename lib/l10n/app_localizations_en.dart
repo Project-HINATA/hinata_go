@@ -459,4 +459,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get confirmOverwriteMessage =>
       'This will overwrite your local data irrecoverably. Are you sure?';
+
+  @override
+  String get invalidAccessCodeLength =>
+      'Access code must be 20 digits and not start with 3';
 }

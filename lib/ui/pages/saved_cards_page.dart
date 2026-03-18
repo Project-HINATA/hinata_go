@@ -364,28 +364,39 @@ class _AddCardDialog extends HookConsumerWidget {
     final valueController = useTextEditingController();
     final selectedFolderIdState = useState(initialFolderId);
 
+    // Use hooks to listen to text changes reactively
+    final name = useListenableSelector(
+      nameController,
+      () => nameController.text.trim(),
+    );
+    final value = useListenableSelector(
+      valueController,
+      () => valueController.text.trim(),
+    );
+
+    final isFormValid =
+        name.isNotEmpty && value.length == 20 && !value.startsWith('3');
+
     void onSave() {
-      final name = nameController.text.trim();
-      final value = valueController.text.trim();
-      if (name.isNotEmpty && value.isNotEmpty) {
-        // Manual entry is treated as Aime type
-        final accessCodeBytes = _hexToBytes(value);
-        final aime = Aime(
-          Uint8List(4), // placeholder id
-          0x08, // placeholder sak
-          0x0004, // placeholder atqa
-          accessCodeBytes,
-        );
-        final newCard = SavedCard(
-          id: const Uuid().v4(),
-          name: name,
-          card: aime,
-          folderId: selectedFolderIdState.value,
-          source: 'Direct',
-        );
-        ref.read(savedCardsProvider.notifier).addCard(newCard);
-        Navigator.pop(context);
-      }
+      if (!isFormValid) return;
+
+      // Manual entry is treated as Aime type
+      final accessCodeBytes = _hexToBytes(value);
+      final aime = Aime(
+        Uint8List(4), // placeholder id
+        0x08, // placeholder sak
+        0x0004, // placeholder atqa
+        accessCodeBytes,
+      );
+      final newCard = SavedCard(
+        id: const Uuid().v4(),
+        name: name,
+        card: aime,
+        folderId: selectedFolderIdState.value,
+        source: 'Direct',
+      );
+      ref.read(savedCardsProvider.notifier).addCard(newCard);
+      Navigator.pop(context);
     }
 
     final folders = ref
@@ -439,7 +450,16 @@ class _AddCardDialog extends HookConsumerWidget {
             const SizedBox(height: 10),
             TextField(
               controller: valueController,
-              decoration: InputDecoration(labelText: context.l10n.accessCode),
+              decoration: InputDecoration(
+                labelText: context.l10n.accessCode,
+                helperText:
+                    value.isNotEmpty &&
+                        (value.length != 20 || value.startsWith('3'))
+                    ? context.l10n.invalidAccessCodeLength
+                    : null,
+                helperMaxLines: 3,
+                helperStyle: const TextStyle(color: Colors.orange),
+              ),
               keyboardType: TextInputType.number,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -454,7 +474,10 @@ class _AddCardDialog extends HookConsumerWidget {
           onPressed: () => Navigator.pop(context),
           child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: onSave, child: Text(context.l10n.save)),
+        FilledButton(
+          onPressed: isFormValid ? onSave : null,
+          child: Text(context.l10n.save),
+        ),
       ],
     );
   }

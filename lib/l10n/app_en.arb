@@ -231,5 +231,6 @@
   "importMerge": "Merge Import",
   "importOverwrite": "Overwrite Import",
   "confirmOverwriteTitle": "Confirm Overwrite",
-  "confirmOverwriteMessage": "This will overwrite your local data irrecoverably. Are you sure?"
+  "confirmOverwriteMessage": "This will overwrite your local data irrecoverably. Are you sure?",
+  "invalidAccessCodeLength": "Access code must be 20 digits and not start with 3"
 }
