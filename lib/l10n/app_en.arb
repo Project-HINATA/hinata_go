@@ -181,5 +181,51 @@
     "placeholders": {
       "name": {}
     }
-  }
+  },
+  "dataManagement": "Data Management",
+  "dataManagementDescription": "Import or export cards and scan logs",
+  "exportData": "Export Data",
+  "importData": "Import Data",
+  "exportSuccess": "Export successful",
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importSuccess": "Import successful",
+  "importFailed": "Import failed: {error}",
+  "@importFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "exportToClipboard": "Copy to Clipboard",
+  "exportToFile": "Save to File",
+  "importFromClipboard": "Paste from Clipboard",
+  "importFromFile": "Load from File",
+  "selectExportMethod": "Select Export Method",
+  "selectImportMethod": "Select Import Method",
+  "invalidDataFormat": "Invalid data format",
+  "importPreviewTitle": "Import Preview",
+  "importPreviewMessage": "The following data will be imported:",
+  "itemCountCards": "Cards: {count}",
+  "@itemCountCards": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "itemCountFolders": "Folders: {count}",
+  "@itemCountFolders": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "itemCountHistory": "Scan Logs: {count}",
+  "@itemCountHistory": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "confirmImport": "Confirm Import"
 }

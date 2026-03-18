@@ -763,6 +763,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed: Could not send to {name}'**
   String failedSentToInstance(Object name);
+
+  /// No description provided for @dataManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Management'**
+  String get dataManagement;
+
+  /// No description provided for @dataManagementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Import or export cards and scan logs'**
+  String get dataManagementDescription;
+
+  /// No description provided for @exportData.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Data'**
+  String get exportData;
+
+  /// No description provided for @importData.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Data'**
+  String get importData;
+
+  /// No description provided for @exportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Export successful'**
+  String get exportSuccess;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: {error}'**
+  String exportFailed(Object error);
+
+  /// No description provided for @importSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Import successful'**
+  String get importSuccess;
+
+  /// No description provided for @importFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: {error}'**
+  String importFailed(Object error);
+
+  /// No description provided for @exportToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to Clipboard'**
+  String get exportToClipboard;
+
+  /// No description provided for @exportToFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to File'**
+  String get exportToFile;
+
+  /// No description provided for @importFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from Clipboard'**
+  String get importFromClipboard;
+
+  /// No description provided for @importFromFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Load from File'**
+  String get importFromFile;
+
+  /// No description provided for @selectExportMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Export Method'**
+  String get selectExportMethod;
+
+  /// No description provided for @selectImportMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Import Method'**
+  String get selectImportMethod;
+
+  /// No description provided for @invalidDataFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid data format'**
+  String get invalidDataFormat;
+
+  /// No description provided for @importPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Preview'**
+  String get importPreviewTitle;
+
+  /// No description provided for @importPreviewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The following data will be imported:'**
+  String get importPreviewMessage;
+
+  /// No description provided for @itemCountCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards: {count}'**
+  String itemCountCards(Object count);
+
+  /// No description provided for @itemCountFolders.
+  ///
+  /// In en, this message translates to:
+  /// **'Folders: {count}'**
+  String itemCountFolders(Object count);
+
+  /// No description provided for @itemCountHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Logs: {count}'**
+  String itemCountHistory(Object count);
+
+  /// No description provided for @confirmImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Import'**
+  String get confirmImport;
 }
 
 class _AppLocalizationsDelegate

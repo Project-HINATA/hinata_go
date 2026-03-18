@@ -372,4 +372,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String failedSentToInstance(Object name) {
     return 'Failed: Could not send to $name';
   }
+
+  @override
+  String get dataManagement => 'Data Management';
+
+  @override
+  String get dataManagementDescription =>
+      'Import or export cards and scan logs';
+
+  @override
+  String get exportData => 'Export Data';
+
+  @override
+  String get importData => 'Import Data';
+
+  @override
+  String get exportSuccess => 'Export successful';
+
+  @override
+  String exportFailed(Object error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String get importSuccess => 'Import successful';
+
+  @override
+  String importFailed(Object error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String get exportToClipboard => 'Copy to Clipboard';
+
+  @override
+  String get exportToFile => 'Save to File';
+
+  @override
+  String get importFromClipboard => 'Paste from Clipboard';
+
+  @override
+  String get importFromFile => 'Load from File';
+
+  @override
+  String get selectExportMethod => 'Select Export Method';
+
+  @override
+  String get selectImportMethod => 'Select Import Method';
+
+  @override
+  String get invalidDataFormat => 'Invalid data format';
+
+  @override
+  String get importPreviewTitle => 'Import Preview';
+
+  @override
+  String get importPreviewMessage => 'The following data will be imported:';
+
+  @override
+  String itemCountCards(Object count) {
+    return 'Cards: $count';
+  }
+
+  @override
+  String itemCountFolders(Object count) {
+    return 'Folders: $count';
+  }
+
+  @override
+  String itemCountHistory(Object count) {
+    return 'Scan Logs: $count';
+  }
+
+  @override
+  String get confirmImport => 'Confirm Import';
 }

@@ -368,4 +368,77 @@ class AppLocalizationsZh extends AppLocalizations {
   String failedSentToInstance(Object name) {
     return '发送失败：无法发送到 $name';
   }
+
+  @override
+  String get dataManagement => '数据管理';
+
+  @override
+  String get dataManagementDescription => '导入或导出卡包和刷卡历史';
+
+  @override
+  String get exportData => '导出数据';
+
+  @override
+  String get importData => '导入数据';
+
+  @override
+  String get exportSuccess => '导出成功';
+
+  @override
+  String exportFailed(Object error) {
+    return '导出失败：$error';
+  }
+
+  @override
+  String get importSuccess => '导入成功';
+
+  @override
+  String importFailed(Object error) {
+    return '导入失败：$error';
+  }
+
+  @override
+  String get exportToClipboard => '复制到剪贴板';
+
+  @override
+  String get exportToFile => '保存为文件';
+
+  @override
+  String get importFromClipboard => '从剪贴板粘贴';
+
+  @override
+  String get importFromFile => '从文件加载';
+
+  @override
+  String get selectExportMethod => '选择导出方式';
+
+  @override
+  String get selectImportMethod => '选择导入方式';
+
+  @override
+  String get invalidDataFormat => '数据格式无效';
+
+  @override
+  String get importPreviewTitle => '导入预览';
+
+  @override
+  String get importPreviewMessage => '将要导入以下数据：';
+
+  @override
+  String itemCountCards(Object count) {
+    return '卡片：$count';
+  }
+
+  @override
+  String itemCountFolders(Object count) {
+    return '文件夹：$count';
+  }
+
+  @override
+  String itemCountHistory(Object count) {
+    return '刷卡历史：$count';
+  }
+
+  @override
+  String get confirmImport => '确认导入';
 }
