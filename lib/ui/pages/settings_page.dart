@@ -65,8 +65,8 @@ class SettingsPage extends HookConsumerWidget {
             onTap: () {
               showModalBottomSheet(
                 context: context,
-                builder: (BuildContext context) {
-                  return _DataManagementSheet();
+                builder: (BuildContext sheetContext) {
+                  return _DataManagementSheet(parentContext: context);
                 },
               );
             },
@@ -114,25 +114,30 @@ class SettingsPage extends HookConsumerWidget {
 }
 
 class _DataManagementSheet extends HookConsumerWidget {
+  final BuildContext parentContext;
+
+  const _DataManagementSheet({required this.parentContext});
+
   Future<void> _handleImport(
-    BuildContext context,
+    BuildContext sheetContext,
     Future<Map<String, dynamic>?> Function() importMethod,
     DataManagementService dataManagement,
     dynamic l10n,
   ) async {
+    Navigator.pop(sheetContext);
     try {
       final data = await importMethod();
       if (data == null) return;
 
-      if (!context.mounted) return;
+      if (!parentContext.mounted) return;
 
       final cardsCount = (data['saved_cards'] as List?)?.length ?? 0;
       final foldersCount = (data['card_folders'] as List?)?.length ?? 0;
-      final logsCount = (data['scan_logs'] as List?)?.length ?? 0;
+      final instancesCount = (data['instances'] as List?)?.length ?? 0;
 
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
+      final result = await showDialog<String>(
+        context: parentContext,
+        builder: (dialogContext) => AlertDialog(
           title: Text(l10n.importPreviewTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -142,38 +147,72 @@ class _DataManagementSheet extends HookConsumerWidget {
               const SizedBox(height: 16),
               Text(l10n.itemCountCards(cardsCount)),
               Text(l10n.itemCountFolders(foldersCount)),
-              Text(l10n.itemCountHistory(logsCount)),
+              Text(l10n.itemCountInstances(instancesCount)),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogContext, 'cancel'),
               child: Text(l10n.cancel),
             ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, 'merge'),
+              child: Text(l10n.importMerge),
+            ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.confirmImport),
+              onPressed: () => Navigator.pop(dialogContext, 'overwrite'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(parentContext).colorScheme.error,
+                foregroundColor: Theme.of(parentContext).colorScheme.onError,
+              ),
+              child: Text(l10n.importOverwrite),
             ),
           ],
         ),
       );
 
-      if (confirm == true) {
-        await dataManagement.applyImport(data);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.importSuccess)),
-          );
-        }
+      if (result == 'cancel' || result == null) return;
+
+      if (result == 'overwrite') {
+        if (!parentContext.mounted) return;
+        final confirmOverwrite = await showDialog<bool>(
+          context: parentContext,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(l10n.confirmOverwriteTitle),
+            content: Text(l10n.confirmOverwriteMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(parentContext).colorScheme.error,
+                  foregroundColor: Theme.of(parentContext).colorScheme.onError,
+                ),
+                child: Text(l10n.importOverwrite),
+              ),
+            ],
+          ),
+        );
+        if (confirmOverwrite != true) return;
+      }
+
+      await dataManagement.applyImport(data, merge: result == 'merge');
+      if (parentContext.mounted) {
+        ScaffoldMessenger.of(
+          parentContext,
+        ).showSnackBar(SnackBar(content: Text(l10n.importSuccess)));
       }
     } catch (e) {
       final message = e.toString().contains('invalidDataFormat')
           ? l10n.invalidDataFormat
           : e.toString();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.importFailed(message))),
-        );
+      if (parentContext.mounted) {
+        ScaffoldMessenger.of(
+          parentContext,
+        ).showSnackBar(SnackBar(content: Text(l10n.importFailed(message))));
       }
     }
   }
@@ -200,14 +239,14 @@ class _DataManagementSheet extends HookConsumerWidget {
               Navigator.pop(context);
               try {
                 await dataManagement.exportToFile();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.exportSuccess)),
-                  );
+                if (parentContext.mounted) {
+                  ScaffoldMessenger.of(
+                    parentContext,
+                  ).showSnackBar(SnackBar(content: Text(l10n.exportSuccess)));
                 }
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (parentContext.mounted) {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
                     SnackBar(content: Text(l10n.exportFailed(e.toString()))),
                   );
                 }
@@ -221,14 +260,14 @@ class _DataManagementSheet extends HookConsumerWidget {
               Navigator.pop(context);
               try {
                 await dataManagement.exportToClipboard();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.exportSuccess)),
-                  );
+                if (parentContext.mounted) {
+                  ScaffoldMessenger.of(
+                    parentContext,
+                  ).showSnackBar(SnackBar(content: Text(l10n.exportSuccess)));
                 }
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (parentContext.mounted) {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
                     SnackBar(content: Text(l10n.exportFailed(e.toString()))),
                   );
                 }
@@ -240,16 +279,24 @@ class _DataManagementSheet extends HookConsumerWidget {
             leading: const Icon(Icons.file_download),
             title: Text(l10n.importFromFile),
             onTap: () {
-              Navigator.pop(context);
-              _handleImport(context, dataManagement.importFromFile, dataManagement, l10n);
+              _handleImport(
+                context,
+                dataManagement.importFromFile,
+                dataManagement,
+                l10n,
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.content_paste),
             title: Text(l10n.importFromClipboard),
             onTap: () {
-              Navigator.pop(context);
-              _handleImport(context, dataManagement.importFromClipboard, dataManagement, l10n);
+              _handleImport(
+                context,
+                dataManagement.importFromClipboard,
+                dataManagement,
+                l10n,
+              );
             },
           ),
           const SizedBox(height: 8),

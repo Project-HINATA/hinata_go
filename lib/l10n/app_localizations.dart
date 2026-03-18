@@ -878,17 +878,41 @@ abstract class AppLocalizations {
   /// **'Folders: {count}'**
   String itemCountFolders(Object count);
 
-  /// No description provided for @itemCountHistory.
+  /// No description provided for @itemCountInstances.
   ///
   /// In en, this message translates to:
-  /// **'Scan Logs: {count}'**
-  String itemCountHistory(Object count);
+  /// **'Instances: {count}'**
+  String itemCountInstances(Object count);
 
   /// No description provided for @confirmImport.
   ///
   /// In en, this message translates to:
   /// **'Confirm Import'**
   String get confirmImport;
+
+  /// No description provided for @importMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge Import'**
+  String get importMerge;
+
+  /// No description provided for @importOverwrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite Import'**
+  String get importOverwrite;
+
+  /// No description provided for @confirmOverwriteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Overwrite'**
+  String get confirmOverwriteTitle;
+
+  /// No description provided for @confirmOverwriteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will overwrite your local data irrecoverably. Are you sure?'**
+  String get confirmOverwriteMessage;
 }
 
 class _AppLocalizationsDelegate

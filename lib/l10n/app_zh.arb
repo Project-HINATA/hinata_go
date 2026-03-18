@@ -130,6 +130,10 @@
   "importPreviewMessage": "将要导入以下数据：",
   "itemCountCards": "卡片：{count}",
   "itemCountFolders": "文件夹：{count}",
-  "itemCountHistory": "刷卡历史：{count}",
-  "confirmImport": "确认导入"
+  "itemCountInstances": "实例：{count}",
+  "confirmImport": "确认导入",
+  "importMerge": "合并导入",
+  "importOverwrite": "覆盖导入",
+  "confirmOverwriteTitle": "确认覆盖",
+  "confirmOverwriteMessage": "此操作将覆盖本地数据且无法恢复。是否确定？"
 }

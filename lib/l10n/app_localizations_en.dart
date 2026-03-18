@@ -440,10 +440,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String itemCountHistory(Object count) {
-    return 'Scan Logs: $count';
+  String itemCountInstances(Object count) {
+    return 'Instances: $count';
   }
 
   @override
   String get confirmImport => 'Confirm Import';
+
+  @override
+  String get importMerge => 'Merge Import';
+
+  @override
+  String get importOverwrite => 'Overwrite Import';
+
+  @override
+  String get confirmOverwriteTitle => 'Confirm Overwrite';
+
+  @override
+  String get confirmOverwriteMessage =>
+      'This will overwrite your local data irrecoverably. Are you sure?';
 }

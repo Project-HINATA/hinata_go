@@ -435,10 +435,22 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String itemCountHistory(Object count) {
-    return '刷卡历史：$count';
+  String itemCountInstances(Object count) {
+    return '实例：$count';
   }
 
   @override
   String get confirmImport => '确认导入';
+
+  @override
+  String get importMerge => '合并导入';
+
+  @override
+  String get importOverwrite => '覆盖导入';
+
+  @override
+  String get confirmOverwriteTitle => '确认覆盖';
+
+  @override
+  String get confirmOverwriteMessage => '此操作将覆盖本地数据且无法恢复。是否确定？';
 }
