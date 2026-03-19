@@ -120,41 +120,37 @@ class ApiService {
       );
     }
 
-    final endpoint = SpiceApiEndpoint.parse(instance.url);
-    final pass = instance.password.isNotEmpty ? instance.password : endpoint.pass;
+    final uri = Uri.parse(instance.url);
+    final pass = instance.password.isNotEmpty
+        ? instance.password
+        : (uri.userInfo.contains(':')
+              ? uri.userInfo.split(':')[1]
+              : uri.userInfo);
 
     log(
-      'Sending SpiceAPI card insert to ${endpoint.host}:${endpoint.port} '
-      'for unit ${instance.unit}: ${card.idString} via ${instance.type.name}',
+      'Sending SpiceAPI [${instance.type.name}] to ${instance.url} (unit: ${instance.unit})',
     );
 
     if (instance.type == InstanceType.spiceApiWebSocket) {
-      return _sendSpiceApiWebSocket(endpoint, pass, instance.unit, cardId);
+      return _sendSpiceApiWebSocket(instance.url, pass, instance.unit, cardId);
     } else {
-      return _sendSpiceApiTcp(endpoint, pass, instance.unit, cardId);
+      return _sendSpiceApiTcp(uri.host, uri.port, pass, instance.unit, cardId);
     }
   }
 
   Future<ApiServiceResult> _sendSpiceApiWebSocket(
-    SpiceApiEndpoint endpoint,
+    String url,
     String pass,
     int unit,
     String cardId,
   ) async {
-    final connection = ws_spiceapi.Connection(
-      endpoint.host,
-      endpoint.port,
-      pass,
-      refreshSession: false,
-    );
+    final connection = ws_spiceapi.Connection(url, pass, refreshSession: false);
 
     try {
       await connection.onConnect().timeout(const Duration(seconds: 10));
-      await ws_spiceapi.cardInsert(
-        connection,
-        unit,
-        cardId,
-      ).timeout(const Duration(seconds: 10));
+      await ws_spiceapi
+          .cardInsert(connection, unit, cardId)
+          .timeout(const Duration(seconds: 10));
       return ApiServiceResult(success: true);
     } finally {
       connection.dispose();
@@ -162,17 +158,13 @@ class ApiService {
   }
 
   Future<ApiServiceResult> _sendSpiceApiTcp(
-    SpiceApiEndpoint endpoint,
+    String host,
+    int port,
     String pass,
     int unit,
     String cardId,
   ) async {
-    final connection = Connection(
-      endpoint.host,
-      endpoint.port,
-      pass,
-      refreshSession: false,
-    );
+    final connection = Connection(host, port, pass, refreshSession: false);
 
     try {
       await connection.onConnect().timeout(const Duration(seconds: 10));

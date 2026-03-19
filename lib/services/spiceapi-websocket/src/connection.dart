@@ -4,8 +4,7 @@ class Connection {
   static const _timeout = Duration(seconds: 3);
   static const _bufferSize = 1024 * 1024 * 8;
 
-  final String host;
-  final int port;
+  final String url;
   String pass;
   dynamic resource;
   final List<int> _dataBuffer = <int>[];
@@ -18,13 +17,7 @@ class Connection {
   RC4? _cipher;
   bool _disposed = false;
 
-  Connection(
-    this.host,
-    this.port,
-    this.pass, {
-    this.resource,
-    bool refreshSession = true,
-  }) {
+  Connection(this.url, this.pass, {this.resource, bool refreshSession = true}) {
     if (pass.isNotEmpty) {
       _cipher = RC4(utf8.encode(pass));
     }
@@ -33,9 +26,10 @@ class Connection {
 
   Future<void> _connect(bool refreshSession) async {
     try {
-      final socket = await WebSocket.connect(
-        'ws://$host:$port',
-      ).timeout(_timeout);
+      final fixedUrl = url
+          .replaceAll("http://", "ws://")
+          .replaceAll("https://", "wss://");
+      final socket = await WebSocket.connect(fixedUrl).timeout(_timeout);
       _socket = socket;
 
       socket.listen(
