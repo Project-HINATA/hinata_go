@@ -773,7 +773,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataManagementDescription.
   ///
   /// In en, this message translates to:
-  /// **'Import or export cards and scan logs'**
+  /// **'Import or export cards and instances'**
   String get dataManagementDescription;
 
   /// No description provided for @exportData.

@@ -373,7 +373,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dataManagement => '数据管理';
 
   @override
-  String get dataManagementDescription => '导入或导出卡包和刷卡历史';
+  String get dataManagementDescription => '导入或导出卡包和实例';
 
   @override
   String get exportData => '导出数据';

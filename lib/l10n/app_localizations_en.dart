@@ -378,7 +378,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dataManagementDescription =>
-      'Import or export cards and scan logs';
+      'Import or export cards and instances';
 
   @override
   String get exportData => 'Export Data';

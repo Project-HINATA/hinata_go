@@ -97,9 +97,9 @@
   "instanceType": "Instance Type",
   "instanceTypeHinataIo": "HINATA IO",
   "instanceTypeSpiceApi": "SpiceAPI (TcpSocket)",
-    "instanceTypeSpiceApiWebSocket": "SpiceAPI (WebSocket)",
-    "spiceApiUnit": "SpiceAPI Unit",
-    "spiceApiPassword": "Password (Optional)",
+  "instanceTypeSpiceApiWebSocket": "SpiceAPI (WebSocket)",
+  "spiceApiUnit": "SpiceAPI Unit",
+  "spiceApiPassword": "Password (Optional)",
   "selectIcon": "Select Icon:",
   "confirmSendToActiveInstance": "Send this {cardName} card to the active instance?",
   "@confirmSendToActiveInstance": {
@@ -183,7 +183,7 @@
     }
   },
   "dataManagement": "Data Management",
-  "dataManagementDescription": "Import or export cards and scan logs",
+  "dataManagementDescription": "Import or export cards and instances",
   "exportData": "Export Data",
   "importData": "Import Data",
   "exportSuccess": "Export successful",

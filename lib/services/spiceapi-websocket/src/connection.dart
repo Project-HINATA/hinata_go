@@ -34,7 +34,7 @@ class Connection {
   Future<void> _connect(bool refreshSession) async {
     try {
       final socket = await WebSocket.connect(
-        'ws://$host:${port + 1}',
+        'ws://$host:$port',
       ).timeout(_timeout);
       _socket = socket;
 

@@ -36,7 +36,7 @@ android {
     }
 
     signingConfigs {
-        create("release") {
+        create("default") {
             keyAlias = System.getenv("ANDROID_KEY_ALIAS") 
                 ?: keystoreProperties.getProperty("keyAlias")
             
@@ -57,10 +57,10 @@ android {
 
     buildTypes {
         getByName("debug") {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("default")
         }
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("default")
             
             isMinifyEnabled = true
             isShrinkResources = true
