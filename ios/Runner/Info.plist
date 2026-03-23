@@ -30,6 +30,8 @@
 	<string>We need NFC access to read your smart cards.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>We need camera access to scan card QR codes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need photo library access to import and export data</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
