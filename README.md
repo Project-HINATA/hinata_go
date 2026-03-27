@@ -2,7 +2,7 @@
 配合 HINATA AimeIO 让你的手机变成刷卡器或扫码游玩家用街机游戏，并可以与各种其他设备协同使用。
 
 ## Downloads
-* iOS版：[TestFlight](https://testflight.apple.com/join/t8TYcRw6)
+* iOS版：[![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/app/id6760301105)
 * Android：[apk](https://github.com/nerimoe/hinata_go/releases)
 
 
