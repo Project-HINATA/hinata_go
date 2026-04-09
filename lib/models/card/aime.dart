@@ -13,6 +13,9 @@ class Aime extends Iso14443 {
   String get name => "Aime";
 
   @override
+  String? get logoPath => "assets/cardlogo/aime.svg";
+
+  @override
   String? get type => "aime";
 
   @override

@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/card/saved_card.dart';
-import '../../models/card/aime.dart';
 import '../../models/card_folder.dart';
+import '../../models/remote_instance.dart';
 import '../../models/scan_log.dart';
-import '../../providers/card_sender.dart';
-import '../../providers/app_state_provider.dart';
-import '../../providers/settings_provider.dart';
-import '../../services/notification_service.dart';
 import '../../l10n/l10n.dart';
+import '../../providers/app_state_provider.dart';
+import '../../providers/card_sender.dart';
+import '../../services/notification_service.dart';
+import '../app_layout.dart';
 import '../ui_text.dart';
+import '../components/saved_cards/card_item.dart';
+import '../components/saved_cards/folder_selection_strip.dart';
+import '../components/saved_cards/add_card_dialog.dart';
+import '../components/saved_cards/add_folder_dialog.dart';
+import '../components/instances/select_instance_dialog.dart';
 
 class SavedCardsPage extends HookConsumerWidget {
   const SavedCardsPage({super.key});
+
+  static const double _bottomFloatingBarFabOffset = 88;
+
+  // ---------------------------------------------------------------------------
+  // Dialog Actions
+  // ---------------------------------------------------------------------------
 
   void _showAddCardDialog(
     BuildContext context,
@@ -27,7 +37,7 @@ class SavedCardsPage extends HookConsumerWidget {
     if (selectedFolderId == 'history_folder') return;
     showDialog(
       context: context,
-      builder: (context) => _AddCardDialog(
+      builder: (context) => AddCardDialog(
         initialFolderId: selectedFolderId,
         onAddFolderRequested: () =>
             _showAddFolderDialog(context, onFolderCreated),
@@ -41,19 +51,8 @@ class SavedCardsPage extends HookConsumerWidget {
   ) {
     showDialog(
       context: context,
-      builder: (context) => _AddFolderDialog(onFolderCreated: onFolderCreated),
+      builder: (context) => AddFolderDialog(onFolderCreated: onFolderCreated),
     );
-  }
-
-  void _performDeleteFolder(
-    BuildContext dialogContext,
-    WidgetRef ref,
-    String folderId,
-    ValueSetter<String> setSelectedFolderId,
-  ) {
-    ref.read(cardFoldersProvider.notifier).removeFolder(folderId);
-    setSelectedFolderId('favorites_folder');
-    Navigator.pop(dialogContext);
   }
 
   void _onDeleteFolder(
@@ -83,12 +82,11 @@ class SavedCardsPage extends HookConsumerWidget {
             child: Text(context.l10n.cancel),
           ),
           FilledButton(
-            onPressed: () => _performDeleteFolder(
-              dialogContext,
-              ref,
-              folder.id,
-              setSelectedFolderId,
-            ),
+            onPressed: () {
+              ref.read(cardFoldersProvider.notifier).removeFolder(folder.id);
+              setSelectedFolderId('favorites_folder');
+              Navigator.pop(dialogContext);
+            },
             child: Text(context.l10n.delete),
           ),
         ],
@@ -96,11 +94,21 @@ class SavedCardsPage extends HookConsumerWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Business Logic
+  // ---------------------------------------------------------------------------
+
   Future<void> _sendCardData(
     BuildContext context,
     WidgetRef ref,
     SavedCard card,
   ) async {
+    final selectedInstance = await showDialog<RemoteInstance>(
+      context: context,
+      builder: (context) => const SelectInstanceDialog(),
+    );
+    if (selectedInstance == null) return;
+
     // Create ScanLog for Direct send
     final newLog = ScanLog(
       id: const Uuid().v4(),
@@ -111,122 +119,13 @@ class SavedCardsPage extends HookConsumerWidget {
     );
     ref.read(scanLogsProvider.notifier).addLog(newLog);
 
-    final enableSecondaryConfirmation = ref
-        .read(settingsProvider)
-        .enableSecondaryConfirmation;
-    if (enableSecondaryConfirmation) {
-      final shouldSend = await showDialog<bool>(
-        context: context,
-        builder: (context) => _ConfirmSendDialog(card: card),
-      );
-      if (shouldSend != true) return;
-    }
-
-    // Call decentralized card sender provider with triggerId for UI feedback
     await ref
         .read(cardSenderProvider.notifier)
-        .sendCard(card.card, triggerId: card.id);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Builder methods
-  // ---------------------------------------------------------------------------
-
-  Widget _buildDismissBackground() {
-    return Container(
-      color: Colors.red,
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.only(right: 20),
-      child: const Icon(Icons.delete, color: Colors.white),
-    );
-  }
-
-  Widget _buildCardItem(BuildContext context, WidgetRef ref, SavedCard card) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final senderState = ref.watch(cardSenderProvider);
-    final isThisCardSending =
-        senderState.isSending && senderState.triggerId == card.id;
-    final isAnyCardSending = senderState.isSending;
-
-    return Dismissible(
-      key: ValueKey(card.id),
-      direction: DismissDirection.endToStart,
-      background: _buildDismissBackground(),
-      onDismissed: (_) {
-        ref.read(savedCardsProvider.notifier).removeCard(card.id);
-      },
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: colorScheme.primaryContainer,
-          child: Icon(Icons.credit_card, color: colorScheme.primary),
-        ),
-        title: Text(
-          card.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(card.showValue),
-        trailing: isThisCardSending
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : IconButton(
-                icon: const Icon(Icons.send_rounded),
-                onPressed: isAnyCardSending
-                    ? null
-                    : () => _sendCardData(context, ref, card),
-                tooltip: context.l10n.quickSend,
-                color: isAnyCardSending ? colorScheme.outline : null,
-              ),
-        onTap: () => context.push('/card_detail', extra: card.card),
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // build
-  // ---------------------------------------------------------------------------
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final selectedFolderIdState = useState('favorites_folder');
-    final folders = ref.watch(cardFoldersProvider);
-    final allCards = ref.watch(savedCardsProvider);
-    final folderCards = allCards
-        .where((c) => c.folderId == selectedFolderIdState.value)
-        .toList();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.savedCards),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.create_new_folder),
-            onPressed: () => _showAddFolderDialog(
-              context,
-              (newId) => selectedFolderIdState.value = newId,
-            ),
-            tooltip: l10n.newFolder,
-          ),
-        ],
-      ),
-      body: GestureDetector(
-        onHorizontalDragEnd: (details) =>
-            _handleSwipe(context, details, folders, selectedFolderIdState),
-        behavior: HitTestBehavior.translucent,
-        child: Column(
-          children: [
-            _buildFolderSelectionStrip(ref, folders, selectedFolderIdState),
-            const Divider(height: 1),
-            _buildCardsList(context, ref, folderCards),
-          ],
-        ),
-      ),
-      floatingActionButton: _buildFAB(context, selectedFolderIdState),
-    );
+        .sendCard(
+          card.card,
+          targetInstance: selectedInstance,
+          triggerId: card.id,
+        );
   }
 
   void _handleSwipe(
@@ -244,61 +143,135 @@ class SavedCardsPage extends HookConsumerWidget {
     if (currentFolderIndex == -1) return;
 
     if (velocity > 0) {
-      // Swiped right -> go to previous folder
       if (currentFolderIndex > 0) {
         selectedFolderIdState.value = folders[currentFolderIndex - 1].id;
       } else {
-        // Already at first folder, go to previous tab
-        context.go('/reader');
+        context.go('/scan');
       }
     } else {
-      // Swiped left -> go to next folder
       if (currentFolderIndex < folders.length - 1) {
         selectedFolderIdState.value = folders[currentFolderIndex + 1].id;
       } else {
-        // Already at last folder, go to next tab
         context.go('/settings');
       }
     }
   }
 
-  Widget _buildFolderSelectionStrip(
+  // ---------------------------------------------------------------------------
+  // Build Method (Flattened)
+  // ---------------------------------------------------------------------------
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final layout = context.appLayout;
+    final selectedFolderIdState = useState('favorites_folder');
+    final folders = ref.watch(cardFoldersProvider);
+    final allCards = ref.watch(savedCardsProvider);
+    final folderCards = allCards
+        .where((c) => c.folderId == selectedFolderIdState.value)
+        .toList();
+
+    return Scaffold(
+      appBar: layout.showPageAppBar ? _buildAppBar(context) : null,
+      body: SafeArea(
+        top: !layout.showPageAppBar,
+        bottom: false,
+        child: _buildBody(
+          context,
+          ref,
+          folders,
+          selectedFolderIdState,
+          folderCards,
+        ),
+      ),
+      floatingActionButton: _buildFABs(
+        context,
+        selectedFolderIdState,
+        bottomPadding: layout.isCompactLandscapePhone
+            ? 0
+            : _bottomFloatingBarFabOffset,
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(title: Text(context.l10n.savedCards));
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    List<CardFolder> folders,
+    ValueNotifier<String> selectedFolderIdState,
+    List<SavedCard> folderCards,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return constraints.maxWidth > 700
+            ? _SavedCardsWideBody(
+                folders: folders,
+                selectedFolderId: selectedFolderIdState.value,
+                onFolderSelected: (id) => selectedFolderIdState.value = id,
+                onFolderLongPress: (folder) => _onDeleteFolder(
+                  context,
+                  ref,
+                  folder,
+                  (id) => selectedFolderIdState.value = id,
+                ),
+                cardsView: _buildCardsView(context, ref, folderCards),
+              )
+            : _SavedCardsCompactBody(
+                onSwipe: (details) => _handleSwipe(
+                  context,
+                  details,
+                  folders,
+                  selectedFolderIdState,
+                ),
+                folderStrip: _buildFolderStrip(
+                  context,
+                  ref,
+                  folders,
+                  selectedFolderIdState,
+                ),
+                cardsView: _buildCardsView(context, ref, folderCards),
+              );
+      },
+    );
+  }
+
+  Widget _buildFolderStrip(
+    BuildContext context,
     WidgetRef ref,
     List<CardFolder> folders,
     ValueNotifier<String> selectedFolderIdState,
   ) {
-    return SizedBox(
-      height: 60,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: folders.length,
-        itemBuilder: (context, index) {
-          final folder = folders[index];
-          final isSelected = folder.id == selectedFolderIdState.value;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: GestureDetector(
-              onLongPress: () => _onDeleteFolder(
-                context,
-                ref,
-                folder,
-                (newId) => selectedFolderIdState.value = newId,
-              ),
-              child: FilterChip(
-                label: Text(folderDisplayName(context, folder.id, folder.name)),
-                selected: isSelected,
-                onSelected: (selected) {
-                  if (selected) {
-                    selectedFolderIdState.value = folder.id;
-                  }
-                },
-              ),
-            ),
-          );
-        },
+    return FolderSelectionStrip(
+      folders: folders,
+      selectedFolderId: selectedFolderIdState.value,
+      onFolderSelected: (id) => selectedFolderIdState.value = id,
+      onFolderLongPress: (folder) => _onDeleteFolder(
+        context,
+        ref,
+        folder,
+        (id) => selectedFolderIdState.value = id,
       ),
     );
+  }
+
+  Widget _buildCardsView(
+    BuildContext context,
+    WidgetRef ref,
+    List<SavedCard> folderCards,
+  ) {
+    return Expanded(
+      child: folderCards.isEmpty
+          ? _buildEmptyState(context)
+          : _buildCardsList(context, ref, folderCards),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(child: Text(context.l10n.noCardsInFolder));
   }
 
   Widget _buildCardsList(
@@ -306,236 +279,199 @@ class SavedCardsPage extends HookConsumerWidget {
     WidgetRef ref,
     List<SavedCard> folderCards,
   ) {
-    return Expanded(
-      child: folderCards.isEmpty
-          ? Center(child: Text(context.l10n.noCardsInFolder))
-          : ListView.builder(
-              itemCount: folderCards.length,
-              itemBuilder: (context, index) =>
-                  _buildCardItem(context, ref, folderCards[index]),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Use MaxCrossAxisExtent for true dynamic columns based on width
+        const double maxItemWidth = 380.0;
+        final bool isGrid = constraints.maxWidth > maxItemWidth * 1.2;
+
+        if (isGrid) {
+          return GridView.builder(
+            padding: EdgeInsets.zero,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: maxItemWidth,
+              childAspectRatio: 5.0,
+              mainAxisSpacing: 0,
+              crossAxisSpacing: 0,
             ),
+            itemCount: folderCards.length,
+            itemBuilder: (context, index) => CardItem(
+              card: folderCards[index],
+              onSend: (card) => _sendCardData(context, ref, card),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: EdgeInsets.zero,
+          itemCount: folderCards.length,
+          itemBuilder: (context, index) => CardItem(
+            card: folderCards[index],
+            onSend: (card) => _sendCardData(context, ref, card),
+          ),
+        );
+      },
     );
   }
 
-  Widget? _buildFAB(
+  Widget _buildFABs(
     BuildContext context,
-    ValueNotifier<String> selectedFolderIdState,
-  ) {
-    if (selectedFolderIdState.value == 'history_folder') return null;
-    return FloatingActionButton.extended(
-      onPressed: () => _showAddCardDialog(
-        context,
-        selectedFolderIdState.value,
-        (newId) => selectedFolderIdState.value = newId,
+    ValueNotifier<String> selectedFolderIdState, {
+    required double bottomPadding,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: _SavedCardsFabGroup(
+        showAddCard: selectedFolderIdState.value != 'history_folder',
+        onAddFolder: () => _showAddFolderDialog(
+          context,
+          (newId) => selectedFolderIdState.value = newId,
+        ),
+        onAddCard: () => _showAddCardDialog(
+          context,
+          selectedFolderIdState.value,
+          (newId) => selectedFolderIdState.value = newId,
+        ),
       ),
-      icon: const Icon(Icons.add),
-      label: Text(context.l10n.addCard),
     );
   }
 }
 
-class _AddCardDialog extends HookConsumerWidget {
-  final String initialFolderId;
-  final VoidCallback onAddFolderRequested;
-
-  const _AddCardDialog({
-    required this.initialFolderId,
-    required this.onAddFolderRequested,
+class _SavedCardsWideBody extends StatelessWidget {
+  const _SavedCardsWideBody({
+    required this.folders,
+    required this.selectedFolderId,
+    required this.onFolderSelected,
+    required this.onFolderLongPress,
+    required this.cardsView,
   });
 
-  static Uint8List _hexToBytes(String hex) {
-    final cleanHex = hex.replaceAll(' ', '');
-    // If input is pure digits, treat it as access code string
-    if (cleanHex.length.isOdd ||
-        !RegExp(r'^[0-9a-fA-F]+$').hasMatch(cleanHex)) {
-      return Uint8List.fromList(cleanHex.codeUnits);
-    }
-    final length = cleanHex.length ~/ 2;
-    final bytes = Uint8List(length);
-    for (int i = 0; i < length; i++) {
-      bytes[i] = int.parse(cleanHex.substring(i * 2, i * 2 + 2), radix: 16);
-    }
-    return bytes;
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nameController = useTextEditingController();
-    final valueController = useTextEditingController();
-    final selectedFolderIdState = useState(initialFolderId);
-
-    // Use hooks to listen to text changes reactively
-    final name = useListenableSelector(
-      nameController,
-      () => nameController.text.trim(),
-    );
-    final value = useListenableSelector(
-      valueController,
-      () => valueController.text.trim(),
-    );
-
-    final isFormValid =
-        name.isNotEmpty && value.length == 20 && !value.startsWith('3');
-
-    void onSave() {
-      if (!isFormValid) return;
-
-      // Manual entry is treated as Aime type
-      final accessCodeBytes = _hexToBytes(value);
-      final aime = Aime(
-        Uint8List(4), // placeholder id
-        0x08, // placeholder sak
-        0x0004, // placeholder atqa
-        accessCodeBytes,
-      );
-      final newCard = SavedCard(
-        id: const Uuid().v4(),
-        name: name,
-        card: aime,
-        folderId: selectedFolderIdState.value,
-        source: 'Direct',
-      );
-      ref.read(savedCardsProvider.notifier).addCard(newCard);
-      Navigator.pop(context);
-    }
-
-    final folders = ref
-        .watch(cardFoldersProvider)
-        .where((f) => f.id != 'history_folder')
-        .toList();
-
-    return AlertDialog(
-      title: Text(context.l10n.addCardManually),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: context.l10n.nameDescription,
-              ),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              key: ValueKey(selectedFolderIdState.value),
-              initialValue: selectedFolderIdState.value,
-              decoration: InputDecoration(labelText: context.l10n.folder),
-              items: [
-                ...folders.map(
-                  (folder) => DropdownMenuItem(
-                    value: folder.id,
-                    child: Text(
-                      folderDisplayName(context, folder.id, folder.name),
-                    ),
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: 'CREATE_NEW',
-                  child: Text(
-                    context.l10n.newFolderOption,
-                    style: const TextStyle(color: Colors.blue),
-                  ),
-                ),
-              ],
-              onChanged: (val) {
-                if (val == 'CREATE_NEW') {
-                  Navigator.pop(context);
-                  onAddFolderRequested();
-                } else if (val != null) {
-                  selectedFolderIdState.value = val;
-                }
-              },
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: valueController,
-              decoration: InputDecoration(
-                labelText: context.l10n.accessCode,
-                helperText:
-                    value.isNotEmpty &&
-                        (value.length != 20 || value.startsWith('3'))
-                    ? context.l10n.invalidAccessCodeLength
-                    : null,
-                helperMaxLines: 3,
-                helperStyle: const TextStyle(color: Colors.orange),
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(20),
-              ],
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: isFormValid ? onSave : null,
-          child: Text(context.l10n.save),
-        ),
-      ],
-    );
-  }
-}
-
-class _AddFolderDialog extends HookConsumerWidget {
-  final ValueChanged<String> onFolderCreated;
-  const _AddFolderDialog({required this.onFolderCreated});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nameController = useTextEditingController();
-
-    void onCreate() {
-      final name = nameController.text.trim();
-      if (name.isNotEmpty) {
-        final newFolder = CardFolder(id: const Uuid().v4(), name: name);
-        ref.read(cardFoldersProvider.notifier).addFolder(newFolder);
-        onFolderCreated(newFolder.id);
-        Navigator.pop(context);
-      }
-    }
-
-    return AlertDialog(
-      title: Text(context.l10n.newFolder),
-      content: TextField(
-        controller: nameController,
-        decoration: InputDecoration(labelText: context.l10n.folderName),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.cancel),
-        ),
-        FilledButton(onPressed: onCreate, child: Text(context.l10n.create)),
-      ],
-    );
-  }
-}
-
-class _ConfirmSendDialog extends StatelessWidget {
-  final SavedCard card;
-  const _ConfirmSendDialog({required this.card});
+  final List<CardFolder> folders;
+  final String selectedFolderId;
+  final ValueChanged<String> onFolderSelected;
+  final ValueChanged<CardFolder> onFolderLongPress;
+  final Widget cardsView;
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(context.l10n.confirmSend),
-      content: Text(context.l10n.confirmSendWithValue(card.showValue)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(context.l10n.cancel),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SavedCardsFolderRail(
+          folders: folders,
+          selectedFolderId: selectedFolderId,
+          onFolderSelected: onFolderSelected,
+          onFolderLongPress: onFolderLongPress,
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(context.l10n.send),
+        const VerticalDivider(width: 1),
+        cardsView,
+      ],
+    );
+  }
+}
+
+class _SavedCardsCompactBody extends StatelessWidget {
+  const _SavedCardsCompactBody({
+    required this.onSwipe,
+    required this.folderStrip,
+    required this.cardsView,
+  });
+
+  final GestureDragEndCallback onSwipe;
+  final Widget folderStrip;
+  final Widget cardsView;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragEnd: onSwipe,
+      behavior: HitTestBehavior.translucent,
+      child: Column(
+        children: [folderStrip, const Divider(height: 1), cardsView],
+      ),
+    );
+  }
+}
+
+class _SavedCardsFolderRail extends StatelessWidget {
+  const _SavedCardsFolderRail({
+    required this.folders,
+    required this.selectedFolderId,
+    required this.onFolderSelected,
+    required this.onFolderLongPress,
+  });
+
+  final List<CardFolder> folders;
+  final String selectedFolderId;
+  final ValueChanged<String> onFolderSelected;
+  final ValueChanged<CardFolder> onFolderLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 180,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: folders.length,
+        itemBuilder: (context, index) {
+          final folder = folders[index];
+          final isSelected = folder.id == selectedFolderId;
+
+          return ListTile(
+            dense: true,
+            selected: isSelected,
+            leading: Icon(
+              isSelected ? Icons.folder_open : Icons.folder,
+              size: 20,
+            ),
+            title: Text(
+              folderDisplayName(context, folder.id, folder.name),
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            onTap: () => onFolderSelected(folder.id),
+            onLongPress: () => onFolderLongPress(folder),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SavedCardsFabGroup extends StatelessWidget {
+  const _SavedCardsFabGroup({
+    required this.showAddCard,
+    required this.onAddFolder,
+    required this.onAddCard,
+  });
+
+  final bool showAddCard;
+  final VoidCallback onAddFolder;
+  final VoidCallback onAddCard;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        FloatingActionButton.extended(
+          heroTag: 'saved_cards_new_folder',
+          onPressed: onAddFolder,
+          tooltip: context.l10n.newFolder,
+          icon: const Icon(Icons.create_new_folder),
+          label: Text(context.l10n.newFolder),
         ),
+        if (showAddCard) ...[
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'saved_cards_new_card',
+            onPressed: onAddCard,
+            icon: const Icon(Icons.add),
+            label: Text(context.l10n.addCard),
+          ),
+        ],
       ],
     );
   }

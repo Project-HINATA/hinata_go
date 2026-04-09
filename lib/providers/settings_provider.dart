@@ -7,21 +7,15 @@ final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(() {
 });
 
 class AppSettings {
-  final bool enableSecondaryConfirmation;
+  final int cardExpirationSeconds;
   final AppLanguage language;
 
-  AppSettings({
-    required this.enableSecondaryConfirmation,
-    required this.language,
-  });
+  AppSettings({required this.cardExpirationSeconds, required this.language});
 
-  AppSettings copyWith({
-    bool? enableSecondaryConfirmation,
-    AppLanguage? language,
-  }) {
+  AppSettings copyWith({int? cardExpirationSeconds, AppLanguage? language}) {
     return AppSettings(
-      enableSecondaryConfirmation:
-          enableSecondaryConfirmation ?? this.enableSecondaryConfirmation,
+      cardExpirationSeconds:
+          cardExpirationSeconds ?? this.cardExpirationSeconds,
       language: language ?? this.language,
     );
   }
@@ -71,8 +65,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
     return ref.watch(storageProvider).getSettings();
   }
 
-  void updateEnableSecondaryConfirmation(bool value) {
-    state = state.copyWith(enableSecondaryConfirmation: value);
+  void updateCardExpirationSeconds(int value) {
+    state = state.copyWith(cardExpirationSeconds: value);
     ref.read(storageProvider).saveSettings(state);
   }
 

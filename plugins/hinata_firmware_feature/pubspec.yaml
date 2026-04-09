@@ -1,0 +1,13 @@
+name: hinata_firmware_feature
+description: Public firmware feature stub for hinata_go.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.11.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+

@@ -9,10 +9,21 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => 'SEGA NFC';
+  String get appTitle => 'HINATA Go';
 
   @override
   String get settings => '设置';
+
+  @override
+  String get cardExpiration => '卡片显示时长';
+
+  @override
+  String get cardExpirationDescription => '扫描卡片后自动清除前的显示秒数';
+
+  @override
+  String cardExpirationValue(String seconds) {
+    return '$seconds 秒';
+  }
 
   @override
   String get secondaryConfirmation => '二次确认';
@@ -24,7 +35,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get about => '关于';
 
   @override
-  String updateToVersion(Object version) {
+  String updateToVersion(String version) {
     return '更新到 $version';
   }
 
@@ -44,7 +55,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get languageChineseNative => '简体中文';
 
   @override
-  String get reader => '读取';
+  String get scan => '扫描';
 
   @override
   String get cards => '卡片';
@@ -104,12 +115,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get savedCardsSource => '已保存卡片';
 
   @override
-  String sourceLine(Object source) {
+  String sourceLine(String source) {
     return '来源：$source';
   }
 
   @override
-  String timeLine(Object time) {
+  String timeLine(String time) {
     return '时间：$time';
   }
 
@@ -135,7 +146,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deleteFolder => '删除文件夹？';
 
   @override
-  String deleteFolderMessage(Object folderName) {
+  String deleteFolderMessage(String folderName) {
     return '确定要删除“$folderName”及其中所有卡片吗？';
   }
 
@@ -176,7 +187,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get confirmSend => '确认发送';
 
   @override
-  String confirmSendWithValue(Object value) {
+  String confirmSendWithValue(String value) {
     return '确定要发送这张卡片吗？\nValue: $value';
   }
 
@@ -190,7 +201,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addInstance => '添加实例';
 
   @override
-  String instanceNowActive(Object name) {
+  String instanceNowActive(String name) {
     return '$name 现已激活';
   }
 
@@ -234,12 +245,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectIcon => '选择图标:';
 
   @override
-  String confirmSendToActiveInstance(Object cardName) {
+  String confirmSendToActiveInstance(String cardName) {
     return '将这张 $cardName 卡片发送到活动实例吗？';
   }
 
   @override
-  String cardDetails(Object cardName) {
+  String cardDetails(String cardName) {
     return '$cardName 详情';
   }
 
@@ -316,7 +327,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get saveToFolder => '保存到文件夹';
 
   @override
-  String savedToFolder(Object name, Object folder) {
+  String get selectInstance => '选择实例';
+
+  @override
+  String get noInstances => '尚未配置任何实例。';
+
+  @override
+  String savedToFolder(String name, String folder) {
     return '已将“$name”保存到 $folder。';
   }
 
@@ -330,7 +347,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get favoritesFolder => '收藏';
 
   @override
-  String sourceNfcWithType(Object displayType) {
+  String sourceNfcWithType(String displayType) {
     return 'NFC（$displayType）';
   }
 
@@ -344,7 +361,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nfcListening => '正在监听 NFC...';
 
   @override
-  String nfcError(Object error) {
+  String nfcError(String error) {
     return '错误：$error';
   }
 
@@ -355,17 +372,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noActiveInstanceSelected => '未选择活动实例。';
 
   @override
-  String sendingToInstance(Object name) {
+  String sendingToInstance(String name) {
     return '正在发送到 $name...';
   }
 
   @override
-  String successSentToInstance(Object name) {
+  String successSentToInstance(String name) {
     return '发送成功：已发送到 $name';
   }
 
   @override
-  String failedSentToInstance(Object name) {
+  String failedSentToInstance(String name) {
     return '发送失败：无法发送到 $name';
   }
 
@@ -385,7 +402,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exportSuccess => '导出成功';
 
   @override
-  String exportFailed(Object error) {
+  String exportFailed(String error) {
     return '导出失败：$error';
   }
 
@@ -393,7 +410,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importSuccess => '导入成功';
 
   @override
-  String importFailed(Object error) {
+  String importFailed(String error) {
     return '导入失败：$error';
   }
 
@@ -425,17 +442,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importPreviewMessage => '将要导入以下数据：';
 
   @override
-  String itemCountCards(Object count) {
+  String itemCountCards(int count) {
     return '卡片：$count';
   }
 
   @override
-  String itemCountFolders(Object count) {
+  String itemCountFolders(int count) {
     return '文件夹：$count';
   }
 
   @override
-  String itemCountInstances(Object count) {
+  String itemCountInstances(int count) {
     return '实例：$count';
   }
 
@@ -452,8 +469,148 @@ class AppLocalizationsZh extends AppLocalizations {
   String get confirmOverwriteTitle => '确认覆盖';
 
   @override
-  String get confirmOverwriteMessage => '此操作将覆盖本地数据且无法恢复。是否确定？';
+  String get confirmOverwriteMessage => '这将不可恢复地覆盖您的本地数据。您确定吗？';
 
   @override
-  String get invalidAccessCodeLength => 'Access Code 必须为 20 位数字且不能以 3 开头';
+  String get invalidAccessCodeLength => '访问代码必须为 20 位数字且不能以 3 开头';
+
+  @override
+  String get hardwareDevice => '设备';
+
+  @override
+  String get firmwareUpdate => '固件更新';
+
+  @override
+  String get ledSettings => 'LED 设置';
+
+  @override
+  String get deviceHub => '设备中心';
+
+  @override
+  String get noDeviceConnected => '未连接设备';
+
+  @override
+  String get scanForDevices => '扫描 HINATA USB 读卡器';
+
+  @override
+  String get scanUsbDevice => '扫描 USB 设备';
+
+  @override
+  String get saveToFlash => '保存到闪存';
+
+  @override
+  String get configSavedSuccess => '配置已成功保存到闪存！';
+
+  @override
+  String errorSavingFlash(String error) {
+    return '保存到闪存时出错: $error';
+  }
+
+  @override
+  String get upToDate => '您的设备固件已是最新！';
+
+  @override
+  String get updateAvailable => '发现新版本';
+
+  @override
+  String latestVersion(String version) {
+    return '最新版本: $version';
+  }
+
+  @override
+  String get startUpdate => '开始更新';
+
+  @override
+  String get retryUpdate => '重试更新';
+
+  @override
+  String get failedToCheckFirmware => '获取固件信息失败。';
+
+  @override
+  String get settingsAndControls => '设置与控制';
+
+  @override
+  String get advancedConfig => '高级配置';
+
+  @override
+  String get checkLatestSoftware => '检查并下载最新固件';
+
+  @override
+  String get configureLighting => '配置灯效与颜色';
+
+  @override
+  String firmwareVersion(String version) {
+    return '固件版本: $version';
+  }
+
+  @override
+  String get tapToConnect => '点击连接';
+
+  @override
+  String get globalSettings => '全局设置';
+
+  @override
+  String get segaSerialSettings => 'SEGA 串口协议设置';
+
+  @override
+  String get cardioSettings => 'CardIO 设置';
+
+  @override
+  String get restoreDefaults => '恢复默认值';
+
+  @override
+  String get processing => '处理中';
+
+  @override
+  String get applySettings => '保存设置';
+
+  @override
+  String get tipsTitle => 'Tips:';
+
+  @override
+  String get flashWarning =>
+      '如果你不点击保存，那么读卡器重新上电后会恢复原来的设置，但由于flash芯片寿命有限，只能擦写几百次，也就是只能保存几百次，所以建议你考虑好后再保存';
+
+  @override
+  String get usbDescriptorNote =>
+      'USB描述符唯一性需要保存后给读卡器重新上电才可以生效，并且修改后会被操作系统认为是一个全新的设备，SEGA游戏需要重新设置端口，上位机会需要重新配对设备';
+
+  @override
+  String get cardioDisableIso14443a => '不上报 ISO14443-A 卡片';
+
+  @override
+  String get cardioIso14443aE004 => '为 ISO14443-A 卡号头部填充 E004';
+
+  @override
+  String get uniqueDescriptor => 'USB描述符唯一性';
+
+  @override
+  String get ledRainbow => '彩虹灯效';
+
+  @override
+  String get segaFwHw => 'HW/FW';
+
+  @override
+  String get segaFastRead => '高速读卡';
+
+  @override
+  String get segaBrightness => 'LED亮度';
+
+  @override
+  String get idleRGB => '待机灯光颜色';
+
+  @override
+  String get busyRGB => '待机刷卡灯光颜色';
+
+  @override
+  String get pickFavoriteColor => '选一个喜欢的颜色吧~';
+
+  @override
+  String get confirmColorChoice => '就这个了！';
+
+  @override
+  String get scanPaused => '扫描暂停';
+
+  @override
+  String get scanPausedDescription => '应用失去焦点，扫描已暂停';
 }

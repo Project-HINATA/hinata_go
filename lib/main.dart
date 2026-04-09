@@ -1,15 +1,17 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:hinata_go/l10n/app_localizations.dart';
+import 'package:hinata_go/l10n/l10n.dart';
 import 'package:hinata_go/providers/nfc_provider.dart';
 import 'package:hinata_go/providers/settings_provider.dart';
 import 'package:hinata_go/providers/storage_provider.dart';
 import 'package:hinata_go/services/notification_service.dart';
-import 'package:hinata_go/l10n/app_localizations.dart';
-import 'package:hinata_go/l10n/l10n.dart';
 import 'navigation/router.dart'; // Keep this import as it's not explicitly removed or replaced by the instruction
 
 void main() async {
@@ -53,6 +55,9 @@ class MyApp extends ConsumerWidget {
         final notificationService = ref.watch(notificationServiceProvider);
 
         return MaterialApp.router(
+          builder: (context, child) {
+            return _SystemUiController(child: child ?? const SizedBox.shrink());
+          },
           onGenerateTitle: (context) => context.l10n.appTitle,
           scaffoldMessengerKey: notificationService.messengerKey,
           theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
@@ -70,5 +75,63 @@ class MyApp extends ConsumerWidget {
         );
       },
     );
+  }
+}
+
+class _SystemUiController extends StatefulWidget {
+  final Widget child;
+
+  const _SystemUiController({required this.child});
+
+  @override
+  State<_SystemUiController> createState() => _SystemUiControllerState();
+}
+
+class _SystemUiControllerState extends State<_SystemUiController> {
+  bool? _isImmersiveModeEnabled;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncSystemUi();
+  }
+
+  @override
+  void dispose() {
+    _restoreSystemUi();
+    super.dispose();
+  }
+
+  void _syncSystemUi() {
+    final orientation = MediaQuery.orientationOf(context);
+    final shortestSide = MediaQuery.sizeOf(context).shortestSide;
+    final shouldEnableImmersiveMode =
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android &&
+        orientation == Orientation.landscape &&
+        shortestSide < 600;
+
+    if (_isImmersiveModeEnabled == shouldEnableImmersiveMode) {
+      return;
+    }
+
+    _isImmersiveModeEnabled = shouldEnableImmersiveMode;
+
+    if (shouldEnableImmersiveMode) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      return;
+    }
+
+    _restoreSystemUi();
+  }
+
+  void _restoreSystemUi() {
+    _isImmersiveModeEnabled = false;
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }

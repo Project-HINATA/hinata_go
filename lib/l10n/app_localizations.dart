@@ -98,769 +98,799 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
-  /// No description provided for @appTitle.
+  /// The name of the application
   ///
   /// In en, this message translates to:
-  /// **'SEGA NFC'**
+  /// **'HINATA Go'**
   String get appTitle;
 
-  /// No description provided for @settings.
+  /// Title for the settings page
   ///
   /// In en, this message translates to:
   /// **'Settings'**
   String get settings;
 
-  /// No description provided for @secondaryConfirmation.
+  /// Setting for how long a scanned card remains visible
+  ///
+  /// In en, this message translates to:
+  /// **'Card Display Duration'**
+  String get cardExpiration;
+
+  /// Description of the card display duration setting
+  ///
+  /// In en, this message translates to:
+  /// **'Duration in seconds before a scanned card is automatically cleared'**
+  String get cardExpirationDescription;
+
+  /// Display value for the duration
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} seconds'**
+  String cardExpirationValue(String seconds);
+
+  /// Setting to enable a confirmation dialog before sending
   ///
   /// In en, this message translates to:
   /// **'Secondary Confirmation'**
   String get secondaryConfirmation;
 
-  /// No description provided for @secondaryConfirmationDescription.
+  /// Description of the secondary confirmation setting
   ///
   /// In en, this message translates to:
   /// **'Ask for confirmation before sending card data'**
   String get secondaryConfirmationDescription;
 
-  /// No description provided for @about.
+  /// Entry for the about page
   ///
   /// In en, this message translates to:
   /// **'About'**
   String get about;
 
-  /// No description provided for @updateToVersion.
+  /// Button text to initiate a firmware/software update
   ///
   /// In en, this message translates to:
   /// **'UPDATE TO {version}'**
-  String updateToVersion(Object version);
+  String updateToVersion(String version);
 
-  /// No description provided for @language.
+  /// Language selection setting
   ///
   /// In en, this message translates to:
   /// **'Language'**
   String get language;
 
-  /// No description provided for @languageDescription.
+  /// Description for the language setting
   ///
   /// In en, this message translates to:
   /// **'Choose app display language'**
   String get languageDescription;
 
-  /// No description provided for @languageSystem.
+  /// Option to follow system language
   ///
   /// In en, this message translates to:
   /// **'System'**
   String get languageSystem;
 
-  /// No description provided for @languageEnglishNative.
+  /// Native name for English
   ///
   /// In en, this message translates to:
   /// **'English'**
   String get languageEnglishNative;
 
-  /// No description provided for @languageChineseNative.
+  /// Native name for Simplified Chinese
   ///
   /// In en, this message translates to:
   /// **'简体中文'**
   String get languageChineseNative;
 
-  /// No description provided for @reader.
+  /// Navigation label for scanning
   ///
   /// In en, this message translates to:
-  /// **'Reader'**
-  String get reader;
+  /// **'Scan'**
+  String get scan;
 
-  /// No description provided for @cards.
+  /// Navigation label for card library
   ///
   /// In en, this message translates to:
   /// **'Cards'**
   String get cards;
 
-  /// No description provided for @scanQrCode.
+  /// Feature to scan QR codes
   ///
   /// In en, this message translates to:
   /// **'Scan QR Code'**
   String get scanQrCode;
 
-  /// No description provided for @scanning.
+  /// Status message while scanning
   ///
   /// In en, this message translates to:
   /// **'Scanning...'**
   String get scanning;
 
-  /// No description provided for @tapToScan.
+  /// Instruction to start scanning
   ///
   /// In en, this message translates to:
   /// **'Tap to Scan'**
   String get tapToScan;
 
-  /// No description provided for @readyToScan.
+  /// Status indicating the scanner is ready
   ///
   /// In en, this message translates to:
   /// **'Ready to Scan'**
   String get readyToScan;
 
-  /// No description provided for @nfcInactive.
+  /// Status when NFC hardware is disabled
   ///
   /// In en, this message translates to:
   /// **'NFC Inactive'**
   String get nfcInactive;
 
-  /// No description provided for @holdCardNearTop.
+  /// iOS-specific instruction for NFC scanning
   ///
   /// In en, this message translates to:
   /// **'Hold your card near the top of your iPhone.'**
   String get holdCardNearTop;
 
-  /// No description provided for @tapToActivateNfc.
+  /// Prompt to manually start NFC
   ///
   /// In en, this message translates to:
   /// **'Tap this area to activate the NFC reader.'**
   String get tapToActivateNfc;
 
-  /// No description provided for @holdCardNearReader.
+  /// General NFC instruction
   ///
   /// In en, this message translates to:
   /// **'Hold your card near the NFC reader area of your device.'**
   String get holdCardNearReader;
 
-  /// No description provided for @nfcUnavailable.
+  /// Error message for NFC state
   ///
   /// In en, this message translates to:
   /// **'NFC service is currently unavailable or disabled.'**
   String get nfcUnavailable;
 
-  /// No description provided for @noActiveInstanceSelectedTap.
+  /// Prompt to choose a target server
   ///
   /// In en, this message translates to:
   /// **'No active instance selected.\nTap to select.'**
   String get noActiveInstanceSelectedTap;
 
-  /// No description provided for @noRecentScans.
+  /// Empty state message for recent scans
   ///
   /// In en, this message translates to:
   /// **'No recent scans.'**
   String get noRecentScans;
 
-  /// No description provided for @recentScans.
+  /// Title for the recent scans list
   ///
   /// In en, this message translates to:
   /// **'Recent Scans'**
   String get recentScans;
 
-  /// No description provided for @viewAllLogs.
+  /// Button to see full scan history
   ///
   /// In en, this message translates to:
   /// **'View All Logs'**
   String get viewAllLogs;
 
-  /// No description provided for @resendToActiveInstance.
+  /// Button to retry sending data
   ///
   /// In en, this message translates to:
   /// **'Resend to active instance'**
   String get resendToActiveInstance;
 
-  /// No description provided for @scanHistoryLogs.
+  /// Title for the history logs page
   ///
   /// In en, this message translates to:
   /// **'Scan History Logs'**
   String get scanHistoryLogs;
 
-  /// No description provided for @clearHistory.
+  /// Button to delete all history
   ///
   /// In en, this message translates to:
   /// **'Clear History'**
   String get clearHistory;
 
-  /// No description provided for @noScanHistoryYet.
+  /// Empty state for history logs
   ///
   /// In en, this message translates to:
   /// **'No scan history yet.'**
   String get noScanHistoryYet;
 
-  /// No description provided for @savedCardsSource.
+  /// Identifier for the source of a card
   ///
   /// In en, this message translates to:
   /// **'Saved Cards'**
   String get savedCardsSource;
 
-  /// No description provided for @sourceLine.
+  /// Detail line for card source
   ///
   /// In en, this message translates to:
   /// **'Source: {source}'**
-  String sourceLine(Object source);
+  String sourceLine(String source);
 
-  /// No description provided for @timeLine.
+  /// Detail line for scan time
   ///
   /// In en, this message translates to:
   /// **'Time: {time}'**
-  String timeLine(Object time);
+  String timeLine(String time);
 
-  /// No description provided for @saveToSavedCards.
+  /// Action to save a card record
   ///
   /// In en, this message translates to:
   /// **'Save to Saved Cards'**
   String get saveToSavedCards;
 
-  /// No description provided for @savedCards.
+  /// Title for the saved cards page
   ///
   /// In en, this message translates to:
   /// **'Saved Cards'**
   String get savedCards;
 
-  /// No description provided for @newFolder.
+  /// Button to create a new folder
   ///
   /// In en, this message translates to:
   /// **'New Folder'**
   String get newFolder;
 
-  /// No description provided for @noCardsInFolder.
+  /// Empty state for a folder
   ///
   /// In en, this message translates to:
   /// **'No cards in this folder.'**
   String get noCardsInFolder;
 
-  /// No description provided for @addCard.
+  /// Button to manually add a card
   ///
   /// In en, this message translates to:
   /// **'Add Card'**
   String get addCard;
 
-  /// No description provided for @cannotDeleteDefaultFolders.
+  /// Error message for folder restrictions
   ///
   /// In en, this message translates to:
   /// **'Cannot delete default folders.'**
   String get cannotDeleteDefaultFolders;
 
-  /// No description provided for @deleteFolder.
+  /// Title for delete confirmation dialog
   ///
   /// In en, this message translates to:
   /// **'Delete Folder?'**
   String get deleteFolder;
 
-  /// No description provided for @deleteFolderMessage.
+  /// Message for folder deletion warning
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to delete \"{folderName}\" and all cards inside it?'**
-  String deleteFolderMessage(Object folderName);
+  String deleteFolderMessage(String folderName);
 
-  /// No description provided for @cancel.
+  /// Standard cancel button
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancel;
 
-  /// No description provided for @delete.
+  /// Standard delete button
   ///
   /// In en, this message translates to:
   /// **'Delete'**
   String get delete;
 
-  /// No description provided for @quickSend.
+  /// Shortcut action for sending
   ///
   /// In en, this message translates to:
   /// **'Quick Send'**
   String get quickSend;
 
-  /// No description provided for @addCardManually.
+  /// Title for the manual card entry form
   ///
   /// In en, this message translates to:
   /// **'Add Card Manually'**
   String get addCardManually;
 
-  /// No description provided for @nameDescription.
+  /// Label for the card name input
   ///
   /// In en, this message translates to:
   /// **'Name / Description'**
   String get nameDescription;
 
-  /// No description provided for @folder.
+  /// Label for folder selection
   ///
   /// In en, this message translates to:
   /// **'Folder'**
   String get folder;
 
-  /// No description provided for @newFolderOption.
+  /// Dropdown option to create a folder
   ///
   /// In en, this message translates to:
   /// **'+ New Folder'**
   String get newFolderOption;
 
-  /// No description provided for @accessCode.
+  /// Field for the card's 20-digit access code
   ///
   /// In en, this message translates to:
   /// **'Access Code'**
   String get accessCode;
 
-  /// No description provided for @save.
+  /// Save action button
   ///
   /// In en, this message translates to:
   /// **'Save'**
   String get save;
 
-  /// No description provided for @folderName.
+  /// Label for folder name input
   ///
   /// In en, this message translates to:
   /// **'Folder Name'**
   String get folderName;
 
-  /// No description provided for @create.
+  /// Confirmation to create
   ///
   /// In en, this message translates to:
   /// **'Create'**
   String get create;
 
-  /// No description provided for @confirmSend.
+  /// Title for the send confirmation dialog
   ///
   /// In en, this message translates to:
   /// **'Confirm Send'**
   String get confirmSend;
 
-  /// No description provided for @confirmSendWithValue.
+  /// Message showing the value being sent
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to send this card?\nValue: {value}'**
-  String confirmSendWithValue(Object value);
+  String confirmSendWithValue(String value);
 
-  /// No description provided for @remoteInstances.
+  /// Title for the instance management page
   ///
   /// In en, this message translates to:
   /// **'Remote Instances'**
   String get remoteInstances;
 
-  /// No description provided for @noInstancesConfigured.
+  /// Empty state for instances
   ///
   /// In en, this message translates to:
   /// **'No instances configured.'**
   String get noInstancesConfigured;
 
-  /// No description provided for @addInstance.
+  /// Button to add a new server instance
   ///
   /// In en, this message translates to:
   /// **'Add Instance'**
   String get addInstance;
 
-  /// No description provided for @instanceNowActive.
+  /// Feedback when an instance is set as active
   ///
   /// In en, this message translates to:
   /// **'{name} is now active'**
-  String instanceNowActive(Object name);
+  String instanceNowActive(String name);
 
-  /// No description provided for @invalidUrl.
+  /// URL validation error
   ///
   /// In en, this message translates to:
   /// **'Please enter a valid URL (http/https)'**
   String get invalidUrl;
 
-  /// No description provided for @invalidEndpoint.
+  /// Endpoint validation error
   ///
   /// In en, this message translates to:
   /// **'Please enter a valid address'**
   String get invalidEndpoint;
 
-  /// No description provided for @editInstance.
+  /// Title for editing an instance
   ///
   /// In en, this message translates to:
   /// **'Edit Instance'**
   String get editInstance;
 
-  /// No description provided for @nameExample.
+  /// Input placeholder for instance name
   ///
   /// In en, this message translates to:
   /// **'Name (e.g. maimaiDX)'**
   String get nameExample;
 
-  /// No description provided for @webhookUrl.
+  /// Input placeholder for URL
   ///
   /// In en, this message translates to:
   /// **'Webhook URL (http://...)'**
   String get webhookUrl;
 
-  /// No description provided for @endpointLabel.
+  /// Label for the address field
   ///
   /// In en, this message translates to:
   /// **'Address'**
   String get endpointLabel;
 
-  /// No description provided for @instanceType.
+  /// Selection for server protocol type
   ///
   /// In en, this message translates to:
   /// **'Instance Type'**
   String get instanceType;
 
-  /// No description provided for @instanceTypeHinataIo.
+  /// HINATA IO instance type
   ///
   /// In en, this message translates to:
   /// **'HINATA IO'**
   String get instanceTypeHinataIo;
 
-  /// No description provided for @instanceTypeSpiceApi.
+  /// SpiceAPI via TCP type
   ///
   /// In en, this message translates to:
   /// **'SpiceAPI (TcpSocket)'**
   String get instanceTypeSpiceApi;
 
-  /// No description provided for @instanceTypeSpiceApiWebSocket.
+  /// SpiceAPI via WebSocket type
   ///
   /// In en, this message translates to:
   /// **'SpiceAPI (WebSocket)'**
   String get instanceTypeSpiceApiWebSocket;
 
-  /// No description provided for @spiceApiUnit.
+  /// Specific unit number for SpiceAPI
   ///
   /// In en, this message translates to:
   /// **'SpiceAPI Unit'**
   String get spiceApiUnit;
 
-  /// No description provided for @spiceApiPassword.
+  /// Password field for SpiceAPI
   ///
   /// In en, this message translates to:
   /// **'Password (Optional)'**
   String get spiceApiPassword;
 
-  /// No description provided for @selectIcon.
+  /// Label for icon picker
   ///
   /// In en, this message translates to:
   /// **'Select Icon:'**
   String get selectIcon;
 
-  /// No description provided for @confirmSendToActiveInstance.
+  /// Specific send confirmation
   ///
   /// In en, this message translates to:
   /// **'Send this {cardName} card to the active instance?'**
-  String confirmSendToActiveInstance(Object cardName);
+  String confirmSendToActiveInstance(String cardName);
 
-  /// No description provided for @cardDetails.
+  /// Header for card details page
   ///
   /// In en, this message translates to:
   /// **'{cardName} Details'**
-  String cardDetails(Object cardName);
+  String cardDetails(String cardName);
 
-  /// No description provided for @valueCopiedToClipboard.
+  /// Success feedback for copy action
   ///
   /// In en, this message translates to:
   /// **'Value copied to clipboard'**
   String get valueCopiedToClipboard;
 
-  /// No description provided for @copyValue.
+  /// Action to copy card ID/Access Code
   ///
   /// In en, this message translates to:
   /// **'Copy Value'**
   String get copyValue;
 
-  /// No description provided for @amusementIcInfo.
+  /// Category for Amusement IC cards
   ///
   /// In en, this message translates to:
   /// **'Amusement IC Information'**
   String get amusementIcInfo;
 
-  /// No description provided for @manufacturer.
+  /// Card manufacturer label
   ///
   /// In en, this message translates to:
   /// **'Manufacturer'**
   String get manufacturer;
 
-  /// No description provided for @aimeInfo.
+  /// Category for SEGA Aime cards
   ///
   /// In en, this message translates to:
   /// **'Aime Information'**
   String get aimeInfo;
 
-  /// No description provided for @felicaDetails.
+  /// Details for FeliCa technology
   ///
   /// In en, this message translates to:
   /// **'FeliCa Technical Details'**
   String get felicaDetails;
 
-  /// No description provided for @idm.
+  /// FeliCa IDm field
   ///
   /// In en, this message translates to:
   /// **'IDm'**
   String get idm;
 
-  /// No description provided for @pmm.
+  /// FeliCa PMm field
   ///
   /// In en, this message translates to:
   /// **'PMm'**
   String get pmm;
 
-  /// No description provided for @systemCode.
+  /// FeliCa system code
   ///
   /// In en, this message translates to:
   /// **'System Code'**
   String get systemCode;
 
-  /// No description provided for @banapassData.
+  /// Bandai Namco Banapassport data
   ///
   /// In en, this message translates to:
   /// **'Banapassport Data'**
   String get banapassData;
 
-  /// No description provided for @block1.
+  /// Technical data block 1
   ///
   /// In en, this message translates to:
   /// **'Block 1'**
   String get block1;
 
-  /// No description provided for @block2.
+  /// Technical data block 2
   ///
   /// In en, this message translates to:
   /// **'Block 2'**
   String get block2;
 
-  /// No description provided for @iso14443Details.
+  /// Details for ISO14443 technology
   ///
   /// In en, this message translates to:
   /// **'ISO14443 Technical Details'**
   String get iso14443Details;
 
-  /// No description provided for @uid.
+  /// Unique Identifier
   ///
   /// In en, this message translates to:
   /// **'UID'**
   String get uid;
 
-  /// No description provided for @sak.
+  /// Select Acknowledge code
   ///
   /// In en, this message translates to:
   /// **'SAK'**
   String get sak;
 
-  /// No description provided for @atqa.
+  /// Answer to Request code
   ///
   /// In en, this message translates to:
   /// **'ATQA'**
   String get atqa;
 
-  /// No description provided for @technicalDetails.
+  /// General technical info category
   ///
   /// In en, this message translates to:
   /// **'Technical Details'**
   String get technicalDetails;
 
-  /// No description provided for @idOrValue.
+  /// The main data value of the card
   ///
   /// In en, this message translates to:
   /// **'ID / Value'**
   String get idOrValue;
 
-  /// No description provided for @savingUpper.
+  /// Status text in uppercase
   ///
   /// In en, this message translates to:
   /// **'SAVING...'**
   String get savingUpper;
 
-  /// No description provided for @saveUpper.
+  /// Button text in uppercase
   ///
   /// In en, this message translates to:
   /// **'SAVE'**
   String get saveUpper;
 
-  /// No description provided for @sendingUpper.
+  /// Status text in uppercase
   ///
   /// In en, this message translates to:
   /// **'SENDING...'**
   String get sendingUpper;
 
-  /// No description provided for @sendUpper.
+  /// Button text in uppercase
   ///
   /// In en, this message translates to:
   /// **'SEND'**
   String get sendUpper;
 
-  /// No description provided for @send.
+  /// Send action
   ///
   /// In en, this message translates to:
   /// **'Send'**
   String get send;
 
-  /// No description provided for @saveToFolder.
+  /// Action to archive card
   ///
   /// In en, this message translates to:
   /// **'Save to Folder'**
   String get saveToFolder;
 
-  /// No description provided for @savedToFolder.
+  /// Title for instance selection
+  ///
+  /// In en, this message translates to:
+  /// **'Select Instance'**
+  String get selectInstance;
+
+  /// Empty state for instance list
+  ///
+  /// In en, this message translates to:
+  /// **'No instances configured.'**
+  String get noInstances;
+
+  /// Success feedback for saving to folder
   ///
   /// In en, this message translates to:
   /// **'Saved \"{name}\" to {folder}.'**
-  String savedToFolder(Object name, Object folder);
+  String savedToFolder(String name, String folder);
 
-  /// No description provided for @cameraScanInstruction.
+  /// Instruction for camera scanner
   ///
   /// In en, this message translates to:
   /// **'Scan QR Code'**
   String get cameraScanInstruction;
 
-  /// No description provided for @historyFolder.
+  /// Default folder for history
   ///
   /// In en, this message translates to:
   /// **'History'**
   String get historyFolder;
 
-  /// No description provided for @favoritesFolder.
+  /// Default folder for favorites
   ///
   /// In en, this message translates to:
   /// **'Favorites'**
   String get favoritesFolder;
 
-  /// No description provided for @sourceNfcWithType.
+  /// Source identifier for NFC scans
   ///
   /// In en, this message translates to:
   /// **'NFC ({displayType})'**
-  String sourceNfcWithType(Object displayType);
+  String sourceNfcWithType(String displayType);
 
-  /// No description provided for @nfcDeviceNotSupported.
+  /// Hardware unsupported error
   ///
   /// In en, this message translates to:
   /// **'Your device does not support NFC'**
   String get nfcDeviceNotSupported;
 
-  /// No description provided for @nfcEnablePrompt.
+  /// System settings prompt
   ///
   /// In en, this message translates to:
   /// **'Please enable NFC'**
   String get nfcEnablePrompt;
 
-  /// No description provided for @nfcListening.
+  /// Status indicating scanning is active
   ///
   /// In en, this message translates to:
   /// **'Listening for NFC...'**
   String get nfcListening;
 
-  /// No description provided for @nfcError.
+  /// NFC error feedback
   ///
   /// In en, this message translates to:
   /// **'Error: {error}'**
-  String nfcError(Object error);
+  String nfcError(String error);
 
-  /// No description provided for @nfcIosAlert.
+  /// iOS system-style scanning message
   ///
   /// In en, this message translates to:
   /// **'Hold your card near the top of your iPhone'**
   String get nfcIosAlert;
 
-  /// No description provided for @noActiveInstanceSelected.
+  /// Error before sending
   ///
   /// In en, this message translates to:
   /// **'No active instance selected.'**
   String get noActiveInstanceSelected;
 
-  /// No description provided for @sendingToInstance.
+  /// Progress message for sending
   ///
   /// In en, this message translates to:
   /// **'Sending to {name}...'**
-  String sendingToInstance(Object name);
+  String sendingToInstance(String name);
 
-  /// No description provided for @successSentToInstance.
+  /// Success feedback for sending
   ///
   /// In en, this message translates to:
   /// **'Success: Sent to {name}'**
-  String successSentToInstance(Object name);
+  String successSentToInstance(String name);
 
-  /// No description provided for @failedSentToInstance.
+  /// Failure feedback for sending
   ///
   /// In en, this message translates to:
   /// **'Failed: Could not send to {name}'**
-  String failedSentToInstance(Object name);
+  String failedSentToInstance(String name);
 
-  /// No description provided for @dataManagement.
+  /// Title for data management page
   ///
   /// In en, this message translates to:
   /// **'Data Management'**
   String get dataManagement;
 
-  /// No description provided for @dataManagementDescription.
+  /// Description of data management features
   ///
   /// In en, this message translates to:
   /// **'Import or export cards and instances'**
   String get dataManagementDescription;
 
-  /// No description provided for @exportData.
+  /// Button to export data
   ///
   /// In en, this message translates to:
   /// **'Export Data'**
   String get exportData;
 
-  /// No description provided for @importData.
+  /// Button to import data
   ///
   /// In en, this message translates to:
   /// **'Import Data'**
   String get importData;
 
-  /// No description provided for @exportSuccess.
+  /// Success message for export
   ///
   /// In en, this message translates to:
   /// **'Export successful'**
   String get exportSuccess;
 
-  /// No description provided for @exportFailed.
+  /// Failure message for export
   ///
   /// In en, this message translates to:
   /// **'Export failed: {error}'**
-  String exportFailed(Object error);
+  String exportFailed(String error);
 
-  /// No description provided for @importSuccess.
+  /// Success message for import
   ///
   /// In en, this message translates to:
   /// **'Import successful'**
   String get importSuccess;
 
-  /// No description provided for @importFailed.
+  /// Failure message for import
   ///
   /// In en, this message translates to:
   /// **'Import failed: {error}'**
-  String importFailed(Object error);
+  String importFailed(String error);
 
-  /// No description provided for @exportToClipboard.
+  /// Method to export data to clipboard
   ///
   /// In en, this message translates to:
   /// **'Copy to Clipboard'**
   String get exportToClipboard;
 
-  /// No description provided for @exportToFile.
+  /// Method to export data to a file
   ///
   /// In en, this message translates to:
   /// **'Save to File'**
   String get exportToFile;
 
-  /// No description provided for @importFromClipboard.
+  /// Method to import from clipboard
   ///
   /// In en, this message translates to:
   /// **'Paste from Clipboard'**
   String get importFromClipboard;
 
-  /// No description provided for @importFromFile.
+  /// Method to import from a file
   ///
   /// In en, this message translates to:
   /// **'Load from File'**
   String get importFromFile;
 
-  /// No description provided for @selectExportMethod.
+  /// Title for export selection menu
   ///
   /// In en, this message translates to:
   /// **'Select Export Method'**
   String get selectExportMethod;
 
-  /// No description provided for @selectImportMethod.
+  /// Title for import selection menu
   ///
   /// In en, this message translates to:
   /// **'Select Import Method'**
   String get selectImportMethod;
 
-  /// No description provided for @invalidDataFormat.
+  /// Error when parsing imported data
   ///
   /// In en, this message translates to:
   /// **'Invalid data format'**
   String get invalidDataFormat;
 
-  /// No description provided for @importPreviewTitle.
+  /// Title for data import summary
   ///
   /// In en, this message translates to:
   /// **'Import Preview'**
   String get importPreviewTitle;
 
-  /// No description provided for @importPreviewMessage.
+  /// Guidance text for import preview
   ///
   /// In en, this message translates to:
   /// **'The following data will be imported:'**
@@ -870,55 +900,319 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Cards: {count}'**
-  String itemCountCards(Object count);
+  String itemCountCards(int count);
 
   /// No description provided for @itemCountFolders.
   ///
   /// In en, this message translates to:
   /// **'Folders: {count}'**
-  String itemCountFolders(Object count);
+  String itemCountFolders(int count);
 
   /// No description provided for @itemCountInstances.
   ///
   /// In en, this message translates to:
   /// **'Instances: {count}'**
-  String itemCountInstances(Object count);
+  String itemCountInstances(int count);
 
-  /// No description provided for @confirmImport.
+  /// Final import confirmation button
   ///
   /// In en, this message translates to:
   /// **'Confirm Import'**
   String get confirmImport;
 
-  /// No description provided for @importMerge.
+  /// Import mode: keep existing data
   ///
   /// In en, this message translates to:
   /// **'Merge Import'**
   String get importMerge;
 
-  /// No description provided for @importOverwrite.
+  /// Import mode: delete existing data
   ///
   /// In en, this message translates to:
   /// **'Overwrite Import'**
   String get importOverwrite;
 
-  /// No description provided for @confirmOverwriteTitle.
+  /// Title for overwrite warning dialog
   ///
   /// In en, this message translates to:
   /// **'Confirm Overwrite'**
   String get confirmOverwriteTitle;
 
-  /// No description provided for @confirmOverwriteMessage.
+  /// Warning message for data loss
   ///
   /// In en, this message translates to:
   /// **'This will overwrite your local data irrecoverably. Are you sure?'**
   String get confirmOverwriteMessage;
 
-  /// No description provided for @invalidAccessCodeLength.
+  /// Validation rule for Aime codes
   ///
   /// In en, this message translates to:
   /// **'Access code must be 20 digits and not start with 3'**
   String get invalidAccessCodeLength;
+
+  /// Title for hardware management
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get hardwareDevice;
+
+  /// OTA firmware feature
+  ///
+  /// In en, this message translates to:
+  /// **'Firmware Update'**
+  String get firmwareUpdate;
+
+  /// Hardware lighting configuration
+  ///
+  /// In en, this message translates to:
+  /// **'LED Settings'**
+  String get ledSettings;
+
+  /// Main entry for hardware management
+  ///
+  /// In en, this message translates to:
+  /// **'Device Hub'**
+  String get deviceHub;
+
+  /// Status when USB reader is not found
+  ///
+  /// In en, this message translates to:
+  /// **'No Device Connected'**
+  String get noDeviceConnected;
+
+  /// Action to search for hardware
+  ///
+  /// In en, this message translates to:
+  /// **'Scan for HINATA USB readers'**
+  String get scanForDevices;
+
+  /// Button to scan for USB hardware
+  ///
+  /// In en, this message translates to:
+  /// **'Scan USB Device'**
+  String get scanUsbDevice;
+
+  /// Commit settings to non-volatile memory
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Flash Storage'**
+  String get saveToFlash;
+
+  /// Success feedback for flash writing
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration saved to Flash successfully!'**
+  String get configSavedSuccess;
+
+  /// Failure message for flash writing
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving to flash: {error}'**
+  String errorSavingFlash(String error);
+
+  /// Status when no firmware updates are found
+  ///
+  /// In en, this message translates to:
+  /// **'Your device is up to date!'**
+  String get upToDate;
+
+  /// Alert for a new firmware version
+  ///
+  /// In en, this message translates to:
+  /// **'Update Available'**
+  String get updateAvailable;
+
+  /// No description provided for @latestVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest Version: {version}'**
+  String latestVersion(String version);
+
+  /// Button to start firmware update
+  ///
+  /// In en, this message translates to:
+  /// **'Start Update'**
+  String get startUpdate;
+
+  /// Button to retry a failed update
+  ///
+  /// In en, this message translates to:
+  /// **'Retry Update'**
+  String get retryUpdate;
+
+  /// Network or connection error during check
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to check firmware status.'**
+  String get failedToCheckFirmware;
+
+  /// Header for device control page
+  ///
+  /// In en, this message translates to:
+  /// **'Settings & Controls'**
+  String get settingsAndControls;
+
+  /// Expert-level hardware settings
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Config'**
+  String get advancedConfig;
+
+  /// Description of the firmware check feature
+  ///
+  /// In en, this message translates to:
+  /// **'Check for the latest software version'**
+  String get checkLatestSoftware;
+
+  /// Description of the lighting feature
+  ///
+  /// In en, this message translates to:
+  /// **'Configure lighting effects'**
+  String get configureLighting;
+
+  /// Display of current firmware version
+  ///
+  /// In en, this message translates to:
+  /// **'Firmware: {version}'**
+  String firmwareVersion(String version);
+
+  /// Button to initiate connection to reader
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to Connect'**
+  String get tapToConnect;
+
+  /// Common hardware configurations
+  ///
+  /// In en, this message translates to:
+  /// **'Global Settings'**
+  String get globalSettings;
+
+  /// Low-level protocol parameters
+  ///
+  /// In en, this message translates to:
+  /// **'SEGA Serial Protocol Settings'**
+  String get segaSerialSettings;
+
+  /// Parameters for the card reading module
+  ///
+  /// In en, this message translates to:
+  /// **'CardIO Settings'**
+  String get cardioSettings;
+
+  /// Reset hardware to factory settings
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Defaults'**
+  String get restoreDefaults;
+
+  /// Status while hardware is busy
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get processing;
+
+  /// Write settings to hardware to take effect
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Settings'**
+  String get applySettings;
+
+  /// Label for the tips section
+  ///
+  /// In en, this message translates to:
+  /// **'Tips:'**
+  String get tipsTitle;
+
+  /// Warning about hardware memory durability
+  ///
+  /// In en, this message translates to:
+  /// **'If you don\'t click Apply Settings, the reader will revert to the original settings after power cycling. However, since the flash chip has limited write cycles (hundreds at most), please apply settings only after confirming everything works correctly.'**
+  String get flashWarning;
+
+  /// Warning about changing USB identifiers
+  ///
+  /// In en, this message translates to:
+  /// **'USB Descriptor uniqueness takes effect only after applying settings and power cycling the reader. After modification, the OS will treat it as a new device, SEGA games will require reassigning ports, and PC host apps may need to pair again.'**
+  String get usbDescriptorNote;
+
+  /// Switch to ignore specific card types
+  ///
+  /// In en, this message translates to:
+  /// **'Disable ISO14443-A Card'**
+  String get cardioDisableIso14443a;
+
+  /// Rule for ID modification
+  ///
+  /// In en, this message translates to:
+  /// **'Fill E004 to head when scanned ISO14443-A Card'**
+  String get cardioIso14443aE004;
+
+  /// Switch for USB unique identification
+  ///
+  /// In en, this message translates to:
+  /// **'USB Descriptor Unique'**
+  String get uniqueDescriptor;
+
+  /// Animated rainbow lighting mode
+  ///
+  /// In en, this message translates to:
+  /// **'Rainbow Light'**
+  String get ledRainbow;
+
+  /// Hardware and firmware version strings
+  ///
+  /// In en, this message translates to:
+  /// **'HW/FW'**
+  String get segaFwHw;
+
+  /// Performance toggle for card reading
+  ///
+  /// In en, this message translates to:
+  /// **'Rapid Scan'**
+  String get segaFastRead;
+
+  /// Slider/Setting for LED intensity
+  ///
+  /// In en, this message translates to:
+  /// **'LED Brightness'**
+  String get segaBrightness;
+
+  /// Color when device is waiting
+  ///
+  /// In en, this message translates to:
+  /// **'Idle Light Color'**
+  String get idleRGB;
+
+  /// Color when a card is swiped
+  ///
+  /// In en, this message translates to:
+  /// **'Busy Light Color'**
+  String get busyRGB;
+
+  /// Color picker guidance
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a favorite color~'**
+  String get pickFavoriteColor;
+
+  /// Confirm button for color selection
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmColorChoice;
+
+  /// Status when scanning is suspended
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Pause'**
+  String get scanPaused;
+
+  /// Explanation for paused scan
+  ///
+  /// In en, this message translates to:
+  /// **'App is out of focus, scanning paused'**
+  String get scanPausedDescription;
 }
 
 class _AppLocalizationsDelegate

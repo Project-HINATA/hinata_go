@@ -44,6 +44,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Local private packages / overrides
+/local_plugins/
+/pubspec_overrides.yaml
+
 
 # VSCode
 .vscode

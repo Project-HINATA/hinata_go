@@ -9,8 +9,10 @@ import 'iso15693.dart';
 class ScannedCard {
   final ICCard card;
   final String source; // 'NFC', 'QR', 'Direct'
+  final DateTime timestamp;
 
-  const ScannedCard({required this.card, required this.source});
+  ScannedCard({required this.card, required this.source, DateTime? timestamp})
+    : timestamp = timestamp ?? DateTime.now();
 
   /// User-facing display value based on card type.
   String get showValue {

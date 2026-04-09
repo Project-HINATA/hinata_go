@@ -51,6 +51,22 @@ dependencies:
   flutter_hooks: ^0.21.3+1
   hooks_riverpod: ^3.2.1
   file_picker: ^8.1.7
+  flutter_colorpicker: ^1.1.0
+  web: ^1.1.0
+
+  # Hardware USB APIs
+  neo_web_usb:
+    git:
+      url: "https://github.com/nerimoe/neo_web_usb.dart"
+  neo_web_hid:
+    git:
+      url: "https://github.com/nerimoe/neo_web_hid.dart"
+  quick_usb:
+    path: plugins/quick_usb/
+  hinata_firmware_feature:
+    path: plugins/hinata_firmware_feature/
+
+  async: ^2.12.0
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +94,7 @@ flutter:
 
   assets:
     - assets/
+    - assets/cardlogo/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

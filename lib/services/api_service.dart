@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
 import 'package:hinata_go/models/card/card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:http/http.dart' as http;
 import '../models/remote_instance.dart';
 import 'spiceapi/spiceapi.dart';
 import 'spiceapi-websocket/spiceapi.dart' as ws_spiceapi;
@@ -39,9 +39,14 @@ class ApiService {
       return _handleTimeout(instance);
     } on FormatException catch (e) {
       return ApiServiceResult(success: false, errorMessage: e.message);
-    } on SocketException catch (e) {
-      return _handleSocketError(instance, e);
     } catch (e, stackTrace) {
+      // Catch network errors by checking error string for common indicators
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('socketexception') ||
+          errorString.contains('connection failed') ||
+          errorString.contains('xmlhttprequest')) {
+        return _handleNetworkError(instance, e);
+      }
       return _handleUnknownError(e, stackTrace);
     }
   }
@@ -77,21 +82,14 @@ class ApiService {
     final payload = {'type': card.type, 'value': card.value};
     log('Sending payload to ${instance.url}: ${jsonEncode(payload)}');
 
-    final uri = Uri.parse(instance.url);
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 10);
-
     try {
-      final request = await client
-          .postUrl(uri)
+      final response = await http
+          .post(
+            Uri.parse(instance.url),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
           .timeout(const Duration(seconds: 10));
-      request.headers.contentType = ContentType.json;
-      request.write(jsonEncode(payload));
-
-      final response = await request.close().timeout(
-        const Duration(seconds: 10),
-      );
-      await response.drain<void>();
 
       log('Response status: ${response.statusCode}');
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -102,8 +100,8 @@ class ApiService {
         success: false,
         errorMessage: 'Server returned ${response.statusCode}',
       );
-    } finally {
-      client.close(force: true);
+    } catch (e) {
+      rethrow; // Re-thrown to be handled by the generic catch in sendCardData
     }
   }
 
@@ -202,14 +200,11 @@ class ApiService {
     return ApiServiceResult(success: false, errorMessage: 'Request timed out');
   }
 
-  ApiServiceResult _handleSocketError(
-    RemoteInstance instance,
-    SocketException error,
-  ) {
+  ApiServiceResult _handleNetworkError(RemoteInstance instance, Object error) {
     log('Network error connecting to ${instance.url}: $error');
     return ApiServiceResult(
       success: false,
-      errorMessage: 'Network error: ${error.message}',
+      errorMessage: 'Network error: Connection failed',
     );
   }
 

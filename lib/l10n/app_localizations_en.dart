@@ -9,10 +9,22 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'SEGA NFC';
+  String get appTitle => 'HINATA Go';
 
   @override
   String get settings => 'Settings';
+
+  @override
+  String get cardExpiration => 'Card Display Duration';
+
+  @override
+  String get cardExpirationDescription =>
+      'Duration in seconds before a scanned card is automatically cleared';
+
+  @override
+  String cardExpirationValue(String seconds) {
+    return '$seconds seconds';
+  }
 
   @override
   String get secondaryConfirmation => 'Secondary Confirmation';
@@ -25,7 +37,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get about => 'About';
 
   @override
-  String updateToVersion(Object version) {
+  String updateToVersion(String version) {
     return 'UPDATE TO $version';
   }
 
@@ -45,7 +57,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageChineseNative => '简体中文';
 
   @override
-  String get reader => 'Reader';
+  String get scan => 'Scan';
 
   @override
   String get cards => 'Cards';
@@ -108,12 +120,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get savedCardsSource => 'Saved Cards';
 
   @override
-  String sourceLine(Object source) {
+  String sourceLine(String source) {
     return 'Source: $source';
   }
 
   @override
-  String timeLine(Object time) {
+  String timeLine(String time) {
     return 'Time: $time';
   }
 
@@ -139,7 +151,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteFolder => 'Delete Folder?';
 
   @override
-  String deleteFolderMessage(Object folderName) {
+  String deleteFolderMessage(String folderName) {
     return 'Are you sure you want to delete \"$folderName\" and all cards inside it?';
   }
 
@@ -180,7 +192,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmSend => 'Confirm Send';
 
   @override
-  String confirmSendWithValue(Object value) {
+  String confirmSendWithValue(String value) {
     return 'Are you sure you want to send this card?\nValue: $value';
   }
 
@@ -194,7 +206,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addInstance => 'Add Instance';
 
   @override
-  String instanceNowActive(Object name) {
+  String instanceNowActive(String name) {
     return '$name is now active';
   }
 
@@ -238,12 +250,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectIcon => 'Select Icon:';
 
   @override
-  String confirmSendToActiveInstance(Object cardName) {
+  String confirmSendToActiveInstance(String cardName) {
     return 'Send this $cardName card to the active instance?';
   }
 
   @override
-  String cardDetails(Object cardName) {
+  String cardDetails(String cardName) {
     return '$cardName Details';
   }
 
@@ -320,7 +332,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveToFolder => 'Save to Folder';
 
   @override
-  String savedToFolder(Object name, Object folder) {
+  String get selectInstance => 'Select Instance';
+
+  @override
+  String get noInstances => 'No instances configured.';
+
+  @override
+  String savedToFolder(String name, String folder) {
     return 'Saved \"$name\" to $folder.';
   }
 
@@ -334,7 +352,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favoritesFolder => 'Favorites';
 
   @override
-  String sourceNfcWithType(Object displayType) {
+  String sourceNfcWithType(String displayType) {
     return 'NFC ($displayType)';
   }
 
@@ -348,7 +366,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nfcListening => 'Listening for NFC...';
 
   @override
-  String nfcError(Object error) {
+  String nfcError(String error) {
     return 'Error: $error';
   }
 
@@ -359,17 +377,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noActiveInstanceSelected => 'No active instance selected.';
 
   @override
-  String sendingToInstance(Object name) {
+  String sendingToInstance(String name) {
     return 'Sending to $name...';
   }
 
   @override
-  String successSentToInstance(Object name) {
+  String successSentToInstance(String name) {
     return 'Success: Sent to $name';
   }
 
   @override
-  String failedSentToInstance(Object name) {
+  String failedSentToInstance(String name) {
     return 'Failed: Could not send to $name';
   }
 
@@ -390,7 +408,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportSuccess => 'Export successful';
 
   @override
-  String exportFailed(Object error) {
+  String exportFailed(String error) {
     return 'Export failed: $error';
   }
 
@@ -398,7 +416,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importSuccess => 'Import successful';
 
   @override
-  String importFailed(Object error) {
+  String importFailed(String error) {
     return 'Import failed: $error';
   }
 
@@ -430,17 +448,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importPreviewMessage => 'The following data will be imported:';
 
   @override
-  String itemCountCards(Object count) {
+  String itemCountCards(int count) {
     return 'Cards: $count';
   }
 
   @override
-  String itemCountFolders(Object count) {
+  String itemCountFolders(int count) {
     return 'Folders: $count';
   }
 
   @override
-  String itemCountInstances(Object count) {
+  String itemCountInstances(int count) {
     return 'Instances: $count';
   }
 
@@ -463,4 +481,145 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get invalidAccessCodeLength =>
       'Access code must be 20 digits and not start with 3';
+
+  @override
+  String get hardwareDevice => 'Device';
+
+  @override
+  String get firmwareUpdate => 'Firmware Update';
+
+  @override
+  String get ledSettings => 'LED Settings';
+
+  @override
+  String get deviceHub => 'Device Hub';
+
+  @override
+  String get noDeviceConnected => 'No Device Connected';
+
+  @override
+  String get scanForDevices => 'Scan for HINATA USB readers';
+
+  @override
+  String get scanUsbDevice => 'Scan USB Device';
+
+  @override
+  String get saveToFlash => 'Save to Flash Storage';
+
+  @override
+  String get configSavedSuccess => 'Configuration saved to Flash successfully!';
+
+  @override
+  String errorSavingFlash(String error) {
+    return 'Error saving to flash: $error';
+  }
+
+  @override
+  String get upToDate => 'Your device is up to date!';
+
+  @override
+  String get updateAvailable => 'Update Available';
+
+  @override
+  String latestVersion(String version) {
+    return 'Latest Version: $version';
+  }
+
+  @override
+  String get startUpdate => 'Start Update';
+
+  @override
+  String get retryUpdate => 'Retry Update';
+
+  @override
+  String get failedToCheckFirmware => 'Failed to check firmware status.';
+
+  @override
+  String get settingsAndControls => 'Settings & Controls';
+
+  @override
+  String get advancedConfig => 'Advanced Config';
+
+  @override
+  String get checkLatestSoftware => 'Check for the latest software version';
+
+  @override
+  String get configureLighting => 'Configure lighting effects';
+
+  @override
+  String firmwareVersion(String version) {
+    return 'Firmware: $version';
+  }
+
+  @override
+  String get tapToConnect => 'Tap to Connect';
+
+  @override
+  String get globalSettings => 'Global Settings';
+
+  @override
+  String get segaSerialSettings => 'SEGA Serial Protocol Settings';
+
+  @override
+  String get cardioSettings => 'CardIO Settings';
+
+  @override
+  String get restoreDefaults => 'Restore Defaults';
+
+  @override
+  String get processing => 'Processing';
+
+  @override
+  String get applySettings => 'Apply Settings';
+
+  @override
+  String get tipsTitle => 'Tips:';
+
+  @override
+  String get flashWarning =>
+      'If you don\'t click Apply Settings, the reader will revert to the original settings after power cycling. However, since the flash chip has limited write cycles (hundreds at most), please apply settings only after confirming everything works correctly.';
+
+  @override
+  String get usbDescriptorNote =>
+      'USB Descriptor uniqueness takes effect only after applying settings and power cycling the reader. After modification, the OS will treat it as a new device, SEGA games will require reassigning ports, and PC host apps may need to pair again.';
+
+  @override
+  String get cardioDisableIso14443a => 'Disable ISO14443-A Card';
+
+  @override
+  String get cardioIso14443aE004 =>
+      'Fill E004 to head when scanned ISO14443-A Card';
+
+  @override
+  String get uniqueDescriptor => 'USB Descriptor Unique';
+
+  @override
+  String get ledRainbow => 'Rainbow Light';
+
+  @override
+  String get segaFwHw => 'HW/FW';
+
+  @override
+  String get segaFastRead => 'Rapid Scan';
+
+  @override
+  String get segaBrightness => 'LED Brightness';
+
+  @override
+  String get idleRGB => 'Idle Light Color';
+
+  @override
+  String get busyRGB => 'Busy Light Color';
+
+  @override
+  String get pickFavoriteColor => 'Pick a favorite color~';
+
+  @override
+  String get confirmColorChoice => 'Confirm';
+
+  @override
+  String get scanPaused => 'Scan Pause';
+
+  @override
+  String get scanPausedDescription => 'App is out of focus, scanning paused';
 }

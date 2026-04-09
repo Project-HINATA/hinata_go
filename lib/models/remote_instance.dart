@@ -1,8 +1,4 @@
-enum InstanceType {
-  hinataIo,
-  spiceApi,
-  spiceApiWebSocket,
-}
+enum InstanceType { hinataIo, spiceApi, spiceApiWebSocket }
 
 class RemoteInstance {
   final String id;
