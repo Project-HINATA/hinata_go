@@ -11,7 +11,9 @@ jobs:
     permissions:
       contents: write
     env:
-      LOCAL_PLUGINS_TAR_GZ_BASE64: ${{ secrets.LOCAL_PLUGINS_TAR_GZ_BASE64 }}
+      LOCAL_PLUGINS_REPO: ${{ secrets.LOCAL_PLUGINS_REPO }}
+      LOCAL_PLUGINS_TOKEN: ${{ secrets.LOCAL_PLUGINS_TOKEN }}
+      LOCAL_PLUGINS_REF: ${{ secrets.LOCAL_PLUGINS_REF }}
 
     steps:
       - name: Checkout Code
@@ -31,23 +33,10 @@ jobs:
           channel: "stable"
           cache: true
 
-      - name: Restore local plugins
-        if: ${{ env.LOCAL_PLUGINS_TAR_GZ_BASE64 != '' }}
+      - name: Setup private plugins
+        if: ${{ env.LOCAL_PLUGINS_REPO != '' }}
         shell: bash
-        run: |
-          echo "$LOCAL_PLUGINS_TAR_GZ_BASE64" | base64 --decode > /tmp/local_plugins.tar.gz
-          mkdir -p local_plugins
-          tar -xzf /tmp/local_plugins.tar.gz -C .
-
-      - name: Create pubspec overrides for private plugins
-        if: ${{ env.LOCAL_PLUGINS_TAR_GZ_BASE64 != '' }}
-        shell: bash
-        run: |
-          cat > pubspec_overrides.yaml <<'EOF'
-          dependency_overrides:
-            hinata_firmware_feature:
-              path: local_plugins/hinata_firmware_feature
-          EOF
+        run: ./.github/scripts/setup_private_plugins.sh
 
       - name: Flutter Pub Get
         run: flutter pub get
@@ -68,43 +57,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PUB_VER=$(grep "^version:" pubspec.yaml | sed 's/version://' | tr -d ' "' | cut -d'+' -f1 | tr -d '\r')
-          COMMIT_SHORT=$(git rev-parse --short HEAD | tr -d '\r')
-
-          LATEST_TAG=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
-          CLEAN_LATEST=$(echo "${LATEST_TAG#v}" | tr -d '\r')
-
-          CHANGELOG="自动构建产物"
-          IS_PRERELEASE=true
-
-          if [ "$PUB_VER" == "$CLEAN_LATEST" ]; then
-            NEW_TAG="pre-${PUB_VER}-${COMMIT_SHORT}"
-            TITLE="Pre-release ${PUB_VER} (${COMMIT_SHORT})"
-          else
-            NEW_TAG="v${PUB_VER}"
-            TITLE="Release v${PUB_VER}"
-            IS_PRERELEASE=false
-            
-            if [ -n "$LATEST_TAG" ]; then
-              LOGS=$(git log "$LATEST_TAG..HEAD" --oneline | grep -E "^[a-f0-9]+ (feat|fix|ui):" || echo "无特定变更记录")
-            else
-              LOGS=$(git log --oneline | grep -E "^[a-f0-9]+ (feat|fix|ui):" || echo "首次发布")
-            fi
-            CHANGELOG="### 🚀 更新内容"$'\n'"$LOGS"
-          fi
-
-          # 写入单行输出
-          echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
-          echo "mode_title=$TITLE" >> $GITHUB_OUTPUT
-          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-
-          # --- 核心修复：多行输出处理 ---
-          {
-            echo "changelog<<EOF"
-            echo -e "$CHANGELOG"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
+        run: ./.github/scripts/generate_release_metadata.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
