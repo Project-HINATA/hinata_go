@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      LOCAL_PLUGINS_TAR_GZ_BASE64: ${{ secrets.LOCAL_PLUGINS_TAR_GZ_BASE64 }}
 
     steps:
       - name: Checkout Code
@@ -30,15 +32,15 @@ jobs:
           cache: true
 
       - name: Restore local plugins
-        if: ${{ secrets.LOCAL_PLUGINS_TAR_GZ_BASE64 != '' }}
+        if: ${{ env.LOCAL_PLUGINS_TAR_GZ_BASE64 != '' }}
         shell: bash
         run: |
-          echo "${{ secrets.LOCAL_PLUGINS_TAR_GZ_BASE64 }}" | base64 --decode > /tmp/local_plugins.tar.gz
+          echo "$LOCAL_PLUGINS_TAR_GZ_BASE64" | base64 --decode > /tmp/local_plugins.tar.gz
           mkdir -p local_plugins
           tar -xzf /tmp/local_plugins.tar.gz -C .
 
       - name: Create pubspec overrides for private plugins
-        if: ${{ secrets.LOCAL_PLUGINS_TAR_GZ_BASE64 != '' }}
+        if: ${{ env.LOCAL_PLUGINS_TAR_GZ_BASE64 != '' }}
         shell: bash
         run: |
           cat > pubspec_overrides.yaml <<'EOF'
