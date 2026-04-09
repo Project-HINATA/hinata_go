@@ -24,6 +24,7 @@
 * **Amusement IC**
 * **旧版 Aime**
 * **Bana Passport**
+* **E-Amusement Pass**
 * **FeliCa**
 
 ## 连接游戏作为读卡器

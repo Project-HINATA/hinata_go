@@ -24,6 +24,7 @@ You may use your mobile device's USB-OTG port to connect the **HINATA Card Reade
 * **Amusement IC**
 * **Legacy Aime**
 * **Bana Passport**
+* **E-Amusement Pass**
 * **FeliCa**
 
 ## Connect to Games as a Card Reader
