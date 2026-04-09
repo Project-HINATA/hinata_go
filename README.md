@@ -1,3 +1,5 @@
+### [English Guide](README_en.md)
+
 # HINATA Go
 配合 HINATA AimeIO 让你的手机变成刷卡器或扫码游玩家用街机游戏，并可以与各种其他设备协同使用。
 
