@@ -1,0 +1,1 @@
+enum ScanningMode { normal, sender }

@@ -14,9 +14,7 @@ final appUpdateProvider = NotifierProvider<AppUpdateNotifier, AppUpdateState>(
 );
 
 class AppUpdateNotifier extends Notifier<AppUpdateState> {
-  static const _appUpdateChannel = MethodChannel(
-    AppConstants.appUpdateChannel,
-  );
+  static const _appUpdateChannel = MethodChannel(AppConstants.appUpdateChannel);
 
   @override
   AppUpdateState build() {

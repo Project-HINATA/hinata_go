@@ -15,7 +15,8 @@ import '../services/nfc_service.dart';
 import '../services/notification_service.dart';
 import 'card_sender.dart';
 import 'app_state_provider.dart';
-import 'settings_provider.dart';
+import 'current_scan_session_provider.dart';
+import '../models/scanning_mode.dart';
 
 enum NfcStatus { idle, tapToScan, unsupported, disabled, listening, error }
 
@@ -24,6 +25,7 @@ class NfcState {
   final bool isProcessing;
   final bool isIOS;
   final NfcStatus status;
+  final DateTime? lastScanEvent;
   final String? errorMessage;
 
   NfcState({
@@ -31,6 +33,7 @@ class NfcState {
     this.isProcessing = false,
     this.isIOS = false,
     this.status = NfcStatus.idle,
+    this.lastScanEvent,
     this.errorMessage,
   });
 
@@ -39,6 +42,7 @@ class NfcState {
     bool? isProcessing,
     bool? isIOS,
     NfcStatus? status,
+    DateTime? lastScanEvent,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -47,6 +51,7 @@ class NfcState {
       isProcessing: isProcessing ?? this.isProcessing,
       isIOS: isIOS ?? this.isIOS,
       status: status ?? this.status,
+      lastScanEvent: lastScanEvent ?? this.lastScanEvent,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
@@ -87,16 +92,17 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       Future.microtask(() => startSession());
     }
 
-    return NfcState(
-      isIOS: isIOS,
-      status: isIOS ? NfcStatus.tapToScan : NfcStatus.idle,
-    );
+    final initialStatus = kIsWeb
+        ? NfcStatus.unsupported
+        : (isIOS ? NfcStatus.tapToScan : NfcStatus.idle);
+
+    return NfcState(isIOS: isIOS, status: initialStatus);
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // NFC is global foreground-wide. Only auto-resume on Android.
-    if (state == AppLifecycleState.resumed && Platform.isAndroid) {
+    if (state == AppLifecycleState.resumed && !kIsWeb && Platform.isAndroid) {
       startSession();
     } else if (state == AppLifecycleState.paused) {
       stopSession();
@@ -130,7 +136,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
       // iOS uses a system modal, so we typically do a single poll.
       // Android uses continuous background scanning.
-      if (Platform.isIOS) {
+      if (!kIsWeb && Platform.isIOS) {
         try {
           final iosAlert =
               ref.read(notificationServiceProvider).l10n?.nfcIosAlert ??
@@ -148,7 +154,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           stopSession();
         }
       } else {
-        // Android continuous loop
+        // Android continuous loop or non-iOS platforms
         while (state.isScanning) {
           try {
             NFCTag tag = await FlutterNfcKit.poll(
@@ -173,7 +179,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
         errorMessage: e.toString(),
       );
     } finally {
-      if (state.isScanning && Platform.isAndroid) {
+      if (state.isScanning && !kIsWeb && Platform.isAndroid) {
         stopSession();
       }
     }
@@ -197,15 +203,35 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     try {
       final scannedCard = await handleNfcTag(tag);
       if (scannedCard != null) {
-        await _processScannedCard(scannedCard);
+        await _registerScan(
+          scannedCard,
+          presenceMode: ScanPresenceMode.timeoutHeartbeat,
+        );
       }
     } finally {
       state = state.copyWith(isProcessing: false);
     }
   }
 
+  Future<void> _registerScan(
+    ScannedCard scannedCard, {
+    required ScanPresenceMode presenceMode,
+  }) async {
+    final result = ref
+        .read(currentScanSessionProvider.notifier)
+        .recordScan(scannedCard, presenceMode: presenceMode);
+
+    if (result == ScanRecordResult.duplicate) {
+      return;
+    }
+
+    await _processScannedCard(scannedCard);
+  }
+
   Future<void> _processScannedCard(ScannedCard scannedCard) async {
-    final settings = ref.read(settingsProvider);
+    state = state.copyWith(lastScanEvent: DateTime.now());
+
+    final scanningMode = ref.read(scanningModeProvider);
     final card = scannedCard.card;
 
     // 1. Create ScanLog
@@ -226,23 +252,21 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     );
     ref.read(savedCardsProvider.notifier).addCard(savedCard);
 
-    // 3. Handle according to settings
-    if (settings.enableSecondaryConfirmation) {
-      // Navigate to card detail page
-      ref.read(routerProvider).push('/card_detail', extra: card);
-      return;
+    // 3. Handle according to Scanning Mode
+    if (scanningMode == ScanningMode.sender) {
+      // Sender Mode: Auto-send to active instance
+      await ref.read(cardSenderProvider.notifier).sendCard(card);
     }
 
-    // Auto-send to active instance
-    await ref.read(cardSenderProvider.notifier).sendCard(card);
-
-    // 4. Navigate back to reader page if not there
-    // This ensures scanning on other pages (Settings, etc.) returns focus to the reader
-    ref.read(routerProvider).go('/reader');
+    // 4. Ensure focus is on Scan page
+    ref.read(routerProvider).go('/scan');
   }
 
   // Also expose for external processing (like QR)
-  Future<void> handleExternalScan(ScannedCard scannedCard) async {
-    await _processScannedCard(scannedCard);
+  Future<void> handleExternalScan(
+    ScannedCard scannedCard, {
+    ScanPresenceMode presenceMode = ScanPresenceMode.immediate,
+  }) async {
+    await _registerScan(scannedCard, presenceMode: presenceMode);
   }
 }

@@ -29,6 +29,27 @@ jobs:
           channel: "stable"
           cache: true
 
+      - name: Restore local plugins
+        if: ${{ secrets.LOCAL_PLUGINS_TAR_GZ_BASE64 != '' }}
+        shell: bash
+        run: |
+          echo "${{ secrets.LOCAL_PLUGINS_TAR_GZ_BASE64 }}" | base64 --decode > /tmp/local_plugins.tar.gz
+          mkdir -p local_plugins
+          tar -xzf /tmp/local_plugins.tar.gz -C .
+
+      - name: Create pubspec overrides for private plugins
+        if: ${{ secrets.LOCAL_PLUGINS_TAR_GZ_BASE64 != '' }}
+        shell: bash
+        run: |
+          cat > pubspec_overrides.yaml <<'EOF'
+          dependency_overrides:
+            hinata_firmware_feature:
+              path: local_plugins/hinata_firmware_feature
+          EOF
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 

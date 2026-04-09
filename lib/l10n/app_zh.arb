@@ -1,140 +1,864 @@
 {
   "@@locale": "zh",
-  "appTitle": "SEGA NFC",
+  "@@context": "HINATA Go App",
+  "appTitle": "HINATA Go",
+  "@appTitle": {
+    "description": "应用程序名称"
+  },
   "settings": "设置",
+  "@settings": {
+    "description": "设置页面标题"
+  },
+  "cardExpiration": "卡片显示时长",
+  "@cardExpiration": {
+    "description": "设置项：扫描后结果保留时长"
+  },
+  "cardExpirationDescription": "扫描卡片后自动清除前的显示秒数",
+  "@cardExpirationDescription": {
+    "description": "设置项描述"
+  },
+  "cardExpirationValue": "{seconds} 秒",
+  "@cardExpirationValue": {
+    "description": "时长数值显示",
+    "placeholders": {
+      "seconds": {
+        "type": "String",
+        "example": "10"
+      }
+    }
+  },
   "secondaryConfirmation": "二次确认",
+  "@secondaryConfirmation": {
+    "description": "设置项：发送前确认开关"
+  },
   "secondaryConfirmationDescription": "发送卡片数据前要求确认",
+  "@secondaryConfirmationDescription": {
+    "description": "二次确认功能描述"
+  },
   "about": "关于",
+  "@about": {
+    "description": "关于页面入口"
+  },
   "updateToVersion": "更新到 {version}",
+  "@updateToVersion": {
+    "description": "更新按钮文本",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "1.0.2"
+      }
+    }
+  },
   "language": "语言",
+  "@language": {
+    "description": "语言设置"
+  },
   "languageDescription": "选择应用显示语言",
+  "@languageDescription": {
+    "description": "语言设置描述"
+  },
   "languageSystem": "跟随系统",
+  "@languageSystem": {
+    "description": "语言选项：系统默认"
+  },
   "languageEnglishNative": "English",
+  "@languageEnglishNative": {
+    "description": "语言选项：英语"
+  },
   "languageChineseNative": "简体中文",
-  "reader": "读取",
+  "@languageChineseNative": {
+    "description": "语言选项：简体中文"
+  },
+  "scan": "扫描",
+  "@scan": {
+    "description": "底部导航或功能项：扫描"
+  },
   "cards": "卡片",
+  "@cards": {
+    "description": "底部导航或功能项：卡片库"
+  },
   "scanQrCode": "扫描二维码",
+  "@scanQrCode": {
+    "description": "二维码扫描功能"
+  },
   "scanning": "扫描中...",
+  "@scanning": {
+    "description": "扫描状态提示"
+  },
   "tapToScan": "点击开始扫描",
+  "@tapToScan": {
+    "description": "扫描页操作引导"
+  },
   "readyToScan": "准备扫描",
+  "@readyToScan": {
+    "description": "扫描器就绪状态"
+  },
   "nfcInactive": "NFC 未激活",
+  "@nfcInactive": {
+    "description": "NFC 硬件关闭状态"
+  },
   "holdCardNearTop": "请将卡片靠近 iPhone 顶部。",
+  "@holdCardNearTop": {
+    "description": "iOS NFC 扫描引导"
+  },
   "tapToActivateNfc": "点击此区域以启用 NFC 读取器。",
+  "@tapToActivateNfc": {
+    "description": "手动激活 NFC 提示"
+  },
   "holdCardNearReader": "请将卡片靠近设备的 NFC 感应区域。",
+  "@holdCardNearReader": {
+    "description": "通用 NFC 扫描引导"
+  },
   "nfcUnavailable": "NFC 服务当前不可用或未启用。",
+  "@nfcUnavailable": {
+    "description": "NFC 错误状态"
+  },
   "noActiveInstanceSelectedTap": "未选择活动实例。\n点击以选择。",
+  "@noActiveInstanceSelectedTap": {
+    "description": "提示用户选择发送目标"
+  },
   "noRecentScans": "暂无最近扫描记录。",
+  "@noRecentScans": {
+    "description": "空白状态提示"
+  },
   "recentScans": "最近扫描",
+  "@recentScans": {
+    "description": "列表标题"
+  },
   "viewAllLogs": "查看全部日志",
+  "@viewAllLogs": {
+    "description": "跳转至历史日志按钮"
+  },
   "resendToActiveInstance": "重新发送到当前活动实例",
+  "@resendToActiveInstance": {
+    "description": "重试操作"
+  },
   "scanHistoryLogs": "扫描历史日志",
+  "@scanHistoryLogs": {
+    "description": "历史记录页标题"
+  },
   "clearHistory": "清空历史",
+  "@clearHistory": {
+    "description": "删除所有记录按钮"
+  },
   "noScanHistoryYet": "暂无扫描历史。",
+  "@noScanHistoryYet": {
+    "description": "历史页空白提示"
+  },
   "savedCardsSource": "已保存卡片",
+  "@savedCardsSource": {
+    "description": "卡片来源标识"
+  },
   "sourceLine": "来源：{source}",
+  "@sourceLine": {
+    "description": "详情页来源行",
+    "placeholders": {
+      "source": {
+        "type": "String",
+        "example": "NFC"
+      }
+    }
+  },
   "timeLine": "时间：{time}",
+  "@timeLine": {
+    "description": "详情页时间行",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "2024-01-01 12:00"
+      }
+    }
+  },
   "saveToSavedCards": "保存到已保存卡片",
+  "@saveToSavedCards": {
+    "description": "操作：保存记录"
+  },
   "savedCards": "已保存卡片",
+  "@savedCards": {
+    "description": "已保存页面标题"
+  },
   "newFolder": "新建文件夹",
+  "@newFolder": {
+    "description": "创建文件夹按钮"
+  },
   "noCardsInFolder": "此文件夹中没有卡片。",
+  "@noCardsInFolder": {
+    "description": "文件夹为空提示"
+  },
   "addCard": "添加卡片",
+  "@addCard": {
+    "description": "手动增加卡片"
+  },
   "cannotDeleteDefaultFolders": "无法删除默认文件夹。",
+  "@cannotDeleteDefaultFolders": {
+    "description": "权限限制提示"
+  },
   "deleteFolder": "删除文件夹？",
+  "@deleteFolder": {
+    "description": "确认框标题"
+  },
   "deleteFolderMessage": "确定要删除“{folderName}”及其中所有卡片吗？",
+  "@deleteFolderMessage": {
+    "description": "删除确认警告内容",
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
   "cancel": "取消",
+  "@cancel": {
+    "description": "通用取消按钮"
+  },
   "delete": "删除",
+  "@delete": {
+    "description": "通用删除按钮"
+  },
   "quickSend": "快速发送",
+  "@quickSend": {
+    "description": "快捷操作"
+  },
   "addCardManually": "手动添加卡片",
+  "@addCardManually": {
+    "description": "表单标题"
+  },
   "nameDescription": "名称 / 描述",
+  "@nameDescription": {
+    "description": "表单字段：名称"
+  },
   "folder": "文件夹",
+  "@folder": {
+    "description": "所属分类"
+  },
   "newFolderOption": "+ 新建文件夹",
+  "@newFolderOption": {
+    "description": "下拉菜单选项"
+  },
   "accessCode": "Access Code",
+  "@accessCode": {
+    "description": "卡片核心识别码字段"
+  },
   "save": "保存",
+  "@save": {
+    "description": "保存操作"
+  },
   "folderName": "文件夹名称",
+  "@folderName": {
+    "description": "文件夹标题输入"
+  },
   "create": "创建",
+  "@create": {
+    "description": "确认创建"
+  },
   "confirmSend": "确认发送",
+  "@confirmSend": {
+    "description": "确认对话框标题"
+  },
   "confirmSendWithValue": "确定要发送这张卡片吗？\nValue: {value}",
+  "@confirmSendWithValue": {
+    "description": "发送确认内容",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "remoteInstances": "远程实例",
+  "@remoteInstances": {
+    "description": "实例管理页标题"
+  },
   "noInstancesConfigured": "尚未配置实例。",
+  "@noInstancesConfigured": {
+    "description": "空实例提示"
+  },
   "addInstance": "添加实例",
+  "@addInstance": {
+    "description": "新增实例按钮"
+  },
   "instanceNowActive": "{name} 现已激活",
+  "@instanceNowActive": {
+    "description": "激活成功提示",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "invalidUrl": "请输入有效的 URL（http/https）",
+  "@invalidUrl": {
+    "description": "校验错误"
+  },
   "invalidEndpoint": "请输入有效的地址",
+  "@invalidEndpoint": {
+    "description": "校验错误"
+  },
   "editInstance": "编辑实例",
+  "@editInstance": {
+    "description": "编辑表单标题"
+  },
   "nameExample": "名称（例如 maimaiDX）",
+  "@nameExample": {
+    "description": "输入占位符"
+  },
   "webhookUrl": "Webhook URL (http://...)",
+  "@webhookUrl": {
+    "description": "输入占位符"
+  },
   "endpointLabel": "地址",
+  "@endpointLabel": {
+    "description": "字段标签"
+  },
   "instanceType": "实例类型",
+  "@instanceType": {
+    "description": "分类选择"
+  },
   "instanceTypeHinataIo": "HINATA IO",
+  "@instanceTypeHinataIo": {
+    "description": "类型名"
+  },
   "instanceTypeSpiceApi": "SpiceAPI (TcpSocket)",
+  "@instanceTypeSpiceApi": {
+    "description": "类型名"
+  },
   "instanceTypeSpiceApiWebSocket": "SpiceAPI (WebSocket)",
+  "@instanceTypeSpiceApiWebSocket": {
+    "description": "类型名"
+  },
   "spiceApiUnit": "SpiceAPI Unit",
+  "@spiceApiUnit": {
+    "description": "SpiceAPI 单元号"
+  },
   "spiceApiPassword": "密码（可选）",
+  "@spiceApiPassword": {
+    "description": "可选字段"
+  },
   "selectIcon": "选择图标:",
+  "@selectIcon": {
+    "description": "图标选择标签"
+  },
   "confirmSendToActiveInstance": "将这张 {cardName} 卡片发送到活动实例吗？",
+  "@confirmSendToActiveInstance": {
+    "description": "发送询问",
+    "placeholders": {
+      "cardName": {
+        "type": "String"
+      }
+    }
+  },
   "cardDetails": "{cardName} 详情",
+  "@cardDetails": {
+    "description": "详情页页眉",
+    "placeholders": {
+      "cardName": {
+        "type": "String"
+      }
+    }
+  },
   "valueCopiedToClipboard": "已复制 Value 到剪贴板",
+  "@valueCopiedToClipboard": {
+    "description": "操作反馈"
+  },
   "copyValue": "复制 Value",
+  "@copyValue": {
+    "description": "操作按钮"
+  },
   "amusementIcInfo": "Amusement IC 信息",
+  "@amusementIcInfo": {
+    "description": "卡片协议详情"
+  },
   "manufacturer": "Manufacturer",
+  "@manufacturer": {
+    "description": "生产商信息"
+  },
   "aimeInfo": "Aime 信息",
+  "@aimeInfo": {
+    "description": "SEGA Aime 协议详情"
+  },
   "felicaDetails": "FeliCa 技术详情",
+  "@felicaDetails": {
+    "description": "底层技术参数"
+  },
   "idm": "IDm",
+  "@idm": {
+    "description": "FeliCa IDm 字段"
+  },
   "pmm": "PMm",
+  "@pmm": {
+    "description": "FeliCa PMm 字段"
+  },
   "systemCode": "System Code",
+  "@systemCode": {
+    "description": "FeliCa 系统码"
+  },
   "banapassData": "Banapassport 数据",
+  "@banapassData": {
+    "description": "Bandai Namco Banapassport 数据"
+  },
   "block1": "Block 1",
+  "@block1": {
+    "description": "数据块1"
+  },
   "block2": "Block 2",
+  "@block2": {
+    "description": "数据块2"
+  },
   "iso14443Details": "ISO14443 技术详情",
+  "@iso14443Details": {
+    "description": "底层技术参数"
+  },
   "uid": "UID",
+  "@uid": {
+    "description": "ISO14443 唯一识别码"
+  },
   "sak": "SAK",
+  "@sak": {
+    "description": "ISO14443 选择确认码"
+  },
   "atqa": "ATQA",
+  "@atqa": {
+    "description": "ISO14443 应答类型代码"
+  },
   "technicalDetails": "技术详情",
+  "@technicalDetails": {
+    "description": "通用技术信息"
+  },
   "idOrValue": "ID / Value",
+  "@idOrValue": {
+    "description": "核心数值字段"
+  },
   "savingUpper": "保存中...",
+  "@savingUpper": {
+    "description": "全大写/加粗 状态提示"
+  },
   "saveUpper": "保存",
+  "@saveUpper": {
+    "description": "全大写/加粗 按钮"
+  },
   "sendingUpper": "发送中...",
+  "@sendingUpper": {
+    "description": "全大写/加粗 状态提示"
+  },
   "sendUpper": "发送",
+  "@sendUpper": {
+    "description": "全大写/加粗 按钮"
+  },
   "send": "发送",
+  "@send": {
+    "description": "操作"
+  },
   "saveToFolder": "保存到文件夹",
+  "@saveToFolder": {
+    "description": "归档操作"
+  },
+  "selectInstance": "选择实例",
+  "@selectInstance": {
+    "description": "实例列表标题"
+  },
+  "noInstances": "尚未配置任何实例。",
+  "@noInstances": {
+    "description": "空状态"
+  },
   "savedToFolder": "已将“{name}”保存到 {folder}。",
+  "@savedToFolder": {
+    "description": "保存成功提示",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
   "cameraScanInstruction": "扫描二维码",
+  "@cameraScanInstruction": {
+    "description": "相机操作指引"
+  },
   "historyFolder": "历史",
+  "@historyFolder": {
+    "description": "预设文件夹名"
+  },
   "favoritesFolder": "收藏",
+  "@favoritesFolder": {
+    "description": "预设文件夹名"
+  },
   "sourceNfcWithType": "NFC（{displayType}）",
+  "@sourceNfcWithType": {
+    "description": "NFC来源标识",
+    "placeholders": {
+      "displayType": {
+        "type": "String",
+        "example": "Aime"
+      }
+    }
+  },
   "nfcDeviceNotSupported": "你的设备不支持 NFC",
+  "@nfcDeviceNotSupported": {
+    "description": "硬件不支持提示"
+  },
   "nfcEnablePrompt": "请启用 NFC",
+  "@nfcEnablePrompt": {
+    "description": "系统设置引导"
+  },
   "nfcListening": "正在监听 NFC...",
+  "@nfcListening": {
+    "description": "扫描进行中"
+  },
   "nfcError": "错误：{error}",
+  "@nfcError": {
+    "description": "NFC 错误反馈",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "nfcIosAlert": "请将卡片靠近 iPhone 顶部",
+  "@nfcIosAlert": {
+    "description": "系统级扫码提示"
+  },
   "noActiveInstanceSelected": "未选择活动实例。",
+  "@noActiveInstanceSelected": {
+    "description": "发送前的预检报错"
+  },
   "sendingToInstance": "正在发送到 {name}...",
+  "@sendingToInstance": {
+    "description": "发送进度提示",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "successSentToInstance": "发送成功：已发送到 {name}",
+  "@successSentToInstance": {
+    "description": "成功提示",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "failedSentToInstance": "发送失败：无法发送到 {name}",
+  "@failedSentToInstance": {
+    "description": "失败提示",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "dataManagement": "数据管理",
+  "@dataManagement": {
+    "description": "数据中心页标题"
+  },
   "dataManagementDescription": "导入或导出卡包和实例",
+  "@dataManagementDescription": {
+    "description": "功能说明"
+  },
   "exportData": "导出数据",
+  "@exportData": {
+    "description": "导出操作按钮"
+  },
   "importData": "导入数据",
+  "@importData": {
+    "description": "导入操作按钮"
+  },
   "exportSuccess": "导出成功",
+  "@exportSuccess": {
+    "description": "导出结果"
+  },
   "exportFailed": "导出失败：{error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "importSuccess": "导入成功",
+  "@importSuccess": {
+    "description": "导入结果"
+  },
   "importFailed": "导入失败：{error}",
+  "@importFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "exportToClipboard": "复制到剪贴板",
+  "@exportToClipboard": {
+    "description": "导出方式"
+  },
   "exportToFile": "保存为文件",
+  "@exportToFile": {
+    "description": "导出方式"
+  },
   "importFromClipboard": "从剪贴板粘贴",
+  "@importFromClipboard": {
+    "description": "导入方式"
+  },
   "importFromFile": "从文件加载",
+  "@importFromFile": {
+    "description": "导入方式"
+  },
   "selectExportMethod": "选择导出方式",
+  "@selectExportMethod": {
+    "description": "菜单标题"
+  },
   "selectImportMethod": "选择导入方式",
+  "@selectImportMethod": {
+    "description": "菜单标题"
+  },
   "invalidDataFormat": "数据格式无效",
+  "@invalidDataFormat": {
+    "description": "导入解析错误"
+  },
   "importPreviewTitle": "导入预览",
+  "@importPreviewTitle": {
+    "description": "确认导入前的摘要页"
+  },
   "importPreviewMessage": "将要导入以下数据：",
+  "@importPreviewMessage": {
+    "description": "预览摘要引导"
+  },
   "itemCountCards": "卡片：{count}",
+  "@itemCountCards": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "itemCountFolders": "文件夹：{count}",
+  "@itemCountFolders": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "itemCountInstances": "实例：{count}",
+  "@itemCountInstances": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "confirmImport": "确认导入",
+  "@confirmImport": {
+    "description": "最后确认按钮"
+  },
   "importMerge": "合并导入",
+  "@importMerge": {
+    "description": "保留现有数据进行补充"
+  },
   "importOverwrite": "覆盖导入",
+  "@importOverwrite": {
+    "description": "清空现有数据"
+  },
   "confirmOverwriteTitle": "确认覆盖",
-  "confirmOverwriteMessage": "此操作将覆盖本地数据且无法恢复。是否确定？",
-  "invalidAccessCodeLength": "Access Code 必须为 20 位数字且不能以 3 开头"
+  "@confirmOverwriteTitle": {
+    "description": "覆盖警告标题"
+  },
+  "confirmOverwriteMessage": "这将不可恢复地覆盖您的本地数据。您确定吗？",
+  "@confirmOverwriteMessage": {
+    "description": "危险操作警告"
+  },
+  "invalidAccessCodeLength": "访问代码必须为 20 位数字且不能以 3 开头",
+  "@invalidAccessCodeLength": {
+    "description": "Aime 代码校验规则"
+  },
+  "hardwareDevice": "设备",
+  "@hardwareDevice": {
+    "description": "硬件管理标题"
+  },
+  "firmwareUpdate": "固件更新",
+  "@firmwareUpdate": {
+    "description": "OTA 功能"
+  },
+  "ledSettings": "LED 设置",
+  "@ledSettings": {
+    "description": "硬件灯光配置"
+  },
+  "deviceHub": "设备中心",
+  "@deviceHub": {
+    "description": "硬件管理入口"
+  },
+  "noDeviceConnected": "未连接设备",
+  "@noDeviceConnected": {
+    "description": "USB/蓝牙未连接提示"
+  },
+  "scanForDevices": "扫描 HINATA USB 读卡器",
+  "@scanForDevices": {
+    "description": "搜索硬件设备"
+  },
+  "scanUsbDevice": "扫描 USB 设备",
+  "@scanUsbDevice": {
+    "description": "USB 扫描按钮"
+  },
+  "saveToFlash": "保存到闪存",
+  "@saveToFlash": {
+    "description": "将设置写入硬件存储"
+  },
+  "configSavedSuccess": "配置已成功保存到闪存！",
+  "@configSavedSuccess": {
+    "description": "硬件写入成功反馈"
+  },
+  "errorSavingFlash": "保存到闪存时出错: {error}",
+  "@errorSavingFlash": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "upToDate": "您的设备固件已是最新！",
+  "@upToDate": {
+    "description": "固件检查结果"
+  },
+  "updateAvailable": "发现新版本",
+  "@updateAvailable": {
+    "description": "固件更新提示"
+  },
+  "latestVersion": "最新版本: {version}",
+  "@latestVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "startUpdate": "开始更新",
+  "@startUpdate": {
+    "description": "固件更新操作"
+  },
+  "retryUpdate": "重试更新",
+  "@retryUpdate": {
+    "description": "固件更新失败后重试"
+  },
+  "failedToCheckFirmware": "获取固件信息失败。",
+  "@failedToCheckFirmware": {
+    "description": "网络或连接错误"
+  },
+  "settingsAndControls": "设置与控制",
+  "@settingsAndControls": {
+    "description": "硬件控制页标题"
+  },
+  "advancedConfig": "高级配置",
+  "@advancedConfig": {
+    "description": "专家设置"
+  },
+  "checkLatestSoftware": "检查并下载最新固件",
+  "@checkLatestSoftware": {
+    "description": "固件更新功能说明"
+  },
+  "configureLighting": "配置灯效与颜色",
+  "@configureLighting": {
+    "description": "灯光设置入口"
+  },
+  "firmwareVersion": "固件版本: {version}",
+  "@firmwareVersion": {
+    "description": "当前固件的版本",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "tapToConnect": "点击连接",
+  "@tapToConnect": {
+    "description": "点击连接"
+  },
+  "globalSettings": "全局设置",
+  "@globalSettings": {
+    "description": "通用硬件配置"
+  },
+  "segaSerialSettings": "SEGA 串口协议设置",
+  "@segaSerialSettings": {
+    "description": "硬件底层协议参数"
+  },
+  "cardioSettings": "CardIO 设置",
+  "@cardioSettings": {
+    "description": "刷卡模块参数"
+  },
+  "restoreDefaults": "恢复默认值",
+  "@restoreDefaults": {
+    "description": "重置硬件参数"
+  },
+  "processing": "处理中",
+  "@processing": {
+    "description": "操作中提示"
+  },
+  "applySettings": "保存设置",
+  "@applySettings": {
+    "description": "写入硬件永久生效"
+  },
+  "tipsTitle": "Tips:",
+  "@tipsTitle": {
+    "description": "提示标签"
+  },
+  "flashWarning": "如果你不点击保存，那么读卡器重新上电后会恢复原来的设置，但由于flash芯片寿命有限，只能擦写几百次，也就是只能保存几百次，所以建议你考虑好后再保存",
+  "@flashWarning": {
+    "description": "硬件存储寿命提示"
+  },
+  "usbDescriptorNote": "USB描述符唯一性需要保存后给读卡器重新上电才可以生效，并且修改后会被操作系统认为是一个全新的设备，SEGA游戏需要重新设置端口，上位机会需要重新配对设备",
+  "@usbDescriptorNote": {
+    "description": "硬件改动后果提示"
+  },
+  "cardioDisableIso14443a": "不上报 ISO14443-A 卡片",
+  "@cardioDisableIso14443a": {
+    "description": "硬件开关：屏蔽部分卡片"
+  },
+  "cardioIso14443aE004": "为 ISO14443-A 卡号头部填充 E004",
+  "@cardioIso14443aE004": {
+    "description": "硬件配置：卡号转换规则"
+  },
+  "uniqueDescriptor": "USB描述符唯一性",
+  "@uniqueDescriptor": {
+    "description": "硬件功能开关"
+  },
+  "ledRainbow": "彩虹灯效",
+  "@ledRainbow": {
+    "description": "灯效模式"
+  },
+  "segaFwHw": "HW/FW",
+  "@segaFwHw": {
+    "description": "固件硬件版本标识"
+  },
+  "segaFastRead": "高速读卡",
+  "@segaFastRead": {
+    "description": "性能设置"
+  },
+  "segaBrightness": "LED亮度",
+  "@segaBrightness": {
+    "description": "灯光亮度调整"
+  },
+  "idleRGB": "待机灯光颜色",
+  "@idleRGB": {
+    "description": "颜色配置"
+  },
+  "busyRGB": "待机刷卡灯光颜色",
+  "@busyRGB": {
+    "description": "颜色配置"
+  },
+  "pickFavoriteColor": "选一个喜欢的颜色吧~",
+  "@pickFavoriteColor": {
+    "description": "拾色器提示"
+  },
+  "confirmColorChoice": "就这个了！",
+  "@confirmColorChoice": {
+    "description": "确认选色"
+  },
+  "scanPaused": "扫描暂停",
+  "@scanPaused": {
+    "description": "扫描状态：暂停"
+  },
+  "scanPausedDescription": "应用失去焦点，扫描已暂停",
+  "@scanPausedDescription": {
+    "description": "状态说明"
+  }
 }

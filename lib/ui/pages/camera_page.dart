@@ -1,13 +1,15 @@
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hinata_go/context_extensions.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
 import '../../models/card/aime.dart';
 import '../../models/card/scanned_card.dart';
 import '../../providers/nfc_provider.dart';
 import '../../utils/qr_handler.dart';
-import '../../l10n/l10n.dart';
 
 class CameraPage extends HookConsumerWidget {
   const CameraPage({super.key});
@@ -24,15 +26,6 @@ class CameraPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final size = MediaQuery.of(context).size;
-    final holeSize = size.width * 0.6;
-    final holeCenter = Offset(size.width / 2, (size.height / 2) - 140);
-    final holeRect = Rect.fromCenter(
-      center: holeCenter,
-      width: holeSize,
-      height: holeSize,
-    );
-
     final controller = useMemoized(
       () => MobileScannerController(
         detectionSpeed: DetectionSpeed.normal,
@@ -71,7 +64,7 @@ class CameraPage extends HookConsumerWidget {
 
           // Stop scanner before popping to prevent further detections
           controller.stop();
-          Navigator.of(context).pop();
+          context.navigator.pop();
           break;
         }
       }
@@ -83,33 +76,22 @@ class CameraPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: MobileScanner(
-              controller: controller,
-              onDetect: onDetect,
-              fit: BoxFit.cover,
-              placeholderBuilder: (context) =>
-                  const Center(child: CircularProgressIndicator()),
-            ),
-          ),
-          Positioned.fill(child: _ScannerManualOverlay(holeRect: holeRect)),
-          _buildCloseButton(context),
-          _buildCameraSwitch(context, controller),
-          _buildTorchButton(context, controller),
-          _buildInstruction(context, holeRect),
-        ],
+      body: _CameraPageBody(
+        controller: controller,
+        onDetect: onDetect,
+        closeButton: _buildCloseButton(context),
+        cameraSwitchButton: _buildCameraSwitch(context, controller),
+        torchButton: _buildTorchButton(context, controller),
       ),
     );
   }
 
   Widget _buildCloseButton(BuildContext context) {
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 16,
+      top: context.mediaQuery.padding.top + 16,
       left: 24,
       child: IconButton.filledTonal(
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: () => context.navigator.pop(),
         icon: const Icon(Icons.close),
         style: IconButton.styleFrom(
           minimumSize: const Size(48, 48),
@@ -126,7 +108,7 @@ class CameraPage extends HookConsumerWidget {
     final state = controller.value;
     final isFront = state.cameraDirection == CameraFacing.front;
     return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 48,
+      bottom: context.mediaQuery.padding.bottom + 48,
       left: 40,
       child: IconButton.filledTonal(
         isSelected: isFront,
@@ -147,7 +129,7 @@ class CameraPage extends HookConsumerWidget {
     final state = controller.value;
     final isTorchOn = state.torchState == TorchState.on;
     return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 48,
+      bottom: context.mediaQuery.padding.bottom + 48,
       right: 40,
       child: IconButton.filledTonal(
         isSelected: isTorchOn,
@@ -161,10 +143,90 @@ class CameraPage extends HookConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildInstruction(BuildContext context, Rect holeRect) {
+class _CameraPageBody extends StatelessWidget {
+  const _CameraPageBody({
+    required this.controller,
+    required this.onDetect,
+    required this.closeButton,
+    required this.cameraSwitchButton,
+    required this.torchButton,
+  });
+
+  final MobileScannerController controller;
+  final void Function(BarcodeCapture) onDetect;
+  final Widget closeButton;
+  final Widget cameraSwitchButton;
+  final Widget torchButton;
+
+  @override
+  Widget build(BuildContext context) {
+    final overlayLayout = _ScannerOverlayLayout.fromContext(context);
+
+    return Stack(
+      children: [
+        _ScannerViewport(controller: controller, onDetect: onDetect),
+        Positioned.fill(
+          child: _ScannerManualOverlay(holeRect: overlayLayout.holeRect),
+        ),
+        closeButton,
+        cameraSwitchButton,
+        torchButton,
+        _ScannerInstruction(holeRect: overlayLayout.holeRect),
+      ],
+    );
+  }
+}
+
+class _ScannerViewport extends StatelessWidget {
+  const _ScannerViewport({required this.controller, required this.onDetect});
+
+  final MobileScannerController controller;
+  final void Function(BarcodeCapture) onDetect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: MobileScanner(
+        controller: controller,
+        onDetect: onDetect,
+        fit: BoxFit.cover,
+        placeholderBuilder: (context) =>
+            const Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+}
+
+class _ScannerOverlayLayout {
+  const _ScannerOverlayLayout({required this.holeRect});
+
+  factory _ScannerOverlayLayout.fromContext(BuildContext context) {
+    final size = context.mediaQuery.size;
+    final holeSize = size.width * 0.6;
+
+    return _ScannerOverlayLayout(
+      holeRect: Rect.fromCenter(
+        center: Offset(size.width / 2, (size.height / 2) - 140),
+        width: holeSize,
+        height: holeSize,
+      ),
+    );
+  }
+
+  final Rect holeRect;
+}
+
+class _ScannerInstruction extends StatelessWidget {
+  const _ScannerInstruction({required this.holeRect});
+
+  final Rect holeRect;
+
+  @override
+  Widget build(BuildContext context) {
     return Positioned(
-      top: holeRect.bottom + 40, // 40px below the hole
+      top: holeRect.bottom + 40,
       left: 0,
       right: 0,
       child: Center(
@@ -188,7 +250,7 @@ class _ScannerManualOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = context.colorScheme;
     return CustomPaint(
       size: Size.infinite,
       painter: _ScannerPainter(

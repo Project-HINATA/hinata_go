@@ -4,6 +4,25 @@ import '../models/remote_instance.dart';
 import '../models/card/saved_card.dart';
 import '../models/card_folder.dart';
 import '../models/scan_log.dart';
+import '../models/scanning_mode.dart';
+
+// --- Scanning Mode ---
+final scanningModeProvider =
+    NotifierProvider<ScanningModeNotifier, ScanningMode>(() {
+      return ScanningModeNotifier();
+    });
+
+class ScanningModeNotifier extends Notifier<ScanningMode> {
+  @override
+  ScanningMode build() {
+    return ref.watch(storageProvider).getScanningMode();
+  }
+
+  void setMode(ScanningMode mode) {
+    state = mode;
+    ref.read(storageProvider).saveScanningMode(mode);
+  }
+}
 
 final instancesProvider =
     NotifierProvider<InstancesNotifier, List<RemoteInstance>>(() {

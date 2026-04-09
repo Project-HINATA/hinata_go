@@ -28,7 +28,10 @@ class DataManagementService {
     };
   }
 
-  Future<void> applyImport(Map<String, dynamic> data, {required bool merge}) async {
+  Future<void> applyImport(
+    Map<String, dynamic> data, {
+    required bool merge,
+  }) async {
     final storage = _ref.read(storageProvider);
 
     if (data.containsKey('instances')) {
@@ -38,12 +41,14 @@ class DataManagementService {
       if (merge) {
         final localInstances = storage.getInstances();
         for (final imported in importedInstances) {
-          final isDuplicate = localInstances.any((local) =>
-              local.icon == imported.icon &&
-              local.url == imported.url &&
-              local.type == imported.type &&
-              local.unit == imported.unit &&
-              local.password == imported.password);
+          final isDuplicate = localInstances.any(
+            (local) =>
+                local.icon == imported.icon &&
+                local.url == imported.url &&
+                local.type == imported.type &&
+                local.unit == imported.unit &&
+                local.password == imported.password,
+          );
           if (!isDuplicate) {
             localInstances.add(imported);
           }
@@ -62,7 +67,9 @@ class DataManagementService {
       if (merge) {
         final localFolders = storage.getCardFolders();
         for (final imported in importedFolders) {
-          final isDuplicate = localFolders.any((local) => local.id == imported.id);
+          final isDuplicate = localFolders.any(
+            (local) => local.id == imported.id,
+          );
           if (!isDuplicate) {
             localFolders.add(imported);
           }
@@ -81,10 +88,13 @@ class DataManagementService {
       if (merge) {
         final localCards = storage.getSavedCards();
         for (final imported in importedCards) {
-          final isDuplicate = localCards.any((local) =>
-              jsonEncode(local.card.toJson()) == jsonEncode(imported.card.toJson()) &&
-              local.folderId == imported.folderId &&
-              local.source == imported.source);
+          final isDuplicate = localCards.any(
+            (local) =>
+                jsonEncode(local.card.toJson()) ==
+                    jsonEncode(imported.card.toJson()) &&
+                local.folderId == imported.folderId &&
+                local.source == imported.source,
+          );
           if (!isDuplicate) {
             localCards.add(imported);
           }

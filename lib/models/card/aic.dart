@@ -26,6 +26,9 @@ class Aic extends Felica {
   String get name => "Amusement IC";
 
   @override
+  String? get logoPath => "assets/cardlogo/aic.svg";
+
+  @override
   String? get type => "aic";
 
   @override

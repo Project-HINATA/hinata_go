@@ -6,6 +6,7 @@ import '../models/card/saved_card.dart';
 import '../models/card_folder.dart';
 import '../models/scan_log.dart';
 import 'settings_provider.dart';
+import '../models/scanning_mode.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('sharedPreferencesProvider must be overridden');
@@ -26,9 +27,9 @@ class StorageService {
   static const String _kCardFoldersKey = 'card_folders';
   static const String _kScanLogsKey = 'scan_logs';
   static const String _kActiveInstanceIdKey = 'active_instance_id';
-  static const String _kEnableSecondaryConfirmationKey =
-      'enable_secondary_confirmation';
+  static const String _kCardExpirationSecondsKey = 'card_expiration_seconds';
   static const String _kAppLanguageKey = 'app_language';
+  static const String _kScanningModeKey = 'scanning_mode';
 
   // --- Instances ---
 
@@ -125,11 +126,11 @@ class StorageService {
 
   // --- Settings ---
   AppSettings getSettings() {
-    final enableSecondaryConfirmation =
-        _prefs.getBool(_kEnableSecondaryConfirmationKey) ?? false;
+    final cardExpirationSeconds =
+        _prefs.getInt(_kCardExpirationSecondsKey) ?? 15;
 
     return AppSettings(
-      enableSecondaryConfirmation: enableSecondaryConfirmation,
+      cardExpirationSeconds: cardExpirationSeconds,
       language: AppLanguageX.fromStorageValue(
         _prefs.getString(_kAppLanguageKey),
       ),
@@ -137,10 +138,21 @@ class StorageService {
   }
 
   Future<void> saveSettings(AppSettings settings) async {
-    await _prefs.setBool(
-      _kEnableSecondaryConfirmationKey,
-      settings.enableSecondaryConfirmation,
+    await _prefs.setInt(
+      _kCardExpirationSecondsKey,
+      settings.cardExpirationSeconds,
     );
     await _prefs.setString(_kAppLanguageKey, settings.language.storageValue);
+  }
+
+  // --- Scanning Mode ---
+  ScanningMode getScanningMode() {
+    final String? modeStr = _prefs.getString(_kScanningModeKey);
+    if (modeStr == 'sender') return ScanningMode.sender;
+    return ScanningMode.normal;
+  }
+
+  Future<void> saveScanningMode(ScanningMode mode) async {
+    await _prefs.setString(_kScanningModeKey, mode.name);
   }
 }

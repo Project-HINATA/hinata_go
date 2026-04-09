@@ -14,6 +14,8 @@ class ICCard {
       id.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
   String get name => "Generic IC Card";
 
+  String? get logoPath => null;
+
   String? get type => null;
 
   String? get value => null;

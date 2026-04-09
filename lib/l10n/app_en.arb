@@ -1,236 +1,867 @@
 {
   "@@locale": "en",
-  "appTitle": "SEGA NFC",
+  "@@context": "HINATA Go App",
+  "appTitle": "HINATA Go",
+  "@appTitle": {
+    "description": "The name of the application"
+  },
   "settings": "Settings",
+  "@settings": {
+    "description": "Title for the settings page"
+  },
+  "cardExpiration": "Card Display Duration",
+  "@cardExpiration": {
+    "description": "Setting for how long a scanned card remains visible"
+  },
+  "cardExpirationDescription": "Duration in seconds before a scanned card is automatically cleared",
+  "@cardExpirationDescription": {
+    "description": "Description of the card display duration setting"
+  },
+  "cardExpirationValue": "{seconds} seconds",
+  "@cardExpirationValue": {
+    "description": "Display value for the duration",
+    "placeholders": {
+      "seconds": {
+        "type": "String",
+        "example": "10"
+      }
+    }
+  },
   "secondaryConfirmation": "Secondary Confirmation",
+  "@secondaryConfirmation": {
+    "description": "Setting to enable a confirmation dialog before sending"
+  },
   "secondaryConfirmationDescription": "Ask for confirmation before sending card data",
+  "@secondaryConfirmationDescription": {
+    "description": "Description of the secondary confirmation setting"
+  },
   "about": "About",
+  "@about": {
+    "description": "Entry for the about page"
+  },
   "updateToVersion": "UPDATE TO {version}",
   "@updateToVersion": {
+    "description": "Button text to initiate a firmware/software update",
     "placeholders": {
-      "version": {}
+      "version": {
+        "type": "String",
+        "example": "1.0.2"
+      }
     }
   },
   "language": "Language",
+  "@language": {
+    "description": "Language selection setting"
+  },
   "languageDescription": "Choose app display language",
+  "@languageDescription": {
+    "description": "Description for the language setting"
+  },
   "languageSystem": "System",
+  "@languageSystem": {
+    "description": "Option to follow system language"
+  },
   "languageEnglishNative": "English",
+  "@languageEnglishNative": {
+    "description": "Native name for English"
+  },
   "languageChineseNative": "简体中文",
-  "reader": "Reader",
+  "@languageChineseNative": {
+    "description": "Native name for Simplified Chinese"
+  },
+  "scan": "Scan",
+  "@scan": {
+    "description": "Navigation label for scanning"
+  },
   "cards": "Cards",
+  "@cards": {
+    "description": "Navigation label for card library"
+  },
   "scanQrCode": "Scan QR Code",
+  "@scanQrCode": {
+    "description": "Feature to scan QR codes"
+  },
   "scanning": "Scanning...",
+  "@scanning": {
+    "description": "Status message while scanning"
+  },
   "tapToScan": "Tap to Scan",
+  "@tapToScan": {
+    "description": "Instruction to start scanning"
+  },
   "readyToScan": "Ready to Scan",
+  "@readyToScan": {
+    "description": "Status indicating the scanner is ready"
+  },
   "nfcInactive": "NFC Inactive",
+  "@nfcInactive": {
+    "description": "Status when NFC hardware is disabled"
+  },
   "holdCardNearTop": "Hold your card near the top of your iPhone.",
+  "@holdCardNearTop": {
+    "description": "iOS-specific instruction for NFC scanning"
+  },
   "tapToActivateNfc": "Tap this area to activate the NFC reader.",
+  "@tapToActivateNfc": {
+    "description": "Prompt to manually start NFC"
+  },
   "holdCardNearReader": "Hold your card near the NFC reader area of your device.",
+  "@holdCardNearReader": {
+    "description": "General NFC instruction"
+  },
   "nfcUnavailable": "NFC service is currently unavailable or disabled.",
+  "@nfcUnavailable": {
+    "description": "Error message for NFC state"
+  },
   "noActiveInstanceSelectedTap": "No active instance selected.\nTap to select.",
+  "@noActiveInstanceSelectedTap": {
+    "description": "Prompt to choose a target server"
+  },
   "noRecentScans": "No recent scans.",
+  "@noRecentScans": {
+    "description": "Empty state message for recent scans"
+  },
   "recentScans": "Recent Scans",
+  "@recentScans": {
+    "description": "Title for the recent scans list"
+  },
   "viewAllLogs": "View All Logs",
+  "@viewAllLogs": {
+    "description": "Button to see full scan history"
+  },
   "resendToActiveInstance": "Resend to active instance",
+  "@resendToActiveInstance": {
+    "description": "Button to retry sending data"
+  },
   "scanHistoryLogs": "Scan History Logs",
+  "@scanHistoryLogs": {
+    "description": "Title for the history logs page"
+  },
   "clearHistory": "Clear History",
+  "@clearHistory": {
+    "description": "Button to delete all history"
+  },
   "noScanHistoryYet": "No scan history yet.",
+  "@noScanHistoryYet": {
+    "description": "Empty state for history logs"
+  },
   "savedCardsSource": "Saved Cards",
+  "@savedCardsSource": {
+    "description": "Identifier for the source of a card"
+  },
   "sourceLine": "Source: {source}",
   "@sourceLine": {
+    "description": "Detail line for card source",
     "placeholders": {
-      "source": {}
+      "source": {
+        "type": "String",
+        "example": "NFC"
+      }
     }
   },
   "timeLine": "Time: {time}",
   "@timeLine": {
+    "description": "Detail line for scan time",
     "placeholders": {
-      "time": {}
+      "time": {
+        "type": "String",
+        "example": "2024-01-01 12:00"
+      }
     }
   },
   "saveToSavedCards": "Save to Saved Cards",
+  "@saveToSavedCards": {
+    "description": "Action to save a card record"
+  },
   "savedCards": "Saved Cards",
+  "@savedCards": {
+    "description": "Title for the saved cards page"
+  },
   "newFolder": "New Folder",
+  "@newFolder": {
+    "description": "Button to create a new folder"
+  },
   "noCardsInFolder": "No cards in this folder.",
+  "@noCardsInFolder": {
+    "description": "Empty state for a folder"
+  },
   "addCard": "Add Card",
+  "@addCard": {
+    "description": "Button to manually add a card"
+  },
   "cannotDeleteDefaultFolders": "Cannot delete default folders.",
+  "@cannotDeleteDefaultFolders": {
+    "description": "Error message for folder restrictions"
+  },
   "deleteFolder": "Delete Folder?",
+  "@deleteFolder": {
+    "description": "Title for delete confirmation dialog"
+  },
   "deleteFolderMessage": "Are you sure you want to delete \"{folderName}\" and all cards inside it?",
   "@deleteFolderMessage": {
+    "description": "Message for folder deletion warning",
     "placeholders": {
-      "folderName": {}
+      "folderName": {
+        "type": "String"
+      }
     }
   },
   "cancel": "Cancel",
+  "@cancel": {
+    "description": "Standard cancel button"
+  },
   "delete": "Delete",
+  "@delete": {
+    "description": "Standard delete button"
+  },
   "quickSend": "Quick Send",
+  "@quickSend": {
+    "description": "Shortcut action for sending"
+  },
   "addCardManually": "Add Card Manually",
+  "@addCardManually": {
+    "description": "Title for the manual card entry form"
+  },
   "nameDescription": "Name / Description",
+  "@nameDescription": {
+    "description": "Label for the card name input"
+  },
   "folder": "Folder",
+  "@folder": {
+    "description": "Label for folder selection"
+  },
   "newFolderOption": "+ New Folder",
+  "@newFolderOption": {
+    "description": "Dropdown option to create a folder"
+  },
   "accessCode": "Access Code",
+  "@accessCode": {
+    "description": "Field for the card's 20-digit access code"
+  },
   "save": "Save",
+  "@save": {
+    "description": "Save action button"
+  },
   "folderName": "Folder Name",
+  "@folderName": {
+    "description": "Label for folder name input"
+  },
   "create": "Create",
+  "@create": {
+    "description": "Confirmation to create"
+  },
   "confirmSend": "Confirm Send",
+  "@confirmSend": {
+    "description": "Title for the send confirmation dialog"
+  },
   "confirmSendWithValue": "Are you sure you want to send this card?\nValue: {value}",
   "@confirmSendWithValue": {
+    "description": "Message showing the value being sent",
     "placeholders": {
-      "value": {}
+      "value": {
+        "type": "String"
+      }
     }
   },
   "remoteInstances": "Remote Instances",
+  "@remoteInstances": {
+    "description": "Title for the instance management page"
+  },
   "noInstancesConfigured": "No instances configured.",
+  "@noInstancesConfigured": {
+    "description": "Empty state for instances"
+  },
   "addInstance": "Add Instance",
+  "@addInstance": {
+    "description": "Button to add a new server instance"
+  },
   "instanceNowActive": "{name} is now active",
   "@instanceNowActive": {
+    "description": "Feedback when an instance is set as active",
     "placeholders": {
-      "name": {}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "invalidUrl": "Please enter a valid URL (http/https)",
+  "@invalidUrl": {
+    "description": "URL validation error"
+  },
   "invalidEndpoint": "Please enter a valid address",
+  "@invalidEndpoint": {
+    "description": "Endpoint validation error"
+  },
   "editInstance": "Edit Instance",
+  "@editInstance": {
+    "description": "Title for editing an instance"
+  },
   "nameExample": "Name (e.g. maimaiDX)",
+  "@nameExample": {
+    "description": "Input placeholder for instance name"
+  },
   "webhookUrl": "Webhook URL (http://...)",
+  "@webhookUrl": {
+    "description": "Input placeholder for URL"
+  },
   "endpointLabel": "Address",
+  "@endpointLabel": {
+    "description": "Label for the address field"
+  },
   "instanceType": "Instance Type",
+  "@instanceType": {
+    "description": "Selection for server protocol type"
+  },
   "instanceTypeHinataIo": "HINATA IO",
+  "@instanceTypeHinataIo": {
+    "description": "HINATA IO instance type"
+  },
   "instanceTypeSpiceApi": "SpiceAPI (TcpSocket)",
+  "@instanceTypeSpiceApi": {
+    "description": "SpiceAPI via TCP type"
+  },
   "instanceTypeSpiceApiWebSocket": "SpiceAPI (WebSocket)",
+  "@instanceTypeSpiceApiWebSocket": {
+    "description": "SpiceAPI via WebSocket type"
+  },
   "spiceApiUnit": "SpiceAPI Unit",
+  "@spiceApiUnit": {
+    "description": "Specific unit number for SpiceAPI"
+  },
   "spiceApiPassword": "Password (Optional)",
+  "@spiceApiPassword": {
+    "description": "Password field for SpiceAPI"
+  },
   "selectIcon": "Select Icon:",
+  "@selectIcon": {
+    "description": "Label for icon picker"
+  },
   "confirmSendToActiveInstance": "Send this {cardName} card to the active instance?",
   "@confirmSendToActiveInstance": {
+    "description": "Specific send confirmation",
     "placeholders": {
-      "cardName": {}
+      "cardName": {
+        "type": "String"
+      }
     }
   },
   "cardDetails": "{cardName} Details",
   "@cardDetails": {
+    "description": "Header for card details page",
     "placeholders": {
-      "cardName": {}
+      "cardName": {
+        "type": "String"
+      }
     }
   },
   "valueCopiedToClipboard": "Value copied to clipboard",
+  "@valueCopiedToClipboard": {
+    "description": "Success feedback for copy action"
+  },
   "copyValue": "Copy Value",
+  "@copyValue": {
+    "description": "Action to copy card ID/Access Code"
+  },
   "amusementIcInfo": "Amusement IC Information",
+  "@amusementIcInfo": {
+    "description": "Category for Amusement IC cards"
+  },
   "manufacturer": "Manufacturer",
+  "@manufacturer": {
+    "description": "Card manufacturer label"
+  },
   "aimeInfo": "Aime Information",
+  "@aimeInfo": {
+    "description": "Category for SEGA Aime cards"
+  },
   "felicaDetails": "FeliCa Technical Details",
+  "@felicaDetails": {
+    "description": "Details for FeliCa technology"
+  },
   "idm": "IDm",
+  "@idm": {
+    "description": "FeliCa IDm field"
+  },
   "pmm": "PMm",
+  "@pmm": {
+    "description": "FeliCa PMm field"
+  },
   "systemCode": "System Code",
+  "@systemCode": {
+    "description": "FeliCa system code"
+  },
   "banapassData": "Banapassport Data",
+  "@banapassData": {
+    "description": "Bandai Namco Banapassport data"
+  },
   "block1": "Block 1",
+  "@block1": {
+    "description": "Technical data block 1"
+  },
   "block2": "Block 2",
+  "@block2": {
+    "description": "Technical data block 2"
+  },
   "iso14443Details": "ISO14443 Technical Details",
+  "@iso14443Details": {
+    "description": "Details for ISO14443 technology"
+  },
   "uid": "UID",
+  "@uid": {
+    "description": "Unique Identifier"
+  },
   "sak": "SAK",
+  "@sak": {
+    "description": "Select Acknowledge code"
+  },
   "atqa": "ATQA",
+  "@atqa": {
+    "description": "Answer to Request code"
+  },
   "technicalDetails": "Technical Details",
+  "@technicalDetails": {
+    "description": "General technical info category"
+  },
   "idOrValue": "ID / Value",
+  "@idOrValue": {
+    "description": "The main data value of the card"
+  },
   "savingUpper": "SAVING...",
+  "@savingUpper": {
+    "description": "Status text in uppercase"
+  },
   "saveUpper": "SAVE",
+  "@saveUpper": {
+    "description": "Button text in uppercase"
+  },
   "sendingUpper": "SENDING...",
+  "@sendingUpper": {
+    "description": "Status text in uppercase"
+  },
   "sendUpper": "SEND",
+  "@sendUpper": {
+    "description": "Button text in uppercase"
+  },
   "send": "Send",
+  "@send": {
+    "description": "Send action"
+  },
   "saveToFolder": "Save to Folder",
+  "@saveToFolder": {
+    "description": "Action to archive card"
+  },
+  "selectInstance": "Select Instance",
+  "@selectInstance": {
+    "description": "Title for instance selection"
+  },
+  "noInstances": "No instances configured.",
+  "@noInstances": {
+    "description": "Empty state for instance list"
+  },
   "savedToFolder": "Saved \"{name}\" to {folder}.",
   "@savedToFolder": {
+    "description": "Success feedback for saving to folder",
     "placeholders": {
-      "name": {},
-      "folder": {}
+      "name": {
+        "type": "String"
+      },
+      "folder": {
+        "type": "String"
+      }
     }
   },
   "cameraScanInstruction": "Scan QR Code",
+  "@cameraScanInstruction": {
+    "description": "Instruction for camera scanner"
+  },
   "historyFolder": "History",
+  "@historyFolder": {
+    "description": "Default folder for history"
+  },
   "favoritesFolder": "Favorites",
+  "@favoritesFolder": {
+    "description": "Default folder for favorites"
+  },
   "sourceNfcWithType": "NFC ({displayType})",
   "@sourceNfcWithType": {
+    "description": "Source identifier for NFC scans",
     "placeholders": {
-      "displayType": {}
+      "displayType": {
+        "type": "String",
+        "example": "Aime"
+      }
     }
   },
   "nfcDeviceNotSupported": "Your device does not support NFC",
+  "@nfcDeviceNotSupported": {
+    "description": "Hardware unsupported error"
+  },
   "nfcEnablePrompt": "Please enable NFC",
+  "@nfcEnablePrompt": {
+    "description": "System settings prompt"
+  },
   "nfcListening": "Listening for NFC...",
+  "@nfcListening": {
+    "description": "Status indicating scanning is active"
+  },
   "nfcError": "Error: {error}",
   "@nfcError": {
+    "description": "NFC error feedback",
     "placeholders": {
-      "error": {}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "nfcIosAlert": "Hold your card near the top of your iPhone",
+  "@nfcIosAlert": {
+    "description": "iOS system-style scanning message"
+  },
   "noActiveInstanceSelected": "No active instance selected.",
+  "@noActiveInstanceSelected": {
+    "description": "Error before sending"
+  },
   "sendingToInstance": "Sending to {name}...",
   "@sendingToInstance": {
+    "description": "Progress message for sending",
     "placeholders": {
-      "name": {}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "successSentToInstance": "Success: Sent to {name}",
   "@successSentToInstance": {
+    "description": "Success feedback for sending",
     "placeholders": {
-      "name": {}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "failedSentToInstance": "Failed: Could not send to {name}",
   "@failedSentToInstance": {
+    "description": "Failure feedback for sending",
     "placeholders": {
-      "name": {}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "dataManagement": "Data Management",
+  "@dataManagement": {
+    "description": "Title for data management page"
+  },
   "dataManagementDescription": "Import or export cards and instances",
+  "@dataManagementDescription": {
+    "description": "Description of data management features"
+  },
   "exportData": "Export Data",
+  "@exportData": {
+    "description": "Button to export data"
+  },
   "importData": "Import Data",
+  "@importData": {
+    "description": "Button to import data"
+  },
   "exportSuccess": "Export successful",
+  "@exportSuccess": {
+    "description": "Success message for export"
+  },
   "exportFailed": "Export failed: {error}",
   "@exportFailed": {
+    "description": "Failure message for export",
     "placeholders": {
-      "error": {}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "importSuccess": "Import successful",
+  "@importSuccess": {
+    "description": "Success message for import"
+  },
   "importFailed": "Import failed: {error}",
   "@importFailed": {
+    "description": "Failure message for import",
     "placeholders": {
-      "error": {}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "exportToClipboard": "Copy to Clipboard",
+  "@exportToClipboard": {
+    "description": "Method to export data to clipboard"
+  },
   "exportToFile": "Save to File",
+  "@exportToFile": {
+    "description": "Method to export data to a file"
+  },
   "importFromClipboard": "Paste from Clipboard",
+  "@importFromClipboard": {
+    "description": "Method to import from clipboard"
+  },
   "importFromFile": "Load from File",
+  "@importFromFile": {
+    "description": "Method to import from a file"
+  },
   "selectExportMethod": "Select Export Method",
+  "@selectExportMethod": {
+    "description": "Title for export selection menu"
+  },
   "selectImportMethod": "Select Import Method",
+  "@selectImportMethod": {
+    "description": "Title for import selection menu"
+  },
   "invalidDataFormat": "Invalid data format",
+  "@invalidDataFormat": {
+    "description": "Error when parsing imported data"
+  },
   "importPreviewTitle": "Import Preview",
+  "@importPreviewTitle": {
+    "description": "Title for data import summary"
+  },
   "importPreviewMessage": "The following data will be imported:",
+  "@importPreviewMessage": {
+    "description": "Guidance text for import preview"
+  },
   "itemCountCards": "Cards: {count}",
   "@itemCountCards": {
     "placeholders": {
-      "count": {}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "itemCountFolders": "Folders: {count}",
   "@itemCountFolders": {
     "placeholders": {
-      "count": {}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "itemCountInstances": "Instances: {count}",
   "@itemCountInstances": {
     "placeholders": {
-      "count": {}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "confirmImport": "Confirm Import",
+  "@confirmImport": {
+    "description": "Final import confirmation button"
+  },
   "importMerge": "Merge Import",
+  "@importMerge": {
+    "description": "Import mode: keep existing data"
+  },
   "importOverwrite": "Overwrite Import",
+  "@importOverwrite": {
+    "description": "Import mode: delete existing data"
+  },
   "confirmOverwriteTitle": "Confirm Overwrite",
+  "@confirmOverwriteTitle": {
+    "description": "Title for overwrite warning dialog"
+  },
   "confirmOverwriteMessage": "This will overwrite your local data irrecoverably. Are you sure?",
-  "invalidAccessCodeLength": "Access code must be 20 digits and not start with 3"
+  "@confirmOverwriteMessage": {
+    "description": "Warning message for data loss"
+  },
+  "invalidAccessCodeLength": "Access code must be 20 digits and not start with 3",
+  "@invalidAccessCodeLength": {
+    "description": "Validation rule for Aime codes"
+  },
+  "hardwareDevice": "Device",
+  "@hardwareDevice": {
+    "description": "Title for hardware management"
+  },
+  "firmwareUpdate": "Firmware Update",
+  "@firmwareUpdate": {
+    "description": "OTA firmware feature"
+  },
+  "ledSettings": "LED Settings",
+  "@ledSettings": {
+    "description": "Hardware lighting configuration"
+  },
+  "deviceHub": "Device Hub",
+  "@deviceHub": {
+    "description": "Main entry for hardware management"
+  },
+  "noDeviceConnected": "No Device Connected",
+  "@noDeviceConnected": {
+    "description": "Status when USB reader is not found"
+  },
+  "scanForDevices": "Scan for HINATA USB readers",
+  "@scanForDevices": {
+    "description": "Action to search for hardware"
+  },
+  "scanUsbDevice": "Scan USB Device",
+  "@scanUsbDevice": {
+    "description": "Button to scan for USB hardware"
+  },
+  "saveToFlash": "Save to Flash Storage",
+  "@saveToFlash": {
+    "description": "Commit settings to non-volatile memory"
+  },
+  "configSavedSuccess": "Configuration saved to Flash successfully!",
+  "@configSavedSuccess": {
+    "description": "Success feedback for flash writing"
+  },
+  "errorSavingFlash": "Error saving to flash: {error}",
+  "@errorSavingFlash": {
+    "description": "Failure message for flash writing",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "upToDate": "Your device is up to date!",
+  "@upToDate": {
+    "description": "Status when no firmware updates are found"
+  },
+  "updateAvailable": "Update Available",
+  "@updateAvailable": {
+    "description": "Alert for a new firmware version"
+  },
+  "latestVersion": "Latest Version: {version}",
+  "@latestVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "startUpdate": "Start Update",
+  "@startUpdate": {
+    "description": "Button to start firmware update"
+  },
+  "retryUpdate": "Retry Update",
+  "@retryUpdate": {
+    "description": "Button to retry a failed update"
+  },
+  "failedToCheckFirmware": "Failed to check firmware status.",
+  "@failedToCheckFirmware": {
+    "description": "Network or connection error during check"
+  },
+  "settingsAndControls": "Settings & Controls",
+  "@settingsAndControls": {
+    "description": "Header for device control page"
+  },
+  "advancedConfig": "Advanced Config",
+  "@advancedConfig": {
+    "description": "Expert-level hardware settings"
+  },
+  "checkLatestSoftware": "Check for the latest software version",
+  "@checkLatestSoftware": {
+    "description": "Description of the firmware check feature"
+  },
+  "configureLighting": "Configure lighting effects",
+  "@configureLighting": {
+    "description": "Description of the lighting feature"
+  },
+  "firmwareVersion": "Firmware: {version}",
+  "@firmwareVersion": {
+    "description": "Display of current firmware version",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "tapToConnect": "Tap to Connect",
+  "@tapToConnect": {
+    "description": "Button to initiate connection to reader"
+  },
+  "globalSettings": "Global Settings",
+  "@globalSettings": {
+    "description": "Common hardware configurations"
+  },
+  "segaSerialSettings": "SEGA Serial Protocol Settings",
+  "@segaSerialSettings": {
+    "description": "Low-level protocol parameters"
+  },
+  "cardioSettings": "CardIO Settings",
+  "@cardioSettings": {
+    "description": "Parameters for the card reading module"
+  },
+  "restoreDefaults": "Restore Defaults",
+  "@restoreDefaults": {
+    "description": "Reset hardware to factory settings"
+  },
+  "processing": "Processing",
+  "@processing": {
+    "description": "Status while hardware is busy"
+  },
+  "applySettings": "Apply Settings",
+  "@applySettings": {
+    "description": "Write settings to hardware to take effect"
+  },
+  "tipsTitle": "Tips:",
+  "@tipsTitle": {
+    "description": "Label for the tips section"
+  },
+  "flashWarning": "If you don't click Apply Settings, the reader will revert to the original settings after power cycling. However, since the flash chip has limited write cycles (hundreds at most), please apply settings only after confirming everything works correctly.",
+  "@flashWarning": {
+    "description": "Warning about hardware memory durability"
+  },
+  "usbDescriptorNote": "USB Descriptor uniqueness takes effect only after applying settings and power cycling the reader. After modification, the OS will treat it as a new device, SEGA games will require reassigning ports, and PC host apps may need to pair again.",
+  "@usbDescriptorNote": {
+    "description": "Warning about changing USB identifiers"
+  },
+  "cardioDisableIso14443a": "Disable ISO14443-A Card",
+  "@cardioDisableIso14443a": {
+    "description": "Switch to ignore specific card types"
+  },
+  "cardioIso14443aE004": "Fill E004 to head when scanned ISO14443-A Card",
+  "@cardioIso14443aE004": {
+    "description": "Rule for ID modification"
+  },
+  "uniqueDescriptor": "USB Descriptor Unique",
+  "@uniqueDescriptor": {
+    "description": "Switch for USB unique identification"
+  },
+  "ledRainbow": "Rainbow Light",
+  "@ledRainbow": {
+    "description": "Animated rainbow lighting mode"
+  },
+  "segaFwHw": "HW/FW",
+  "@segaFwHw": {
+    "description": "Hardware and firmware version strings"
+  },
+  "segaFastRead": "Rapid Scan",
+  "@segaFastRead": {
+    "description": "Performance toggle for card reading"
+  },
+  "segaBrightness": "LED Brightness",
+  "@segaBrightness": {
+    "description": "Slider/Setting for LED intensity"
+  },
+  "idleRGB": "Idle Light Color",
+  "@idleRGB": {
+    "description": "Color when device is waiting"
+  },
+  "busyRGB": "Busy Light Color",
+  "@busyRGB": {
+    "description": "Color when a card is swiped"
+  },
+  "pickFavoriteColor": "Pick a favorite color~",
+  "@pickFavoriteColor": {
+    "description": "Color picker guidance"
+  },
+  "confirmColorChoice": "Confirm",
+  "@confirmColorChoice": {
+    "description": "Confirm button for color selection"
+  },
+  "scanPaused": "Scan Pause",
+  "@scanPaused": {
+    "description": "Status when scanning is suspended"
+  },
+  "scanPausedDescription": "App is out of focus, scanning paused",
+  "@scanPausedDescription": {
+    "description": "Explanation for paused scan"
+  }
 }

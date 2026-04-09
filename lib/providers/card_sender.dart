@@ -58,7 +58,7 @@ class CardSender extends Notifier<CardSenderState> {
 
       final result = await apiService.sendCardData(
         instance: activeInstance,
-        card: card
+        card: card,
       );
 
       if (result.success) {
@@ -69,7 +69,8 @@ class CardSender extends Notifier<CardSenderState> {
       } else {
         notificationService.showError(
           (l10n?.failedSentToInstance(activeInstance.name) ??
-              'Failed: Could not send to ${activeInstance.name}') + (result.errorMessage != null ? '\n${result.errorMessage}' : ''),
+                  'Failed: Could not send to ${activeInstance.name}') +
+              (result.errorMessage != null ? '\n${result.errorMessage}' : ''),
         );
       }
       return result.success;
