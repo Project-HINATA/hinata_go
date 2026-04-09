@@ -7,6 +7,7 @@ import '../models/scanning_mode.dart';
 import 'app_layout.dart';
 import '../providers/app_update_provider.dart';
 import '../providers/app_state_provider.dart';
+import '../providers/display_rotation_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'components/device/device_mini_bar.dart';
 
@@ -53,6 +54,9 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final layout = context.appLayout;
+        final androidDisplayRotation = ref.watch(
+          androidDisplayRotationProvider,
+        );
 
         return GestureDetector(
           onHorizontalDragEnd: layout.useRailNavigation ? null : _handleSwipe,
@@ -60,6 +64,8 @@ class ScaffoldWithNavBar extends ConsumerWidget {
           behavior: HitTestBehavior.translucent,
           child: layout.useRailNavigation
               ? _RailScaffoldBody(
+                  layout: layout,
+                  androidDisplayRotation: androidDisplayRotation,
                   navigationShell: navigationShell,
                   currentIndex: navigationShell.currentIndex,
                   onDestinationSelected: _goBranch,
@@ -154,19 +160,25 @@ class _MobileScaffoldBody extends StatelessWidget {
 
 class _RailScaffoldBody extends ConsumerWidget {
   const _RailScaffoldBody({
+    required this.layout,
+    required this.androidDisplayRotation,
     required this.navigationShell,
     required this.currentIndex,
     required this.onDestinationSelected,
   });
 
+  final AppLayoutInfo layout;
+  final int? androidDisplayRotation;
   final StatefulNavigationShell navigationShell;
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final layout = context.appLayout;
     final isExtended = layout.canExtendRail;
+    final railOnLeadingSide = layout.resolveRailOnLeadingSide(
+      androidDisplayRotation,
+    );
     final railColumn = _RailColumn(
       currentIndex: currentIndex,
       onDestinationSelected: onDestinationSelected,
@@ -177,18 +189,16 @@ class _RailScaffoldBody extends ConsumerWidget {
     return Scaffold(
       body: Row(
         children: [
-          if (layout.railOnLeadingSide) railColumn,
-          if (layout.railOnLeadingSide)
-            const VerticalDivider(thickness: 1, width: 1),
+          if (railOnLeadingSide) railColumn,
+          if (railOnLeadingSide) const VerticalDivider(thickness: 1, width: 1),
           Expanded(
             child: _RailContentHost(
               navigationShell: navigationShell,
               isCompactLandscapePhone: layout.isCompactLandscapePhone,
             ),
           ),
-          if (!layout.railOnLeadingSide)
-            const VerticalDivider(thickness: 1, width: 1),
-          if (!layout.railOnLeadingSide) railColumn,
+          if (!railOnLeadingSide) const VerticalDivider(thickness: 1, width: 1),
+          if (!railOnLeadingSide) railColumn,
         ],
       ),
     );

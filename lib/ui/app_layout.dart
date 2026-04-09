@@ -50,13 +50,11 @@ class AppLayoutInfo {
   bool get useRailNavigation =>
       isLandscape || size.width >= compactLayoutBreakpoint;
 
-  bool get showPageAppBar => !isLandscape;
-
   bool get canExtendRail => isCompactLandscapePhone
       ? size.width >= compactPhoneExpandedRailBreakpoint
       : size.width >= expandedRailBreakpoint;
 
-  bool get deviceTopOnRight {
+  bool get _insetDerivedDeviceTopOnRight {
     final leftSignal = viewPadding.left + systemGestureInsets.left;
     final rightSignal = viewPadding.right + systemGestureInsets.right;
 
@@ -67,12 +65,22 @@ class AppLayoutInfo {
     return rightSignal > leftSignal;
   }
 
-  bool get railOnLeadingSide {
+  bool resolveDeviceTopOnRight(int? androidDisplayRotation) {
+    if (isLandscape && androidDisplayRotation != null) {
+      // On portrait-native phones, Surface.ROTATION_270 corresponds to
+      // reverse-landscape, meaning the device top points to the right.
+      return androidDisplayRotation == 3;
+    }
+
+    return _insetDerivedDeviceTopOnRight;
+  }
+
+  bool resolveRailOnLeadingSide(int? androidDisplayRotation) {
     if (isLandscape && !isPhone) {
       return true;
     }
 
-    return deviceTopOnRight;
+    return resolveDeviceTopOnRight(androidDisplayRotation);
   }
 }
 

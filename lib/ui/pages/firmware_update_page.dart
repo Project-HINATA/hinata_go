@@ -6,7 +6,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/services/notification_service.dart';
 
 import '../../providers/firmware_provider.dart';
-import '../app_layout.dart';
 import '../components/firmware/firmware_status_view.dart';
 
 class FirmwareUpdatePage extends ConsumerWidget {
@@ -14,12 +13,11 @@ class FirmwareUpdatePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final layout = context.appLayout;
     if (!firmwareFeatureEnabled) {
       return Scaffold(
-        appBar: layout.showPageAppBar ? _buildDisabledAppBar() : null,
+        appBar: _buildDisabledAppBar(),
         body: SafeArea(
-          top: !layout.showPageAppBar,
+          top: false,
           bottom: false,
           child: const Center(
             child: Padding(
@@ -42,14 +40,8 @@ class FirmwareUpdatePage extends ConsumerWidget {
         }
       },
       child: Scaffold(
-        appBar: layout.showPageAppBar
-            ? _buildAppBar(context, isFlashing)
-            : null,
-        body: SafeArea(
-          top: !layout.showPageAppBar,
-          bottom: false,
-          child: _buildBody(),
-        ),
+        appBar: _buildAppBar(context, isFlashing),
+        body: SafeArea(top: false, bottom: false, child: _buildBody()),
       ),
     );
   }

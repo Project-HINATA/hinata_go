@@ -19,9 +19,9 @@ class SettingsPage extends HookConsumerWidget {
     final updateState = ref.watch(appUpdateProvider);
 
     return Scaffold(
-      appBar: layout.showPageAppBar ? _buildAppBar(context) : null,
+      appBar: layout.isLandscape ? null : _buildAppBar(context),
       body: SafeArea(
-        top: !layout.showPageAppBar,
+        top: layout.isLandscape,
         bottom: false,
         child: Center(
           child: ConstrainedBox(
@@ -120,10 +120,19 @@ class SettingsPage extends HookConsumerWidget {
       subtitle: Text(context.l10n.dataManagementDescription),
       leading: const Icon(Icons.import_export),
       onTap: () {
-        showModalBottomSheet(
+        showDialog<void>(
           context: context,
-          builder: (BuildContext sheetContext) {
-            return DataManagementSheet(parentContext: context);
+          builder: (dialogContext) {
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 24,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: DataManagementSheet(parentContext: context),
+              ),
+            );
           },
         );
       },

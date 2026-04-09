@@ -4,7 +4,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../l10n/l10n.dart';
 import '../../models/remote_instance.dart';
 import '../../providers/app_state_provider.dart';
-import '../app_layout.dart';
 import '../components/instances/instance_item.dart';
 import '../components/instances/instance_dialog.dart';
 
@@ -23,14 +22,13 @@ class InstancesPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final layout = context.appLayout;
     final instances = ref.watch(instancesProvider);
     final activeId = ref.watch(activeInstanceIdProvider);
 
     return Scaffold(
-      appBar: layout.showPageAppBar ? _buildAppBar(context) : null,
+      appBar: _buildAppBar(context),
       body: SafeArea(
-        top: !layout.showPageAppBar,
+        top: false,
         bottom: false,
         child: _buildBody(context, instances, activeId),
       ),

@@ -6,7 +6,6 @@ import 'package:hinata_go/context_extensions.dart';
 
 import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
-import '../app_layout.dart';
 import '../ui_text.dart';
 import '../widgets/save_card_dialog.dart';
 
@@ -15,18 +14,17 @@ class ScanLogsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final layout = context.appLayout;
     final logs = ref.watch(scanLogsProvider);
     final reversedLogs = logs.reversed.toList();
 
     return Scaffold(
-      appBar: layout.showPageAppBar ? _buildAppBar(context, ref) : null,
+      appBar: _buildAppBar(context, ref),
       body: SafeArea(
-        top: !layout.showPageAppBar,
+        top: false,
         bottom: false,
         child: _ScanLogsBody(child: _buildBody(context, reversedLogs)),
       ),
-      floatingActionButton: layout.showPageAppBar || reversedLogs.isEmpty
+      floatingActionButton: reversedLogs.isEmpty
           ? null
           : FloatingActionButton.small(
               onPressed: () => ref.read(scanLogsProvider.notifier).clearLogs(),
@@ -110,7 +108,7 @@ class ScanLogsPage extends HookConsumerWidget {
       ),
       isThreeLine: true,
       trailing: IconButton(
-        icon: const Icon(Icons.save_alt),
+        icon: const Icon(Icons.folder_special),
         tooltip: context.l10n.saveToSavedCards,
         onPressed: () => onSave(log),
       ),

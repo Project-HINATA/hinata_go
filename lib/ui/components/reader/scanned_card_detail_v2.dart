@@ -102,16 +102,34 @@ class ScannedCardDetailV2 extends ConsumerWidget {
       final Felica felica => _buildFelicaFields(felica),
       final Banapass banapass => _buildBanapassFields(banapass),
       final Iso14443 iso14443 => _buildIso14443Fields(iso14443),
-      _ => [_NativeInfoRow(label: 'ID', value: card.idString.toUpperCase())],
+      _ => [
+        _NativeInfoRow(
+          label: 'ID',
+          value: card.idString.toUpperCase(),
+          groupInFours: true,
+        ),
+      ],
     };
   }
 
   List<Widget> _buildAicFields(Aic card) {
     return [
-      _NativeInfoRow(label: 'Access Code', value: card.accessCodeString),
+      _NativeInfoRow(
+        label: 'Access Code',
+        value: card.accessCodeString,
+        groupInFours: true,
+      ),
       _NativeInfoRow(label: 'Manufacturer', value: card.manufacturer),
-      _NativeInfoRow(label: 'IDm', value: card.idString.toUpperCase()),
-      _NativeInfoRow(label: 'PMm', value: card.pmmString.toUpperCase()),
+      _NativeInfoRow(
+        label: 'IDm',
+        value: card.idString.toUpperCase(),
+        groupInFours: true,
+      ),
+      _NativeInfoRow(
+        label: 'PMm',
+        value: card.pmmString.toUpperCase(),
+        groupInFours: true,
+      ),
       _NativeInfoRow(
         label: 'System Code',
         value: _formatSystemCode(card.systemCode),
@@ -121,8 +139,16 @@ class ScannedCardDetailV2 extends ConsumerWidget {
 
   List<Widget> _buildAimeFields(Aime card) {
     return [
-      _NativeInfoRow(label: 'Access Code', value: card.accessCodeString),
-      _NativeInfoRow(label: 'UID', value: card.idString.toUpperCase()),
+      _NativeInfoRow(
+        label: 'Access Code',
+        value: card.accessCodeString,
+        groupInFours: true,
+      ),
+      _NativeInfoRow(
+        label: 'UID',
+        value: card.idString.toUpperCase(),
+        groupInFours: true,
+      ),
       _NativeInfoRow(label: 'SAK', value: _formatHexByte(card.sak)),
       _NativeInfoRow(label: 'ATQA', value: _formatHexWord(card.atqa)),
     ];
@@ -130,8 +156,16 @@ class ScannedCardDetailV2 extends ConsumerWidget {
 
   List<Widget> _buildFelicaFields(Felica card) {
     return [
-      _NativeInfoRow(label: 'IDm', value: card.idString.toUpperCase()),
-      _NativeInfoRow(label: 'PMm', value: card.pmmString.toUpperCase()),
+      _NativeInfoRow(
+        label: 'IDm',
+        value: card.idString.toUpperCase(),
+        groupInFours: true,
+      ),
+      _NativeInfoRow(
+        label: 'PMm',
+        value: card.pmmString.toUpperCase(),
+        groupInFours: true,
+      ),
       _NativeInfoRow(
         label: 'System Code',
         value: _formatSystemCode(card.systemCode),
@@ -144,13 +178,18 @@ class ScannedCardDetailV2 extends ConsumerWidget {
       _NativeInfoRow(
         label: 'Block 1',
         value: card.value?.substring(0, 32) ?? '',
+        groupInFours: true,
       ),
     ];
   }
 
   List<Widget> _buildIso14443Fields(Iso14443 card) {
     return [
-      _NativeInfoRow(label: 'UID', value: card.idString.toUpperCase()),
+      _NativeInfoRow(
+        label: 'UID',
+        value: card.idString.toUpperCase(),
+        groupInFours: true,
+      ),
       _NativeInfoRow(label: 'SAK', value: _formatHexByte(card.sak)),
       _NativeInfoRow(label: 'ATQA', value: _formatHexWord(card.atqa)),
     ];
@@ -280,16 +319,18 @@ class _SourceBadge extends StatelessWidget {
 class _NativeInfoRow extends ConsumerWidget {
   final String label;
   final String value;
-  const _NativeInfoRow({required this.label, required this.value});
+  final bool groupInFours;
+
+  const _NativeInfoRow({
+    required this.label,
+    required this.value,
+    this.groupInFours = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
-
-    // Grouping for better legibility
-    final formattedValue = value
-        .replaceAllMapped(RegExp(r".{4}"), (match) => "${match.group(0)} ")
-        .trim();
+    final formattedValue = groupInFours ? _groupIntoFours(value) : value;
 
     return Material(
       color: Colors.transparent,
@@ -375,5 +416,11 @@ class _NativeInfoRow extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _groupIntoFours(String input) {
+    return input.replaceAllMapped(RegExp(r'.{1,4}'), (match) {
+      return '${match.group(0)} ';
+    }).trim();
   }
 }

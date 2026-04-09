@@ -4,7 +4,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/hardware_device_provider.dart';
 import '../../services/communication/usb_hinata_impl.dart';
-import '../app_layout.dart';
 import '../components/device/disconnected_state.dart';
 import '../components/device/device_dashboard.dart';
 
@@ -13,7 +12,6 @@ class DeviceControlPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final layout = context.appLayout;
     final deviceState = ref.watch(hardwareDeviceProvider);
     final isConnected = deviceState.connectedDevice != null;
     final isUsbHinata = deviceState.connectedDevice is UsbHinataDeviceImpl;
@@ -24,23 +22,21 @@ class DeviceControlPage extends ConsumerWidget {
     final l10n = context.l10n;
 
     return Scaffold(
-      appBar: layout.showPageAppBar
-          ? AppBar(
-              title: Text(l10n.deviceHub),
-              actions: [
-                if (isConnected)
-                  IconButton(
-                    icon: const Icon(Icons.link_off),
-                    tooltip: 'Disconnect',
-                    onPressed: () {
-                      ref.read(hardwareDeviceProvider.notifier).disconnect();
-                    },
-                  ),
-              ],
-            )
-          : null,
+      appBar: AppBar(
+        title: Text(l10n.deviceHub),
+        actions: [
+          if (isConnected)
+            IconButton(
+              icon: const Icon(Icons.link_off),
+              tooltip: 'Disconnect',
+              onPressed: () {
+                ref.read(hardwareDeviceProvider.notifier).disconnect();
+              },
+            ),
+        ],
+      ),
       body: SafeArea(
-        top: !layout.showPageAppBar,
+        top: false,
         bottom: false,
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -52,7 +48,7 @@ class DeviceControlPage extends ConsumerWidget {
               : const DisconnectedState(),
         ),
       ),
-      floatingActionButton: layout.showPageAppBar || !isConnected
+      floatingActionButton: !isConnected
           ? null
           : FloatingActionButton.small(
               onPressed: () {

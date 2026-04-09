@@ -172,9 +172,9 @@ class SavedCardsPage extends HookConsumerWidget {
         .toList();
 
     return Scaffold(
-      appBar: layout.showPageAppBar ? _buildAppBar(context) : null,
+      appBar: layout.isLandscape ? null : _buildAppBar(context),
       body: SafeArea(
-        top: !layout.showPageAppBar,
+        top: layout.isLandscape,
         bottom: false,
         child: _buildBody(
           context,

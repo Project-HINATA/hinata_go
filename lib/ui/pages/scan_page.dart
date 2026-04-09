@@ -6,6 +6,7 @@ import 'package:hinata_go/context_extensions.dart';
 import '../../models/remote_instance.dart';
 import '../../models/scanning_mode.dart';
 import '../../providers/app_state_provider.dart';
+import '../../providers/display_rotation_provider.dart';
 import '../app_layout.dart';
 import '../components/reader/current_scan_result_panel.dart';
 import '../components/reader/instance_card.dart';
@@ -23,6 +24,10 @@ class ScanPage extends ConsumerWidget {
     final mode = ref.watch(scanningModeProvider);
     final activeInstance = ref.watch(activeInstanceProvider);
     final layout = context.appLayout;
+    final androidDisplayRotation = ref.watch(androidDisplayRotationProvider);
+    final deviceTopOnRight = layout.resolveDeviceTopOnRight(
+      androidDisplayRotation,
+    );
     final modeSelector = _ModeSelector(
       mode: mode,
       onModeChanged: (newMode) {
@@ -36,12 +41,13 @@ class ScanPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: context.colorScheme.surface,
-      appBar: layout.showPageAppBar ? _buildAppBar(context) : null,
+      appBar: layout.isLandscape ? null : _buildAppBar(context),
       body: SafeArea(
-        top: !layout.showPageAppBar,
+        top: layout.isLandscape,
         bottom: false,
         child: _ScanPageBody(
           layout: layout,
+          deviceTopOnRight: deviceTopOnRight,
           modeSelector: modeSelector,
           dynamicContent: dynamicContent,
         ),
@@ -75,11 +81,13 @@ class ScanPage extends ConsumerWidget {
 class _ScanPageBody extends StatelessWidget {
   const _ScanPageBody({
     required this.layout,
+    required this.deviceTopOnRight,
     required this.modeSelector,
     required this.dynamicContent,
   });
 
   final AppLayoutInfo layout;
+  final bool deviceTopOnRight;
   final Widget modeSelector;
   final Widget dynamicContent;
 
@@ -96,6 +104,7 @@ class _ScanPageBody extends StatelessWidget {
               return layout.isLandscape
                   ? _ScanLandscapeBody(
                       layout: layout,
+                      deviceTopOnRight: deviceTopOnRight,
                       constraints: constraints,
                       modeSelector: modeSelector,
                       dynamicContent: dynamicContent,
@@ -116,12 +125,14 @@ class _ScanPageBody extends StatelessWidget {
 class _ScanLandscapeBody extends StatelessWidget {
   const _ScanLandscapeBody({
     required this.layout,
+    required this.deviceTopOnRight,
     required this.constraints,
     required this.modeSelector,
     required this.dynamicContent,
   });
 
   final AppLayoutInfo layout;
+  final bool deviceTopOnRight;
   final BoxConstraints constraints;
   final Widget modeSelector;
   final Widget dynamicContent;
@@ -144,19 +155,17 @@ class _ScanLandscapeBody extends StatelessWidget {
     final placeholder = _ScanPlaceholder(
       width: placeholderHeight / ScanPage._goldenRatio,
       height: placeholderHeight,
-      contentQuarterTurns: layout.deviceTopOnRight ? 1 : 3,
+      contentQuarterTurns: deviceTopOnRight ? 1 : 3,
     );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (layout.deviceTopOnRight) controlColumnPane,
-        if (layout.deviceTopOnRight)
-          const SizedBox(width: ScanPage._contentSpacing),
+        if (deviceTopOnRight) controlColumnPane,
+        if (deviceTopOnRight) const SizedBox(width: ScanPage._contentSpacing),
         placeholder,
-        if (!layout.deviceTopOnRight)
-          const SizedBox(width: ScanPage._contentSpacing),
-        if (!layout.deviceTopOnRight) controlColumnPane,
+        if (!deviceTopOnRight) const SizedBox(width: ScanPage._contentSpacing),
+        if (!deviceTopOnRight) controlColumnPane,
       ],
     );
   }

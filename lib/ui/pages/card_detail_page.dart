@@ -7,7 +7,6 @@ import '../../models/card/card.dart';
 import '../../models/remote_instance.dart';
 import '../../providers/card_sender.dart';
 import '../../services/notification_service.dart';
-import '../app_layout.dart';
 import '../components/card_detail/bottom_actions.dart';
 import '../components/instances/select_instance_dialog.dart';
 import '../components/reader/scanned_card_detail_v2.dart';
@@ -54,13 +53,12 @@ class CardDetailPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final layout = context.appLayout;
     final senderState = ref.watch(cardSenderProvider);
 
     return Scaffold(
-      appBar: layout.showPageAppBar ? _buildAppBar(context, ref) : null,
+      appBar: _buildAppBar(context, ref),
       body: SafeArea(
-        top: !layout.showPageAppBar,
+        top: false,
         bottom: false,
         child: _buildBody(context, ref, senderState),
       ),
