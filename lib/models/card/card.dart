@@ -71,3 +71,11 @@ class ICCard {
     return bytes;
   }
 }
+
+abstract interface class HasAccessCode {
+  String? get accessCodeString;
+}
+
+abstract interface class HasEPass {
+  String? get epass;
+}

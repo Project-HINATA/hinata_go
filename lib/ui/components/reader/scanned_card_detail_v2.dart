@@ -3,12 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
-import '../../../models/card/card.dart';
+
 import '../../../models/card/aic.dart';
-import '../../../models/card/aime.dart';
-import '../../../models/card/felica.dart';
-import '../../../models/card/iso14443a.dart';
 import '../../../models/card/banapass.dart';
+import '../../../models/card/card.dart';
+import '../../../models/card/felica.dart';
+import '../../../models/card/iso15693.dart';
+import '../../../models/card/iso14443a.dart';
 import '../../../services/notification_service.dart';
 
 class ScannedCardDetailV2 extends ConsumerWidget {
@@ -56,7 +57,7 @@ class ScannedCardDetailV2 extends ConsumerWidget {
               source: source,
               showCloseButtonSpace: showCloseButtonSpace,
             ),
-          _TechnicalFieldsSection(children: _buildTechnicalFields(card)),
+          _TechnicalFieldsSection(children: _buildTechnicalFields()),
         ],
       ),
     );
@@ -95,135 +96,171 @@ class ScannedCardDetailV2 extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildTechnicalFields(ICCard card) {
-    return switch (card) {
-      final Aic aic => _buildAicFields(aic),
-      final Aime aime => _buildAimeFields(aime),
-      final Felica felica => _buildFelicaFields(felica),
-      final Banapass banapass => _buildBanapassFields(banapass),
-      final Iso14443 iso14443 => _buildIso14443Fields(iso14443),
-      _ => [
-        _NativeInfoRow(
-          label: 'ID',
-          value: card.idString.toUpperCase(),
-          groupInFours: true,
-        ),
-      ],
-    };
-  }
-
-  List<Widget> _buildAicFields(Aic card) {
-    return [
-      _NativeInfoRow(
-        label: 'Access Code',
-        value: card.accessCodeString,
-        groupInFours: true,
-      ),
-      _NativeInfoRow(label: 'Manufacturer', value: card.manufacturer),
-      _NativeInfoRow(
-        label: 'IDm',
-        value: card.idString.toUpperCase(),
-        groupInFours: true,
-      ),
-      if (card.epass != null)
-        _NativeInfoRow(label: 'EPass', value: card.epass!),
-      _NativeInfoRow(
-        label: 'PMm',
-        value: card.pmmString.toUpperCase(),
-        groupInFours: true,
-      ),
-      _NativeInfoRow(
-        label: 'System Code',
-        value: _formatSystemCode(card.systemCode),
-      ),
-    ];
-  }
-
-  List<Widget> _buildAimeFields(Aime card) {
-    return [
-      _NativeInfoRow(
-        label: 'Access Code',
-        value: card.accessCodeString,
-        groupInFours: true,
-      ),
-      _NativeInfoRow(
-        label: 'UID',
-        value: card.idString.toUpperCase(),
-        groupInFours: true,
-      ),
-      _NativeInfoRow(label: 'SAK', value: _formatHexByte(card.sak)),
-      _NativeInfoRow(label: 'ATQA', value: _formatHexWord(card.atqa)),
-    ];
-  }
-
-  List<Widget> _buildFelicaFields(Felica card) {
-    return [
-      _NativeInfoRow(
-        label: 'IDm',
-        value: card.idString.toUpperCase(),
-        groupInFours: true,
-      ),
-      if (card.epass != null)
-        _NativeInfoRow(label: 'EPass', value: card.epass!),
-      _NativeInfoRow(
-        label: 'PMm',
-        value: card.pmmString.toUpperCase(),
-        groupInFours: true,
-      ),
-      _NativeInfoRow(
-        label: 'System Code',
-        value: _formatSystemCode(card.systemCode),
-      ),
-    ];
-  }
-
-  List<Widget> _buildBanapassFields(Banapass card) {
-    final accessCode = card.accessCodeString;
-    if (accessCode != null && accessCode.isNotEmpty) {
-      return [
-        _NativeInfoRow(
-          label: 'Access Code',
-          value: accessCode,
-          groupInFours: true,
-        ),
-      ];
-    }
-
-    return [
-      _NativeInfoRow(
-        label: 'Block 1',
-        value: card.value?.substring(0, 32) ?? '',
-        groupInFours: true,
-      ),
-    ];
-  }
-
-  List<Widget> _buildIso14443Fields(Iso14443 card) {
-    return [
-      _NativeInfoRow(
-        label: 'UID',
-        value: card.idString.toUpperCase(),
-        groupInFours: true,
-      ),
-      _NativeInfoRow(label: 'SAK', value: _formatHexByte(card.sak)),
-      _NativeInfoRow(label: 'ATQA', value: _formatHexWord(card.atqa)),
-    ];
-  }
-
-  String _formatSystemCode(List<int> systemCode) {
-    return systemCode
-        .map((e) => e.toRadixString(16).padLeft(4, '0').toUpperCase())
-        .join(', ');
-  }
-
-  String _formatHexByte(int value) {
-    return '0x${value.toRadixString(16).padLeft(2, '0').toUpperCase()}';
-  }
-
-  String _formatHexWord(int value) {
-    return '0x${value.toRadixString(16).padLeft(4, '0').toUpperCase()}';
+  List<Widget> _buildTechnicalFields() {
+    return _buildCardDetailFields(card)
+        .map(
+          (field) => _NativeInfoRow(
+            label: field.label,
+            value: field.value,
+            groupInFours: field.groupInFours,
+          ),
+        )
+        .toList();
   }
 }
+
+class _CardDetailField {
+  const _CardDetailField({
+    required this.label,
+    required this.value,
+    this.groupInFours = false,
+  });
+
+  final String label;
+  final String value;
+  final bool groupInFours;
+}
+
+class _CardFieldDefinition<T> {
+  const _CardFieldDefinition({
+    required this.label,
+    required this.extractor,
+    this.groupInFours = false,
+  });
+
+  final String label;
+  final String? Function(T card) extractor;
+  final bool groupInFours;
+}
+
+List<_CardDetailField> _buildCardDetailFields(ICCard card) {
+  final fields = [
+    ..._extractFields<HasAccessCode>(card, _accessCodeFieldDefinitions),
+    ..._extractFields<Aic>(card, _aicFieldDefinitions),
+    ..._extractFields<Banapass>(card, _banapassFieldDefinitions),
+    ..._extractFields<Felica>(card, _felicaPrimaryFieldDefinitions),
+    ..._extractFields<Iso14443>(card, _iso14443FieldDefinitions),
+    ..._extractFields<Iso15693>(card, _iso15693FieldDefinitions),
+    ..._extractFields<HasEPass>(card, _epassFieldDefinitions),
+    ..._extractFields<Felica>(card, _felicaSecondaryFieldDefinitions),
+  ];
+
+  if (fields.isNotEmpty) {
+    return fields;
+  }
+
+  return [
+    _CardDetailField(
+      label: 'ID',
+      value: card.idString.toUpperCase(),
+      groupInFours: true,
+    ),
+  ];
+}
+
+List<_CardDetailField> _extractFields<T>(
+  Object card,
+  List<_CardFieldDefinition<T>> definitions,
+) {
+  if (card is! T) {
+    return const [];
+  }
+
+  final typedCard = card as T;
+
+  return definitions
+      .map(
+        (definition) => _buildCardDetailField(
+          label: definition.label,
+          value: definition.extractor(typedCard),
+          groupInFours: definition.groupInFours,
+        ),
+      )
+      .whereType<_CardDetailField>()
+      .toList();
+}
+
+_CardDetailField? _buildCardDetailField({
+  required String label,
+  required String? value,
+  bool groupInFours = false,
+}) {
+  if (value == null || value.isEmpty) {
+    return null;
+  }
+
+  return _CardDetailField(
+    label: label,
+    value: value,
+    groupInFours: groupInFours,
+  );
+}
+
+const List<_CardFieldDefinition<HasAccessCode>> _accessCodeFieldDefinitions = [
+  _CardFieldDefinition(
+    label: 'Access Code',
+    extractor: _accessCodeValue,
+    groupInFours: true,
+  ),
+];
+
+const List<_CardFieldDefinition<Aic>> _aicFieldDefinitions = [
+  _CardFieldDefinition(label: 'Manufacturer', extractor: _aicManufacturer),
+];
+
+const List<_CardFieldDefinition<Banapass>> _banapassFieldDefinitions = [
+  _CardFieldDefinition(label: 'Block 1', extractor: _banapassFallbackBlock1),
+];
+
+const List<_CardFieldDefinition<Felica>> _felicaPrimaryFieldDefinitions = [
+  _CardFieldDefinition(label: 'IDm', extractor: _felicaIdm, groupInFours: true),
+];
+
+const List<_CardFieldDefinition<HasEPass>> _epassFieldDefinitions = [
+  _CardFieldDefinition(
+    label: 'EPass',
+    extractor: _epassValue,
+    groupInFours: true,
+  ),
+];
+
+const List<_CardFieldDefinition<Felica>> _felicaSecondaryFieldDefinitions = [
+  _CardFieldDefinition(label: 'PMm', extractor: _felicaPmm, groupInFours: true),
+  _CardFieldDefinition(label: 'System Code', extractor: _felicaSystemCode),
+];
+
+const List<_CardFieldDefinition<Iso14443>> _iso14443FieldDefinitions = [
+  _CardFieldDefinition(
+    label: 'UID',
+    extractor: _iso14443Uid,
+    groupInFours: true,
+  ),
+  _CardFieldDefinition(label: 'SAK', extractor: _iso14443Sak),
+  _CardFieldDefinition(label: 'ATQA', extractor: _iso14443Atqa),
+];
+
+const List<_CardFieldDefinition<Iso15693>> _iso15693FieldDefinitions = [
+  _CardFieldDefinition(
+    label: 'UID',
+    extractor: _iso15693Uid,
+    groupInFours: true,
+  ),
+];
+
+String _upperHex(String value) => value.toUpperCase();
+
+String? _accessCodeValue(HasAccessCode card) => card.accessCodeString;
+String? _aicManufacturer(Aic card) => card.manufacturer;
+String? _banapassFallbackBlock1(Banapass card) =>
+    card.accessCodeString == null ? card.block1Hex : null;
+String? _felicaIdm(Felica card) => _upperHex(card.idString);
+String? _epassValue(HasEPass card) => card.epass;
+String? _felicaPmm(Felica card) => _upperHex(card.pmmString);
+String? _felicaSystemCode(Felica card) => card.systemCodeDisplay;
+String? _iso14443Uid(Iso14443 card) => _upperHex(card.idString);
+String? _iso14443Sak(Iso14443 card) => card.sakDisplay;
+String? _iso14443Atqa(Iso14443 card) => card.atqaDisplay;
+String? _iso15693Uid(Iso15693 card) => _upperHex(card.idString);
 
 class _CardDetailHeader extends StatelessWidget {
   const _CardDetailHeader({

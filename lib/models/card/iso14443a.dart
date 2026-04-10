@@ -24,6 +24,12 @@ class Iso14443 extends ICCard {
     return "Generic ISO14443 Card";
   }
 
+  String get sakDisplay =>
+      '0x${sak.toRadixString(16).padLeft(2, '0').toUpperCase()}';
+
+  String get atqaDisplay =>
+      '0x${atqa.toRadixString(16).padLeft(4, '0').toUpperCase()}';
+
   @override
   Map<String, dynamic> toJson() {
     return {...super.toJson(), 'sak': sak, 'atqa': atqa};

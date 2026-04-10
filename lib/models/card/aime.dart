@@ -3,10 +3,11 @@ import 'dart:typed_data';
 import 'card.dart';
 import 'iso14443a.dart';
 
-class Aime extends Iso14443 {
+class Aime extends Iso14443 implements HasAccessCode {
   final Uint8List accessCode;
   Aime(super.id, super.sak, super.atqa, this.accessCode);
 
+  @override
   String get accessCodeString =>
       accessCode.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
   @override

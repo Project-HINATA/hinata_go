@@ -3,10 +3,17 @@ import 'dart:typed_data';
 import 'card.dart';
 import 'felica.dart';
 
-class Aic extends Felica {
+class Aic extends Felica implements HasAccessCode {
   final Uint8List accessCode;
-  Aic(super.id, super.pmm, super.systemCode, this.accessCode);
+  Aic(
+    super.id,
+    super.pmm,
+    super.systemCode,
+    this.accessCode, {
+    super.persistedEpass,
+  });
 
+  @override
   String get accessCodeString =>
       accessCode.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
 
@@ -46,6 +53,7 @@ class Aic extends Felica {
       felica.pmm,
       felica.systemCode,
       ICCard.hexToBytes(json['accessCode'] as String? ?? ''),
+      persistedEpass: json['epass'] as String?,
     );
   }
 }

@@ -12,10 +12,13 @@ BigInt bytesToBigInt(Uint8List bytes) {
   return result;
 }
 
-class Felica extends ICCard {
+class Felica extends ICCard implements HasEPass {
   final Uint8List pmm;
   final Uint16List systemCode;
-  Felica(super.id, this.pmm, this.systemCode);
+  final String? _persistedEpass;
+
+  Felica(super.id, this.pmm, this.systemCode, {String? persistedEpass})
+    : _persistedEpass = persistedEpass;
 
   String get pmmString =>
       pmm.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
@@ -23,13 +26,8 @@ class Felica extends ICCard {
   String get fakeAccessCodeString =>
       bytesToBigInt(id).toString().padLeft(20, '0');
 
-  String? get epass {
-    try {
-      return EPass.encode(idString.toUpperCase());
-    } catch (_) {
-      return null;
-    }
-  }
+  @override
+  late final String? epass = _persistedEpass ?? _computeEpass();
 
   @override
   String get name => "Felica";
@@ -40,12 +38,17 @@ class Felica extends ICCard {
   @override
   String? get value => idString;
 
+  String get systemCodeDisplay => systemCode
+      .map((e) => e.toRadixString(16).padLeft(4, '0').toUpperCase())
+      .join(', ');
+
   @override
   Map<String, dynamic> toJson() {
     return {
       ...super.toJson(),
       'pmm': pmmString,
       'systemCode': systemCode.toList(),
+      if (epass != null) 'epass': epass,
     };
   }
 
@@ -56,6 +59,15 @@ class Felica extends ICCard {
       Uint16List.fromList(
         (json['systemCode'] as List<dynamic>?)?.cast<int>() ?? [],
       ),
+      persistedEpass: json['epass'] as String?,
     );
+  }
+
+  String? _computeEpass() {
+    try {
+      return EPass.encode(idString.toUpperCase());
+    } catch (_) {
+      return null;
+    }
   }
 }
