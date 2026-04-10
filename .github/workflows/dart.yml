@@ -14,6 +14,9 @@ jobs:
       LOCAL_PLUGINS_REPO: ${{ secrets.LOCAL_PLUGINS_REPO }}
       LOCAL_PLUGINS_TOKEN: ${{ secrets.LOCAL_PLUGINS_TOKEN }}
       LOCAL_PLUGINS_REF: ${{ secrets.LOCAL_PLUGINS_REF }}
+      CARDCIPHER_REPO: ${{ secrets.CARDCIPHER_REPO }}
+      CARDCIPHER_TOKEN: ${{ secrets.CARDCIPHER_TOKEN }}
+      CARDCIPHER_REF: ${{ secrets.CARDCIPHER_REF }}
 
     steps:
       - name: Checkout Code
@@ -34,7 +37,7 @@ jobs:
           cache: true
 
       - name: Setup private plugins
-        if: ${{ env.LOCAL_PLUGINS_REPO != '' }}
+        if: ${{ env.LOCAL_PLUGINS_REPO != '' || env.CARDCIPHER_REPO != '' }}
         shell: bash
         run: ./.github/scripts/setup_private_plugins.sh
 

@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:cardcipher/bana.dart';
+
 import 'card.dart';
 import 'iso14443a.dart';
 
@@ -8,12 +10,22 @@ class Banapass extends Iso14443 {
   final Uint8List? block2;
   Banapass(super.id, super.sak, super.atqa, this.block1, this.block2);
 
-  String get _block1Hex =>
+  String get block1Hex =>
       block1.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
 
-  String get _block2Hex => block2 != null
+  String get block2Hex => block2 != null
       ? block2!.map((e) => e.toRadixString(16).padLeft(2, '0')).join()
       : '';
+
+  NbgiAccessCodeResult? get accessCodeResult {
+    try {
+      return nbgiGetAccessCode(block1);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? get accessCodeString => accessCodeResult?.accessCode;
 
   @override
   String get name => "Banapass";
@@ -22,14 +34,14 @@ class Banapass extends Iso14443 {
   String? get type => "mifare";
 
   @override
-  String? get value => "$_block1Hex$_block2Hex";
+  String? get value => "$block1Hex$block2Hex";
 
   @override
   Map<String, dynamic> toJson() {
     return {
       ...super.toJson(),
-      'block1': _block1Hex,
-      'block2': block2 != null ? _block2Hex : null,
+      'block1': block1Hex,
+      'block2': block2 != null ? block2Hex : null,
     };
   }
 

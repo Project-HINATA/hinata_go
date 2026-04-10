@@ -63,6 +63,8 @@ dependencies:
       url: "https://github.com/nerimoe/neo_web_hid.dart"
   quick_usb:
     path: plugins/quick_usb/
+  cardcipher:
+    path: plugins/cardcipher/
   hinata_firmware_feature:
     path: plugins/hinata_firmware_feature/
 

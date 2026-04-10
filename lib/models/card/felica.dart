@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:cardcipher/epass.dart';
+
 import 'card.dart';
 
 BigInt bytesToBigInt(Uint8List bytes) {
@@ -20,6 +22,14 @@ class Felica extends ICCard {
 
   String get fakeAccessCodeString =>
       bytesToBigInt(id).toString().padLeft(20, '0');
+
+  String? get epass {
+    try {
+      return EPass.encode(idString.toUpperCase());
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   String get name => "Felica";

@@ -125,6 +125,8 @@ class ScannedCardDetailV2 extends ConsumerWidget {
         value: card.idString.toUpperCase(),
         groupInFours: true,
       ),
+      if (card.epass != null)
+        _NativeInfoRow(label: 'EPass', value: card.epass!),
       _NativeInfoRow(
         label: 'PMm',
         value: card.pmmString.toUpperCase(),
@@ -161,6 +163,8 @@ class ScannedCardDetailV2 extends ConsumerWidget {
         value: card.idString.toUpperCase(),
         groupInFours: true,
       ),
+      if (card.epass != null)
+        _NativeInfoRow(label: 'EPass', value: card.epass!),
       _NativeInfoRow(
         label: 'PMm',
         value: card.pmmString.toUpperCase(),
@@ -174,6 +178,17 @@ class ScannedCardDetailV2 extends ConsumerWidget {
   }
 
   List<Widget> _buildBanapassFields(Banapass card) {
+    final accessCode = card.accessCodeString;
+    if (accessCode != null && accessCode.isNotEmpty) {
+      return [
+        _NativeInfoRow(
+          label: 'Access Code',
+          value: accessCode,
+          groupInFours: true,
+        ),
+      ];
+    }
+
     return [
       _NativeInfoRow(
         label: 'Block 1',
