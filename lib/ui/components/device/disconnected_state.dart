@@ -13,6 +13,7 @@ class DisconnectedState extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(hardwareDeviceProvider);
     final l10n = context.l10n;
+    final canUseHid = state.hidAvailable;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -40,14 +41,18 @@ class DisconnectedState extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      l10n.scanForDevices,
+                      canUseHid
+                          ? l10n.scanForDevices
+                          : 'USB HID is not available in this environment.',
                       textAlign: TextAlign.center,
                       style: context.textTheme.bodyLarge?.copyWith(
                         color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 32),
-                    if (state.isConnecting)
+                    if (!canUseHid)
+                      const SizedBox.shrink()
+                    else if (state.isConnecting)
                       const CircularProgressIndicator()
                     else
                       FilledButton.icon(

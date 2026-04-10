@@ -74,6 +74,7 @@ class _NfcDisplayInputs {
     required this.colorScheme,
     required this.lastAcceptedScanAt,
     required this.isCardPresent,
+    required this.isUsbAvailable,
     required this.isUsbConnected,
     required this.isScanningNfc,
     required this.isProcessing,
@@ -87,6 +88,7 @@ class _NfcDisplayInputs {
     required bool isPaused,
   }) {
     final nfcState = ref.watch(nfcProvider);
+    final hardwareDeviceState = ref.watch(hardwareDeviceProvider);
 
     return _NfcDisplayInputs(
       colorScheme: context.colorScheme,
@@ -96,7 +98,8 @@ class _NfcDisplayInputs {
       isCardPresent: ref.watch(
         currentScanSessionProvider.select((s) => s.isCardPresent),
       ),
-      isUsbConnected: ref.watch(hardwareDeviceProvider).connectedDevice != null,
+      isUsbAvailable: hardwareDeviceState.hidAvailable,
+      isUsbConnected: hardwareDeviceState.connectedDevice != null,
       isScanningNfc: nfcState.isScanning,
       isProcessing: nfcState.isProcessing,
       isIOS: !kIsWeb && Platform.isIOS,
@@ -107,6 +110,7 @@ class _NfcDisplayInputs {
   final ColorScheme colorScheme;
   final DateTime? lastAcceptedScanAt;
   final bool isCardPresent;
+  final bool isUsbAvailable;
   final bool isUsbConnected;
   final bool isScanningNfc;
   final bool isProcessing;
@@ -121,6 +125,7 @@ class _NfcDisplayState {
     required this.isIOS,
     required this.isPaused,
     required this.isScanningNfc,
+    required this.isUsbAvailable,
     required this.isUsbConnected,
     required this.isProcessing,
     required this.isShowingSuccess,
@@ -140,6 +145,7 @@ class _NfcDisplayState {
       isIOS: inputs.isIOS,
       isPaused: inputs.isPaused,
       isScanningNfc: inputs.isScanningNfc,
+      isUsbAvailable: inputs.isUsbAvailable,
       isUsbConnected: inputs.isUsbConnected,
       isProcessing: inputs.isProcessing,
       isShowingSuccess: isShowingSuccess,
@@ -159,6 +165,7 @@ class _NfcDisplayState {
   final bool isIOS;
   final bool isPaused;
   final bool isScanningNfc;
+  final bool isUsbAvailable;
   final bool isUsbConnected;
   final bool isProcessing;
   final bool isShowingSuccess;
@@ -480,8 +487,9 @@ class _StatusMarkers extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nfcStatus = ref.watch(nfcProvider).status;
-    final isUsbConnected =
-        ref.watch(hardwareDeviceProvider).connectedDevice != null;
+    final hardwareDeviceState = ref.watch(hardwareDeviceProvider);
+    final isUsbAvailable = hardwareDeviceState.hidAvailable;
+    final isUsbConnected = hardwareDeviceState.connectedDevice != null;
 
     return Flex(
       direction: sideways ? Axis.vertical : Axis.horizontal,
@@ -492,8 +500,10 @@ class _StatusMarkers extends ConsumerWidget {
             icon: Icons.contactless_rounded,
             enabled: nfcStatus != NfcStatus.disabled,
           ),
-        _StatusMarkerSpacer(sideways: sideways),
-        _StatusMarkerIcon(icon: Icons.usb_rounded, enabled: isUsbConnected),
+        if (isUsbAvailable) ...[
+          _StatusMarkerSpacer(sideways: sideways),
+          _StatusMarkerIcon(icon: Icons.usb_rounded, enabled: isUsbConnected),
+        ],
       ],
     );
   }

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
+
 import 'package:web/web.dart' as web;
 import 'package:neo_web_hid/neo_web_hid.dart' as neo;
+
 import 'hid_bridge_interface.dart';
 
 // Re-export interface for convenience
@@ -60,15 +62,7 @@ class WebHID extends HIDManager {
   }
 
   @override
-  bool canUseHid() {
-    // Robust check for WebHID support
-    // Using dynamic to bypass package:web Navigator missing 'hid' property in some versions
-    try {
-      return (web.window.navigator as dynamic).hid != null;
-    } catch (_) {
-      return false;
-    }
-  }
+  bool canUseHid() => neo.canUseHid();
 
   @override
   Future<List<HIDDevice>> getDevices() async {

@@ -8,6 +8,7 @@ import 'app_layout.dart';
 import '../providers/app_update_provider.dart';
 import '../providers/app_state_provider.dart';
 import '../providers/display_rotation_provider.dart';
+import '../providers/hardware_device_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'components/device/device_mini_bar.dart';
 
@@ -59,6 +60,9 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         final androidDisplayRotation = ref.watch(
           androidDisplayRotationProvider,
         );
+        final hardwareDeviceState = ref.watch(hardwareDeviceProvider);
+        final showBottomFloatingDeviceBar =
+            hardwareDeviceState.hidAvailable && !layout.isCompactLandscapePhone;
 
         return GestureDetector(
           onHorizontalDragEnd: layout.useRailNavigation ? null : _handleSwipe,
@@ -71,12 +75,14 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                   navigationShell: navigationShell,
                   currentIndex: navigationShell.currentIndex,
                   onDestinationSelected: _goBranch,
+                  showBottomFloatingDeviceBar: showBottomFloatingDeviceBar,
                 )
               : _MobileScaffoldBody(
                   navigationShell: navigationShell,
                   currentIndex: navigationShell.currentIndex,
                   onDestinationSelected: _goBranch,
                   destinations: destinations,
+                  showBottomFloatingDeviceBar: showBottomFloatingDeviceBar,
                 ),
         );
       },
@@ -133,12 +139,14 @@ class _MobileScaffoldBody extends StatelessWidget {
     required this.currentIndex,
     required this.onDestinationSelected,
     required this.destinations,
+    required this.showBottomFloatingDeviceBar,
   });
 
   final StatefulNavigationShell navigationShell;
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<NavigationDestination> destinations;
+  final bool showBottomFloatingDeviceBar;
 
   @override
   Widget build(BuildContext context) {
@@ -147,11 +155,13 @@ class _MobileScaffoldBody extends StatelessWidget {
         children: [
           Positioned.fill(
             child: _BottomFloatingDeviceBarSafeArea(
-              extraBottomInset: _bottomFloatingDeviceBarInset,
+              extraBottomInset: showBottomFloatingDeviceBar
+                  ? _bottomFloatingDeviceBarInset
+                  : 0,
               child: _NavigationShellHost(navigationShell: navigationShell),
             ),
           ),
-          const _BottomFloatingDeviceBar(),
+          if (showBottomFloatingDeviceBar) const _BottomFloatingDeviceBar(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -170,6 +180,7 @@ class _RailScaffoldBody extends ConsumerWidget {
     required this.navigationShell,
     required this.currentIndex,
     required this.onDestinationSelected,
+    required this.showBottomFloatingDeviceBar,
   });
 
   final AppLayoutInfo layout;
@@ -177,6 +188,7 @@ class _RailScaffoldBody extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
+  final bool showBottomFloatingDeviceBar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -199,7 +211,7 @@ class _RailScaffoldBody extends ConsumerWidget {
           Expanded(
             child: _RailContentHost(
               navigationShell: navigationShell,
-              isCompactLandscapePhone: layout.isCompactLandscapePhone,
+              showBottomFloatingDeviceBar: showBottomFloatingDeviceBar,
             ),
           ),
           if (!railOnLeadingSide) const VerticalDivider(thickness: 1, width: 1),
@@ -361,11 +373,11 @@ class _RailSection extends StatelessWidget {
 class _RailContentHost extends StatelessWidget {
   const _RailContentHost({
     required this.navigationShell,
-    required this.isCompactLandscapePhone,
+    required this.showBottomFloatingDeviceBar,
   });
 
   final StatefulNavigationShell navigationShell;
-  final bool isCompactLandscapePhone;
+  final bool showBottomFloatingDeviceBar;
 
   @override
   Widget build(BuildContext context) {
@@ -373,13 +385,13 @@ class _RailContentHost extends StatelessWidget {
       children: [
         Positioned.fill(
           child: _BottomFloatingDeviceBarSafeArea(
-            extraBottomInset: isCompactLandscapePhone
-                ? 0
-                : _bottomFloatingDeviceBarInset,
+            extraBottomInset: showBottomFloatingDeviceBar
+                ? _bottomFloatingDeviceBarInset
+                : 0,
             child: _NavigationShellHost(navigationShell: navigationShell),
           ),
         ),
-        if (!isCompactLandscapePhone) const _BottomFloatingDeviceBar(),
+        if (showBottomFloatingDeviceBar) const _BottomFloatingDeviceBar(),
       ],
     );
   }

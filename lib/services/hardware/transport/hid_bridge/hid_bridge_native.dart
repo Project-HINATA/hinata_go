@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:quick_usb/quick_usb.dart';
+
 import 'hid_bridge_interface.dart';
 
 // Re-export interface for convenience
@@ -157,7 +160,7 @@ class NativeHID extends HIDManager {
   }
 
   @override
-  bool canUseHid() => true;
+  bool canUseHid() => Platform.isAndroid;
 
   @override
   Future<List<HIDDevice>> getDevices() async {

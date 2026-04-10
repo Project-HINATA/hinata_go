@@ -15,6 +15,7 @@ import 'firmware_provider.dart';
 
 class HardwareDeviceState {
   final DeviceInterface? connectedDevice;
+  final bool hidAvailable;
   final bool isConnecting;
   final String? error;
   final String? firmwareVersion;
@@ -23,6 +24,7 @@ class HardwareDeviceState {
 
   HardwareDeviceState({
     this.connectedDevice,
+    this.hidAvailable = false,
     this.isConnecting = false,
     this.error,
     this.firmwareVersion,
@@ -32,6 +34,7 @@ class HardwareDeviceState {
 
   HardwareDeviceState copyWith({
     DeviceInterface? connectedDevice,
+    bool? hidAvailable,
     bool? isConnecting,
     String? error,
     String? firmwareVersion,
@@ -43,6 +46,7 @@ class HardwareDeviceState {
       connectedDevice: clearDevice
           ? null
           : (connectedDevice ?? this.connectedDevice),
+      hidAvailable: hidAvailable ?? this.hidAvailable,
       isConnecting: isConnecting ?? this.isConnecting,
       error: error ?? this.error,
       firmwareVersion: clearDevice
@@ -57,11 +61,18 @@ class HardwareDeviceState {
 class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
   @override
   HardwareDeviceState build() {
+    final hidAvailable = _safeCanUseHid();
     _initHidListeners();
-    return HardwareDeviceState();
+    return HardwareDeviceState(hidAvailable: hidAvailable);
   }
 
   void _initHidListeners() {
+    final canUseHid = _safeCanUseHid();
+    if (!canUseHid) {
+      log('HID unavailable on current platform/browser, skipping HID init.');
+      return;
+    }
+
     hid.onConnect((event) {
       log("Auto-connected to device: ${event.device}");
       _connectToHidDevice(event.device);
@@ -89,15 +100,32 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
     });
 
     // Try to get already connected devices
-    hid.getDevices().then((devices) {
-      if (devices.isNotEmpty) {
-        _connectToHidDevice(devices.first);
-      }
-    });
+    hid
+        .getDevices()
+        .then((devices) {
+          if (devices.isNotEmpty) {
+            _connectToHidDevice(devices.first);
+          }
+        })
+        .catchError((Object error, StackTrace stackTrace) {
+          log(
+            'Failed to enumerate HID devices during init.',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        });
   }
 
   Future<void> requestUsbDevice() async {
     state = state.copyWith(isConnecting: true, error: null);
+    if (!_safeCanUseHid()) {
+      state = state.copyWith(
+        isConnecting: false,
+        error: 'USB HID is not available in this browser',
+      );
+      return;
+    }
+
     try {
       final requestOptions = HIDDeviceRequestOptions(
         filters: [RequestOptionsFilter(vendorId: bridgeVendorId)],
@@ -198,6 +226,15 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
         .read(currentScanSessionProvider.notifier)
         .markCardRemoved(source: 'HINATA');
     state = state.copyWith(clearDevice: true);
+  }
+
+  bool _safeCanUseHid() {
+    try {
+      return hid.canUseHid();
+    } catch (e, s) {
+      log('Failed to probe HID availability.', error: e, stackTrace: s);
+      return false;
+    }
   }
 }
 

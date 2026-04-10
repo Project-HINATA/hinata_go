@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -13,23 +12,9 @@ import 'disconnected_state.dart';
 
 bool shouldShowBottomFloatingDeviceBar(
   BuildContext context, {
-  required bool isConnected,
+  required bool hidAvailable,
 }) {
-  final isMobileWeb =
-      kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS);
-
-  if (isMobileWeb) {
-    return false;
-  }
-
-  final theme = context.theme;
-  if (theme.platform == TargetPlatform.iOS && !isConnected) {
-    return false;
-  }
-
-  return true;
+  return hidAvailable;
 }
 
 class DeviceMiniBar extends ConsumerWidget {
@@ -140,7 +125,7 @@ class _DeviceMiniBarDisplayData {
       isConnected: isConnected,
       hideOnCurrentPlatform: !shouldShowBottomFloatingDeviceBar(
         context,
-        isConnected: isConnected,
+        hidAvailable: deviceState.hidAvailable,
       ),
       title: isConnected
           ? (hinataDevice?.productName ?? l10n.deviceHub)
