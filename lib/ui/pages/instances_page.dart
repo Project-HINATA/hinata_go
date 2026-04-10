@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:hinata_go/ui/app_layout.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../models/remote_instance.dart';
 import '../../providers/app_state_provider.dart';
+import '../../providers/hardware_device_provider.dart';
+import 'package:hinata_go/context_extensions.dart';
 import '../components/instances/instance_item.dart';
 import '../components/instances/instance_dialog.dart';
 
@@ -32,7 +35,7 @@ class InstancesPage extends HookConsumerWidget {
         bottom: false,
         child: _buildBody(context, instances, activeId),
       ),
-      floatingActionButton: _buildFAB(context),
+      floatingActionButton: _buildFAB(context, ref),
     );
   }
 
@@ -81,11 +84,24 @@ class InstancesPage extends HookConsumerWidget {
     );
   }
 
-  Widget _buildFAB(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: () => _showInstanceDialog(context),
-      icon: const Icon(Icons.add),
-      label: Text(context.l10n.addInstance),
+  Widget _buildFAB(BuildContext context, WidgetRef ref) {
+    final layout = context.appLayout;
+    final deviceState = ref.watch(hardwareDeviceProvider);
+    final theme = Theme.of(context);
+
+    final isConnected = deviceState.connectedDevice != null;
+    final hideOnCurrentPlatform =
+        theme.platform == TargetPlatform.iOS && !isConnected;
+    final hasFloatingDeviceBar =
+        !layout.isCompactLandscapePhone && !hideOnCurrentPlatform;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: hasFloatingDeviceBar ? 80.0 : 0.0),
+      child: FloatingActionButton.extended(
+        onPressed: () => _showInstanceDialog(context),
+        icon: const Icon(Icons.add),
+        label: Text(context.l10n.addInstance),
+      ),
     );
   }
 }
