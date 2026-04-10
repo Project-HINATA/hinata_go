@@ -8,7 +8,6 @@ import 'package:hinata_go/context_extensions.dart';
 import 'package:hinata_go/providers/hardware_device_provider.dart';
 import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
 
-import '../../app_layout.dart';
 import 'device_dashboard.dart';
 import 'disconnected_state.dart';
 
@@ -16,7 +15,12 @@ bool shouldShowBottomFloatingDeviceBar(
   BuildContext context, {
   required bool isConnected,
 }) {
-  if (kIsWeb && context.appLayout.isPhone) {
+  final isMobileWeb =
+      kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+
+  if (isMobileWeb) {
     return false;
   }
 
