@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -7,8 +8,25 @@ import 'package:hinata_go/context_extensions.dart';
 import 'package:hinata_go/providers/hardware_device_provider.dart';
 import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
 
+import '../../app_layout.dart';
 import 'device_dashboard.dart';
 import 'disconnected_state.dart';
+
+bool shouldShowBottomFloatingDeviceBar(
+  BuildContext context, {
+  required bool isConnected,
+}) {
+  if (kIsWeb && context.appLayout.isPhone) {
+    return false;
+  }
+
+  final theme = context.theme;
+  if (theme.platform == TargetPlatform.iOS && !isConnected) {
+    return false;
+  }
+
+  return true;
+}
 
 class DeviceMiniBar extends ConsumerWidget {
   final bool compact;
@@ -28,7 +46,6 @@ class DeviceMiniBar extends ConsumerWidget {
       deviceState,
     );
 
-    // Do not show on iOS if no device is connected (iOS doesn't support USB readers anyway)
     if (displayData.hideOnCurrentPlatform) return const SizedBox.shrink();
 
     if (compact) {
@@ -117,8 +134,10 @@ class _DeviceMiniBarDisplayData {
 
     return _DeviceMiniBarDisplayData(
       isConnected: isConnected,
-      hideOnCurrentPlatform:
-          theme.platform == TargetPlatform.iOS && !isConnected,
+      hideOnCurrentPlatform: !shouldShowBottomFloatingDeviceBar(
+        context,
+        isConnected: isConnected,
+      ),
       title: isConnected
           ? (hinataDevice?.productName ?? l10n.deviceHub)
           : l10n.noDeviceConnected,
