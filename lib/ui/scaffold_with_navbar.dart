@@ -11,6 +11,8 @@ import '../providers/display_rotation_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'components/device/device_mini_bar.dart';
 
+const double _bottomFloatingDeviceBarInset = 80;
+
 class ScaffoldWithNavBar extends ConsumerWidget {
   const ScaffoldWithNavBar({required this.navigationShell, super.key});
 
@@ -144,7 +146,10 @@ class _MobileScaffoldBody extends StatelessWidget {
       body: Stack(
         children: [
           Positioned.fill(
-            child: _NavigationShellHost(navigationShell: navigationShell),
+            child: _BottomFloatingDeviceBarSafeArea(
+              extraBottomInset: _bottomFloatingDeviceBarInset,
+              child: _NavigationShellHost(navigationShell: navigationShell),
+            ),
           ),
           const _BottomFloatingDeviceBar(),
         ],
@@ -367,10 +372,49 @@ class _RailContentHost extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: _NavigationShellHost(navigationShell: navigationShell),
+          child: _BottomFloatingDeviceBarSafeArea(
+            extraBottomInset: isCompactLandscapePhone
+                ? 0
+                : _bottomFloatingDeviceBarInset,
+            child: _NavigationShellHost(navigationShell: navigationShell),
+          ),
         ),
         if (!isCompactLandscapePhone) const _BottomFloatingDeviceBar(),
       ],
+    );
+  }
+}
+
+class _BottomFloatingDeviceBarSafeArea extends StatelessWidget {
+  const _BottomFloatingDeviceBarSafeArea({
+    required this.extraBottomInset,
+    required this.child,
+  });
+
+  final double extraBottomInset;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (extraBottomInset <= 0) {
+      return child;
+    }
+
+    final mediaQuery = context.mediaQuery;
+
+    return MediaQuery(
+      data: mediaQuery.copyWith(
+        padding: mediaQuery.padding.copyWith(
+          bottom: mediaQuery.padding.bottom + extraBottomInset,
+        ),
+        viewPadding: mediaQuery.viewPadding.copyWith(
+          bottom: mediaQuery.viewPadding.bottom + extraBottomInset,
+        ),
+        systemGestureInsets: mediaQuery.systemGestureInsets.copyWith(
+          bottom: mediaQuery.systemGestureInsets.bottom + extraBottomInset,
+        ),
+      ),
+      child: child,
     );
   }
 }

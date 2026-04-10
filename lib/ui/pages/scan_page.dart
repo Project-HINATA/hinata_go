@@ -16,6 +16,7 @@ class ScanPage extends ConsumerWidget {
   const ScanPage({super.key});
 
   static const double _contentSpacing = 32;
+  static const double _contentBottomSpacing = 16;
   static const double _goldenRatio = 1.61803398875;
   static const double _desktopLandscapePlaceholderMaxHeight = 420;
 
@@ -184,10 +185,13 @@ class _ScanPortraitBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomContentPadding =
+        context.mediaQuery.padding.bottom + ScanPage._contentBottomSpacing;
+
     return SingleChildScrollView(
       clipBehavior: Clip.none,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 96),
+      padding: EdgeInsets.only(bottom: bottomContentPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -325,10 +329,13 @@ class _ScrollableContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomContentPadding =
+        context.mediaQuery.padding.bottom + ScanPage._contentBottomSpacing;
+
     return Scrollbar(
       child: SingleChildScrollView(
         clipBehavior: Clip.none,
-        padding: const EdgeInsets.only(bottom: 96),
+        padding: EdgeInsets.only(bottom: bottomContentPadding),
         child: child,
       ),
     );

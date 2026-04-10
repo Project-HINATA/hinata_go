@@ -23,8 +23,6 @@ import '../components/instances/select_instance_dialog.dart';
 class SavedCardsPage extends HookConsumerWidget {
   const SavedCardsPage({super.key});
 
-  static const double _bottomFloatingBarFabOffset = 88;
-
   // ---------------------------------------------------------------------------
   // Dialog Actions
   // ---------------------------------------------------------------------------
@@ -184,13 +182,7 @@ class SavedCardsPage extends HookConsumerWidget {
           folderCards,
         ),
       ),
-      floatingActionButton: _buildFABs(
-        context,
-        selectedFolderIdState,
-        bottomPadding: layout.isCompactLandscapePhone
-            ? 0
-            : _bottomFloatingBarFabOffset,
-      ),
+      floatingActionButton: _buildFABs(context, selectedFolderIdState),
     );
   }
 
@@ -316,22 +308,18 @@ class SavedCardsPage extends HookConsumerWidget {
 
   Widget _buildFABs(
     BuildContext context,
-    ValueNotifier<String> selectedFolderIdState, {
-    required double bottomPadding,
-  }) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      child: _SavedCardsFabGroup(
-        showAddCard: selectedFolderIdState.value != 'history_folder',
-        onAddFolder: () => _showAddFolderDialog(
-          context,
-          (newId) => selectedFolderIdState.value = newId,
-        ),
-        onAddCard: () => _showAddCardDialog(
-          context,
-          selectedFolderIdState.value,
-          (newId) => selectedFolderIdState.value = newId,
-        ),
+    ValueNotifier<String> selectedFolderIdState,
+  ) {
+    return _SavedCardsFabGroup(
+      showAddCard: selectedFolderIdState.value != 'history_folder',
+      onAddFolder: () => _showAddFolderDialog(
+        context,
+        (newId) => selectedFolderIdState.value = newId,
+      ),
+      onAddCard: () => _showAddCardDialog(
+        context,
+        selectedFolderIdState.value,
+        (newId) => selectedFolderIdState.value = newId,
       ),
     );
   }
