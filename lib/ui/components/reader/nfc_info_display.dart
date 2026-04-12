@@ -151,7 +151,7 @@ class _NfcDisplayState {
       isShowingSuccess: isShowingSuccess,
       isCardPresent: inputs.isCardPresent,
       isWaitingForCard:
-          !inputs.isPaused &&
+          !(inputs.isPaused && !(inputs.isIOS && inputs.isScanningNfc)) &&
           !inputs.isProcessing &&
           !isShowingSuccess &&
           !inputs.isCardPresent &&
@@ -173,6 +173,7 @@ class _NfcDisplayState {
   final bool isWaitingForCard;
   final int normalizedQuarterTurns;
 
+  bool get shouldShowPausedPrompt => isPaused && !(isIOS && isScanningNfc);
   bool get isHighlighted => isShowingSuccess || isCardPresent;
   bool get isSidewaysContent => normalizedQuarterTurns.isOdd;
 
@@ -460,8 +461,9 @@ class _ScanningPrompt extends StatelessWidget {
           constraints.maxWidth,
           sideways: sideways,
         );
+        final shouldShowPausedPrompt = isPaused && !(isIOS && isNfcActive);
 
-        if (isPaused) {
+        if (shouldShowPausedPrompt) {
           return _PausedPromptContent(
             styles: _PromptStyles.paused(context),
             textBlockMaxWidth: textBlockMaxWidth,
@@ -547,14 +549,19 @@ class _PromptText {
   }) {
     final colorScheme = context.colorScheme;
     final isActive = isNfcActive || isUsbActive;
+    final isIosScanning = isIOS && isNfcActive;
 
     return _PromptText(
-      text: isIOS
+      text: isIosScanning
+          ? context.l10n.nfcIosAlert
+          : isIOS
           ? context.l10n.tapToScan
           : isActive
           ? context.l10n.holdCardNearReader
           : context.l10n.nfcInactive,
-      icon: isActive
+      icon: isIosScanning
+          ? Icons.phone_iphone_rounded
+          : isActive
           ? Icons.contactless_rounded
           : Icons.portable_wifi_off_rounded,
       color: isActive
