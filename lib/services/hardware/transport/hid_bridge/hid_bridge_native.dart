@@ -145,17 +145,17 @@ class NativeHID extends HIDManager {
   static final List<Function(HIDConnectionEvent)> _disconnectCallbacks = [];
   static StreamSubscription<UsbConnectionEvent>? _deviceConnectionSubscription;
 
-  NativeHID() {
-    _ensureDeviceConnectionListener();
-  }
+  NativeHID();
 
   @override
   void onConnect(Function(HIDConnectionEvent) callback) {
+    _ensureDeviceConnectionListener();
     _connectCallbacks.add(callback);
   }
 
   @override
   void onDisconnect(Function(HIDConnectionEvent) callback) {
+    _ensureDeviceConnectionListener();
     _disconnectCallbacks.add(callback);
   }
 
@@ -164,6 +164,11 @@ class NativeHID extends HIDManager {
 
   @override
   Future<List<HIDDevice>> getDevices() async {
+    if (!canUseHid()) {
+      return const [];
+    }
+
+    _ensureDeviceConnectionListener();
     await QuickUsb.init();
     final list = await QuickUsb.getDeviceList();
     return list
@@ -174,6 +179,10 @@ class NativeHID extends HIDManager {
 
   @override
   Future<List<HIDDevice>> requestDevice(HIDDeviceRequestOptions options) async {
+    if (!canUseHid()) {
+      return const [];
+    }
+
     return getDevices();
   }
 
@@ -181,6 +190,10 @@ class NativeHID extends HIDManager {
   bool get hasFocus => true; // Always true for native (no web document focus concept)
 
   void _ensureDeviceConnectionListener() {
+    if (!canUseHid()) {
+      return;
+    }
+
     _deviceConnectionSubscription ??= QuickUsb.deviceConnectionEvents.listen(
       (event) {
         if (event.device.vendorId != _nativeBridgeVendorId) {
