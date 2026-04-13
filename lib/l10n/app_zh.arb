@@ -85,7 +85,7 @@
   "@scanning": {
     "description": "扫描状态提示"
   },
-  "tapToScan": "点击开始扫描",
+  "tapToScan": "触摸后开始扫描",
   "@tapToScan": {
     "description": "扫描页操作引导"
   },
