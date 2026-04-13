@@ -8,7 +8,6 @@ import '../services/communication/device_interface.dart';
 import '../services/communication/usb_hinata_impl.dart';
 import '../services/hardware/core/hinata_device.dart';
 import '../services/hardware/transport/hid_bridge/hid_bridge.dart';
-import '../models/card/scanned_card.dart';
 import 'current_scan_session_provider.dart';
 import 'nfc_provider.dart';
 import 'firmware_provider.dart';
@@ -190,10 +189,9 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
       }
 
       try {
-        final card = await usbImpl.poll();
+        final scannedCard = await usbImpl.poll();
 
-        if (card != null) {
-          final scannedCard = ScannedCard(card: card, source: 'HINATA');
+        if (scannedCard != null) {
           await ref
               .read(nfcProvider.notifier)
               .handleExternalScan(

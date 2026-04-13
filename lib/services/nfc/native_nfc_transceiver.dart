@@ -60,6 +60,11 @@ class NativeNfcTransceiver implements NfcTransceiver {
   }
 
   @override
+  Future<void> reconnect() async {
+    // Native implementations handle automatic reconnection or do not strict HALT on failed auth.
+  }
+
+  @override
   Future<void> close() async {
     // Optional: FlutterNfcKit.finish() can be called here if needed,
     // but usually handled by the provider/service.

@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'device_interface.dart';
 import '../hardware/core/hinata_device.dart';
 import '../../models/hardware_config.dart';
-import '../../models/card/card.dart';
+import '../../models/card/scanned_card.dart';
 import '../../models/card/felica.dart';
 import '../../models/card/iso14443a.dart';
 import '../nfc/card_reader_engine.dart';
@@ -121,41 +120,15 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   }
 
   @override
-  Future<ICCard?> poll() async {
+  Future<ScannedCard?> poll() async {
     final transceiver = HinataTransceiver(_hinata.pn532Api);
     final engine = CardReaderEngine(transceiver);
 
-    // 1. Poll for FeliCa (AIC)
-    for (int i = 0; i < 5; i++) {
-      final felicaTag = await _pollFelicaTag();
-      if (felicaTag != null) {
-        final scanned = await engine.handleFelica(
-          tag: felicaTag,
-          source: 'USB',
-        );
-        return scanned?.card;
-      }
-    }
+    // Poll for Felica or ISO tag
+    final rawTag = await _pollFelicaTag() ?? await _pollIsoTag();
+    if (rawTag == null) return null;
 
-    // 2. Poll for ISO14443A (Banapass)
-    var isoTag = await _pollIsoTag();
-    if (isoTag != null) {
-      final scanned = await engine.handleBana(tag: isoTag, source: 'USB');
-      if (scanned != null) return scanned.card;
-    } else {
-      return null;
-    }
-    // 3. Poll for ISO14443A (Aime)
-    log("error: try to find Aime");
-    isoTag = await _pollIsoTag();
-    log("error: got tag");
-    if (isoTag != null) {
-      final scanned = await engine.handleAime(tag: isoTag, source: 'USB');
-      log("error: got scanned");
-      if (scanned != null) return scanned.card;
-    }
-
-    return null;
+    return await engine.processTag(rawTag, source: 'HINATA');
   }
 
   Future<Felica?> _pollFelicaTag() async {

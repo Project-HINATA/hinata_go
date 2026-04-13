@@ -15,6 +15,9 @@ abstract class NfcTransceiver {
   /// Reads a single block from a Mifare card.
   Future<Uint8List> readMifareBlock(int block);
 
+  /// Reconnect / reactivate the card (useful for PN532 HALT states)
+  Future<void> reconnect();
+
   /// Closes the connection (if applicable).
   Future<void> close();
 }

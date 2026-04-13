@@ -1,5 +1,7 @@
 import 'dart:developer';
 import 'dart:typed_data';
+import 'package:hinata_go/models/card/iso15693.dart';
+
 import '../../models/card/aic.dart';
 import '../../models/card/aime.dart';
 import '../../models/card/banapass.dart';
@@ -171,4 +173,32 @@ class CardReaderEngine {
             systemCodes[0] == 0x88B4 ||
             systemCodes[0] == 0);
   }
+
+  /// Unified entry point for resolving a tag
+  Future<ScannedCard?> processTag(dynamic rawTag, {String source = 'NFC'}) async {
+    if (rawTag is Felica) {
+      return await handleFelica(tag: rawTag, source: source);
+    } 
+    
+    if (rawTag is Iso14443) {
+      // Try Bana first
+      var scanned = await handleBana(tag: rawTag, source: source);
+      if (scanned != null) return scanned;
+
+      // Reactivate card (vital for PN532 as failure to auth halts the card)
+      await transceiver.reconnect();
+
+      // Try Aime
+      scanned = await handleAime(tag: rawTag, source: source);
+      return scanned;
+    }
+
+    // Pass through Iso15693 or any other generic parsed tags
+    if (rawTag is Iso15693) {
+      return ScannedCard(card: rawTag, source: source);
+    }
+
+    return null;
+  }
 }
+

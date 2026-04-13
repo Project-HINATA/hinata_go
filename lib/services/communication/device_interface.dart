@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
-import '../../models/card/card.dart';
+import '../../models/card/scanned_card.dart';
 
 /// Represents connection state of the hardware device
 enum DeviceConnectionState { disconnected, connecting, connected, error }
@@ -64,7 +64,7 @@ abstract class DeviceInterface {
   }) async => throw UnsupportedError('Not supported');
 
   /// Unified polling for NFC cards.
-  Future<ICCard?> poll() async =>
+  Future<ScannedCard?> poll() async =>
       throw UnsupportedError('Polling not supported');
 
   /// Close and clean up resources

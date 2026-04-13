@@ -101,6 +101,13 @@ class HinataTransceiver implements NfcTransceiver {
   }
 
   @override
+  Future<void> reconnect() async {
+    // PN532 will put Mifare cards in HALT state after a failed Mifare auth.
+    // We send an inListPassiveTarget to reactivate it.
+    await pn532.inListPassiveTarget(tg, 1, []);
+  }
+
+  @override
   Future<void> close() async {
     await pn532.inRelease(tg);
   }
