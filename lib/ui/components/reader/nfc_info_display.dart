@@ -563,7 +563,7 @@ class _PromptText {
           ? Icons.phone_iphone_rounded
           : isActive
           ? Icons.contactless_rounded
-          : Icons.portable_wifi_off_rounded,
+          : Icons.touch_app_rounded,
       color: isActive
           ? colorScheme.primary
           : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
