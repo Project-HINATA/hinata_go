@@ -1,13 +1,12 @@
 import 'dart:developer';
 import 'dart:typed_data';
 import 'package:hinata_go/models/card/iso15693.dart';
-
-import '../../models/card/aic.dart';
-import '../../models/card/aime.dart';
-import '../../models/card/banapass.dart';
-import '../../models/card/felica.dart';
-import '../../models/card/iso14443a.dart';
-import '../../models/card/scanned_card.dart';
+import 'package:hinata_go/models/card/aic.dart';
+import 'package:hinata_go/models/card/aime.dart';
+import 'package:hinata_go/models/card/banapass.dart';
+import 'package:hinata_go/models/card/felica.dart';
+import 'package:hinata_go/models/card/iso14443a.dart';
+import 'package:hinata_go/models/card/scanned_card.dart';
 import '../../utils/spad0.dart';
 import '../../constants/mifare_key.dart';
 import 'nfc_transceiver.dart';

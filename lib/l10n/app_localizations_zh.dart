@@ -67,7 +67,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scanning => '扫描中...';
 
   @override
-  String get tapToScan => '触摸后开始扫描';
+  String get tapToScan => '点击开始扫描';
 
   @override
   String get readyToScan => '准备扫描';

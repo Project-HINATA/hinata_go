@@ -2,9 +2,9 @@ import 'dart:typed_data';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:convert/convert.dart';
 
-import '../models/card/felica.dart';
-import '../models/card/iso14443a.dart';
-import '../models/card/iso15693.dart';
+import 'package:hinata_go/models/card/felica.dart';
+import 'package:hinata_go/models/card/iso14443a.dart';
+import 'package:hinata_go/models/card/iso15693.dart';
 
 Uint8List _toUint8List(String hexString) {
   return Uint8List.fromList(hex.decode(hexString));

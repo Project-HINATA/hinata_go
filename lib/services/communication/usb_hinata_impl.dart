@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'device_interface.dart';
+import 'package:hinata_go/models/hardware_config.dart';
+import 'package:hinata_go/models/card/scanned_card.dart';
+import 'package:hinata_go/models/card/felica.dart';
+import 'package:hinata_go/models/card/iso14443a.dart';
 import '../hardware/core/hinata_device.dart';
-import '../../models/hardware_config.dart';
-import '../../models/card/scanned_card.dart';
-import '../../models/card/felica.dart';
-import '../../models/card/iso14443a.dart';
 import '../nfc/card_reader_engine.dart';
 import '../nfc/hinata_transceiver.dart';
 
@@ -124,11 +124,19 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     final transceiver = HinataTransceiver(_hinata.pn532Api);
     final engine = CardReaderEngine(transceiver);
 
-    // Poll for Felica or ISO tag
-    final rawTag = await _pollFelicaTag() ?? await _pollIsoTag();
-    if (rawTag == null) return null;
+    for (int i = 0; i < 5; i++) {
+      final felicaTag = await _pollFelicaTag();
+      if (felicaTag != null) {
+        return await engine.processTag(felicaTag, source: 'HINATA');
+      }
+    }
 
-    return await engine.processTag(rawTag, source: 'HINATA');
+    final isoTag = await _pollIsoTag();
+    if (isoTag != null) {
+      return await engine.processTag(isoTag, source: 'HINATA');
+    }
+
+    return null;
   }
 
   Future<Felica?> _pollFelicaTag() async {
