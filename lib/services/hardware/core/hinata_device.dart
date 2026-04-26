@@ -56,7 +56,7 @@ class HINATA {
 
   Future open() async {
     if (!_device.opened) {
-      await _device.open().catchError((e) {}).onError((e, s) {});
+      await _device.open();
     }
     firmTimeStamp = await getFirmTimeStamp();
     if (firmTimeStamp > 2025040400) commitHash = await getCommitHash();

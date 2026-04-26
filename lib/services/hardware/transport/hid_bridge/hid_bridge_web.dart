@@ -24,8 +24,9 @@ class WebHIDDevice extends HIDDevice {
   @override
   bool get opened => _device.opened;
   @override
-  List<HIDCollectionInfo> get collections =>
-      List.filled(3, HIDCollectionInfo());
+  List<HIDCollectionInfo> get collections => _device.collections
+      .map((_) => HIDCollectionInfo())
+      .toList(growable: false);
 
   @override
   Future<void> open() => _device.open();

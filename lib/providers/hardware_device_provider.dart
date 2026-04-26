@@ -58,6 +58,11 @@ class HardwareDeviceState {
 }
 
 class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
+  static const _hidReadyCheckInterval = Duration(milliseconds: 50);
+  static const _hidReadyMaxAttempts = 60;
+
+  int _connectGeneration = 0;
+
   @override
   HardwareDeviceState build() {
     final hidAvailable = _safeCanUseHid();
@@ -74,11 +79,12 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
 
     hid.onConnect((event) {
       log("Auto-connected to device: ${event.device}");
-      _connectToHidDevice(event.device);
+      unawaited(_connectToHidDeviceWhenReady(event.device));
     });
 
     hid.onDisconnect((event) {
       log("Disconnected from device: ${event.device}");
+      _connectGeneration++;
 
       // Protect state if we are currently flashing/updating
       if (state.isUpdating) {
@@ -101,9 +107,9 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
     // Try to get already connected devices
     hid
         .getDevices()
-        .then((devices) {
+        .then((devices) async {
           if (devices.isNotEmpty) {
-            _connectToHidDevice(devices.first);
+            await _connectToHidDeviceWhenReady(devices.first);
           }
         })
         .catchError((Object error, StackTrace stackTrace) {
@@ -131,7 +137,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
       );
       final devices = await hid.requestDevice(requestOptions);
       if (devices.isNotEmpty) {
-        await _connectToHidDevice(devices.first);
+        await _connectToHidDeviceWhenReady(devices.first);
       } else {
         state = state.copyWith(
           isConnecting: false,
@@ -143,12 +149,54 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
     }
   }
 
-  Future<void> _connectToHidDevice(HIDDevice device) async {
+  Future<void> _connectToHidDeviceWhenReady(HIDDevice device) async {
+    final generation = ++_connectGeneration;
+    state = state.copyWith(isConnecting: true, error: null);
+
+    for (var attempt = 0; attempt < _hidReadyMaxAttempts; attempt++) {
+      if (generation != _connectGeneration) {
+        return;
+      }
+
+      if (_isHidDeviceReady(device)) {
+        await _connectToHidDevice(device, generation: generation);
+        return;
+      }
+
+      await Future.delayed(_hidReadyCheckInterval);
+    }
+
+    if (generation == _connectGeneration) {
+      state = state.copyWith(
+        isConnecting: false,
+        error: 'HID device is not ready. Please reconnect the reader.',
+      );
+    }
+  }
+
+  bool _isHidDeviceReady(HIDDevice device) {
+    try {
+      return device.collections.length > 2;
+    } catch (e, s) {
+      log('Failed to inspect HID device collections.', error: e, stackTrace: s);
+      return false;
+    }
+  }
+
+  Future<void> _connectToHidDevice(
+    HIDDevice device, {
+    required int generation,
+  }) async {
     state = state.copyWith(isConnecting: true, error: null);
     try {
       final hinata = HINATA(device);
       final usbImpl = UsbHinataDeviceImpl(hinata);
       await usbImpl.connect();
+
+      if (generation != _connectGeneration) {
+        await usbImpl.disconnect();
+        return;
+      }
 
       final firmVer = hinata.firmVersion;
       final pid = device.productId;
@@ -176,7 +224,11 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
         }
       });
       _startPollLoop(usbImpl);
-    } catch (e) {
+    } catch (e, s) {
+      if (generation != _connectGeneration) {
+        return;
+      }
+      log('Failed to connect HID device.', error: e, stackTrace: s);
       state = state.copyWith(isConnecting: false, error: e.toString());
     }
   }
@@ -219,6 +271,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
   }
 
   void disconnect() async {
+    _connectGeneration++;
     await state.connectedDevice?.disconnect();
     ref
         .read(currentScanSessionProvider.notifier)
