@@ -9,6 +9,8 @@
 | --- | ------- |
 | [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/app/id6760301105) | [**APK 下载**](https://github.com/nerimoe/hinata_go/releases) |
 
+网页版：[https://go.neri.moe](https://go.neri.moe)
+
 ## 基础功能
 
 * 读取卡片信息
