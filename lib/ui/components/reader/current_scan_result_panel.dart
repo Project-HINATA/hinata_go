@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
 
 import '../../../models/card/card.dart';
+import '../../../models/card/scanned_card.dart';
 import '../../../models/remote_instance.dart';
 import '../../../providers/card_sender.dart';
 import '../../../providers/current_scan_session_provider.dart';
@@ -84,6 +85,7 @@ class CurrentScanResultPanel extends HookConsumerWidget {
         return _PanelEntranceTransition(value: value, child: child!);
       },
       child: _CurrentScanResultContent(
+        scannedCard: currentScan,
         card: currentScan.card,
         source: currentScan.source,
         showDismissControls: session.showDismissControls,
@@ -139,6 +141,7 @@ class _PanelEntranceTransition extends StatelessWidget {
 
 class _CurrentScanResultContent extends StatelessWidget {
   const _CurrentScanResultContent({
+    required this.scannedCard,
     required this.card,
     required this.source,
     required this.showDismissControls,
@@ -148,6 +151,7 @@ class _CurrentScanResultContent extends StatelessWidget {
     required this.onClear,
   });
 
+  final ScannedCard scannedCard;
   final ICCard card;
   final String source;
   final bool showDismissControls;
@@ -167,8 +171,10 @@ class _CurrentScanResultContent extends StatelessWidget {
           animationController: animationController,
           onClear: onClear,
         ),
-        const SizedBox(height: 24),
-        _ScanActionRow(onSave: onSave, onSend: onSend),
+        if (scannedCard.isUsable) ...[
+          const SizedBox(height: 24),
+          _ScanActionRow(onSave: onSave, onSend: onSend),
+        ],
         const SizedBox(height: 16),
         _ClearScanButton(onPressed: onClear),
       ],

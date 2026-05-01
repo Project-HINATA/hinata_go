@@ -860,5 +860,13 @@
   "scanPausedDescription": "应用失去焦点，扫描已暂停",
   "@scanPausedDescription": {
     "description": "状态说明"
+  },
+  "unknownCardType": "不可在游戏中使用的卡片",
+  "@unknownCardType": {
+    "description": "无法识别的卡片类型"
+  },
+  "unusableMifareCardWarning": "这张卡无法在游戏中使用。",
+  "@unusableMifareCardWarning": {
+    "description": "MIFARE Classic 无法解析出合法 access code 时的提示"
   }
 }

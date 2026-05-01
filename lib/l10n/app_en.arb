@@ -863,5 +863,13 @@
   "scanPausedDescription": "App is out of focus, scanning paused",
   "@scanPausedDescription": {
     "description": "Explanation for paused scan"
+  },
+  "unknownCardType": "Unknown",
+  "@unknownCardType": {
+    "description": "Display name for an unrecognized card type"
+  },
+  "unusableMifareCardWarning": "This card cannot be used in games.",
+  "@unusableMifareCardWarning": {
+    "description": "Warning shown when a MIFARE Classic card cannot produce a valid access code"
   }
 }

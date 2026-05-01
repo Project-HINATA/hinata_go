@@ -622,4 +622,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scanPausedDescription => 'App is out of focus, scanning paused';
+
+  @override
+  String get unknownCardType => 'Unknown';
+
+  @override
+  String get unusableMifareCardWarning => 'This card cannot be used in games.';
 }

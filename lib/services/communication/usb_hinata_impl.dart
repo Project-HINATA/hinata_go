@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'device_interface.dart';
 import 'package:hinata_go/models/hardware_config.dart';
+import 'package:hinata_go/models/card/invalid_mifare.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
@@ -11,6 +12,8 @@ import '../nfc/card_reader_engine.dart';
 import '../nfc/hinata_transceiver.dart';
 
 class UsbHinataDeviceImpl implements DeviceInterface {
+  static const Duration _readFailureConfirmWindow = Duration(seconds: 1);
+
   final HINATA _hinata;
   final ValueNotifier<DeviceConnectionState> _connectionState = ValueNotifier(
     DeviceConnectionState.disconnected,
@@ -18,6 +21,9 @@ class UsbHinataDeviceImpl implements DeviceInterface {
 
   final StreamController<List<int>> _cardioStreamController =
       StreamController<List<int>>.broadcast();
+
+  _PendingReadFailure? _pendingReadFailure;
+  _PendingReadFailure? _confirmedReadFailure;
 
   UsbHinataDeviceImpl(this._hinata) {
     _hinata.subscribeCardioInput((data) {
@@ -127,16 +133,66 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     for (int i = 0; i < 5; i++) {
       final felicaTag = await _pollFelicaTag();
       if (felicaTag != null) {
+        _clearReadFailureState();
         return await engine.processTag(felicaTag, source: 'HINATA');
       }
     }
 
     final isoTag = await _pollIsoTag();
     if (isoTag != null) {
-      return await engine.processTag(isoTag, source: 'HINATA');
+      final scanned = await engine.processTag(isoTag, source: 'HINATA');
+      return _resolveReaderScan(scanned);
     }
 
+    _clearReadFailureState();
     return null;
+  }
+
+  ScannedCard? _resolveReaderScan(ScannedCard? scannedCard) {
+    final card = scannedCard?.card;
+    if (scannedCard == null || card is! InvalidMifareCard) {
+      _clearReadFailureState();
+      return scannedCard;
+    }
+
+    if (card.reason != InvalidMifareReason.readFailure) {
+      _clearReadFailureState();
+      return scannedCard;
+    }
+
+    final now = DateTime.now();
+    final key = _readFailureKey(card);
+    final confirmed = _confirmedReadFailure;
+    if (confirmed != null && confirmed.key == key) {
+      return confirmed.scannedCard;
+    }
+
+    final pending = _pendingReadFailure;
+    if (pending == null || pending.key != key) {
+      _pendingReadFailure = _PendingReadFailure(
+        key: key,
+        firstSeenAt: now,
+        scannedCard: scannedCard,
+      );
+      return null;
+    }
+
+    if (now.difference(pending.firstSeenAt) < _readFailureConfirmWindow) {
+      return null;
+    }
+
+    _pendingReadFailure = null;
+    _confirmedReadFailure = pending;
+    return pending.scannedCard;
+  }
+
+  String _readFailureKey(InvalidMifareCard card) {
+    return '${card.idString}|${card.sak}|${card.atqa}'.toUpperCase();
+  }
+
+  void _clearReadFailureState() {
+    _pendingReadFailure = null;
+    _confirmedReadFailure = null;
   }
 
   Future<Felica?> _pollFelicaTag() async {
@@ -173,4 +229,16 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     _cardioStreamController.close();
     _hinata.destroy();
   }
+}
+
+class _PendingReadFailure {
+  const _PendingReadFailure({
+    required this.key,
+    required this.firstSeenAt,
+    required this.scannedCard,
+  });
+
+  final String key;
+  final DateTime firstSeenAt;
+  final ScannedCard scannedCard;
 }

@@ -4,6 +4,9 @@ class Iso14443 extends ICCard {
   final int sak;
   final int atqa;
   Iso14443(super.id, this.sak, this.atqa);
+
+  bool get isMifareClassicCandidate => (sak & 0x08) != 0;
+
   @override
   String get name {
     if (sak == 0x09 && atqa == 0x0004 && id.length == 4) {

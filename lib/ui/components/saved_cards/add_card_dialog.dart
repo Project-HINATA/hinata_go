@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../models/card/aime.dart';
 import '../../../models/card/saved_card.dart';
 import '../../../providers/app_state_provider.dart';
+import '../../../utils/access_code_validator.dart';
 import '../../../utils/hex_utils.dart';
 import '../../../l10n/l10n.dart';
 import '../../ui_text.dart';
@@ -36,7 +37,7 @@ class AddCardDialog extends HookConsumerWidget {
     );
 
     final isFormValid =
-        name.isNotEmpty && value.length == 20 && !value.startsWith('3');
+        name.isNotEmpty && AccessCodeValidator.isValidAimeAccessCode(value);
 
     void onSave() {
       if (!isFormValid) return;
@@ -109,7 +110,7 @@ class AddCardDialog extends HookConsumerWidget {
                 labelText: context.l10n.accessCode,
                 helperText:
                     value.isNotEmpty &&
-                        (value.length != 20 || value.startsWith('3'))
+                        !AccessCodeValidator.isValidAimeAccessCode(value)
                     ? context.l10n.invalidAccessCodeLength
                     : null,
                 helperMaxLines: 3,

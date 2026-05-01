@@ -8,6 +8,7 @@ import '../../../models/card/aic.dart';
 import '../../../models/card/banapass.dart';
 import '../../../models/card/card.dart';
 import '../../../models/card/felica.dart';
+import '../../../models/card/invalid_mifare.dart';
 import '../../../models/card/iso15693.dart';
 import '../../../models/card/iso14443a.dart';
 import '../../../services/notification_service.dart';
@@ -53,14 +54,22 @@ class ScannedCardDetailV2 extends ConsumerWidget {
           if (showHeader)
             _CardDetailHeader(
               logo: _buildLogo(context, colorScheme),
-              name: card.name,
+              name: _displayName(context),
               source: source,
               showCloseButtonSpace: showCloseButtonSpace,
             ),
-          _TechnicalFieldsSection(children: _buildTechnicalFields()),
+          if (card is InvalidMifareCard)
+            _UnusableCardWarning(
+              message: context.l10n.unusableMifareCardWarning,
+            ),
+          _TechnicalFieldsSection(children: _buildTechnicalFields(context)),
         ],
       ),
     );
+  }
+
+  String _displayName(BuildContext context) {
+    return card is InvalidMifareCard ? context.l10n.unknownCardType : card.name;
   }
 
   Widget _buildLogo(BuildContext context, ColorScheme colorScheme) {
@@ -96,8 +105,8 @@ class ScannedCardDetailV2 extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildTechnicalFields() {
-    return _buildCardDetailFields(card)
+  List<Widget> _buildTechnicalFields(BuildContext context) {
+    return _buildCardDetailFields(context, card)
         .map(
           (field) => _NativeInfoRow(
             label: field.label,
@@ -133,11 +142,15 @@ class _CardFieldDefinition<T> {
   final bool groupInFours;
 }
 
-List<_CardDetailField> _buildCardDetailFields(ICCard card) {
+List<_CardDetailField> _buildCardDetailFields(
+  BuildContext context,
+  ICCard card,
+) {
   final fields = [
     ..._extractFields<HasAccessCode>(card, _accessCodeFieldDefinitions),
     ..._extractFields<Aic>(card, _aicFieldDefinitions),
     ..._extractFields<Banapass>(card, _banapassFieldDefinitions),
+    ..._buildInvalidMifareFields(context, card),
     ..._extractFields<Felica>(card, _felicaPrimaryFieldDefinitions),
     ..._extractFields<Iso14443>(card, _iso14443FieldDefinitions),
     ..._extractFields<Iso15693>(card, _iso15693FieldDefinitions),
@@ -178,6 +191,23 @@ List<_CardDetailField> _extractFields<T>(
       )
       .whereType<_CardDetailField>()
       .toList();
+}
+
+List<_CardDetailField> _buildInvalidMifareFields(
+  BuildContext context,
+  ICCard card,
+) {
+  if (card is! InvalidMifareCard) {
+    return const [];
+  }
+
+  return [
+    _buildCardDetailField(
+      label: 'Access Code',
+      value: card.unusableAccessCode,
+      groupInFours: true,
+    ),
+  ].whereType<_CardDetailField>().toList();
 }
 
 _CardDetailField? _buildCardDetailField({
@@ -337,6 +367,46 @@ class _TechnicalFieldsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: children,
+      ),
+    );
+  }
+}
+
+class _UnusableCardWarning extends StatelessWidget {
+  const _UnusableCardWarning({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 20,
+            color: colorScheme.onErrorContainer,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

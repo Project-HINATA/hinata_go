@@ -1213,6 +1213,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'App is out of focus, scanning paused'**
   String get scanPausedDescription;
+
+  /// Display name for an unrecognized card type
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get unknownCardType;
+
+  /// Warning shown when a MIFARE Classic card cannot produce a valid access code
+  ///
+  /// In en, this message translates to:
+  /// **'This card cannot be used in games.'**
+  String get unusableMifareCardWarning;
 }
 
 class _AppLocalizationsDelegate

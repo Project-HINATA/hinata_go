@@ -1,5 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../models/card/card.dart';
+import '../models/card/invalid_mifare.dart';
 import '../models/remote_instance.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
@@ -36,6 +37,7 @@ class CardSender extends Notifier<CardSenderState> {
     String? triggerId,
   }) async {
     if (state.isSending) return false;
+    if (card is InvalidMifareCard) return false;
 
     final activeInstance = targetInstance ?? ref.read(activeInstanceProvider);
     final notificationService = ref.read(notificationServiceProvider);

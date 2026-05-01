@@ -3,6 +3,7 @@ import 'aic.dart';
 import 'aime.dart';
 import 'banapass.dart';
 import 'felica.dart';
+import 'invalid_mifare.dart';
 import 'iso15693.dart';
 import 'scanned_card.dart';
 
@@ -29,6 +30,9 @@ class SavedCard {
     if (card is Felica) return (card as Felica).idString;
     if (card is Banapass) {
       return (card as Banapass).accessCodeString ?? card.name;
+    }
+    if (card is InvalidMifareCard) {
+      return (card as InvalidMifareCard).unusableAccessCode ?? card.idString;
     }
     if (card is Iso15693) return (card as Iso15693).idString;
     return card.name;

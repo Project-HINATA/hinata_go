@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../models/card/card.dart';
+import '../../models/card/invalid_mifare.dart';
 import '../../models/remote_instance.dart';
 import '../../providers/card_sender.dart';
 import '../../services/notification_service.dart';
@@ -85,12 +86,14 @@ class CardDetailPage extends HookConsumerWidget {
   ) {
     return _CardDetailBody(
       detail: ScannedCardDetailV2(card: card, showHeader: true),
-      actions: CardDetailBottomActions(
-        onSend: () => _sendCard(context, ref),
-        onSave: () => _saveCard(context),
-        isSending: senderState.isSending,
-        isSaving: false,
-      ),
+      actions: card is InvalidMifareCard
+          ? const SizedBox.shrink()
+          : CardDetailBottomActions(
+              onSend: () => _sendCard(context, ref),
+              onSave: () => _saveCard(context),
+              isSending: senderState.isSending,
+              isSaving: false,
+            ),
     );
   }
 }

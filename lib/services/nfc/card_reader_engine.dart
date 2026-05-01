@@ -5,11 +5,13 @@ import 'package:hinata_go/models/card/aic.dart';
 import 'package:hinata_go/models/card/aime.dart';
 import 'package:hinata_go/models/card/banapass.dart';
 import 'package:hinata_go/models/card/felica.dart';
+import 'package:hinata_go/models/card/invalid_mifare.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 
 import '../../constants/mifare_key.dart';
+import '../../utils/access_code_validator.dart';
 import '../../utils/spad0.dart';
 import 'nfc_exception.dart';
 import 'nfc_transceiver.dart';
@@ -23,8 +25,6 @@ class CardReaderEngine {
   static const int aicServiceCode = 0x000B;
   static const int _aimeAccessCodeStart = 6;
   static const int _aimeAccessCodeEnd = 16;
-  static const int _accessCodeLength = 20;
-  static const String _banapassAimePrefix = '3';
 
   /// High-level logic for handling FeliCa tags (AIC Detection)
   Future<ScannedCard?> handleFelica({
@@ -102,7 +102,20 @@ class CardReaderEngine {
         Uint8List.fromList(block1),
         Uint8List.fromList(block2),
       );
-      return ScannedCard(card: banapass, source: source);
+      if (AccessCodeValidator.isValidDecodedBanapassAccessCode(
+        banapass.accessCodeString,
+      )) {
+        return ScannedCard(card: banapass, source: source);
+      }
+
+      return ScannedCard(
+        card: tag.toInvalidMifareCard(
+          unusableAccessCode: banapass.accessCodeString,
+          block1: Uint8List.fromList(block1),
+          block2: Uint8List.fromList(block2),
+        ),
+        source: source,
+      );
     } catch (_) {
       return null;
     }
@@ -120,22 +133,42 @@ class CardReaderEngine {
 
     final block2 = await transceiver.readMifareBlock(2);
     if (block2.length < _aimeAccessCodeEnd) {
-      return null;
+      return ScannedCard(
+        card: tag.toInvalidMifareCard(block2: Uint8List.fromList(block2)),
+        source: source,
+      );
     }
 
     final accessCodeBytes = Uint8List.fromList(
       block2.sublist(_aimeAccessCodeStart, _aimeAccessCodeEnd),
     );
     final aime = tag.toAime(accessCodeBytes);
+    final aimeAccessCode = aime.accessCodeString;
 
-    if (aime.accessCodeString.startsWith(_banapassAimePrefix)) {
+    if (AccessCodeValidator.startsWithBanapassPrefix(aimeAccessCode)) {
       final banapass = await _readBanapassFromAimeAuthenticatedSector(
         tag: tag,
         block2: block2,
       );
       return banapass != null
           ? ScannedCard(card: banapass, source: source)
-          : null;
+          : ScannedCard(
+              card: tag.toInvalidMifareCard(
+                unusableAccessCode: aimeAccessCode,
+                block2: Uint8List.fromList(block2),
+              ),
+              source: source,
+            );
+    }
+
+    if (!AccessCodeValidator.isValidAimeAccessCode(aimeAccessCode)) {
+      return ScannedCard(
+        card: tag.toInvalidMifareCard(
+          unusableAccessCode: aimeAccessCode,
+          block2: Uint8List.fromList(block2),
+        ),
+        source: source,
+      );
     }
 
     return ScannedCard(card: aime, source: source);
@@ -152,7 +185,9 @@ class CardReaderEngine {
         Uint8List.fromList(block2),
       );
 
-      return _isCompleteBanapassAccessCode(banapass.accessCodeString)
+      return AccessCodeValidator.isValidDecodedBanapassAccessCode(
+            banapass.accessCodeString,
+          )
           ? banapass
           : null;
     } catch (e, s) {
@@ -163,13 +198,6 @@ class CardReaderEngine {
       );
       return null;
     }
-  }
-
-  bool _isCompleteBanapassAccessCode(String? accessCode) {
-    return accessCode != null &&
-        accessCode.length == _accessCodeLength &&
-        accessCode.startsWith(_banapassAimePrefix) &&
-        RegExp(r'^\d+$').hasMatch(accessCode);
   }
 
   /// Helper for FeliCa Read Without Encryption logic
@@ -230,6 +258,15 @@ class CardReaderEngine {
     }
 
     if (rawTag is Iso14443) {
+      if (!rawTag.isMifareClassicCandidate) {
+        return ScannedCard(
+          card: rawTag.toInvalidMifareCard(
+            reason: InvalidMifareReason.invalidData,
+          ),
+          source: source,
+        );
+      }
+
       try {
         return await readMifareWithAimeKey(tag: rawTag, source: source);
       } on NfcException catch (e) {
@@ -240,7 +277,14 @@ class CardReaderEngine {
 
       // Reactivate card (vital for PN532 as failure to auth halts the card).
       await transceiver.reconnect();
-      return await readMifareWithBanaKey(tag: rawTag, source: source);
+      final scanned = await readMifareWithBanaKey(tag: rawTag, source: source);
+      return scanned ??
+          ScannedCard(
+            card: rawTag.toInvalidMifareCard(
+              reason: InvalidMifareReason.readFailure,
+            ),
+            source: source,
+          );
     }
 
     // Pass through Iso15693 or any other generic parsed tags

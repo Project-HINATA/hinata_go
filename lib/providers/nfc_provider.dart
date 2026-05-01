@@ -231,6 +231,13 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   Future<void> _processScannedCard(ScannedCard scannedCard) async {
     state = state.copyWith(lastScanEvent: DateTime.now());
 
+    // Keep unusable cards visible in the current scan panel, but do not record
+    // or transmit them.
+    if (!scannedCard.isUsable) {
+      ref.read(routerProvider).go('/scan');
+      return;
+    }
+
     final scanningMode = ref.read(scanningModeProvider);
     final card = scannedCard.card;
 
