@@ -1,16 +1,18 @@
 import 'dart:developer';
 import 'dart:typed_data';
-import 'package:hinata_go/models/card/iso15693.dart';
+
 import 'package:hinata_go/models/card/aic.dart';
 import 'package:hinata_go/models/card/aime.dart';
 import 'package:hinata_go/models/card/banapass.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
+import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
-import '../../utils/spad0.dart';
+
 import '../../constants/mifare_key.dart';
-import 'nfc_transceiver.dart';
+import '../../utils/spad0.dart';
 import 'nfc_exception.dart';
+import 'nfc_transceiver.dart';
 
 class CardReaderEngine {
   final NfcTransceiver transceiver;
@@ -19,6 +21,10 @@ class CardReaderEngine {
 
   /// Standard AIC Service Code for Reading
   static const int aicServiceCode = 0x000B;
+  static const int _aimeAccessCodeStart = 6;
+  static const int _aimeAccessCodeEnd = 16;
+  static const int _accessCodeLength = 20;
+  static const String _banapassAimePrefix = '3';
 
   /// High-level logic for handling FeliCa tags (AIC Detection)
   Future<ScannedCard?> handleFelica({
@@ -78,7 +84,7 @@ class CardReaderEngine {
     return defaultReturn;
   }
 
-  Future<ScannedCard?> handleBana({
+  Future<ScannedCard?> readMifareWithBanaKey({
     required Iso14443 tag,
     String source = 'NFC',
   }) async {
@@ -102,27 +108,68 @@ class CardReaderEngine {
     }
   }
 
-  Future<ScannedCard?> handleAime({
+  Future<ScannedCard?> readMifareWithAimeKey({
     required Iso14443 tag,
     String source = 'NFC',
   }) async {
-    try {
-      await transceiver.authenticateMifare(
-        uid: tag.id,
-        block: 2, // Sector 0
-        keyB: Uint8List.fromList(aimeKey),
-      );
+    await transceiver.authenticateMifare(
+      uid: tag.id,
+      block: 2, // Sector 0
+      keyB: Uint8List.fromList(aimeKey),
+    );
 
-      final block2 = await transceiver.readMifareBlock(2);
-      if (block2.length >= 16) {
-        final accessCodeBytes = Uint8List.fromList(block2.sublist(6, 16));
-        final aime = tag.toAime(accessCodeBytes);
-        return ScannedCard(card: aime, source: source);
-      }
-      return null;
-    } catch (_) {
+    final block2 = await transceiver.readMifareBlock(2);
+    if (block2.length < _aimeAccessCodeEnd) {
       return null;
     }
+
+    final accessCodeBytes = Uint8List.fromList(
+      block2.sublist(_aimeAccessCodeStart, _aimeAccessCodeEnd),
+    );
+    final aime = tag.toAime(accessCodeBytes);
+
+    if (aime.accessCodeString.startsWith(_banapassAimePrefix)) {
+      final banapass = await _readBanapassFromAimeAuthenticatedSector(
+        tag: tag,
+        block2: block2,
+      );
+      return banapass != null
+          ? ScannedCard(card: banapass, source: source)
+          : null;
+    }
+
+    return ScannedCard(card: aime, source: source);
+  }
+
+  Future<Banapass?> _readBanapassFromAimeAuthenticatedSector({
+    required Iso14443 tag,
+    required Uint8List block2,
+  }) async {
+    try {
+      final block1 = await transceiver.readMifareBlock(1);
+      final banapass = tag.toBanapass(
+        Uint8List.fromList(block1),
+        Uint8List.fromList(block2),
+      );
+
+      return _isCompleteBanapassAccessCode(banapass.accessCodeString)
+          ? banapass
+          : null;
+    } catch (e, s) {
+      log(
+        'CardReaderEngine Banapass block1 decrypt error',
+        error: e,
+        stackTrace: s,
+      );
+      return null;
+    }
+  }
+
+  bool _isCompleteBanapassAccessCode(String? accessCode) {
+    return accessCode != null &&
+        accessCode.length == _accessCodeLength &&
+        accessCode.startsWith(_banapassAimePrefix) &&
+        RegExp(r'^\d+$').hasMatch(accessCode);
   }
 
   /// Helper for FeliCa Read Without Encryption logic
@@ -174,22 +221,26 @@ class CardReaderEngine {
   }
 
   /// Unified entry point for resolving a tag
-  Future<ScannedCard?> processTag(dynamic rawTag, {String source = 'NFC'}) async {
+  Future<ScannedCard?> processTag(
+    dynamic rawTag, {
+    String source = 'NFC',
+  }) async {
     if (rawTag is Felica) {
       return await handleFelica(tag: rawTag, source: source);
-    } 
-    
+    }
+
     if (rawTag is Iso14443) {
-      // Try Bana first
-      var scanned = await handleBana(tag: rawTag, source: source);
-      if (scanned != null) return scanned;
+      try {
+        return await readMifareWithAimeKey(tag: rawTag, source: source);
+      } on NfcException catch (e) {
+        if (e.type != NfcErrorType.authFailed) {
+          rethrow;
+        }
+      }
 
-      // Reactivate card (vital for PN532 as failure to auth halts the card)
+      // Reactivate card (vital for PN532 as failure to auth halts the card).
       await transceiver.reconnect();
-
-      // Try Aime
-      scanned = await handleAime(tag: rawTag, source: source);
-      return scanned;
+      return await readMifareWithBanaKey(tag: rawTag, source: source);
     }
 
     // Pass through Iso15693 or any other generic parsed tags
@@ -200,4 +251,3 @@ class CardReaderEngine {
     return null;
   }
 }
-
