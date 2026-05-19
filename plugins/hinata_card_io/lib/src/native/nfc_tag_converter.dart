@@ -1,10 +1,9 @@
 import 'dart:typed_data';
-import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
-import 'package:convert/convert.dart';
 
-import 'package:hinata_go/models/card/felica.dart';
-import 'package:hinata_go/models/card/iso14443a.dart';
-import 'package:hinata_go/models/card/iso15693.dart';
+import 'package:convert/convert.dart';
+import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
+
+import '../card/card_tag.dart';
 
 Uint8List _toUint8List(String hexString) {
   return Uint8List.fromList(hex.decode(hexString));
@@ -12,7 +11,7 @@ Uint8List _toUint8List(String hexString) {
 
 extension NfcTagConverter on NFCTag {
   /// Converts flutter_nfc_kit's string-based tag representation to internal binary tag models.
-  dynamic toInternalTag() {
+  CardTag? toCardTag() {
     if (type == NFCTagType.iso18092) {
       final idm = _toUint8List(id);
       Uint8List pmm = Uint8List(8);
@@ -30,13 +29,13 @@ extension NfcTagConverter on NFCTag {
           }).toList(),
         );
       }
-      return Felica(idm, pmm, systemCodes);
+      return FelicaTag(idm, pmm, systemCodes);
     }
 
     if (type == NFCTagType.iso15693) {
       final uid = _toUint8List(id);
       if (uid.isNotEmpty) {
-        return Iso15693(uid);
+        return Iso15693Tag(uid);
       }
     }
 
@@ -56,7 +55,7 @@ extension NfcTagConverter on NFCTag {
           atqaInt = (atqaBytes[1] << 8) | atqaBytes[0];
         }
       }
-      return Iso14443(uid, sakInt, atqaInt);
+      return Iso14443aTag(uid, sakInt, atqaInt);
     }
 
     return null;

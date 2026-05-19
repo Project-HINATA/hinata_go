@@ -37,7 +37,6 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  flutter_nfc_kit: ^3.6.0
   shared_preferences: ^2.5.4
   mobile_scanner: ^7.2.0
   http: ^1.6.0
@@ -46,7 +45,6 @@ dependencies:
   package_info_plus: ^9.0.0
   dynamic_color: ^1.8.1
   flutter_svg: ^2.0.17
-  convert: ^3.1.2
   url_launcher: ^6.3.2
   flutter_hooks: ^0.21.3+1
   hooks_riverpod: ^3.2.1
@@ -54,19 +52,12 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   web: ^1.1.0
 
-  # Hardware USB APIs
-  neo_web_usb:
-    git:
-      url: "https://github.com/nerimoe/neo_web_usb.dart"
-  neo_web_hid:
-    git:
-      url: "https://github.com/nerimoe/neo_web_hid.dart"
-  quick_usb:
-    path: plugins/quick_usb/
   cardcipher:
     path: plugins/cardcipher/
   hinata_firmware_feature:
     path: plugins/hinata_firmware_feature/
+  hinata_card_io:
+    path: plugins/hinata_card_io/
 
   async: ^2.12.0
 

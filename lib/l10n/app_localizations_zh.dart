@@ -615,7 +615,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scanPausedDescription => '应用失去焦点，扫描已暂停';
 
   @override
-  String get unknownCardType => '其他卡片';
+  String get unknownCardType => '不可在游戏中使用的卡片';
 
   @override
   String get unusableMifareCardWarning => '这张卡无法在游戏中使用。';

@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
+import 'package:hinata_card_io/hinata_card_io.dart';
 
 import 'package:hinata_go/context_extensions.dart';
-import 'package:hinata_go/models/hardware_config.dart';
-import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
 import 'package:hinata_go/services/notification_service.dart';
 import 'device_header.dart';
 import 'device_settings_cards.dart';
 
 class DeviceDashboard extends ConsumerWidget {
-  final UsbHinataDeviceImpl device;
+  final HinataReader device;
   final ScrollController? scrollController;
   const DeviceDashboard({
     required this.device,
@@ -109,7 +108,7 @@ class _DashboardSection extends StatelessWidget {
 }
 
 class _SaveToFlashButton extends ConsumerWidget {
-  final UsbHinataDeviceImpl device;
+  final HinataReader device;
   const _SaveToFlashButton({required this.device});
 
   @override
@@ -142,7 +141,7 @@ class _SaveToFlashButton extends ConsumerWidget {
       device.segaBrightness = 255;
       device.idleRGB = Colors.blue;
       device.busyRGB = Colors.green;
-      await device.setConfig(ConfigIndex.config0.toInt(), config0.asByte());
+      await device.setConfig(ConfigIndex.config0, config0.asByte());
       await device.setLed(device.idleRGB);
 
       if (context.mounted) {

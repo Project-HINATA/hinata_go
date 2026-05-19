@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
-import 'package:hinata_go/models/hardware_config.dart';
+import 'package:hinata_card_io/hinata_card_io.dart';
 import 'package:hinata_go/utils/gamma.dart';
 
 class BrightnessSlider extends StatefulWidget {
-  final UsbHinataDeviceImpl device;
+  final HinataReader device;
   const BrightnessSlider({required this.device, super.key});
 
   @override
@@ -48,7 +47,7 @@ class _BrightnessSliderState extends State<BrightnessSlider> {
               onChangeEnd: (value) async {
                 final brightnessValue = unmapWithGamma(value, 0.5);
                 await widget.device.setConfig(
-                  ConfigIndex.segaBrightness.toInt(),
+                  ConfigIndex.segaBrightness,
                   brightnessValue,
                 );
                 await widget.device.resetLed();

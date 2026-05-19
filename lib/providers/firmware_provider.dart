@@ -1,8 +1,6 @@
+import 'package:hinata_card_io/hinata_card_io.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
-
-import '../services/communication/device_interface.dart';
-import '../services/communication/usb_hinata_impl.dart';
 
 enum FirmUpdateStateEnum {
   deviceSelecting,
@@ -99,9 +97,8 @@ class FirmwareNotifier extends Notifier<FirmwareState> {
     );
   }
 
-  Future<void> requestFirmware(DeviceInterface device) async {
+  Future<void> requestFirmware(HinataReader device) async {
     if (state.isRequesting) return;
-    if (device is! UsbHinataDeviceImpl) return;
     if (!firmwareFeatureEnabled) return;
 
     state = state.copyWith(isRequesting: true);
@@ -122,7 +119,7 @@ class FirmwareNotifier extends Notifier<FirmwareState> {
     }
   }
 
-  Future<void> startFlash(UsbHinataDeviceImpl device) async {
+  Future<void> startFlash(HinataReader device) async {
     final firmware = state.firmware;
     if (!firmwareFeatureEnabled || firmware == null || firmware.firm == null) {
       return;

@@ -1,14 +1,15 @@
 import 'dart:developer';
 import 'dart:typed_data';
-import '../hardware/protocols/pn532.dart';
-import 'nfc_transceiver.dart';
-import 'nfc_exception.dart';
 
-class HinataTransceiver implements NfcTransceiver {
+import '../card/card_io_exception.dart';
+import '../card/card_transceiver.dart';
+import '../protocols/pn532.dart';
+
+class HinataCardTransceiver implements CardTransceiver {
   final Pn532Api pn532;
   final int tg;
 
-  HinataTransceiver(this.pn532, {this.tg = 1});
+  HinataCardTransceiver(this.pn532, {this.tg = 1});
 
   @override
   Future<Uint8List> transceive(Uint8List data, {Duration? timeout}) async {
@@ -24,8 +25,8 @@ class HinataTransceiver implements NfcTransceiver {
       log(data.toString());
 
       if (res.isEmpty) {
-        throw NfcException(
-          type: NfcErrorType.readError,
+        throw CardIoException(
+          type: CardIoErrorType.readError,
           message: 'Empty response from PN532',
         );
       }
@@ -35,8 +36,8 @@ class HinataTransceiver implements NfcTransceiver {
       // PN532 returns the response including status byte at res[0] (0x00 for success)
       return Uint8List.fromList(res.sublist(1));
     } catch (e) {
-      throw NfcException(
-        type: NfcErrorType.readError,
+      throw CardIoException(
+        type: CardIoErrorType.readError,
         message: 'HINATA PN532 transceive failed',
         originalError: e,
       );
@@ -66,14 +67,14 @@ class HinataTransceiver implements NfcTransceiver {
       );
 
       if (result != Pn532Error.none) {
-        throw NfcException(
-          type: NfcErrorType.authFailed,
+        throw CardIoException(
+          type: CardIoErrorType.authFailed,
           message: 'PN532 Mifare Auth failed: $result',
         );
       }
     } catch (e) {
-      throw NfcException(
-        type: NfcErrorType.authFailed,
+      throw CardIoException(
+        type: CardIoErrorType.authFailed,
         message: 'HINATA Mifare authentication failed $keyType',
         originalError: e,
       );
@@ -85,15 +86,15 @@ class HinataTransceiver implements NfcTransceiver {
     try {
       final res = await pn532.mifareClassicReadBlock(tg, block);
       if (res == null) {
-        throw NfcException(
-          type: NfcErrorType.readError,
+        throw CardIoException(
+          type: CardIoErrorType.readError,
           message: 'Failed to read Mifare block $block',
         );
       }
       return Uint8List.fromList(res);
     } catch (e) {
-      throw NfcException(
-        type: NfcErrorType.readError,
+      throw CardIoException(
+        type: CardIoErrorType.readError,
         message: 'HINATA Mifare read failed',
         originalError: e,
       );

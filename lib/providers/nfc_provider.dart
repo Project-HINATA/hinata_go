@@ -2,9 +2,8 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:hinata_card_io/hinata_card_io.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/card/scanned_card.dart';
@@ -62,21 +61,23 @@ final nfcProvider = NotifierProvider<NfcNotifier, NfcState>(() {
 });
 
 class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
+  final PhoneNfcReader _phoneNfcReader = PhoneNfcReader();
   bool _isStarting = false;
 
   @override
   NfcState build() {
     // Listen to tagStream for tags relayed from Android Intents (App Launch)
-    FlutterNfcKit.tagStream.listen((tag) {
-      _onTagDiscovered(tag);
+    _phoneNfcReader.tagStream.listen((tag) {
+      _onTagDiscovered(_phoneNfcReader.resolve(tag));
     });
 
     // Pulse the native side to relay the initial tag that launched the app
     if (!kIsWeb && Platform.isAndroid) {
-      const methodChannel = MethodChannel('moe.neri.hinatago/nfc_launcher');
-      methodChannel.invokeMethod('getInitialTag').catchError((e) {
-        log('Error getting initial tag: $e');
-      });
+      _phoneNfcReader
+          .relayAndroidInitialTag(channelName: 'moe.neri.hinatago/nfc_launcher')
+          .catchError((e) {
+            log('Error getting initial tag: $e');
+          });
     }
 
     // Register as observer for global app lifecycle
@@ -114,14 +115,14 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     _isStarting = true;
 
     try {
-      NFCAvailability availability = await FlutterNfcKit.nfcAvailability;
-      if (availability == NFCAvailability.not_supported) {
+      final availability = await _phoneNfcReader.availability();
+      if (availability == PhoneNfcAvailability.notSupported) {
         _isStarting = false;
         state = state.copyWith(status: NfcStatus.unsupported, clearError: true);
         return;
       }
 
-      if (availability == NFCAvailability.disabled) {
+      if (availability == PhoneNfcAvailability.disabled) {
         _isStarting = false;
         state = state.copyWith(status: NfcStatus.disabled, clearError: true);
         return;
@@ -141,13 +142,10 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           final iosAlert =
               ref.read(notificationServiceProvider).l10n?.nfcIosAlert ??
               'Hold your card near the top of your iPhone';
-          NFCTag tag = await FlutterNfcKit.poll(
+          final pollResult = await _phoneNfcReader.poll(
             iosAlertMessage: iosAlert,
-            readIso18092: true,
-            readIso14443B: false,
-            readIso15693: true,
           );
-          await _onTagDiscovered(tag);
+          await _onTagDiscovered(pollResult);
         } catch (e) {
           log('iOS NFC poll error or cancel: $e');
         } finally {
@@ -157,12 +155,8 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
         // Android continuous loop or non-iOS platforms
         while (state.isScanning) {
           try {
-            NFCTag tag = await FlutterNfcKit.poll(
-              readIso18092: true,
-              readIso14443B: false,
-              readIso15693: true,
-            );
-            await _onTagDiscovered(tag);
+            final pollResult = await _phoneNfcReader.poll();
+            await _onTagDiscovered(pollResult);
           } catch (e) {
             if (e.toString().contains('User Canceled') ||
                 e.toString().contains('Session Timeout')) {
@@ -192,16 +186,17 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       clearError: true,
     );
     try {
-      await FlutterNfcKit.finish();
+      await _phoneNfcReader.finish();
     } catch (_) {}
   }
 
-  Future<void> _onTagDiscovered(NFCTag tag) async {
+  Future<void> _onTagDiscovered(PhoneNfcPollResult? pollResult) async {
+    if (pollResult == null) return;
     if (state.isProcessing) return;
     state = state.copyWith(isProcessing: true);
 
     try {
-      final scannedCard = await handleNfcTag(tag);
+      final scannedCard = await handleNfcPollResult(pollResult);
       if (scannedCard != null) {
         await _registerScan(
           scannedCard,

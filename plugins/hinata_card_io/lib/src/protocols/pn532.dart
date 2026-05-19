@@ -2,11 +2,8 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:typed_data';
 
-import 'package:hinata_go/services/hardware/protocols/base.dart';
-import 'package:hinata_go/models/card/card.dart';
-import 'package:hinata_go/models/card/felica.dart';
-import 'package:hinata_go/models/card/iso14443a.dart';
-// Removed hex_string_to_list import
+import '../card/card_tag.dart';
+import 'base.dart';
 
 enum Pn532Error {
   none(0x00),
@@ -274,7 +271,7 @@ class Pn532Api extends IoBase {
     }
   }
 
-  Future<List<ICCard>> inListPassiveTarget(
+  Future<List<CardTag>> inListPassiveTarget(
     int brty,
     int maxTg,
     List<int> initialData,
@@ -291,7 +288,7 @@ class Pn532Api extends IoBase {
       return [];
     }
     final tagNum = res.payload[0];
-    var tags = <ICCard>[];
+    var tags = <CardTag>[];
     var idIdx = 1;
     for (var i = 0; i < tagNum; i++) {
       switch (brty) {
@@ -327,7 +324,7 @@ class Pn532Api extends IoBase {
           }
           var id = res.payload.sublist(idIdx + 5, idIdx + 5 + idLen); // UID
           idIdx += 5 + idLen;
-          tags.add(Iso14443(Uint8List.fromList(id), sak, atqa));
+          tags.add(Iso14443aTag(Uint8List.fromList(id), sak, atqa));
         case 1: // 212 kbps (FeliCa polling)
         case 2: // 424 kbps (FeliCa polling)
           // 00, 00, ff, 18, e8, d5, 4b,
@@ -354,7 +351,7 @@ class Pn532Api extends IoBase {
           }
           idIdx += 20 + systemCodesCount * 2;
           tags.add(
-            Felica(
+            FelicaTag(
               Uint8List.fromList(idm),
               Uint8List.fromList(pmm),
               Uint16List.fromList(systemCodes),

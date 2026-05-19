@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:typed_data';
 
+import 'package:hinata_card_io/hinata_card_io.dart';
 import 'package:hinata_go/models/card/aic.dart';
 import 'package:hinata_go/models/card/aime.dart';
 import 'package:hinata_go/models/card/banapass.dart';
@@ -13,11 +14,10 @@ import 'package:hinata_go/models/card/scanned_card.dart';
 import '../../constants/mifare_key.dart';
 import '../../utils/access_code_validator.dart';
 import '../../utils/spad0.dart';
-import 'nfc_exception.dart';
-import 'nfc_transceiver.dart';
+import 'card_tag_adapter.dart';
 
 class CardReaderEngine {
-  final NfcTransceiver transceiver;
+  final CardTransceiver transceiver;
 
   CardReaderEngine(this.transceiver);
 
@@ -75,8 +75,8 @@ class CardReaderEngine {
       }
     } catch (e) {
       log('CardReaderEngine Felica error: $e');
-      throw NfcException(
-        type: NfcErrorType.readError,
+      throw CardIoException(
+        type: CardIoErrorType.readError,
         message: 'Failed to read FeliCa data',
         originalError: e,
       );
@@ -253,6 +253,8 @@ class CardReaderEngine {
     dynamic rawTag, {
     String source = 'NFC',
   }) async {
+    rawTag = rawTag is CardTag ? rawTag.toAppCardTag() : rawTag;
+
     if (rawTag is Felica) {
       return await handleFelica(tag: rawTag, source: source);
     }
@@ -269,8 +271,8 @@ class CardReaderEngine {
 
       try {
         return await readMifareWithAimeKey(tag: rawTag, source: source);
-      } on NfcException catch (e) {
-        if (e.type != NfcErrorType.authFailed) {
+      } on CardIoException catch (e) {
+        if (e.type != CardIoErrorType.authFailed) {
           rethrow;
         }
       }

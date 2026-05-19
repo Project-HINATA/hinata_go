@@ -1,10 +1,12 @@
 import 'dart:typed_data';
-import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
-import 'package:convert/convert.dart';
-import 'nfc_transceiver.dart';
-import 'nfc_exception.dart';
 
-class NativeNfcTransceiver implements NfcTransceiver {
+import 'package:convert/convert.dart';
+import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
+
+import '../card/card_io_exception.dart';
+import '../card/card_transceiver.dart';
+
+class PhoneNfcTransceiver implements CardTransceiver {
   @override
   Future<Uint8List> transceive(Uint8List data, {Duration? timeout}) async {
     try {
@@ -15,8 +17,8 @@ class NativeNfcTransceiver implements NfcTransceiver {
       );
       return Uint8List.fromList(hex.decode(responseHex));
     } catch (e) {
-      throw NfcException(
-        type: NfcErrorType.readError,
+      throw CardIoException(
+        type: CardIoErrorType.readError,
         message: 'Native NFC transceive failed',
         originalError: e,
       );
@@ -37,8 +39,8 @@ class NativeNfcTransceiver implements NfcTransceiver {
         await FlutterNfcKit.authenticateSector(block ~/ 4, keyB: keyB);
       }
     } catch (e) {
-      throw NfcException(
-        type: NfcErrorType.authFailed,
+      throw CardIoException(
+        type: CardIoErrorType.authFailed,
         message: 'Native Mifare authentication failed',
         originalError: e,
       );
@@ -51,8 +53,8 @@ class NativeNfcTransceiver implements NfcTransceiver {
       final res = await FlutterNfcKit.readBlock(block);
       return res;
     } catch (e) {
-      throw NfcException(
-        type: NfcErrorType.readError,
+      throw CardIoException(
+        type: CardIoErrorType.readError,
         message: 'Native Mifare read failed',
         originalError: e,
       );

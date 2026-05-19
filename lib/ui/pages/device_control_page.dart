@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:hinata_card_io/hinata_card_io.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../providers/hardware_device_provider.dart';
-import '../../services/communication/usb_hinata_impl.dart';
 import '../components/device/disconnected_state.dart';
 import '../components/device/device_dashboard.dart';
 
@@ -14,9 +14,9 @@ class DeviceControlPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final deviceState = ref.watch(hardwareDeviceProvider);
     final isConnected = deviceState.connectedDevice != null;
-    final isUsbHinata = deviceState.connectedDevice is UsbHinataDeviceImpl;
+    final isUsbHinata = deviceState.connectedDevice is HinataReader;
     final hinataDevice = isUsbHinata
-        ? deviceState.connectedDevice as UsbHinataDeviceImpl
+        ? deviceState.connectedDevice as HinataReader
         : null;
 
     final l10n = context.l10n;

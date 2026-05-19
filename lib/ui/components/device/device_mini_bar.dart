@@ -5,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
 import 'package:hinata_go/providers/hardware_device_provider.dart';
-import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
+import 'package:hinata_card_io/hinata_card_io.dart';
 
 import 'device_dashboard.dart';
 import 'disconnected_state.dart';
@@ -111,9 +111,9 @@ class _DeviceMiniBarDisplayData {
     final l10n = context.l10n;
     final theme = context.theme;
     final isConnected = deviceState.connectedDevice != null;
-    final isUsbHinata = deviceState.connectedDevice is UsbHinataDeviceImpl;
+    final isUsbHinata = deviceState.connectedDevice is HinataReader;
     final hinataDevice = isUsbHinata
-        ? deviceState.connectedDevice as UsbHinataDeviceImpl
+        ? deviceState.connectedDevice as HinataReader
         : null;
     final deviceSvg = switch (deviceState.productId) {
       0x0147 => 'assets/std.svg',
@@ -318,9 +318,9 @@ class _DeviceSheetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUsbHinata = state.connectedDevice is UsbHinataDeviceImpl;
+    final isUsbHinata = state.connectedDevice is HinataReader;
     final hinataDevice = isUsbHinata
-        ? state.connectedDevice as UsbHinataDeviceImpl
+        ? state.connectedDevice as HinataReader
         : null;
 
     return Container(

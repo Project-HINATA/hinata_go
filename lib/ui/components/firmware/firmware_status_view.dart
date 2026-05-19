@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:hinata_go/context_extensions.dart';
+import 'package:hinata_card_io/hinata_card_io.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
+import 'package:hinata_go/context_extensions.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../providers/firmware_provider.dart';
 import '../../../providers/hardware_device_provider.dart';
-import '../../../services/communication/usb_hinata_impl.dart';
 
 class FirmwareStatusView extends ConsumerWidget {
   const FirmwareStatusView({super.key});
@@ -79,7 +79,7 @@ class FirmwareStatusView extends ConsumerWidget {
           FilledButton(
             onPressed: () {
               final device = deviceState.connectedDevice;
-              if (device is UsbHinataDeviceImpl) {
+              if (device is HinataReader) {
                 flashNotifier.startFlash(device);
               }
             },
@@ -89,7 +89,7 @@ class FirmwareStatusView extends ConsumerWidget {
           FilledButton.icon(
             onPressed: () {
               final device = deviceState.connectedDevice;
-              if (device is UsbHinataDeviceImpl) {
+              if (device is HinataReader) {
                 flashNotifier.startFlash(device);
               }
             },

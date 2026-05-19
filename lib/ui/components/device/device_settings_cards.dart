@@ -2,12 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:hinata_card_io/hinata_card_io.dart';
 import 'package:hinata_go/context_extensions.dart';
-import 'package:hinata_go/models/hardware_config.dart';
-import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
 
 class GlobalSettingsCard extends StatefulWidget {
-  final UsbHinataDeviceImpl device;
+  final HinataReader device;
   const GlobalSettingsCard({required this.device, super.key});
 
   @override
@@ -70,10 +69,7 @@ class _GlobalSettingsCardState extends State<GlobalSettingsCard> {
               value: isRainbow,
               onChanged: (value) async {
                 config0.enableLedRainbow = value;
-                await hinata.setConfig(
-                  ConfigIndex.config0.toInt(),
-                  config0.asByte(),
-                );
+                await hinata.setConfig(ConfigIndex.config0, config0.asByte());
                 if (!value) {
                   await hinata.resetLed();
                 }
@@ -91,15 +87,15 @@ class _GlobalSettingsCardState extends State<GlobalSettingsCard> {
                 ) async {
                   await hinata.setLed(color);
                   await hinata.setConfig(
-                    ConfigIndex.idleR.toInt(),
+                    ConfigIndex.idleR,
                     (color.r * 255).round(),
                   );
                   await hinata.setConfig(
-                    ConfigIndex.idleG.toInt(),
+                    ConfigIndex.idleG,
                     (color.g * 255).round(),
                   );
                   await hinata.setConfig(
-                    ConfigIndex.idleB.toInt(),
+                    ConfigIndex.idleB,
                     (color.b * 255).round(),
                   );
                   hinata.idleRGB = color;
@@ -117,15 +113,15 @@ class _GlobalSettingsCardState extends State<GlobalSettingsCard> {
                   color,
                 ) async {
                   await hinata.setConfig(
-                    ConfigIndex.busyR.toInt(),
+                    ConfigIndex.busyR,
                     (color.r * 255).round(),
                   );
                   await hinata.setConfig(
-                    ConfigIndex.busyG.toInt(),
+                    ConfigIndex.busyG,
                     (color.g * 255).round(),
                   );
                   await hinata.setConfig(
-                    ConfigIndex.busyB.toInt(),
+                    ConfigIndex.busyB,
                     (color.b * 255).round(),
                   );
                   hinata.busyRGB = color;
@@ -140,10 +136,7 @@ class _GlobalSettingsCardState extends State<GlobalSettingsCard> {
             value: config0.serialDescriptorUnique,
             onChanged: (value) async {
               config0.serialDescriptorUnique = value;
-              await hinata.setConfig(
-                ConfigIndex.config0.toInt(),
-                config0.asByte(),
-              );
+              await hinata.setConfig(ConfigIndex.config0, config0.asByte());
               setState(() {});
             },
           ),
@@ -154,7 +147,7 @@ class _GlobalSettingsCardState extends State<GlobalSettingsCard> {
 }
 
 class SegaSettingsCard extends StatefulWidget {
-  final UsbHinataDeviceImpl device;
+  final HinataReader device;
   const SegaSettingsCard({required this.device, super.key});
 
   @override
@@ -203,7 +196,7 @@ class _SegaSettingsCardState extends State<SegaSettingsCard> {
               },
               onChangeEnd: (value) async {
                 await hinata.setConfig(
-                  ConfigIndex.segaBrightness.toInt(),
+                  ConfigIndex.segaBrightness,
                   hinata.segaBrightness,
                 );
                 await hinata.resetLed();
@@ -224,7 +217,7 @@ class _SegaSettingsCardState extends State<SegaSettingsCard> {
                   if (value != null) {
                     config0.segaHwFw = value;
                     await hinata.setConfig(
-                      ConfigIndex.config0.toInt(),
+                      ConfigIndex.config0,
                       config0.asByte(),
                     );
                     setState(() {});
@@ -239,10 +232,7 @@ class _SegaSettingsCardState extends State<SegaSettingsCard> {
             value: config0.segaFastRead,
             onChanged: (value) async {
               config0.segaFastRead = value;
-              await hinata.setConfig(
-                ConfigIndex.config0.toInt(),
-                config0.asByte(),
-              );
+              await hinata.setConfig(ConfigIndex.config0, config0.asByte());
               setState(() {});
             },
           ),
@@ -253,7 +243,7 @@ class _SegaSettingsCardState extends State<SegaSettingsCard> {
 }
 
 class CardIOSettingsCard extends StatefulWidget {
-  final UsbHinataDeviceImpl device;
+  final HinataReader device;
   const CardIOSettingsCard({required this.device, super.key});
 
   @override
@@ -276,10 +266,7 @@ class _CardIOSettingsCardState extends State<CardIOSettingsCard> {
             value: config0.cardioDisableIso14443a,
             onChanged: (value) async {
               config0.cardioDisableIso14443a = value;
-              await hinata.setConfig(
-                ConfigIndex.config0.toInt(),
-                config0.asByte(),
-              );
+              await hinata.setConfig(ConfigIndex.config0, config0.asByte());
               setState(() {});
             },
           ),
@@ -292,7 +279,7 @@ class _CardIOSettingsCardState extends State<CardIOSettingsCard> {
                 : (value) async {
                     config0.cardioIso14443aStartWithE004 = value;
                     await hinata.setConfig(
-                      ConfigIndex.config0.toInt(),
+                      ConfigIndex.config0,
                       config0.asByte(),
                     );
                     setState(() {});
