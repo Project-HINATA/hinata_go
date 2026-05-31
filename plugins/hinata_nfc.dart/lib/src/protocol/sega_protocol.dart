@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:hinata_go/services/hardware/protocols/base.dart';
-import 'package:hinata_go/models/card/card.dart';
-import 'package:hinata_go/models/card/felica.dart';
-import 'package:hinata_go/models/card/iso14443a.dart';
+import 'base.dart';
+import '../nfc/target.dart';
 
 enum ResponseCode {
   ok(0x00),
@@ -109,24 +107,24 @@ class SegaApi extends IoBase {
     return res[5];
   }
 
-  Future<ICCard?> detectCard() async {
+  Future<NfcTarget?> detectCard() async {
     final res = await _send(NFCCommand.cardDetect, []);
     final cardNum = res[7];
     if (cardNum == 1) {
       final cardType = res[8];
       final idLen = res[9];
       if (cardType == 0x10) {
-        return Felica(
-          Uint8List.fromList(res.sublist(10, 10 + 8)),
-          Uint8List.fromList(res.sublist(10 + 8, 10 + 8 + 8)),
-          Uint16List.fromList([0xFFFF]),
+        return NfcTarget(
+          id: Uint8List.fromList(res.sublist(10, 10 + 8)),
+          pmm: Uint8List.fromList(res.sublist(10 + 8, 10 + 8 + 8)),
+          systemCodes: Uint16List.fromList([0xFFFF]),
         );
       }
       if (cardType == 0x20) {
-        return Iso14443(
-          Uint8List.fromList(res.sublist(10, 10 + idLen)),
-          0x08,
-          0x0000,
+        return NfcTarget(
+          id: Uint8List.fromList(res.sublist(10, 10 + idLen)),
+          sak: 0x08,
+          atqa: 0x0000,
         );
       }
     }

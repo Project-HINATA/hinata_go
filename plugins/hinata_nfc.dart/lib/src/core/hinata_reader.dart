@@ -2,19 +2,18 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:hinata_go/utils/hex_utils.dart';
 
-import 'package:hinata_go/services/hardware/protocols/pn532.dart';
-import 'package:hinata_go/models/hardware_config.dart';
-import 'package:hinata_go/services/hardware/core/subscription.dart';
-import 'package:hinata_go/services/hardware/transport/hid_bridge/hid_bridge.dart';
-import 'package:hinata_go/services/hardware/protocols/sega_protocol.dart';
+import '../protocol/pn532.dart';
+import '../protocol/sega_protocol.dart';
+import 'hardware_config.dart';
+import 'subscription.dart';
+import '../transport/hid_bridge/hid_bridge.dart';
 
 const vendorId = 0xF822;
 
 enum DeviceState { notPaired, paired, connected }
 
-class HINATA {
+class HinataReader {
   final HIDDevice _device;
 
   int firmTimeStamp = 0;
@@ -23,7 +22,7 @@ class HINATA {
 
   final Map<int, Subscription> _subscriptions = {};
 
-  HINATA(this._device) {
+  HinataReader(this._device) {
     _device.onInputReport(_onInputReport);
   }
 
@@ -32,7 +31,7 @@ class HINATA {
   String get firmVersion {
     var version = firmTimeStamp.toString();
     if (firmTimeStamp >= 2025051301) {
-      version += "-${HexUtils.bytesToHex(commitHash)}";
+      version += "-${_bytesToHex(commitHash)}";
     }
     return version;
   }
@@ -40,7 +39,7 @@ class HINATA {
   String get chipIdStr {
     var str = "00000000";
     if (firmTimeStamp >= 2025051301) {
-      str = HexUtils.bytesToHex(chipId);
+      str = _bytesToHex(chipId);
     }
     return str;
   }
@@ -51,8 +50,8 @@ class HINATA {
 
   int segaBrightness = 255;
   Config0 config0 = Config0.fromByte(0x88);
-  Color idleRGB = Color.fromARGB(0, 255, 255, 255);
-  Color busyRGB = Color.fromARGB(0, 0, 0, 255);
+  Color idleRGB = const Color.fromARGB(0, 255, 255, 255);
+  Color busyRGB = const Color.fromARGB(0, 0, 0, 255);
 
   Future open() async {
     if (!_device.opened) {
@@ -239,5 +238,9 @@ class HINATA {
   void destroy() {
     _device.onInputReport(null);
     unawaited(_device.close());
+  }
+
+  String _bytesToHex(List<int> bytes) {
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 }

@@ -18,11 +18,10 @@ import 'package:hinata_go/utils/ekicode_data.dart';
 import '../../constants/mifare_key.dart';
 import '../../utils/access_code_validator.dart';
 import '../../utils/spad0.dart';
-import 'nfc_exception.dart';
-import 'nfc_transceiver.dart';
+import 'package:hinata_nfc/hinata_nfc.dart';
 
 class CardReaderEngine {
-  final NfcTransceiver transceiver;
+  final NfcCardChannel transceiver;
 
   CardReaderEngine(this.transceiver);
 

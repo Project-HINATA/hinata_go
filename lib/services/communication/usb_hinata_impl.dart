@@ -1,20 +1,19 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
+import 'package:hinata_nfc/hinata_nfc.dart';
+
 import 'device_interface.dart';
-import 'package:hinata_go/models/hardware_config.dart';
 import 'package:hinata_go/models/card/invalid_mifare.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
-import '../hardware/core/hinata_device.dart';
 import '../nfc/card_reader_engine.dart';
-import '../nfc/hinata_transceiver.dart';
 
 class UsbHinataDeviceImpl implements DeviceInterface {
   static const Duration _readFailureConfirmWindow = Duration(seconds: 1);
 
-  final HINATA _hinata;
+  final HinataReader _hinata;
   final ValueNotifier<DeviceConnectionState> _connectionState = ValueNotifier(
     DeviceConnectionState.disconnected,
   );
@@ -34,7 +33,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     });
 
     // Check if initially opened
-    // Note: HINATA object is instantiated when device is connected physically in Provider originally.
+    // Note: HinataReader object is instantiated when device is connected physically in Provider originally.
     // So we'll trigger state change on connect.
   }
 
@@ -128,8 +127,8 @@ class UsbHinataDeviceImpl implements DeviceInterface {
 
   @override
   Future<ScannedCard?> poll({bool readExtended = true}) async {
-    final transceiver = HinataTransceiver(_hinata.pn532Api);
-    final engine = CardReaderEngine(transceiver);
+    final channel = HinataNfcCardChannel(_hinata.pn532Api);
+    final engine = CardReaderEngine(channel);
 
     for (int i = 0; i < 5; i++) {
       final felicaTag = await _pollFelicaTag();
@@ -140,7 +139,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
           felicaTag,
           source: 'HINATA',
           readExtended: readExtended,
-        );
+          );
       }
     }
 
@@ -167,8 +166,8 @@ class UsbHinataDeviceImpl implements DeviceInterface {
       return null;
     }
 
-    final transceiver = HinataTransceiver(_hinata.pn532Api);
-    final engine = CardReaderEngine(transceiver);
+    final channel = HinataNfcCardChannel(_hinata.pn532Api);
+    final engine = CardReaderEngine(channel);
 
     final scanned = await engine.processTag(
       tag,
@@ -230,17 +229,19 @@ class UsbHinataDeviceImpl implements DeviceInterface {
       0xFFFF,
       0x0001,
     );
-    final cards = await _hinata.pn532Api.inListPassiveTarget(1, 1, initialData);
-    if (cards.isNotEmpty && cards[0] is Felica) {
-      return cards[0] as Felica;
+    final targets = await _hinata.pn532Api.inListPassiveTarget(1, 1, initialData);
+    if (targets.isNotEmpty) {
+      final t = targets[0];
+      return Felica(t.id, t.pmm!, t.systemCodes!);
     }
     return null;
   }
 
   Future<Iso14443?> _pollIsoTag() async {
-    final cards = await _hinata.pn532Api.inListPassiveTarget(0, 1, []);
-    if (cards.isNotEmpty && cards[0] is Iso14443) {
-      return cards[0] as Iso14443;
+    final targets = await _hinata.pn532Api.inListPassiveTarget(0, 1, []);
+    if (targets.isNotEmpty) {
+      final t = targets[0];
+      return Iso14443(t.id, t.sak!, t.atqa!);
     }
     return null;
   }

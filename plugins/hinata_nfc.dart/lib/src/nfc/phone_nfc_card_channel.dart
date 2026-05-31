@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:convert/convert.dart';
-import 'nfc_transceiver.dart';
+import 'nfc_card_channel.dart';
 import 'nfc_exception.dart';
 
-class NativeNfcTransceiver implements NfcTransceiver {
+class PhoneNfcCardChannel implements NfcCardChannel {
   @override
   Future<Uint8List> transceive(Uint8List data, {Duration? timeout}) async {
     try {
@@ -17,7 +17,7 @@ class NativeNfcTransceiver implements NfcTransceiver {
     } catch (e) {
       throw NfcException(
         type: NfcErrorType.readError,
-        message: 'Native NFC transceive failed',
+        message: 'Phone NFC transceive failed',
         originalError: e,
       );
     }
@@ -39,7 +39,7 @@ class NativeNfcTransceiver implements NfcTransceiver {
     } catch (e) {
       throw NfcException(
         type: NfcErrorType.authFailed,
-        message: 'Native Mifare authentication failed',
+        message: 'Phone Mifare authentication failed',
         originalError: e,
       );
     }
@@ -53,7 +53,7 @@ class NativeNfcTransceiver implements NfcTransceiver {
     } catch (e) {
       throw NfcException(
         type: NfcErrorType.readError,
-        message: 'Native Mifare read failed',
+        message: 'Phone Mifare read failed',
         originalError: e,
       );
     }

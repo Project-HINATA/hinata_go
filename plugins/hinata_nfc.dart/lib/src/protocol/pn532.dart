@@ -2,11 +2,8 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:typed_data';
 
-import 'package:hinata_go/services/hardware/protocols/base.dart';
-import 'package:hinata_go/models/card/card.dart';
-import 'package:hinata_go/models/card/felica.dart';
-import 'package:hinata_go/models/card/iso14443a.dart';
-// Removed hex_string_to_list import
+import 'base.dart';
+import '../nfc/target.dart';
 
 enum Pn532Error {
   none(0x00),
@@ -274,7 +271,7 @@ class Pn532Api extends IoBase {
     }
   }
 
-  Future<List<ICCard>> inListPassiveTarget(
+  Future<List<NfcTarget>> inListPassiveTarget(
     int brty,
     int maxTg,
     List<int> initialData,
@@ -291,21 +288,11 @@ class Pn532Api extends IoBase {
       return [];
     }
     final tagNum = res.payload[0];
-    var tags = <ICCard>[];
+    var tags = <NfcTarget>[];
     var idIdx = 1;
     for (var i = 0; i < tagNum; i++) {
       switch (brty) {
         case 0: // 106 kbps type A (ISO/IEC14443 Type A)
-          // 00, 00, ff, 00, ff, 00, 4b,
-          // 02,
-          // 01, [00, 44], 00, 07, [04, 86, 25, e2, 94, 1e, 94],
-          // 02, [00, 04], 08, 04, [3b, fb, 00, 2d]
-
-          // id1 = 9
-          // id2 = 9 + 2 + 1 + 1 + uidLen
-
-          // log("ISO14443-A: ${res.payload}");
-
           if (res.payload.length < idIdx + 5) {
             log(
               'PN532 ISO14443 payload too short for header: '
@@ -327,18 +314,13 @@ class Pn532Api extends IoBase {
           }
           var id = res.payload.sublist(idIdx + 5, idIdx + 5 + idLen); // UID
           idIdx += 5 + idLen;
-          tags.add(Iso14443(Uint8List.fromList(id), sak, atqa));
+          tags.add(NfcTarget(
+            id: Uint8List.fromList(id),
+            sak: sak,
+            atqa: atqa,
+          ));
         case 1: // 212 kbps (FeliCa polling)
         case 2: // 424 kbps (FeliCa polling)
-          // 00, 00, ff, 18, e8, d5, 4b,
-          // 01,
-          // 01, 14, 01, [01, 2e, 55, 14, e4, 08, 83, 40], [00, f1, 00, 00, 00, 01, 43, 00], [88, b4]
-
-          // 2: Length
-          // 3: Id of two
-          // 4 ~ 4 + 8: Idm
-          // 4+8 ~ 4+8+8 Pmm
-          // 4+8+8 ~ 4+8+8+ 2 * n: SystemCode
           if (res.payload.length < 16) return [];
           var packetLen = res.payload[idIdx + 1];
           var systemCodesCount = (packetLen - 2 - 8 - 8) >> 1;
@@ -354,10 +336,10 @@ class Pn532Api extends IoBase {
           }
           idIdx += 20 + systemCodesCount * 2;
           tags.add(
-            Felica(
-              Uint8List.fromList(idm),
-              Uint8List.fromList(pmm),
-              Uint16List.fromList(systemCodes),
+            NfcTarget(
+              id: Uint8List.fromList(idm),
+              pmm: Uint8List.fromList(pmm),
+              systemCodes: Uint16List.fromList(systemCodes),
             ),
           );
         case 3: // 106 kbps type B (ISO/IEC14443-3B)

@@ -1,14 +1,15 @@
 import 'dart:developer';
 import 'dart:typed_data';
-import '../hardware/protocols/pn532.dart';
-import 'nfc_transceiver.dart';
+
+import '../protocol/pn532.dart';
+import 'nfc_card_channel.dart';
 import 'nfc_exception.dart';
 
-class HinataTransceiver implements NfcTransceiver {
+class HinataNfcCardChannel implements NfcCardChannel {
   final Pn532Api pn532;
   final int tg;
 
-  HinataTransceiver(this.pn532, {this.tg = 1});
+  HinataNfcCardChannel(this.pn532, {this.tg = 1});
 
   @override
   Future<Uint8List> transceive(Uint8List data, {Duration? timeout}) async {

@@ -67,6 +67,8 @@ dependencies:
     path: plugins/cardcipher/
   hinata_firmware_feature:
     path: plugins/hinata_firmware_feature/
+  hinata_nfc:
+    path: plugins/hinata_nfc.dart/
 
   async: ^2.12.0
 

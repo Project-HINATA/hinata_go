@@ -6,8 +6,7 @@ import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 
 import '../services/communication/device_interface.dart';
 import '../services/communication/usb_hinata_impl.dart';
-import '../services/hardware/core/hinata_device.dart';
-import '../services/hardware/transport/hid_bridge/hid_bridge.dart';
+import 'package:hinata_nfc/hinata_nfc.dart';
 import 'current_scan_session_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'nfc_provider.dart';
@@ -191,7 +190,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
   }) async {
     state = state.copyWith(isConnecting: true, error: null);
     try {
-      final hinata = HINATA(device);
+      final hinata = HinataReader(device);
       final usbImpl = UsbHinataDeviceImpl(hinata);
       await usbImpl.connect();
 

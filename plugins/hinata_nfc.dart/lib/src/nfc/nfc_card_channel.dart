@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-abstract class NfcTransceiver {
+abstract class NfcCardChannel {
   /// Sends raw data and receives a response.
   Future<Uint8List> transceive(Uint8List data, {Duration? timeout});
 
