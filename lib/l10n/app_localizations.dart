@@ -1225,6 +1225,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This card cannot be used in games.'**
   String get unusableMifareCardWarning;
+
+  /// Transit card balance label
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get transitBalance;
+
+  /// Card number label
+  ///
+  /// In en, this message translates to:
+  /// **'Card Number'**
+  String get cardNumber;
+
+  /// Expandable transaction history list title
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction History'**
+  String get transactionHistory;
+
+  /// Snapshot time label
+  ///
+  /// In en, this message translates to:
+  /// **'Snapshot Time'**
+  String get snapshotTime;
+
+  /// Empty state description for transactions
+  ///
+  /// In en, this message translates to:
+  /// **'No transaction history'**
+  String get noTransactions;
+
+  /// Transaction type: ride
+  ///
+  /// In en, this message translates to:
+  /// **'Ride'**
+  String get transitTypeRide;
+
+  /// Transaction type: top-up
+  ///
+  /// In en, this message translates to:
+  /// **'Top-up'**
+  String get transitTypeTopup;
+
+  /// Transaction type: shopping
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping'**
+  String get transitTypeShopping;
+
+  /// Transaction type: adjustment
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment'**
+  String get transitTypeAdjustment;
+
+  /// Transaction type: refund
+  ///
+  /// In en, this message translates to:
+  /// **'Refund'**
+  String get transitTypeRefund;
+
+  /// Transaction type: issue
+  ///
+  /// In en, this message translates to:
+  /// **'Issue'**
+  String get transitTypeIssue;
+
+  /// Transaction type: deduction
+  ///
+  /// In en, this message translates to:
+  /// **'Deduction'**
+  String get transitTypeDeduction;
+
+  /// Transaction type: reissue
+  ///
+  /// In en, this message translates to:
+  /// **'Reissue'**
+  String get transitTypeReissue;
+
+  /// Transaction type: other
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get transitTypeOther;
 }
 
 class _AppLocalizationsDelegate

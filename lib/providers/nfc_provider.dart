@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/card/scanned_card.dart';
 import '../models/card/saved_card.dart';
+import '../models/card/transit.dart';
 import '../models/scan_log.dart';
 import '../navigation/router.dart';
 import '../services/nfc_service.dart';
@@ -63,6 +65,8 @@ final nfcProvider = NotifierProvider<NfcNotifier, NfcState>(() {
 
 class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   bool _isStarting = false;
+  String? _lastScanLogId;
+  String? _lastSavedCardId;
 
   @override
   NfcState build() {
@@ -201,12 +205,43 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     state = state.copyWith(isProcessing: true);
 
     try {
-      final scannedCard = await handleNfcTag(tag);
+      // 1. Read basic info first (extremely fast)
+      final scannedCard = await handleNfcTag(tag, readExtended: false);
+
+      // Dismiss the global processing indicator overlay immediately so UI can update
+      state = state.copyWith(isProcessing: false);
+
       if (scannedCard != null) {
         await _registerScan(
           scannedCard,
           presenceMode: ScanPresenceMode.timeoutHeartbeat,
         );
+
+        // 2. If it is a transit card, read extended info sequentially
+        if (scannedCard.card is TransitCard) {
+          ref
+              .read(currentScanSessionProvider.notifier)
+              .setReadingExtendedInfo(true);
+
+          // Yield to Flutter to paint Phase 1 UI immediately
+          await Future.delayed(const Duration(milliseconds: 50));
+
+          try {
+            final extendedCard = await handleNfcTag(tag, readExtended: true);
+            if (extendedCard != null) {
+              ref
+                  .read(currentScanSessionProvider.notifier)
+                  .updateCard(extendedCard);
+              await _updateRegisteredScan(extendedCard);
+            }
+          } catch (e) {
+            log('Error reading extended transit history: $e');
+          } finally {
+            ref
+                .read(currentScanSessionProvider.notifier)
+                .setReadingExtendedInfo(false);
+          }
+        }
       }
     } finally {
       state = state.copyWith(isProcessing: false);
@@ -241,9 +276,14 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     final scanningMode = ref.read(scanningModeProvider);
     final card = scannedCard.card;
 
+    final scanLogId = const Uuid().v4();
+    final savedCardId = const Uuid().v4();
+    _lastScanLogId = scanLogId;
+    _lastSavedCardId = savedCardId;
+
     // 1. Create ScanLog
     final newLog = ScanLog(
-      id: const Uuid().v4(),
+      id: scanLogId,
       source: scannedCard.source,
       showValue: scannedCard.showValue,
       card: card,
@@ -254,7 +294,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     // 2. Auto-save to 'history_folder'
     final savedCard = SavedCard.fromScanned(
       scannedCard,
-      id: const Uuid().v4(),
+      id: savedCardId,
       folderId: 'history_folder',
     );
     ref.read(savedCardsProvider.notifier).addCard(savedCard);
@@ -269,11 +309,52 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     ref.read(routerProvider).go('/scan');
   }
 
+  Future<void> _updateRegisteredScan(ScannedCard extendedCard) async {
+    final card = extendedCard.card;
+
+    if (_lastScanLogId != null) {
+      final logs = ref.read(scanLogsProvider);
+      try {
+        final existingLog = logs.firstWhere((e) => e.id == _lastScanLogId);
+        final updatedLog = ScanLog(
+          id: existingLog.id,
+          source: existingLog.source,
+          showValue: extendedCard.showValue,
+          card: card,
+          timestamp: existingLog.timestamp,
+        );
+        ref.read(scanLogsProvider.notifier).updateLog(updatedLog);
+      } catch (_) {}
+    }
+
+    if (_lastSavedCardId != null) {
+      final savedCards = ref.read(savedCardsProvider);
+      try {
+        final existingSaved = savedCards.firstWhere(
+          (e) => e.id == _lastSavedCardId,
+        );
+        final updatedSaved = SavedCard(
+          id: existingSaved.id,
+          name: existingSaved.name,
+          card: card,
+          folderId: existingSaved.folderId,
+          source: existingSaved.source,
+        );
+        ref.read(savedCardsProvider.notifier).updateCard(updatedSaved);
+      } catch (_) {}
+    }
+  }
+
   // Also expose for external processing (like QR)
   Future<void> handleExternalScan(
     ScannedCard scannedCard, {
     ScanPresenceMode presenceMode = ScanPresenceMode.immediate,
   }) async {
     await _registerScan(scannedCard, presenceMode: presenceMode);
+  }
+
+  /// Expose helper to allow external readers (like HINATA USB) to update scan logs
+  Future<void> updateExternalScan(ScannedCard extendedCard) async {
+    await _updateRegisteredScan(extendedCard);
   }
 }

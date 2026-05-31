@@ -4,11 +4,18 @@ import '../utils/nfc_tag_converter.dart';
 import 'nfc/card_reader_engine.dart';
 import 'nfc/native_nfc_transceiver.dart';
 
-Future<ScannedCard?> handleNfcTag(NFCTag tag) async {
+Future<ScannedCard?> handleNfcTag(
+  NFCTag tag, {
+  bool readExtended = true,
+}) async {
   final engine = CardReaderEngine(NativeNfcTransceiver());
   final internalTag = tag.toInternalTag();
 
   if (internalTag == null) return null;
 
-  return await engine.processTag(internalTag, source: 'NFC');
+  return await engine.processTag(
+    internalTag,
+    source: 'NFC',
+    readExtended: readExtended,
+  );
 }

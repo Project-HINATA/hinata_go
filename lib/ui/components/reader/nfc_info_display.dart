@@ -80,6 +80,7 @@ class _NfcDisplayInputs {
     required this.isProcessing,
     required this.isIOS,
     required this.isPaused,
+    required this.isReadingExtendedInfo,
   });
 
   factory _NfcDisplayInputs.fromRef(
@@ -104,6 +105,9 @@ class _NfcDisplayInputs {
       isProcessing: nfcState.isProcessing,
       isIOS: !kIsWeb && Platform.isIOS,
       isPaused: isPaused,
+      isReadingExtendedInfo: ref.watch(
+        currentScanSessionProvider.select((s) => s.isReadingExtendedInfo),
+      ),
     );
   }
 
@@ -116,6 +120,7 @@ class _NfcDisplayInputs {
   final bool isProcessing;
   final bool isIOS;
   final bool isPaused;
+  final bool isReadingExtendedInfo;
 }
 
 class _NfcDisplayState {
@@ -132,6 +137,7 @@ class _NfcDisplayState {
     required this.isCardPresent,
     required this.isWaitingForCard,
     required this.normalizedQuarterTurns,
+    required this.isReadingExtendedInfo,
   });
 
   factory _NfcDisplayState.fromInputs(
@@ -157,6 +163,7 @@ class _NfcDisplayState {
           !inputs.isCardPresent &&
           (inputs.isScanningNfc || inputs.isUsbConnected),
       normalizedQuarterTurns: normalizedQuarterTurns,
+      isReadingExtendedInfo: inputs.isReadingExtendedInfo,
     );
   }
 
@@ -172,6 +179,7 @@ class _NfcDisplayState {
   final bool isCardPresent;
   final bool isWaitingForCard;
   final int normalizedQuarterTurns;
+  final bool isReadingExtendedInfo;
 
   bool get shouldShowPausedPrompt => isPaused && !(isIOS && isScanningNfc);
   bool get isHighlighted => isShowingSuccess || isCardPresent;
@@ -258,6 +266,13 @@ class _CenterDisplayContent extends StatelessWidget {
               ? const KeyedSubtree(
                   key: ValueKey('success'),
                   child: _FluidMorphSuccess(),
+                )
+              : displayState.isReadingExtendedInfo
+              ? KeyedSubtree(
+                  key: const ValueKey('readingExtended'),
+                  child: _ReadingExtendedPrompt(
+                    sideways: displayState.isSidewaysContent,
+                  ),
                 )
               : KeyedSubtree(
                   key: const ValueKey('prompt'),
@@ -906,6 +921,54 @@ class _NfcProcessingOverlay extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
+    );
+  }
+}
+
+class _ReadingExtendedPrompt extends StatelessWidget {
+  final bool sideways;
+
+  const _ReadingExtendedPrompt({required this.sideways});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final lineConfig = _PromptLineConfig.fromSideways(sideways);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textBlockMaxWidth = _PromptLayout.maxWidth(
+          constraints.maxWidth,
+          sideways: sideways,
+        );
+
+        final isZh = Localizations.localeOf(context).languageCode == 'zh';
+        final text = isZh
+            ? "正在读取扩展信息，请勿移动卡片"
+            : "Reading extended info, please do not move the card";
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            const SizedBox(height: 16),
+            _PromptTextBlock(
+              text: text,
+              maxWidth: textBlockMaxWidth,
+              maxLines: lineConfig.bodyMaxLines,
+              style: context.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

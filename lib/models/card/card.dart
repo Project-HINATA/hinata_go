@@ -7,6 +7,8 @@ import 'felica.dart';
 import 'invalid_mifare.dart';
 import 'iso15693.dart';
 import 'iso14443a.dart';
+import 'suica.dart';
+import 'tunion.dart';
 
 class ICCard {
   final Uint8List id;
@@ -19,7 +21,7 @@ class ICCard {
 
   String? get type => null;
 
-  String? get value => null;
+  String? get gamePayload => null;
 
   Map<String, dynamic> toJson() {
     return {'type': type, 'id': _bytesToHex(id)};
@@ -43,6 +45,10 @@ class ICCard {
         return Iso14443.fromJson(json);
       case 'iso15693':
         return Iso15693.fromJson(json);
+      case 'suica':
+        return Suica.fromJson(json);
+      case 'tunion':
+        return TUnion.fromJson(json);
       default:
         return ICCard(hexToBytes(json['id'] as String? ?? ''));
     }

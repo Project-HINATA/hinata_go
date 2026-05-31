@@ -39,7 +39,7 @@ class Aic extends Felica implements HasAccessCode {
   String? get type => "aic";
 
   @override
-  String? get value => "$idString:$accessCodeString";
+  String? get gamePayload => "$idString:$accessCodeString";
 
   @override
   Map<String, dynamic> toJson() {

@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 import 'package:hinata_go/models/card/aic.dart';
 import 'package:hinata_go/models/card/aime.dart';
@@ -9,6 +10,10 @@ import 'package:hinata_go/models/card/invalid_mifare.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
+import 'package:hinata_go/models/card/suica.dart';
+import 'package:hinata_go/models/card/tunion.dart';
+import 'package:hinata_go/models/card/transit.dart';
+import 'package:hinata_go/utils/ekicode_data.dart';
 
 import '../../constants/mifare_key.dart';
 import '../../utils/access_code_validator.dart';
@@ -30,6 +35,7 @@ class CardReaderEngine {
   Future<ScannedCard?> handleFelica({
     required Felica tag,
     String source = 'NFC',
+    bool readExtended = true,
   }) async {
     log(tag.id.toString());
     final defaultReturn = ScannedCard(card: tag, source: source);
@@ -41,6 +47,14 @@ class CardReaderEngine {
 
     // 2. Check PMm and IDm specific bytes for Amusement IC
     if (!_mayAic(tag.id, tag.pmm, tag.systemCode)) {
+      if (tag.systemCode.contains(0x0003)) {
+        final suica = await _tryReadSuica(
+          tag,
+          source: source,
+          readExtended: readExtended,
+        );
+        if (suica != null) return suica;
+      }
       return defaultReturn;
     }
 
@@ -252,12 +266,29 @@ class CardReaderEngine {
   Future<ScannedCard?> processTag(
     dynamic rawTag, {
     String source = 'NFC',
+    bool readExtended = true,
   }) async {
     if (rawTag is Felica) {
-      return await handleFelica(tag: rawTag, source: source);
+      return await handleFelica(
+        tag: rawTag,
+        source: source,
+        readExtended: readExtended,
+      );
     }
 
     if (rawTag is Iso14443) {
+      // 1. Zero-cost SAK check: Only attempt T-Union if SAK indicates ISO14443-4 CPU card (bit 5)
+      if ((rawTag.sak & 0x20) != 0) {
+        final tunion = await _tryReadTUnion(
+          rawTag,
+          source: source,
+          readExtended: readExtended,
+        );
+        if (tunion != null) {
+          return tunion;
+        }
+      }
+
       if (!rawTag.isMifareClassicCandidate) {
         return ScannedCard(
           card: rawTag.toInvalidMifareCard(
@@ -293,5 +324,433 @@ class CardReaderEngine {
     }
 
     return null;
+  }
+
+  Future<ScannedCard?> _tryReadSuica(
+    Felica tag, {
+    required String source,
+    bool readExtended = true,
+  }) async {
+    try {
+      final List<TransitTransaction> rawTransactions = [];
+      final List<double> blockBalances = [];
+      double balance = 0.0;
+
+      // Suica history service code is 0x090F
+      const int suicaServiceCode = 0x090F;
+
+      final int blocksToRead = readExtended ? 20 : 1;
+      for (int blockIndex = 0; blockIndex < blocksToRead; blockIndex++) {
+        // Read block using FeliCa Read Without Encryption
+        final response = await felicaReadWithoutEncryption(tag.id, [
+          blockIndex,
+        ], serviceCode: suicaServiceCode);
+
+        // Response should contain length, response code, IDm, status flags, block count, block data
+        // status flags are at index 10 and 11, block data starts at index 13
+        if (response.length < 29) {
+          break; // Response too short or read finished
+        }
+
+        final status1 = response[10];
+        final status2 = response[11];
+        if (status1 != 0 || status2 != 0) {
+          break; // Non-zero status flags indicate end of records or error
+        }
+
+        final blockData = response.sublist(13, 29);
+
+        // Filter out empty transaction records (all zeros or all 0xFF, common on new cards)
+        if (blockData.every((b) => b == 0 || b == 0xFF)) {
+          continue;
+        }
+
+        final consoleType = blockData[0];
+        final processType = blockData[1];
+
+        // Bytes 4-5 are the Date (stored in packed big-endian format)
+        final dateRaw = (blockData[4] << 8) | blockData[5];
+        final year = (dateRaw >> 9) & 0x7F;
+        final month = (dateRaw >> 5) & 0x0F;
+        final day = dateRaw & 0x1F;
+        final fullYear = 2000 + year;
+
+        // Entry and Exit line/station bytes
+        final entryLine = blockData[6];
+        final entryStation = blockData[7];
+        final exitLine = blockData[8];
+        final exitStation = blockData[9];
+
+        // Bytes 10-11: Balance (stored in little-endian order)
+        final blockBalance = blockData[10] | (blockData[11] << 8);
+
+        // Bytes 13-14: Sequence Number (big-endian)
+        final seq = (blockData[13] << 8) | blockData[14];
+
+        // Filter out empty transaction records (sequence number is 0)
+        if (seq == 0) {
+          continue;
+        }
+
+        if (blockIndex == 0) {
+          balance = blockBalance.toDouble();
+        }
+
+        blockBalances.add(blockBalance.toDouble());
+
+        final isShopping =
+            processType == 0x46 ||
+            processType == 0x4b ||
+            consoleType == 0x46 ||
+            consoleType == 0x4b;
+        final typeStr = _getSuicaProcessType(processType);
+
+        final region = blockData[15] >> 4;
+
+        String formatStation(int line, int station) {
+          final key = "$region,$line,$station";
+          final value = ekicodeMap[key];
+          if (value != null) {
+            final parts = value.split('|');
+            if (parts.length >= 2) {
+              final lineName = parts[0].replaceAll(RegExp(r'^\d+号[線线]'), '');
+              final suffix = (lineName.endsWith('線') || lineName.endsWith('鉄道'))
+                  ? ''
+                  : '線';
+              return "${parts[1]} ($lineName$suffix)";
+            }
+          }
+          return "Line 0x${line.toRadixString(16).toUpperCase().padLeft(2, '0')}, Station 0x${station.toRadixString(16).toUpperCase().padLeft(2, '0')}";
+        }
+
+        final detailsStr = isShopping
+            ? "Store/Time: ${entryLine.toString().padLeft(2, '0')}:${entryStation.toString().padLeft(2, '0')}"
+            : "${formatStation(entryLine, entryStation)} ──► ${formatStation(exitLine, exitStation)}";
+
+        final txDate = DateTime(fullYear, month, day);
+
+        rawTransactions.add(
+          TransitTransaction(
+            date: txDate,
+            type: typeStr,
+            amount: 0.0, // Will be computed
+            details: detailsStr,
+            seq: seq,
+          ),
+        );
+      }
+
+      final List<TransitTransaction> transactions = [];
+      for (int i = 0; i < rawTransactions.length; i++) {
+        double amt = 0.0;
+        if (i + 1 < blockBalances.length) {
+          amt = blockBalances[i] - blockBalances[i + 1];
+        }
+
+        final baseTx = rawTransactions[i];
+        transactions.add(
+          TransitTransaction(
+            date: baseTx.date,
+            type: baseTx.type,
+            amount: amt,
+            details: baseTx.details,
+            seq: baseTx.seq,
+          ),
+        );
+      }
+
+      final suica = Suica(
+        tag.id,
+        tag.pmm,
+        tag.systemCode,
+        balance: balance,
+        transactions: transactions,
+        snapshotTime: DateTime.now(),
+      );
+
+      return ScannedCard(card: suica, source: source);
+    } catch (e) {
+      log('CardReaderEngine Suica read error: $e');
+      return null;
+    }
+  }
+
+  String _getSuicaProcessType(int processType) {
+    switch (processType) {
+      case 0x01:
+        return 'Ride';
+      case 0x02:
+        return 'Top-up';
+      case 0x03:
+      case 0x04:
+      case 0x05:
+      case 0x06:
+        return 'Adjustment';
+      case 0x07:
+        return 'Issue';
+      case 0x08:
+      case 0x0c:
+        return 'Deduction';
+      case 0x0d:
+      case 0x0f:
+        return 'Ride';
+      case 0x10:
+      case 0x11:
+        return 'Reissue';
+      case 0x13:
+        return 'Top-up';
+      case 0x46:
+      case 0x4b:
+        return 'Shopping';
+      case 0x48:
+        return 'Top-up';
+      default:
+        return 'Other';
+    }
+  }
+
+  /// Try to read ISO14443-4 T-Union card info, balance, and transaction history
+  Future<ScannedCard?> _tryReadTUnion(
+    Iso14443 tag, {
+    required String source,
+    bool readExtended = true,
+  }) async {
+    debugPrint('[_tryReadTUnion] Starting read. readExtended: $readExtended');
+    try {
+      // 1. SELECT China T-Union electronic purse application
+      final selectAid = Uint8List.fromList([
+        0x00,
+        0xA4,
+        0x04,
+        0x00,
+        0x08,
+        0xA0,
+        0x00,
+        0x00,
+        0x06,
+        0x32,
+        0x01,
+        0x01,
+        0x05,
+      ]);
+      final selectRes = await transceiver.transceive(selectAid);
+      debugPrint(
+        '[_tryReadTUnion] SELECT AID response length: ${selectRes.length}',
+      );
+      if (selectRes.length < 2) {
+        debugPrint(
+          '[_tryReadTUnion] SELECT AID response too short: ${selectRes.length}',
+        );
+        return null;
+      }
+
+      final sw1 = selectRes[selectRes.length - 2];
+      final sw2 = selectRes[selectRes.length - 1];
+      debugPrint(
+        '[_tryReadTUnion] SELECT AID SW: ${sw1.toRadixString(16).toUpperCase()}${sw2.toRadixString(16).toUpperCase()}',
+      );
+      if (sw1 != 0x90 || sw2 != 0x00) {
+        debugPrint(
+          '[_tryReadTUnion] Not a China T-Union card (SELECT SW != 9000)',
+        );
+        return null;
+      }
+
+      // 2. READ CARD BASIC INFO: SFI 0x15
+      final readInfo = Uint8List.fromList([0x00, 0xB0, 0x95, 0x00, 0x1E]);
+      final infoRes = await transceiver.transceive(readInfo);
+      debugPrint(
+        '[_tryReadTUnion] READ INFO response length: ${infoRes.length}',
+      );
+      if (infoRes.length < 32) {
+        debugPrint(
+          '[_tryReadTUnion] READ INFO response too short: ${infoRes.length}',
+        );
+        return null;
+      }
+
+      final infoSw1 = infoRes[infoRes.length - 2];
+      final infoSw2 = infoRes[infoRes.length - 1];
+      if (infoSw1 != 0x90 || infoSw2 != 0x00) {
+        debugPrint('[_tryReadTUnion] READ INFO SW != 9000');
+        return null;
+      }
+
+      // Extract Application Serial Number (bytes 10 to 19 of payload)
+      final asnBytes = infoRes.sublist(10, 20);
+      final rawAsnStr = asnBytes
+          .map((b) => b.toRadixString(16).padLeft(2, '0'))
+          .join()
+          .toUpperCase();
+      final cardNumber = rawAsnStr.startsWith('0')
+          ? rawAsnStr.substring(1)
+          : rawAsnStr;
+      debugPrint('[_tryReadTUnion] parsed card number: $cardNumber');
+
+      // 3. READ BALANCE: APDU 80 5C 00 02 04
+      final readBal = Uint8List.fromList([0x80, 0x5C, 0x00, 0x02, 0x04]);
+      final balRes = await transceiver.transceive(readBal);
+      debugPrint(
+        '[_tryReadTUnion] READ BALANCE response length: ${balRes.length}',
+      );
+      if (balRes.length < 6) {
+        debugPrint(
+          '[_tryReadTUnion] READ BALANCE response too short: ${balRes.length}',
+        );
+        return null;
+      }
+
+      final balSw1 = balRes[balRes.length - 2];
+      final balSw2 = balRes[balRes.length - 1];
+      if (balSw1 != 0x90 || balSw2 != 0x00) {
+        debugPrint('[_tryReadTUnion] READ BALANCE SW != 9000');
+        return null;
+      }
+
+      final balanceCents =
+          (balRes[0] << 24) | (balRes[1] << 16) | (balRes[2] << 8) | balRes[3];
+      final balance = balanceCents / 100.0;
+      debugPrint('[_tryReadTUnion] parsed balance: $balance');
+
+      // 4. READ TRANSACTION HISTORY: SFI 0x18 (read up to 10 records)
+      final List<TransitTransaction> transactions = [];
+      if (readExtended) {
+        debugPrint(
+          '[_tryReadTUnion] readExtended is true, querying transaction logs...',
+        );
+        for (int recNum = 1; recNum <= 10; recNum++) {
+          final readRecord = Uint8List.fromList([
+            0x00,
+            0xB2,
+            recNum,
+            0xC4,
+            0x00,
+          ]);
+          final recRes = await transceiver.transceive(readRecord);
+          debugPrint(
+            '[_tryReadTUnion] Record $recNum response length: ${recRes.length}',
+          );
+          if (recRes.length < 2) {
+            debugPrint('[_tryReadTUnion] Record $recNum response too short');
+            break;
+          }
+
+          final recSw1 = recRes[recRes.length - 2];
+          final recSw2 = recRes[recRes.length - 1];
+          debugPrint(
+            '[_tryReadTUnion] Record $recNum SW: ${recSw1.toRadixString(16).toUpperCase()}${recSw2.toRadixString(16).toUpperCase()}',
+          );
+          if (recSw1 != 0x90 || recSw2 != 0x00) {
+            break;
+          }
+
+          final recordData = recRes.sublist(0, recRes.length - 2);
+          if (recordData.length < 23) {
+            debugPrint(
+              '[_tryReadTUnion] Record $recNum payload too short: ${recordData.length}',
+            );
+            continue;
+          }
+
+          if (recordData.every((b) => b == 0 || b == 0xFF)) {
+            debugPrint(
+              '[_tryReadTUnion] Record $recNum is empty (all zeros/FF)',
+            );
+            continue;
+          }
+
+          final seq = (recordData[0] << 8) | recordData[1];
+          if (seq == 0) {
+            debugPrint('[_tryReadTUnion] Record $recNum has sequence 0');
+            continue;
+          }
+          final amountCents =
+              (recordData[5] << 24) |
+              (recordData[6] << 16) |
+              (recordData[7] << 8) |
+              recordData[8];
+          final amount = amountCents / 100.0;
+          final typeCode = recordData[9];
+
+          final terminalId = recordData
+              .sublist(10, 16)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+
+          // Date (YYYYMMDD) and Time (HHMMSS) in BCD format
+          final dateHex = recordData
+              .sublist(16, 20)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
+          final timeHex = recordData
+              .sublist(20, 23)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
+
+          final yearStr = dateHex.substring(0, 4);
+          final monthStr = dateHex.substring(4, 6);
+          final dayStr = dateHex.substring(6, 8);
+          final hourStr = timeHex.substring(0, 2);
+          final minStr = timeHex.substring(2, 4);
+          final secStr = timeHex.substring(4, 6);
+
+          final dateTimeStr =
+              "$yearStr-$monthStr-${dayStr}T$hourStr:$minStr:$secStr";
+          final txDateTime = DateTime.tryParse(dateTimeStr);
+
+          final typeStr = _getTUnionProcessType(typeCode, amountCents);
+          final details = "Terminal: $terminalId";
+
+          debugPrint(
+            '[_tryReadTUnion] Record $recNum parsed: Date=$txDateTime, Type=$typeStr, Amount=$amount, Seq=$seq',
+          );
+          transactions.add(
+            TransitTransaction(
+              date: txDateTime,
+              type: typeStr,
+              amount: typeStr == 'Top-up' ? amount : -amount,
+              details: details,
+              terminalId: terminalId,
+              seq: seq,
+            ),
+          );
+        }
+      }
+
+      final tunion = TUnion(
+        tag.id,
+        tag.sak,
+        tag.atqa,
+        cardNumber: cardNumber,
+        balance: balance,
+        transactions: transactions,
+        snapshotTime: DateTime.now(),
+      );
+
+      debugPrint(
+        '[_tryReadTUnion] Reading successful. Transactions count: ${transactions.length}',
+      );
+      return ScannedCard(card: tunion, source: source);
+    } catch (e, s) {
+      debugPrint('[_tryReadTUnion] Fatal error reading T-Union: $e\n$s');
+      return null;
+    }
+  }
+
+  String _getTUnionProcessType(int typeCode, int amountCents) {
+    switch (typeCode) {
+      case 0x09:
+        return 'Ride';
+      case 0x06:
+        return 'Shopping';
+      case 0x01:
+      case 0x02:
+        return 'Top-up';
+      case 0x05:
+        return 'Refund';
+      default:
+        return 'Other';
+    }
   }
 }

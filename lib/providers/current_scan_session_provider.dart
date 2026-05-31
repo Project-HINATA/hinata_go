@@ -15,6 +15,7 @@ class CurrentScanSessionState {
   final DateTime? lastAcceptedScanAt;
   final DateTime? cardRemovedAt;
   final ScanPresenceMode? presenceMode;
+  final bool isReadingExtendedInfo;
 
   const CurrentScanSessionState({
     this.scannedCard,
@@ -23,6 +24,7 @@ class CurrentScanSessionState {
     this.lastAcceptedScanAt,
     this.cardRemovedAt,
     this.presenceMode,
+    this.isReadingExtendedInfo = false,
   });
 
   bool get hasScan => scannedCard != null;
@@ -36,6 +38,7 @@ class CurrentScanSessionState {
     DateTime? lastAcceptedScanAt,
     DateTime? cardRemovedAt,
     ScanPresenceMode? presenceMode,
+    bool? isReadingExtendedInfo,
     bool clear = false,
     bool clearRemovedAt = false,
   }) {
@@ -52,6 +55,8 @@ class CurrentScanSessionState {
           ? null
           : (cardRemovedAt ?? this.cardRemovedAt),
       presenceMode: presenceMode ?? this.presenceMode,
+      isReadingExtendedInfo:
+          isReadingExtendedInfo ?? this.isReadingExtendedInfo,
     );
   }
 }
@@ -123,6 +128,17 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
     state = state.copyWith(isCardPresent: false, cardRemovedAt: DateTime.now());
   }
 
+  void setReadingExtendedInfo(bool value) {
+    state = state.copyWith(isReadingExtendedInfo: value);
+  }
+
+  void updateCard(ScannedCard updatedCard) {
+    if (state.hasScan &&
+        state.scannedCard!.card.idString == updatedCard.card.idString) {
+      state = state.copyWith(scannedCard: updatedCard);
+    }
+  }
+
   void clear() {
     _cancelPresenceTimer();
     state = state.copyWith(clear: true);
@@ -170,7 +186,7 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
 
   String _buildDedupeKey(ScannedCard scannedCard) {
     final card = scannedCard.card;
-    final cardIdentity = card.value ?? card.idString;
+    final cardIdentity = card.gamePayload ?? card.idString;
     final cardType = card.type ?? card.runtimeType.toString();
     return '${scannedCard.source}|$cardType|$cardIdentity'.toUpperCase();
   }

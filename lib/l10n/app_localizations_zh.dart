@@ -615,8 +615,50 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scanPausedDescription => '应用失去焦点，扫描已暂停';
 
   @override
-  String get unknownCardType => '其他卡片';
+  String get unknownCardType => '不可在游戏中使用的卡片';
 
   @override
   String get unusableMifareCardWarning => '这张卡无法在游戏中使用。';
+
+  @override
+  String get transitBalance => '余额';
+
+  @override
+  String get cardNumber => '卡号';
+
+  @override
+  String get transactionHistory => '交易记录';
+
+  @override
+  String get snapshotTime => '快照时间';
+
+  @override
+  String get noTransactions => '暂无交易记录';
+
+  @override
+  String get transitTypeRide => '乘车';
+
+  @override
+  String get transitTypeTopup => '充值';
+
+  @override
+  String get transitTypeShopping => '消费';
+
+  @override
+  String get transitTypeAdjustment => '调整/精算';
+
+  @override
+  String get transitTypeRefund => '退款';
+
+  @override
+  String get transitTypeIssue => '发行';
+
+  @override
+  String get transitTypeDeduction => '扣费';
+
+  @override
+  String get transitTypeReissue => '补卡发行';
+
+  @override
+  String get transitTypeOther => '其他';
 }

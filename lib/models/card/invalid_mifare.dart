@@ -32,7 +32,7 @@ class InvalidMifareCard extends Iso14443 {
   String? get type => 'unknown';
 
   @override
-  String? get value => null;
+  String? get gamePayload => null;
 
   @override
   Map<String, dynamic> toJson() {

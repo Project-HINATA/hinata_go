@@ -24,6 +24,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
 
   _PendingReadFailure? _pendingReadFailure;
   _PendingReadFailure? _confirmedReadFailure;
+  dynamic _activeTag;
 
   UsbHinataDeviceImpl(this._hinata) {
     _hinata.subscribeCardioInput((data) {
@@ -126,7 +127,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   }
 
   @override
-  Future<ScannedCard?> poll() async {
+  Future<ScannedCard?> poll({bool readExtended = true}) async {
     final transceiver = HinataTransceiver(_hinata.pn532Api);
     final engine = CardReaderEngine(transceiver);
 
@@ -134,18 +135,47 @@ class UsbHinataDeviceImpl implements DeviceInterface {
       final felicaTag = await _pollFelicaTag();
       if (felicaTag != null) {
         _clearReadFailureState();
-        return await engine.processTag(felicaTag, source: 'HINATA');
+        _activeTag = felicaTag;
+        return await engine.processTag(
+          felicaTag,
+          source: 'HINATA',
+          readExtended: readExtended,
+        );
       }
     }
 
     final isoTag = await _pollIsoTag();
     if (isoTag != null) {
-      final scanned = await engine.processTag(isoTag, source: 'HINATA');
+      _activeTag = isoTag;
+      final scanned = await engine.processTag(
+        isoTag,
+        source: 'HINATA',
+        readExtended: readExtended,
+      );
       return _resolveReaderScan(scanned);
     }
 
+    _activeTag = null;
     _clearReadFailureState();
     return null;
+  }
+
+  @override
+  Future<ScannedCard?> readExtended(ScannedCard basicCard) async {
+    final tag = _activeTag;
+    if (tag == null) {
+      return null;
+    }
+
+    final transceiver = HinataTransceiver(_hinata.pn532Api);
+    final engine = CardReaderEngine(transceiver);
+
+    final scanned = await engine.processTag(
+      tag,
+      source: 'HINATA',
+      readExtended: true,
+    );
+    return _resolveReaderScan(scanned);
   }
 
   ScannedCard? _resolveReaderScan(ScannedCard? scannedCard) {

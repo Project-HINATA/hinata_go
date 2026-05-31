@@ -57,7 +57,9 @@ class CardItem extends ConsumerWidget {
           overflow: TextOverflow.ellipsis,
           softWrap: false,
         ),
-        trailing: isThisCardSending
+        trailing: card.card.gamePayload == null
+            ? null
+            : isThisCardSending
             ? const SizedBox(
                 width: 24,
                 height: 24,

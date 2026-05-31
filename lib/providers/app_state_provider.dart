@@ -95,7 +95,8 @@ class SavedCardsNotifier extends Notifier<List<SavedCard>> {
   void addCard(SavedCard card) {
     // Deduplication check: Do not add if a card with same value exists in this folder
     final exists = state.any(
-      (c) => c.card.value == card.card.value && c.folderId == card.folderId,
+      (c) =>
+          c.card.idString == card.card.idString && c.folderId == card.folderId,
     );
     if (!exists) {
       state = [...state, card];
@@ -206,6 +207,11 @@ class ScanLogsNotifier extends Notifier<List<ScanLog>> {
 
   void addLog(ScanLog log) {
     state = [...state, log];
+    ref.read(storageProvider).saveScanLogs(state);
+  }
+
+  void updateLog(ScanLog updated) {
+    state = state.map((e) => e.id == updated.id ? updated : e).toList();
     ref.read(storageProvider).saveScanLogs(state);
   }
 

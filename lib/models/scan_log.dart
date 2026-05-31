@@ -16,7 +16,7 @@ class ScanLog {
   });
 
   // Backward compatibility getters
-  String get value => card.value ?? '';
+  String get value => card.gamePayload ?? '';
   String get apiType => card.type ?? 'unknown';
   String get displayType => card.name;
 
@@ -48,7 +48,7 @@ class ScanLog {
     return ScanLog(
       id: json['id'] as String,
       source: source,
-      showValue: json['showValue'] as String? ?? card.value ?? '',
+      showValue: json['showValue'] as String? ?? card.gamePayload ?? '',
       card: card,
       timestamp: DateTime.parse(json['timestamp'] as String),
     );

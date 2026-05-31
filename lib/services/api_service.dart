@@ -57,7 +57,7 @@ class ApiService {
   }
 
   ApiServiceResult? _validateCard(ICCard card) {
-    if (card.value != null && card.value!.isNotEmpty) {
+    if (card.gamePayload != null && card.gamePayload!.isNotEmpty) {
       return null;
     }
 
@@ -79,7 +79,7 @@ class ApiService {
       );
     }
 
-    final payload = {'type': card.type, 'value': card.value};
+    final payload = {'type': card.type, 'value': card.gamePayload};
     log('Sending payload to ${instance.url}: ${jsonEncode(payload)}');
 
     try {

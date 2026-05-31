@@ -5,6 +5,7 @@ import 'package:hinata_go/context_extensions.dart';
 
 import '../../../models/card/card.dart';
 import '../../../models/card/scanned_card.dart';
+import '../../../models/card/transit.dart';
 import '../../../models/remote_instance.dart';
 import '../../../providers/card_sender.dart';
 import '../../../providers/current_scan_session_provider.dart';
@@ -12,6 +13,7 @@ import '../../../providers/settings_provider.dart';
 import '../../components/instances/select_instance_dialog.dart';
 import '../../widgets/save_card_dialog.dart';
 import 'scanned_card_detail_v2.dart';
+import 'transit_history_card.dart';
 
 class CurrentScanResultPanel extends HookConsumerWidget {
   const CurrentScanResultPanel({super.key});
@@ -171,9 +173,16 @@ class _CurrentScanResultContent extends StatelessWidget {
           animationController: animationController,
           onClear: onClear,
         ),
+        if (card is TransitCard) ...[
+          const SizedBox(height: 16),
+          TransitHistoryCard(card: card as TransitCard),
+        ],
         if (scannedCard.isUsable) ...[
           const SizedBox(height: 24),
-          _ScanActionRow(onSave: onSave, onSend: onSend),
+          _ScanActionRow(
+            onSave: onSave,
+            onSend: card.gamePayload != null ? onSend : null,
+          ),
         ],
         const SizedBox(height: 16),
         _ClearScanButton(onPressed: onClear),
@@ -263,10 +272,10 @@ class _TimedDismissButton extends StatelessWidget {
 }
 
 class _ScanActionRow extends StatelessWidget {
-  const _ScanActionRow({required this.onSave, required this.onSend});
+  const _ScanActionRow({required this.onSave, this.onSend});
 
   final VoidCallback onSave;
-  final Future<void> Function() onSend;
+  final Future<void> Function()? onSend;
 
   @override
   Widget build(BuildContext context) {
@@ -279,14 +288,16 @@ class _ScanActionRow extends StatelessWidget {
             onPressed: onSave,
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _ScanActionButton.filled(
-            icon: Icons.send_rounded,
-            label: context.l10n.sendUpper,
-            onPressed: () => onSend(),
+        if (onSend != null) ...[
+          const SizedBox(width: 16),
+          Expanded(
+            child: _ScanActionButton.filled(
+              icon: Icons.send_rounded,
+              label: context.l10n.sendUpper,
+              onPressed: () => onSend!(),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

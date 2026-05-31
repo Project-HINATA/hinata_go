@@ -9,8 +9,10 @@ import '../services/communication/usb_hinata_impl.dart';
 import '../services/hardware/core/hinata_device.dart';
 import '../services/hardware/transport/hid_bridge/hid_bridge.dart';
 import 'current_scan_session_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'nfc_provider.dart';
 import 'firmware_provider.dart';
+import '../models/card/transit.dart';
 
 class HardwareDeviceState {
   final DeviceInterface? connectedDevice;
@@ -241,15 +243,77 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
       }
 
       try {
-        final scannedCard = await usbImpl.poll();
+        // 1. Phase 1: Fast poll for basic info
+        final scannedCard = await usbImpl.poll(readExtended: false);
 
         if (scannedCard != null) {
-          await ref
-              .read(nfcProvider.notifier)
-              .handleExternalScan(
+          debugPrint(
+            '[_startPollLoop] Fast poll returned card: ${scannedCard.card.idString}, type: ${scannedCard.card.runtimeType}',
+          );
+
+          // Record scan in current session. If it returns accepted, it's a new card scan!
+          final recordResult = ref
+              .read(currentScanSessionProvider.notifier)
+              .recordScan(
                 scannedCard,
                 presenceMode: ScanPresenceMode.explicitRemoval,
               );
+          debugPrint('[_startPollLoop] recordScan result: $recordResult');
+
+          if (recordResult == ScanRecordResult.accepted) {
+            // Process Phase 1 scanned card (create log, auto-save, auto-send)
+            await ref
+                .read(nfcProvider.notifier)
+                .handleExternalScan(
+                  scannedCard,
+                  presenceMode: ScanPresenceMode.explicitRemoval,
+                );
+
+            debugPrint(
+              '[_startPollLoop] card is TransitCard: ${scannedCard.card is TransitCard}',
+            );
+            // 2. If it is a transit card, read extended info sequentially
+            if (scannedCard.card is TransitCard) {
+              ref
+                  .read(currentScanSessionProvider.notifier)
+                  .setReadingExtendedInfo(true);
+
+              // Yield to Flutter to paint Phase 1 UI immediately
+              await Future.delayed(const Duration(milliseconds: 50));
+
+              try {
+                debugPrint(
+                  '[_startPollLoop] Starting Phase 2 sequential read...',
+                );
+                // Read extended card history using active card session without re-polling
+                final extendedCard = await usbImpl.readExtended(scannedCard);
+                debugPrint(
+                  '[_startPollLoop] Phase 2 read finished. extendedCard: ${extendedCard != null ? "found" : "null"}',
+                );
+                if (extendedCard != null) {
+                  final txCount =
+                      (extendedCard.card as TransitCard).transactions.length;
+                  debugPrint(
+                    '[_startPollLoop] extendedCard transactions: $txCount',
+                  );
+                  ref
+                      .read(currentScanSessionProvider.notifier)
+                      .updateCard(extendedCard);
+                  await ref
+                      .read(nfcProvider.notifier)
+                      .updateExternalScan(extendedCard);
+                }
+              } catch (e) {
+                debugPrint(
+                  '[_startPollLoop] Error reading extended transit history via USB: $e',
+                );
+              } finally {
+                ref
+                    .read(currentScanSessionProvider.notifier)
+                    .setReadingExtendedInfo(false);
+              }
+            }
+          }
         } else {
           ref
               .read(currentScanSessionProvider.notifier)

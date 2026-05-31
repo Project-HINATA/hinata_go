@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:hinata_go/context_extensions.dart';
 
 class CardDetailBottomActions extends StatelessWidget {
-  final VoidCallback onSend;
+  final VoidCallback? onSend;
   final VoidCallback onSave;
   final bool isSending;
   final bool isSaving;
 
   const CardDetailBottomActions({
     super.key,
-    required this.onSend,
+    this.onSend,
     required this.onSave,
     required this.isSending,
     required this.isSaving,
@@ -26,8 +26,10 @@ class CardDetailBottomActions extends StatelessWidget {
       child: Row(
         children: [
           _buildSaveButton(context, colorScheme),
-          const SizedBox(width: 12),
-          _buildSendButton(context, colorScheme),
+          if (onSend != null) ...[
+            const SizedBox(width: 12),
+            _buildSendButton(context, colorScheme),
+          ],
         ],
       ),
     );

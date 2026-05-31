@@ -64,8 +64,11 @@ abstract class DeviceInterface {
   }) async => throw UnsupportedError('Not supported');
 
   /// Unified polling for NFC cards.
-  Future<ScannedCard?> poll() async =>
+  Future<ScannedCard?> poll({bool readExtended = true}) async =>
       throw UnsupportedError('Polling not supported');
+
+  /// Read extended card info for a previously polled basic card (optional, for USB split-phase scans)
+  Future<ScannedCard?> readExtended(ScannedCard basicCard) async => null;
 
   /// Close and clean up resources
   void dispose();

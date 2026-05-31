@@ -37,7 +37,7 @@ class Banapass extends Iso14443 implements HasAccessCode {
   String? get type => "mifare";
 
   @override
-  String? get value => "$block1Hex$block2Hex";
+  String? get gamePayload => "$block1Hex$block2Hex";
 
   @override
   Map<String, dynamic> toJson() {

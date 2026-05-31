@@ -20,7 +20,7 @@ class Aime extends Iso14443 implements HasAccessCode {
   String? get type => "aime";
 
   @override
-  String? get value => accessCodeString;
+  String? get gamePayload => accessCodeString;
 
   @override
   Map<String, dynamic> toJson() {

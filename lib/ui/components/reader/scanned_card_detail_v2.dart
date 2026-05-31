@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
+import 'package:intl/intl.dart';
 
 import '../../../models/card/aic.dart';
 import '../../../models/card/banapass.dart';
@@ -11,6 +12,7 @@ import '../../../models/card/felica.dart';
 import '../../../models/card/invalid_mifare.dart';
 import '../../../models/card/iso15693.dart';
 import '../../../models/card/iso14443a.dart';
+import '../../../models/card/transit.dart';
 import '../../../services/notification_service.dart';
 
 class ScannedCardDetailV2 extends ConsumerWidget {
@@ -146,7 +148,35 @@ List<_CardDetailField> _buildCardDetailFields(
   BuildContext context,
   ICCard card,
 ) {
-  final fields = [
+  final fields = <_CardDetailField>[];
+
+  if (card is TransitCard) {
+    fields.add(
+      _CardDetailField(
+        label: context.l10n.transitBalance,
+        value: card.balanceFormatted,
+      ),
+    );
+    if (card.cardNumber != null) {
+      fields.add(
+        _CardDetailField(
+          label: context.l10n.cardNumber,
+          value: card.cardNumber!,
+          groupInFours: true,
+        ),
+      );
+    }
+    if (card.snapshotTime != null) {
+      fields.add(
+        _CardDetailField(
+          label: context.l10n.snapshotTime,
+          value: DateFormat('yyyy-MM-dd HH:mm:ss').format(card.snapshotTime!),
+        ),
+      );
+    }
+  }
+
+  fields.addAll([
     ..._extractFields<HasAccessCode>(card, _accessCodeFieldDefinitions),
     ..._extractFields<Aic>(card, _aicFieldDefinitions),
     ..._extractFields<Banapass>(card, _banapassFieldDefinitions),
@@ -156,7 +186,7 @@ List<_CardDetailField> _buildCardDetailFields(
     ..._extractFields<Iso15693>(card, _iso15693FieldDefinitions),
     ..._extractFields<HasEPass>(card, _epassFieldDefinitions),
     ..._extractFields<Felica>(card, _felicaSecondaryFieldDefinitions),
-  ];
+  ]);
 
   if (fields.isNotEmpty) {
     return fields;

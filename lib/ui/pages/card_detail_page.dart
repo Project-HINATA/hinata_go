@@ -5,12 +5,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../l10n/l10n.dart';
 import '../../models/card/card.dart';
 import '../../models/card/invalid_mifare.dart';
+import '../../models/card/transit.dart';
 import '../../models/remote_instance.dart';
 import '../../providers/card_sender.dart';
 import '../../services/notification_service.dart';
 import '../components/card_detail/bottom_actions.dart';
 import '../components/instances/select_instance_dialog.dart';
 import '../components/reader/scanned_card_detail_v2.dart';
+import '../components/reader/transit_history_card.dart';
 import '../widgets/save_card_dialog.dart';
 
 class CardDetailPage extends HookConsumerWidget {
@@ -42,7 +44,7 @@ class CardDetailPage extends HookConsumerWidget {
   }
 
   void _copyValue(BuildContext context, WidgetRef ref) {
-    Clipboard.setData(ClipboardData(text: card.value ?? ''));
+    Clipboard.setData(ClipboardData(text: card.gamePayload ?? ''));
     ref
         .read(notificationServiceProvider)
         .showSuccess(context.l10n.valueCopiedToClipboard);
@@ -85,11 +87,22 @@ class CardDetailPage extends HookConsumerWidget {
     CardSenderState senderState,
   ) {
     return _CardDetailBody(
-      detail: ScannedCardDetailV2(card: card, showHeader: true),
+      detail: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ScannedCardDetailV2(card: card, showHeader: true),
+          if (card is TransitCard) ...[
+            const SizedBox(height: 16),
+            TransitHistoryCard(card: card as TransitCard),
+          ],
+        ],
+      ),
       actions: card is InvalidMifareCard
           ? const SizedBox.shrink()
           : CardDetailBottomActions(
-              onSend: () => _sendCard(context, ref),
+              onSend: card.gamePayload != null
+                  ? () => _sendCard(context, ref)
+                  : null,
               onSave: () => _saveCard(context),
               isSending: senderState.isSending,
               isSaving: false,

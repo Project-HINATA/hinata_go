@@ -868,5 +868,61 @@
   "unusableMifareCardWarning": "这张卡无法在游戏中使用。",
   "@unusableMifareCardWarning": {
     "description": "MIFARE Classic 无法解析出合法 access code 时的提示"
+  },
+  "transitBalance": "余额",
+  "@transitBalance": {
+    "description": "交通卡余额标签"
+  },
+  "cardNumber": "卡号",
+  "@cardNumber": {
+    "description": "卡号标签"
+  },
+  "transactionHistory": "交易记录",
+  "@transactionHistory": {
+    "description": "交易记录折叠面板标题"
+  },
+  "snapshotTime": "快照时间",
+  "@snapshotTime": {
+    "description": "快照时间标签"
+  },
+  "noTransactions": "暂无交易记录",
+  "@noTransactions": {
+    "description": "暂无交易记录空提示"
+  },
+  "transitTypeRide": "乘车",
+  "@transitTypeRide": {
+    "description": "交易类型：乘车"
+  },
+  "transitTypeTopup": "充值",
+  "@transitTypeTopup": {
+    "description": "交易类型：充值"
+  },
+  "transitTypeShopping": "消费",
+  "@transitTypeShopping": {
+    "description": "交易类型：消费"
+  },
+  "transitTypeAdjustment": "调整/精算",
+  "@transitTypeAdjustment": {
+    "description": "交易类型：调整"
+  },
+  "transitTypeRefund": "退款",
+  "@transitTypeRefund": {
+    "description": "交易类型：退款"
+  },
+  "transitTypeIssue": "发行",
+  "@transitTypeIssue": {
+    "description": "交易类型：发行"
+  },
+  "transitTypeDeduction": "扣费",
+  "@transitTypeDeduction": {
+    "description": "交易类型：扣费"
+  },
+  "transitTypeReissue": "补卡发行",
+  "@transitTypeReissue": {
+    "description": "交易类型：补卡发行"
+  },
+  "transitTypeOther": "其他",
+  "@transitTypeOther": {
+    "description": "交易类型：其他"
   }
 }

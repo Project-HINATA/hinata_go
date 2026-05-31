@@ -871,5 +871,61 @@
   "unusableMifareCardWarning": "This card cannot be used in games.",
   "@unusableMifareCardWarning": {
     "description": "Warning shown when a MIFARE Classic card cannot produce a valid access code"
+  },
+  "transitBalance": "Balance",
+  "@transitBalance": {
+    "description": "Transit card balance label"
+  },
+  "cardNumber": "Card Number",
+  "@cardNumber": {
+    "description": "Card number label"
+  },
+  "transactionHistory": "Transaction History",
+  "@transactionHistory": {
+    "description": "Expandable transaction history list title"
+  },
+  "snapshotTime": "Snapshot Time",
+  "@snapshotTime": {
+    "description": "Snapshot time label"
+  },
+  "noTransactions": "No transaction history",
+  "@noTransactions": {
+    "description": "Empty state description for transactions"
+  },
+  "transitTypeRide": "Ride",
+  "@transitTypeRide": {
+    "description": "Transaction type: ride"
+  },
+  "transitTypeTopup": "Top-up",
+  "@transitTypeTopup": {
+    "description": "Transaction type: top-up"
+  },
+  "transitTypeShopping": "Shopping",
+  "@transitTypeShopping": {
+    "description": "Transaction type: shopping"
+  },
+  "transitTypeAdjustment": "Adjustment",
+  "@transitTypeAdjustment": {
+    "description": "Transaction type: adjustment"
+  },
+  "transitTypeRefund": "Refund",
+  "@transitTypeRefund": {
+    "description": "Transaction type: refund"
+  },
+  "transitTypeIssue": "Issue",
+  "@transitTypeIssue": {
+    "description": "Transaction type: issue"
+  },
+  "transitTypeDeduction": "Deduction",
+  "@transitTypeDeduction": {
+    "description": "Transaction type: deduction"
+  },
+  "transitTypeReissue": "Reissue",
+  "@transitTypeReissue": {
+    "description": "Transaction type: reissue"
+  },
+  "transitTypeOther": "Other",
+  "@transitTypeOther": {
+    "description": "Transaction type: other"
   }
 }

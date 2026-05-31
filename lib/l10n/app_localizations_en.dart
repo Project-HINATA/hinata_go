@@ -628,4 +628,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unusableMifareCardWarning => 'This card cannot be used in games.';
+
+  @override
+  String get transitBalance => 'Balance';
+
+  @override
+  String get cardNumber => 'Card Number';
+
+  @override
+  String get transactionHistory => 'Transaction History';
+
+  @override
+  String get snapshotTime => 'Snapshot Time';
+
+  @override
+  String get noTransactions => 'No transaction history';
+
+  @override
+  String get transitTypeRide => 'Ride';
+
+  @override
+  String get transitTypeTopup => 'Top-up';
+
+  @override
+  String get transitTypeShopping => 'Shopping';
+
+  @override
+  String get transitTypeAdjustment => 'Adjustment';
+
+  @override
+  String get transitTypeRefund => 'Refund';
+
+  @override
+  String get transitTypeIssue => 'Issue';
+
+  @override
+  String get transitTypeDeduction => 'Deduction';
+
+  @override
+  String get transitTypeReissue => 'Reissue';
+
+  @override
+  String get transitTypeOther => 'Other';
 }

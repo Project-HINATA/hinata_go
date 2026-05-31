@@ -18,7 +18,7 @@ class Iso15693 extends ICCard implements HasEPass {
   String? get type => 'iso15693';
 
   @override
-  String? get value => idString;
+  String? get gamePayload => idString;
 
   @override
   Map<String, dynamic> toJson() {
