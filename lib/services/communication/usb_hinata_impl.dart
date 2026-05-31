@@ -139,7 +139,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
           felicaTag,
           source: 'HINATA',
           readExtended: readExtended,
-          );
+        );
       }
     }
 
@@ -229,7 +229,11 @@ class UsbHinataDeviceImpl implements DeviceInterface {
       0xFFFF,
       0x0001,
     );
-    final targets = await _hinata.pn532Api.inListPassiveTarget(1, 1, initialData);
+    final targets = await _hinata.pn532Api.inListPassiveTarget(
+      1,
+      1,
+      initialData,
+    );
     if (targets.isNotEmpty) {
       final t = targets[0];
       return Felica(t.id, t.pmm!, t.systemCodes!);

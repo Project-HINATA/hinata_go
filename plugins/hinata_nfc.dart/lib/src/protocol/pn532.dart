@@ -314,11 +314,7 @@ class Pn532Api extends IoBase {
           }
           var id = res.payload.sublist(idIdx + 5, idIdx + 5 + idLen); // UID
           idIdx += 5 + idLen;
-          tags.add(NfcTarget(
-            id: Uint8List.fromList(id),
-            sak: sak,
-            atqa: atqa,
-          ));
+          tags.add(NfcTarget(id: Uint8List.fromList(id), sak: sak, atqa: atqa));
         case 1: // 212 kbps (FeliCa polling)
         case 2: // 424 kbps (FeliCa polling)
           if (res.payload.length < 16) return [];

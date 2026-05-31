@@ -13,7 +13,6 @@ import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/suica.dart';
 import 'package:hinata_go/models/card/tunion.dart';
 import 'package:hinata_go/models/card/transit.dart';
-import 'package:hinata_go/utils/ekicode_data.dart';
 
 import '../../constants/mifare_key.dart';
 import '../../utils/access_code_validator.dart';
@@ -331,7 +330,7 @@ class CardReaderEngine {
     bool readExtended = true,
   }) async {
     try {
-      final List<TransitTransaction> rawTransactions = [];
+      final List<Uint8List> blocksData = [];
       final List<double> blockBalances = [];
       double balance = 0.0;
 
@@ -364,25 +363,6 @@ class CardReaderEngine {
           continue;
         }
 
-        final consoleType = blockData[0];
-        final processType = blockData[1];
-
-        // Bytes 4-5 are the Date (stored in packed big-endian format)
-        final dateRaw = (blockData[4] << 8) | blockData[5];
-        final year = (dateRaw >> 9) & 0x7F;
-        final month = (dateRaw >> 5) & 0x0F;
-        final day = dateRaw & 0x1F;
-        final fullYear = 2000 + year;
-
-        // Entry and Exit line/station bytes
-        final entryLine = blockData[6];
-        final entryStation = blockData[7];
-        final exitLine = blockData[8];
-        final exitStation = blockData[9];
-
-        // Bytes 10-11: Balance (stored in little-endian order)
-        final blockBalance = blockData[10] | (blockData[11] << 8);
-
         // Bytes 13-14: Sequence Number (big-endian)
         final seq = (blockData[13] << 8) | blockData[14];
 
@@ -391,71 +371,26 @@ class CardReaderEngine {
           continue;
         }
 
+        // Bytes 10-11: Balance (stored in little-endian order)
+        final blockBalance = blockData[10] | (blockData[11] << 8);
+
         if (blockIndex == 0) {
           balance = blockBalance.toDouble();
         }
 
+        blocksData.add(blockData);
         blockBalances.add(blockBalance.toDouble());
-
-        final isShopping =
-            processType == 0x46 ||
-            processType == 0x4b ||
-            consoleType == 0x46 ||
-            consoleType == 0x4b;
-        final typeStr = _getSuicaProcessType(processType);
-
-        final region = blockData[15] >> 4;
-
-        String formatStation(int line, int station) {
-          final key = "$region,$line,$station";
-          final value = ekicodeMap[key];
-          if (value != null) {
-            final parts = value.split('|');
-            if (parts.length >= 2) {
-              final lineName = parts[0].replaceAll(RegExp(r'^\d+号[線线]'), '');
-              final suffix = (lineName.endsWith('線') || lineName.endsWith('鉄道'))
-                  ? ''
-                  : '線';
-              return "${parts[1]} ($lineName$suffix)";
-            }
-          }
-          return "Line 0x${line.toRadixString(16).toUpperCase().padLeft(2, '0')}, Station 0x${station.toRadixString(16).toUpperCase().padLeft(2, '0')}";
-        }
-
-        final detailsStr = isShopping
-            ? "Store/Time: ${entryLine.toString().padLeft(2, '0')}:${entryStation.toString().padLeft(2, '0')}"
-            : "${formatStation(entryLine, entryStation)} ──► ${formatStation(exitLine, exitStation)}";
-
-        final txDate = DateTime(fullYear, month, day);
-
-        rawTransactions.add(
-          TransitTransaction(
-            date: txDate,
-            type: typeStr,
-            amount: 0.0, // Will be computed
-            details: detailsStr,
-            seq: seq,
-          ),
-        );
       }
 
       final List<TransitTransaction> transactions = [];
-      for (int i = 0; i < rawTransactions.length; i++) {
+      for (int i = 0; i < blocksData.length; i++) {
         double amt = 0.0;
         if (i + 1 < blockBalances.length) {
           amt = blockBalances[i] - blockBalances[i + 1];
         }
 
-        final baseTx = rawTransactions[i];
-        transactions.add(
-          TransitTransaction(
-            date: baseTx.date,
-            type: baseTx.type,
-            amount: amt,
-            details: baseTx.details,
-            seq: baseTx.seq,
-          ),
-        );
+        final tx = Suica.parseTransaction(blocksData[i], amt);
+        transactions.add(tx);
       }
 
       final suica = Suica(
@@ -471,40 +406,6 @@ class CardReaderEngine {
     } catch (e) {
       log('CardReaderEngine Suica read error: $e');
       return null;
-    }
-  }
-
-  String _getSuicaProcessType(int processType) {
-    switch (processType) {
-      case 0x01:
-        return 'Ride';
-      case 0x02:
-        return 'Top-up';
-      case 0x03:
-      case 0x04:
-      case 0x05:
-      case 0x06:
-        return 'Adjustment';
-      case 0x07:
-        return 'Issue';
-      case 0x08:
-      case 0x0c:
-        return 'Deduction';
-      case 0x0d:
-      case 0x0f:
-        return 'Ride';
-      case 0x10:
-      case 0x11:
-        return 'Reissue';
-      case 0x13:
-        return 'Top-up';
-      case 0x46:
-      case 0x4b:
-        return 'Shopping';
-      case 0x48:
-        return 'Top-up';
-      default:
-        return 'Other';
     }
   }
 
