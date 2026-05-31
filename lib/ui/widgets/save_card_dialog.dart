@@ -124,31 +124,61 @@ class SaveCardDialog extends HookConsumerWidget {
     );
   }
 
-  void _saveCard(
+  Future<void> _saveCard(
     BuildContext context,
     WidgetRef ref,
     TextEditingController nameController,
     ValueNotifier<String> selectedFolderIdState,
     List<CardFolder> folders,
-  ) {
-    if (nameController.text.isEmpty) return;
+  ) async {
+    final name = nameController.text.trim();
+    if (name.isEmpty) return;
+
+    final notifier = ref.read(savedCardsProvider.notifier);
+    final folderId = selectedFolderIdState.value;
+
+    final duplicate = notifier.findDuplicate(card, name, folderId);
 
     final newCard = SavedCard(
       id: const Uuid().v4(),
-      name: nameController.text,
+      name: name,
       card: card,
-      folderId: selectedFolderIdState.value,
+      folderId: folderId,
       source: source,
     );
 
-    ref.read(savedCardsProvider.notifier).addCard(newCard);
-    _showSaveSuccessSnackBar(
-      context,
-      ref,
-      nameController.text,
-      selectedFolderIdState.value,
-      folders,
-    );
+    if (duplicate != null) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(context.l10n.duplicateCardTitle),
+          content: Text(context.l10n.duplicateCardPrompt),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(context.l10n.cancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                context.l10n.overwrite,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      notifier.replaceCard(duplicate, newCard);
+    } else {
+      notifier.addCard(newCard);
+    }
+
+    if (!context.mounted) return;
+
+    _showSaveSuccessSnackBar(context, ref, name, folderId, folders);
     Navigator.pop(context, true);
   }
 

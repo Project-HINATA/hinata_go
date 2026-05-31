@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../models/card/card.dart';
 import '../../models/card/invalid_mifare.dart';
 import '../../models/card/transit.dart';
+import '../../models/card/saved_card.dart';
 import '../../models/remote_instance.dart';
+import '../../providers/app_state_provider.dart';
 import '../../providers/card_sender.dart';
 import '../../services/notification_service.dart';
 import '../components/card_detail/bottom_actions.dart';
@@ -43,11 +44,78 @@ class CardDetailPage extends HookConsumerWidget {
         .sendCard(card, targetInstance: selectedInstance);
   }
 
-  void _copyValue(BuildContext context, WidgetRef ref) {
-    Clipboard.setData(ClipboardData(text: card.gamePayload ?? ''));
-    ref
-        .read(notificationServiceProvider)
-        .showSuccess(context.l10n.valueCopiedToClipboard);
+  Future<void> _renameCard(
+    BuildContext context,
+    WidgetRef ref,
+    SavedCard savedCard,
+  ) async {
+    final controller = TextEditingController(text: savedCard.name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.l10n.renameCard),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(labelText: context.l10n.cardNameLabel),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: Text(context.l10n.save),
+          ),
+        ],
+      ),
+    );
+
+    if (newName != null && newName.isNotEmpty && newName != savedCard.name) {
+      if (!context.mounted) return;
+      final updatedCard = savedCard.copyWith(name: newName);
+      ref.read(savedCardsProvider.notifier).updateCard(updatedCard);
+      ref
+          .read(notificationServiceProvider)
+          .showSuccess(context.l10n.renameSuccess);
+    }
+  }
+
+  Future<void> _deleteCard(
+    BuildContext context,
+    WidgetRef ref,
+    SavedCard savedCard,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.l10n.deleteCard),
+        content: Text(context.l10n.confirmDeleteCard),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              context.l10n.delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      if (!context.mounted) return;
+      ref.read(savedCardsProvider.notifier).removeCard(savedCard.id);
+      ref
+          .read(notificationServiceProvider)
+          .showSuccess(context.l10n.deleteSuccess);
+      Navigator.pop(context); // Pop back out of detail page
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -57,9 +125,16 @@ class CardDetailPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final senderState = ref.watch(cardSenderProvider);
+    final savedCards = ref.watch(savedCardsProvider);
+    SavedCard? savedCard;
+    try {
+      savedCard = savedCards.firstWhere((c) => c.card.isSameCard(card));
+    } catch (_) {
+      savedCard = null;
+    }
 
     return Scaffold(
-      appBar: _buildAppBar(context, ref),
+      appBar: _buildAppBar(context, ref, savedCard),
       body: SafeArea(
         top: false,
         bottom: false,
@@ -68,15 +143,26 @@ class CardDetailPage extends HookConsumerWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    WidgetRef ref,
+    SavedCard? savedCard,
+  ) {
     return AppBar(
-      title: Text(context.l10n.cardDetails(card.name)),
+      title: Text(context.l10n.cardDetails(savedCard?.name ?? card.name)),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.copy),
-          onPressed: () => _copyValue(context, ref),
-          tooltip: context.l10n.copyValue,
-        ),
+        if (savedCard != null) ...[
+          IconButton(
+            icon: const Icon(Icons.edit_note),
+            onPressed: () => _renameCard(context, ref, savedCard),
+            tooltip: context.l10n.renameCard,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _deleteCard(context, ref, savedCard),
+            tooltip: context.l10n.deleteCard,
+          ),
+        ],
       ],
     );
   }

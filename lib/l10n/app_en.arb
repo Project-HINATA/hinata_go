@@ -927,5 +927,41 @@
   "transitTypeOther": "Other",
   "@transitTypeOther": {
     "description": "Transaction type: other"
+  },
+  "duplicateCardTitle": "Card Already Saved",
+  "@duplicateCardTitle": {
+    "description": "Title of the alert dialog when a duplicate card is found"
+  },
+  "duplicateCardPrompt": "Same card already exists. Overwrite?",
+  "@duplicateCardPrompt": {
+    "description": "Prompt message in the duplicate card alert dialog"
+  },
+  "overwrite": "Confirm",
+  "@overwrite": {
+    "description": "Button text to confirm overwriting a duplicate item"
+  },
+  "renameCard": "Rename Card",
+  "@renameCard": {
+    "description": "Title of the rename card dialog"
+  },
+  "cardNameLabel": "New Card Name",
+  "@cardNameLabel": {
+    "description": "Label text for card name input"
+  },
+  "deleteCard": "Delete Card",
+  "@deleteCard": {
+    "description": "Title of the delete confirmation dialog"
+  },
+  "confirmDeleteCard": "Are you sure you want to delete this card? This action cannot be undone.",
+  "@confirmDeleteCard": {
+    "description": "Confirmation message when deleting a card"
+  },
+  "renameSuccess": "Renamed successfully",
+  "@renameSuccess": {
+    "description": "Toast message for successful card rename"
+  },
+  "deleteSuccess": "Deleted successfully",
+  "@deleteSuccess": {
+    "description": "Toast message for successful card deletion"
   }
 }

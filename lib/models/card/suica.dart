@@ -30,9 +30,6 @@ class Suica extends Felica with TransitCard {
   String? get cardNumber => null; // Suica doesn't expose public card number in RF
 
   @override
-  String? get gamePayload => null;
-
-  @override
   String get name => "Suica";
 
   @override

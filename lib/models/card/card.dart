@@ -23,6 +23,28 @@ class ICCard {
 
   String? get gamePayload => null;
 
+  /// Checks if this card is logically or physically the same card as [other].
+  bool isSameCard(ICCard other) {
+    if (type != other.type) return false;
+
+    // For cards with access codes (Aime, Banapass, AIC), compare their access codes
+    if (this is HasAccessCode && other is HasAccessCode) {
+      final ac1 = (this as HasAccessCode).accessCodeString;
+      final ac2 = (other as HasAccessCode).accessCodeString;
+      if (ac1 != null && ac2 != null && ac1.isNotEmpty && ac2.isNotEmpty) {
+        return ac1 == ac2;
+      }
+    }
+
+    // For China T-Union transit cards, compare public card numbers
+    if (this is TUnion && other is TUnion) {
+      return (this as TUnion).cardNumber == other.cardNumber;
+    }
+
+    // For other cards, compare physical chip IDs (UID / IDm)
+    return idString == other.idString;
+  }
+
   Map<String, dynamic> toJson() {
     return {'type': type, 'id': _bytesToHex(id)};
   }

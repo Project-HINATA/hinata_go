@@ -1309,6 +1309,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other'**
   String get transitTypeOther;
+
+  /// Title of the alert dialog when a duplicate card is found
+  ///
+  /// In en, this message translates to:
+  /// **'Card Already Saved'**
+  String get duplicateCardTitle;
+
+  /// Prompt message in the duplicate card alert dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Same card already exists. Overwrite?'**
+  String get duplicateCardPrompt;
+
+  /// Button text to confirm overwriting a duplicate item
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get overwrite;
+
+  /// Title of the rename card dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Card'**
+  String get renameCard;
+
+  /// Label text for card name input
+  ///
+  /// In en, this message translates to:
+  /// **'New Card Name'**
+  String get cardNameLabel;
+
+  /// Title of the delete confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Card'**
+  String get deleteCard;
+
+  /// Confirmation message when deleting a card
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this card? This action cannot be undone.'**
+  String get confirmDeleteCard;
+
+  /// Toast message for successful card rename
+  ///
+  /// In en, this message translates to:
+  /// **'Renamed successfully'**
+  String get renameSuccess;
+
+  /// Toast message for successful card deletion
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted successfully'**
+  String get deleteSuccess;
 }
 
 class _AppLocalizationsDelegate

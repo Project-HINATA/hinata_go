@@ -670,4 +670,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transitTypeOther => 'Other';
+
+  @override
+  String get duplicateCardTitle => 'Card Already Saved';
+
+  @override
+  String get duplicateCardPrompt => 'Same card already exists. Overwrite?';
+
+  @override
+  String get overwrite => 'Confirm';
+
+  @override
+  String get renameCard => 'Rename Card';
+
+  @override
+  String get cardNameLabel => 'New Card Name';
+
+  @override
+  String get deleteCard => 'Delete Card';
+
+  @override
+  String get confirmDeleteCard =>
+      'Are you sure you want to delete this card? This action cannot be undone.';
+
+  @override
+  String get renameSuccess => 'Renamed successfully';
+
+  @override
+  String get deleteSuccess => 'Deleted successfully';
 }

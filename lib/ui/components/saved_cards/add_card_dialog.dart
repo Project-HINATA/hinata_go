@@ -39,19 +39,54 @@ class AddCardDialog extends HookConsumerWidget {
     final isFormValid =
         name.isNotEmpty && AccessCodeValidator.isValidAimeAccessCode(value);
 
-    void onSave() {
+    Future<void> onSave() async {
       if (!isFormValid) return;
 
       final accessCodeBytes = HexUtils.hexToBytes(value);
       final aime = Aime(Uint8List(4), 0x08, 0x0004, accessCodeBytes);
+      final notifier = ref.read(savedCardsProvider.notifier);
+      final folderId = selectedFolderIdState.value;
+
+      final duplicate = notifier.findDuplicate(aime, name, folderId);
+
       final newCard = SavedCard(
         id: const Uuid().v4(),
         name: name,
         card: aime,
-        folderId: selectedFolderIdState.value,
+        folderId: folderId,
         source: 'Direct',
       );
-      ref.read(savedCardsProvider.notifier).addCard(newCard);
+
+      if (duplicate != null) {
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(context.l10n.duplicateCardTitle),
+            content: Text(context.l10n.duplicateCardPrompt),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(context.l10n.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  context.l10n.overwrite,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (confirm != true) return;
+
+        notifier.replaceCard(duplicate, newCard);
+      } else {
+        notifier.addCard(newCard);
+      }
+
+      if (!context.mounted) return;
       Navigator.pop(context);
     }
 

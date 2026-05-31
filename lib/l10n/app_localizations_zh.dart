@@ -661,4 +661,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get transitTypeOther => '其他';
+
+  @override
+  String get duplicateCardTitle => '卡片已存在';
+
+  @override
+  String get duplicateCardPrompt => '已经存在相同卡片，要覆盖吗';
+
+  @override
+  String get overwrite => '确认';
+
+  @override
+  String get renameCard => '重命名卡片';
+
+  @override
+  String get cardNameLabel => '新卡片名称';
+
+  @override
+  String get deleteCard => '删除卡片';
+
+  @override
+  String get confirmDeleteCard => '确定要删除这张卡片吗？删除后数据将无法恢复。';
+
+  @override
+  String get renameSuccess => '重命名成功';
+
+  @override
+  String get deleteSuccess => '删除成功';
 }

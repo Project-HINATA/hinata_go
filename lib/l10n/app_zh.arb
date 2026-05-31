@@ -924,5 +924,41 @@
   "transitTypeOther": "其他",
   "@transitTypeOther": {
     "description": "交易类型：其他"
+  },
+  "duplicateCardTitle": "卡片已存在",
+  "@duplicateCardTitle": {
+    "description": "发现重复卡片弹窗标题"
+  },
+  "duplicateCardPrompt": "已经存在相同卡片，要覆盖吗",
+  "@duplicateCardPrompt": {
+    "description": "发现重复卡片时的确认提示"
+  },
+  "overwrite": "确认",
+  "@overwrite": {
+    "description": "替换/覆盖按钮文本"
+  },
+  "renameCard": "重命名卡片",
+  "@renameCard": {
+    "description": "重命名卡片弹窗标题"
+  },
+  "cardNameLabel": "新卡片名称",
+  "@cardNameLabel": {
+    "description": "输入卡片名称的标签文本"
+  },
+  "deleteCard": "删除卡片",
+  "@deleteCard": {
+    "description": "删除卡片弹窗标题"
+  },
+  "confirmDeleteCard": "确定要删除这张卡片吗？删除后数据将无法恢复。",
+  "@confirmDeleteCard": {
+    "description": "删除卡片时的二次确认提示"
+  },
+  "renameSuccess": "重命名成功",
+  "@renameSuccess": {
+    "description": "重命名成功吐司提示"
+  },
+  "deleteSuccess": "删除成功",
+  "@deleteSuccess": {
+    "description": "删除成功吐司提示"
   }
 }

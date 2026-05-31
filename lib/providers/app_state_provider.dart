@@ -2,6 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'storage_provider.dart';
 import '../models/remote_instance.dart';
 import '../models/card/saved_card.dart';
+import '../models/card/card.dart';
 import '../models/card_folder.dart';
 import '../models/scan_log.dart';
 import '../models/scanning_mode.dart';
@@ -93,15 +94,32 @@ class SavedCardsNotifier extends Notifier<List<SavedCard>> {
   }
 
   void addCard(SavedCard card) {
-    // Deduplication check: Do not add if a card with same value exists in this folder
-    final exists = state.any(
-      (c) =>
-          c.card.idString == card.card.idString && c.folderId == card.folderId,
-    );
-    if (!exists) {
+    // Deduplication check: Do not add if a card with same identity and name exists in this folder
+    final duplicate = findDuplicate(card.card, card.name, card.folderId);
+    if (duplicate == null) {
       state = [...state, card];
       ref.read(storageProvider).saveSavedCards(state);
     }
+  }
+
+  SavedCard? findDuplicate(ICCard card, String name, String folderId) {
+    try {
+      return state.firstWhere(
+        (c) =>
+            c.folderId == folderId &&
+            c.card.isSameCard(card) &&
+            c.name.trim() == name.trim(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void replaceCard(SavedCard oldCard, SavedCard newCard) {
+    state = state
+        .map((e) => e.id == oldCard.id ? newCard.copyWith(id: oldCard.id) : e)
+        .toList();
+    ref.read(storageProvider).saveSavedCards(state);
   }
 
   void updateCard(SavedCard updated) {
