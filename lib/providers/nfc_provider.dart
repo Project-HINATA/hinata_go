@@ -8,9 +8,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:uuid/uuid.dart';
 
+import '../models/card/aime.dart';
+import '../models/card/banapass.dart';
+import '../models/card/invalid_mifare.dart';
+import '../models/card/iso14443a.dart';
 import '../models/card/scanned_card.dart';
 import '../models/card/saved_card.dart';
 import '../models/card/transit.dart';
+import '../models/card/tunion.dart';
 import '../models/scan_log.dart';
 import '../navigation/router.dart';
 import '../services/nfc_service.dart';
@@ -65,6 +70,7 @@ final nfcProvider = NotifierProvider<NfcNotifier, NfcState>(() {
 
 class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   bool _isStarting = false;
+  bool _isRetrying = false;
   String? _lastScanLogId;
   String? _lastSavedCardId;
 
@@ -211,14 +217,31 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       // Dismiss the global processing indicator overlay immediately so UI can update
       state = state.copyWith(isProcessing: false);
 
-      if (scannedCard != null) {
+      ScannedCard? finalCard = scannedCard;
+
+      // 2. FeliCa fallback: if the card is an unidentified ISO14443A tag
+      //    (CPU card that failed T-Union, or unknown type), re-poll with
+      //    FeliCa-only mode. This solves the issue where scanning an iPhone
+      //    picks IsoDep instead of Suica's FeliCa interface.
+      if (finalCard != null &&
+          _isUnidentifiedIso14443(finalCard) &&
+          !kIsWeb &&
+          Platform.isAndroid &&
+          !_isRetrying) {
+        final retryResult = await _attemptFelicaRetry();
+        if (retryResult != null) {
+          finalCard = retryResult;
+        }
+      }
+
+      if (finalCard != null) {
         await _registerScan(
-          scannedCard,
+          finalCard,
           presenceMode: ScanPresenceMode.timeoutHeartbeat,
         );
 
-        // 2. If it is a transit card, read extended info sequentially
-        if (scannedCard.card is TransitCard) {
+        // 3. If it is a transit card, read extended info sequentially
+        if (finalCard.card is TransitCard) {
           ref
               .read(currentScanSessionProvider.notifier)
               .setReadingExtendedInfo(true);
@@ -245,6 +268,47 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       }
     } finally {
       state = state.copyWith(isProcessing: false);
+    }
+  }
+
+  /// Whether the scan result is an unidentified ISO14443A card.
+  /// This includes plain [Iso14443] cards that were not recognized as any
+  /// known subtype (T-Union, Aime, Banapass, etc.).
+  /// [InvalidMifareCard] is excluded — that is a genuine Mifare Classic
+  /// read failure and should not trigger a FeliCa retry.
+  bool _isUnidentifiedIso14443(ScannedCard card) {
+    final c = card.card;
+    return c is Iso14443 &&
+        c is! TUnion &&
+        c is! Aime &&
+        c is! Banapass &&
+        c is! InvalidMifareCard;
+  }
+
+  /// Finish the current NFC session and re-poll with FeliCa-only tech flags.
+  /// Returns the new [ScannedCard] if FeliCa was found, or null on failure.
+  Future<ScannedCard?> _attemptFelicaRetry() async {
+    _isRetrying = true;
+    try {
+      await FlutterNfcKit.finish();
+
+      final tag = await FlutterNfcKit.poll(
+        timeout: const Duration(seconds: 3),
+        readIso14443A: false,
+        readIso14443B: false,
+        readIso18092: true,
+        readIso15693: false,
+      );
+
+      return await handleNfcTag(tag, readExtended: false);
+    } catch (e) {
+      log('FeliCa retry failed: $e');
+      return null;
+    } finally {
+      _isRetrying = false;
+      try {
+        await FlutterNfcKit.finish();
+      } catch (_) {}
     }
   }
 

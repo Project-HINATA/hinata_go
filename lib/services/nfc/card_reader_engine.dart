@@ -275,7 +275,30 @@ class CardReaderEngine {
     }
 
     if (rawTag is Iso14443) {
-      // 1. Zero-cost SAK check: Only attempt T-Union if SAK indicates ISO14443-4 CPU card (bit 5)
+      // Path 1: Mifare Classic (SAK bit 3) → authenticate + read sectors
+      if (rawTag.isMifareClassicCandidate) {
+        try {
+          return await readMifareWithAimeKey(tag: rawTag, source: source);
+        } on NfcException catch (e) {
+          if (e.type != NfcErrorType.authFailed) {
+            rethrow;
+          }
+        }
+
+        // Reactivate card (vital for PN532 as failure to auth halts the card).
+        await transceiver.reconnect();
+        final scanned =
+            await readMifareWithBanaKey(tag: rawTag, source: source);
+        return scanned ??
+            ScannedCard(
+              card: rawTag.toInvalidMifareCard(
+                reason: InvalidMifareReason.readFailure,
+              ),
+              source: source,
+            );
+      }
+
+      // Path 2: CPU card / ISO14443-4 (SAK bit 5) → try T-Union
       if ((rawTag.sak & 0x20) != 0) {
         final tunion = await _tryReadTUnion(
           rawTag,
@@ -287,33 +310,9 @@ class CardReaderEngine {
         }
       }
 
-      if (!rawTag.isMifareClassicCandidate) {
-        return ScannedCard(
-          card: rawTag.toInvalidMifareCard(
-            reason: InvalidMifareReason.invalidData,
-          ),
-          source: source,
-        );
-      }
-
-      try {
-        return await readMifareWithAimeKey(tag: rawTag, source: source);
-      } on NfcException catch (e) {
-        if (e.type != NfcErrorType.authFailed) {
-          rethrow;
-        }
-      }
-
-      // Reactivate card (vital for PN532 as failure to auth halts the card).
-      await transceiver.reconnect();
-      final scanned = await readMifareWithBanaKey(tag: rawTag, source: source);
-      return scanned ??
-          ScannedCard(
-            card: rawTag.toInvalidMifareCard(
-              reason: InvalidMifareReason.readFailure,
-            ),
-            source: source,
-          );
+      // Path 3: Not Mifare, not T-Union → return as generic Iso14443.
+      // The NFC provider will attempt a FeliCa-only retry for this case.
+      return ScannedCard(card: rawTag, source: source);
     }
 
     // Pass through Iso15693 or any other generic parsed tags
