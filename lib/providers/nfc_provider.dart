@@ -218,6 +218,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       state = state.copyWith(isProcessing: false);
 
       ScannedCard? finalCard = scannedCard;
+      NFCTag activeTag = tag;
 
       // 2. FeliCa fallback: if the card is an unidentified ISO14443A tag
       //    (CPU card that failed T-Union, or unknown type), re-poll with
@@ -230,7 +231,8 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           !_isRetrying) {
         final retryResult = await _attemptFelicaRetry();
         if (retryResult != null) {
-          finalCard = retryResult;
+          finalCard = retryResult.$1;
+          activeTag = retryResult.$2;
         }
       }
 
@@ -250,7 +252,10 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           await Future.delayed(const Duration(milliseconds: 50));
 
           try {
-            final extendedCard = await handleNfcTag(tag, readExtended: true);
+            final extendedCard = await handleNfcTag(
+              activeTag,
+              readExtended: true,
+            );
             if (extendedCard != null) {
               ref
                   .read(currentScanSessionProvider.notifier)
@@ -286,9 +291,10 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   }
 
   /// Finish the current NFC session and re-poll with FeliCa-only tech flags.
-  /// Returns the new [ScannedCard] if FeliCa was found, or null on failure.
-  Future<ScannedCard?> _attemptFelicaRetry() async {
+  /// Returns the new [ScannedCard] and the [NFCTag] if FeliCa was found, or null on failure.
+  Future<(ScannedCard, NFCTag)?> _attemptFelicaRetry() async {
     _isRetrying = true;
+    bool success = false;
     try {
       await FlutterNfcKit.finish();
 
@@ -300,15 +306,22 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
         readIso15693: false,
       );
 
-      return await handleNfcTag(tag, readExtended: false);
+      final scannedCard = await handleNfcTag(tag, readExtended: false);
+      if (scannedCard != null) {
+        success = true;
+        return (scannedCard, tag);
+      }
+      return null;
     } catch (e) {
       log('FeliCa retry failed: $e');
       return null;
     } finally {
       _isRetrying = false;
-      try {
-        await FlutterNfcKit.finish();
-      } catch (_) {}
+      if (!success) {
+        try {
+          await FlutterNfcKit.finish();
+        } catch (_) {}
+      }
     }
   }
 

@@ -287,8 +287,10 @@ class CardReaderEngine {
 
         // Reactivate card (vital for PN532 as failure to auth halts the card).
         await transceiver.reconnect();
-        final scanned =
-            await readMifareWithBanaKey(tag: rawTag, source: source);
+        final scanned = await readMifareWithBanaKey(
+          tag: rawTag,
+          source: source,
+        );
         return scanned ??
             ScannedCard(
               card: rawTag.toInvalidMifareCard(
