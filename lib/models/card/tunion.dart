@@ -28,6 +28,9 @@ class TUnion extends Iso14443 with TransitCard {
   String get balanceFormatted => "${balance.toStringAsFixed(2)} CNY";
 
   @override
+  String get showedValue => cardNumber;
+
+  @override
   String get name => "China T-Union";
 
   @override

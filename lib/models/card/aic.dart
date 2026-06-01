@@ -30,6 +30,9 @@ class Aic extends Felica implements HasAccessCode {
   }
 
   @override
+  String get showedValue => accessCodeString.toUpperCase();
+
+  @override
   String get name => "Amusement IC";
 
   @override

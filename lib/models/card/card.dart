@@ -23,6 +23,9 @@ class ICCard {
 
   String? get gamePayload => null;
 
+  /// User-facing display value based on card type.
+  String get showedValue => idString.toUpperCase();
+
   /// Checks if this card is logically or physically the same card as [other].
   bool isSameCard(ICCard other) {
     if (type != other.type) return false;

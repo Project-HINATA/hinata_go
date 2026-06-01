@@ -26,6 +26,10 @@ class InvalidMifareCard extends Iso14443 {
   String? get block2Hex => block2 != null ? _bytesToHex(block2!) : null;
 
   @override
+  String get showedValue =>
+      unusableAccessCode?.toUpperCase() ?? idString.toUpperCase();
+
+  @override
   String get name => 'Unknown';
 
   @override

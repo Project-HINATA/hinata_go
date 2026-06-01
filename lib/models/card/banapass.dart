@@ -31,6 +31,10 @@ class Banapass extends Iso14443 implements HasAccessCode {
       _persistedAccessCode ?? _computeAccessCodeString();
 
   @override
+  String get showedValue =>
+      accessCodeString?.toUpperCase() ?? idString.toUpperCase();
+
+  @override
   String get name => "Banapass";
 
   @override

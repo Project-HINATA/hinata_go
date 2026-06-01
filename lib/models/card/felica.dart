@@ -38,6 +38,9 @@ class Felica extends ICCard implements HasEPass {
   @override
   String? get gamePayload => idString;
 
+  @override
+  String get showedValue => idString.toUpperCase();
+
   String get systemCodeDisplay => systemCode
       .map((e) => e.toRadixString(16).padLeft(4, '0').toUpperCase())
       .join(', ');

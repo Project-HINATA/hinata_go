@@ -11,6 +11,9 @@ class Aime extends Iso14443 implements HasAccessCode {
   String get accessCodeString =>
       accessCode.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
   @override
+  String get showedValue => accessCodeString.toUpperCase();
+
+  @override
   String get name => "Aime";
 
   @override
