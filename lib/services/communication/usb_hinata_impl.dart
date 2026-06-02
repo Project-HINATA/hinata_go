@@ -4,10 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 import 'device_interface.dart';
+import 'package:hinata_go/models/card/aime.dart';
+import 'package:hinata_go/models/card/banapass.dart';
 import 'package:hinata_go/models/card/invalid_mifare.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
+import 'package:hinata_go/models/card/tunion.dart';
 import '../nfc/card_reader_engine.dart';
 
 class UsbHinataDeviceImpl implements DeviceInterface {
@@ -141,9 +144,12 @@ class UsbHinataDeviceImpl implements DeviceInterface {
           readExtended: readExtended,
         );
       }
+      // await _hinata.pn532Api.setRfCfg(0, 0);
     }
 
-    final isoTag = await _pollIsoTag();
+    // RF field is off from the last failed FeliCa poll.
+    // inListPassiveTarget will re-enable it automatically.
+    final isoTag = null;
     if (isoTag != null) {
       _activeTag = isoTag;
       final scanned = await engine.processTag(
@@ -151,6 +157,33 @@ class UsbHinataDeviceImpl implements DeviceInterface {
         source: 'HINATA',
         readExtended: readExtended,
       );
+
+      // FeliCa fallback: if the ISO14443A tag could not be identified as any
+      // known card type (T-Union, Aime, Banapass), it may be an iPhone whose
+      // FeliCa interface was missed during the initial polls. Release the
+      // current target, reset RF field, and retry FeliCa once more.
+      if (scanned != null && _isUnidentifiedIso14443(scanned)) {
+        await _hinata.pn532Api.inRelease(1);
+        await _hinata.pn532Api.setRfCfg(0, 0);
+
+        final retryTag = await _pollFelicaTag();
+        if (retryTag != null) {
+          _clearReadFailureState();
+          _activeTag = retryTag;
+          // Read with extended info directly — the FeliCa connection via
+          // iPhone is fragile, so avoid a separate readExtended() round-trip.
+          return await engine.processTag(
+            retryTag,
+            source: 'HINATA',
+            readExtended: true,
+          );
+        }
+
+        // FeliCa retry also failed — suppress the unidentified ISO14443A
+        // result so it doesn't flash on the UI before the next poll cycle.
+        return null;
+      }
+
       return _resolveReaderScan(scanned);
     }
 
@@ -222,6 +255,15 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   void _clearReadFailureState() {
     _pendingReadFailure = null;
     _confirmedReadFailure = null;
+  }
+
+  bool _isUnidentifiedIso14443(ScannedCard card) {
+    final c = card.card;
+    return c is Iso14443 &&
+        c is! TUnion &&
+        c is! Aime &&
+        c is! Banapass &&
+        c is! InvalidMifareCard;
   }
 
   Future<Felica?> _pollFelicaTag() async {
