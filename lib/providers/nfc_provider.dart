@@ -242,8 +242,11 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           presenceMode: ScanPresenceMode.timeoutHeartbeat,
         );
 
-        // 3. If it is a transit card, read extended info sequentially
-        if (finalCard.card is TransitCard) {
+        // 3. If it is a transit card, read extended info sequentially if not yet loaded
+        final sessionState = ref.read(currentScanSessionProvider);
+        if (finalCard.card is TransitCard &&
+            !sessionState.isReadingExtendedInfo &&
+            !sessionState.isExtendedInfoLoaded) {
           ref
               .read(currentScanSessionProvider.notifier)
               .setReadingExtendedInfo(true);
@@ -255,6 +258,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
             final extendedCard = await handleNfcTag(
               activeTag,
               readExtended: true,
+              existingCard: sessionState.scannedCard ?? finalCard,
             );
             if (extendedCard != null) {
               ref

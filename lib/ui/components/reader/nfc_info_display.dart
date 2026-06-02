@@ -8,6 +8,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
 
+import '../../../models/card/transit.dart';
 import '../../../providers/current_scan_session_provider.dart';
 import '../../../providers/hardware_device_provider.dart';
 import '../../../providers/nfc_provider.dart';
@@ -81,6 +82,8 @@ class _NfcDisplayInputs {
     required this.isIOS,
     required this.isPaused,
     required this.isReadingExtendedInfo,
+    required this.isTransitCard,
+    required this.isExtendedInfoLoaded,
   });
 
   factory _NfcDisplayInputs.fromRef(
@@ -108,6 +111,14 @@ class _NfcDisplayInputs {
       isReadingExtendedInfo: ref.watch(
         currentScanSessionProvider.select((s) => s.isReadingExtendedInfo),
       ),
+      isTransitCard: ref.watch(
+        currentScanSessionProvider.select(
+          (s) => s.scannedCard?.card is TransitCard,
+        ),
+      ),
+      isExtendedInfoLoaded: ref.watch(
+        currentScanSessionProvider.select((s) => s.isExtendedInfoLoaded),
+      ),
     );
   }
 
@@ -121,6 +132,8 @@ class _NfcDisplayInputs {
   final bool isIOS;
   final bool isPaused;
   final bool isReadingExtendedInfo;
+  final bool isTransitCard;
+  final bool isExtendedInfoLoaded;
 }
 
 class _NfcDisplayState {
@@ -137,7 +150,7 @@ class _NfcDisplayState {
     required this.isCardPresent,
     required this.isWaitingForCard,
     required this.normalizedQuarterTurns,
-    required this.isReadingExtendedInfo,
+    required this.showReadingExtendedInfo,
   });
 
   factory _NfcDisplayState.fromInputs(
@@ -145,6 +158,12 @@ class _NfcDisplayState {
     required bool isShowingSuccess,
     required int normalizedQuarterTurns,
   }) {
+    final showReadingExtended =
+        inputs.isReadingExtendedInfo ||
+        (inputs.isCardPresent &&
+            inputs.isTransitCard &&
+            !inputs.isExtendedInfoLoaded);
+
     return _NfcDisplayState(
       colorScheme: inputs.colorScheme,
       borderRadius: BorderRadius.circular(24),
@@ -163,7 +182,7 @@ class _NfcDisplayState {
           !inputs.isCardPresent &&
           (inputs.isScanningNfc || inputs.isUsbConnected),
       normalizedQuarterTurns: normalizedQuarterTurns,
-      isReadingExtendedInfo: inputs.isReadingExtendedInfo,
+      showReadingExtendedInfo: showReadingExtended,
     );
   }
 
@@ -179,7 +198,7 @@ class _NfcDisplayState {
   final bool isCardPresent;
   final bool isWaitingForCard;
   final int normalizedQuarterTurns;
-  final bool isReadingExtendedInfo;
+  final bool showReadingExtendedInfo;
 
   bool get shouldShowPausedPrompt => isPaused && !(isIOS && isScanningNfc);
   bool get isHighlighted => isShowingSuccess || isCardPresent;
@@ -267,7 +286,7 @@ class _CenterDisplayContent extends StatelessWidget {
                   key: ValueKey('success'),
                   child: _FluidMorphSuccess(),
                 )
-              : displayState.isReadingExtendedInfo
+              : displayState.showReadingExtendedInfo
               ? KeyedSubtree(
                   key: const ValueKey('readingExtended'),
                   child: _ReadingExtendedPrompt(

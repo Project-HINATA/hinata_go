@@ -7,9 +7,14 @@ class ScannedCard {
   final ICCard card;
   final String source; // 'NFC', 'QR', 'Direct'
   final DateTime timestamp;
+  final bool isExtendedInfoFullyLoaded;
 
-  ScannedCard({required this.card, required this.source, DateTime? timestamp})
-    : timestamp = timestamp ?? DateTime.now();
+  ScannedCard({
+    required this.card,
+    required this.source,
+    DateTime? timestamp,
+    this.isExtendedInfoFullyLoaded = false,
+  }) : timestamp = timestamp ?? DateTime.now();
 
   bool get isUsable => card is! InvalidMifareCard;
 

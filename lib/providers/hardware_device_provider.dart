@@ -259,7 +259,9 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
               );
           debugPrint('[_startPollLoop] recordScan result: $recordResult');
 
-          if (recordResult == ScanRecordResult.accepted) {
+          final isNewScan = recordResult == ScanRecordResult.accepted;
+
+          if (isNewScan) {
             // Process Phase 1 scanned card (create log, auto-save, auto-send)
             await ref
                 .read(nfcProvider.notifier)
@@ -267,50 +269,57 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
                   scannedCard,
                   presenceMode: ScanPresenceMode.explicitRemoval,
                 );
+          }
 
-            debugPrint(
-              '[_startPollLoop] card is TransitCard: ${scannedCard.card is TransitCard}',
-            );
-            // 2. If it is a transit card, read extended info sequentially
-            if (scannedCard.card is TransitCard) {
-              ref
-                  .read(currentScanSessionProvider.notifier)
-                  .setReadingExtendedInfo(true);
+          // 2. If it is a transit card, read extended info sequentially if not yet loaded
+          final sessionState = ref.read(currentScanSessionProvider);
+          debugPrint(
+            '[_startPollLoop] duplicate card check: isTransit=${scannedCard.card is TransitCard}, '
+            'isReading=${sessionState.isReadingExtendedInfo}, '
+            'isLoaded=${sessionState.isExtendedInfoLoaded}',
+          );
+          if (scannedCard.card is TransitCard &&
+              !sessionState.isReadingExtendedInfo &&
+              !sessionState.isExtendedInfoLoaded) {
+            ref
+                .read(currentScanSessionProvider.notifier)
+                .setReadingExtendedInfo(true);
 
-              // Yield to Flutter to paint Phase 1 UI immediately
-              await Future.delayed(const Duration(milliseconds: 50));
+            // Yield to Flutter to paint Phase 1 UI immediately
+            await Future.delayed(const Duration(milliseconds: 50));
 
-              try {
+            try {
+              debugPrint(
+                '[_startPollLoop] Starting Phase 2 sequential read...',
+              );
+              // Read extended card history using active card session without re-polling
+              final extendedCard = await usbImpl.readExtended(
+                sessionState.scannedCard ?? scannedCard,
+              );
+              debugPrint(
+                '[_startPollLoop] Phase 2 read finished. extendedCard: ${extendedCard != null ? "found" : "null"}',
+              );
+              if (extendedCard != null) {
+                final txCount =
+                    (extendedCard.card as TransitCard).transactions.length;
                 debugPrint(
-                  '[_startPollLoop] Starting Phase 2 sequential read...',
+                  '[_startPollLoop] extendedCard transactions: $txCount',
                 );
-                // Read extended card history using active card session without re-polling
-                final extendedCard = await usbImpl.readExtended(scannedCard);
-                debugPrint(
-                  '[_startPollLoop] Phase 2 read finished. extendedCard: ${extendedCard != null ? "found" : "null"}',
-                );
-                if (extendedCard != null) {
-                  final txCount =
-                      (extendedCard.card as TransitCard).transactions.length;
-                  debugPrint(
-                    '[_startPollLoop] extendedCard transactions: $txCount',
-                  );
-                  ref
-                      .read(currentScanSessionProvider.notifier)
-                      .updateCard(extendedCard);
-                  await ref
-                      .read(nfcProvider.notifier)
-                      .updateExternalScan(extendedCard);
-                }
-              } catch (e) {
-                debugPrint(
-                  '[_startPollLoop] Error reading extended transit history via USB: $e',
-                );
-              } finally {
                 ref
                     .read(currentScanSessionProvider.notifier)
-                    .setReadingExtendedInfo(false);
+                    .updateCard(extendedCard);
+                await ref
+                    .read(nfcProvider.notifier)
+                    .updateExternalScan(extendedCard);
               }
+            } catch (e) {
+              debugPrint(
+                '[_startPollLoop] Error reading extended transit history via USB: $e',
+              );
+            } finally {
+              ref
+                  .read(currentScanSessionProvider.notifier)
+                  .setReadingExtendedInfo(false);
             }
           }
         } else {

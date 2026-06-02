@@ -8,6 +8,7 @@ import 'nfc/card_reader_engine.dart';
 Future<ScannedCard?> handleNfcTag(
   NFCTag tag, {
   bool readExtended = true,
+  ScannedCard? existingCard,
 }) async {
   final channel = PhoneNfcCardChannel();
   final engine = CardReaderEngine(channel);
@@ -19,5 +20,6 @@ Future<ScannedCard?> handleNfcTag(
     internalTag,
     source: 'NFC',
     readExtended: readExtended,
+    existingCard: existingCard,
   );
 }

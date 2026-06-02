@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'iso14443a.dart';
 import 'transit.dart';
 
@@ -14,6 +16,8 @@ class TUnion extends Iso14443 with TransitCard {
   @override
   final DateTime? snapshotTime;
 
+  final List<Uint8List?> rawBlocks;
+
   TUnion(
     super.id,
     super.sak,
@@ -22,6 +26,7 @@ class TUnion extends Iso14443 with TransitCard {
     required this.balance,
     required this.transactions,
     this.snapshotTime,
+    this.rawBlocks = const [],
   });
 
   @override

@@ -16,6 +16,7 @@ class CurrentScanSessionState {
   final DateTime? cardRemovedAt;
   final ScanPresenceMode? presenceMode;
   final bool isReadingExtendedInfo;
+  final bool isExtendedInfoLoaded;
 
   const CurrentScanSessionState({
     this.scannedCard,
@@ -25,6 +26,7 @@ class CurrentScanSessionState {
     this.cardRemovedAt,
     this.presenceMode,
     this.isReadingExtendedInfo = false,
+    this.isExtendedInfoLoaded = false,
   });
 
   bool get hasScan => scannedCard != null;
@@ -39,6 +41,7 @@ class CurrentScanSessionState {
     DateTime? cardRemovedAt,
     ScanPresenceMode? presenceMode,
     bool? isReadingExtendedInfo,
+    bool? isExtendedInfoLoaded,
     bool clear = false,
     bool clearRemovedAt = false,
   }) {
@@ -57,6 +60,7 @@ class CurrentScanSessionState {
       presenceMode: presenceMode ?? this.presenceMode,
       isReadingExtendedInfo:
           isReadingExtendedInfo ?? this.isReadingExtendedInfo,
+      isExtendedInfoLoaded: isExtendedInfoLoaded ?? this.isExtendedInfoLoaded,
     );
   }
 }
@@ -110,6 +114,7 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
       lastAcceptedScanAt: acceptedAt,
       cardRemovedAt: isCardPresent ? null : acceptedAt,
       presenceMode: presenceMode,
+      isExtendedInfoLoaded: scannedCard.isExtendedInfoFullyLoaded,
     );
 
     _refreshPresence(
@@ -135,7 +140,10 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
   void updateCard(ScannedCard updatedCard) {
     if (state.hasScan &&
         state.scannedCard!.card.idString == updatedCard.card.idString) {
-      state = state.copyWith(scannedCard: updatedCard);
+      state = state.copyWith(
+        scannedCard: updatedCard,
+        isExtendedInfoLoaded: updatedCard.isExtendedInfoFullyLoaded,
+      );
     }
   }
 

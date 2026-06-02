@@ -13,6 +13,9 @@ class Suica extends Felica with TransitCard {
   @override
   final DateTime? snapshotTime;
 
+  final List<Uint8List?> rawBlocks;
+  final List<double?> rawBalances;
+
   Suica(
     super.id,
     super.pmm,
@@ -21,6 +24,8 @@ class Suica extends Felica with TransitCard {
     required this.transactions,
     this.snapshotTime,
     super.persistedEpass,
+    this.rawBlocks = const [],
+    this.rawBalances = const [],
   });
 
   @override

@@ -34,6 +34,7 @@ class CardReaderEngine {
     required Felica tag,
     String source = 'NFC',
     bool readExtended = true,
+    ScannedCard? existingCard,
   }) async {
     log(tag.id.toString());
     final defaultReturn = ScannedCard(card: tag, source: source);
@@ -50,6 +51,7 @@ class CardReaderEngine {
           tag,
           source: source,
           readExtended: readExtended,
+          existingCard: existingCard,
         );
         if (suica != null) return suica;
       }
@@ -265,12 +267,14 @@ class CardReaderEngine {
     dynamic rawTag, {
     String source = 'NFC',
     bool readExtended = true,
+    ScannedCard? existingCard,
   }) async {
     if (rawTag is Felica) {
       return await handleFelica(
         tag: rawTag,
         source: source,
         readExtended: readExtended,
+        existingCard: existingCard,
       );
     }
 
@@ -306,6 +310,7 @@ class CardReaderEngine {
           rawTag,
           source: source,
           readExtended: readExtended,
+          existingCard: existingCard,
         );
         if (tunion != null) {
           return tunion;
@@ -329,35 +334,74 @@ class CardReaderEngine {
     Felica tag, {
     required String source,
     bool readExtended = true,
+    ScannedCard? existingCard,
   }) async {
     try {
-      final List<Uint8List> blocksData = [];
-      final List<double> blockBalances = [];
+      final List<Uint8List?> blocksData = List.filled(20, null);
+      final List<double?> blockBalances = List.filled(20, null);
       double balance = 0.0;
+
+      if (existingCard != null && existingCard.card is Suica) {
+        final existingSuica = existingCard.card as Suica;
+        for (int i = 0; i < 20; i++) {
+          if (i < existingSuica.rawBlocks.length) {
+            blocksData[i] = existingSuica.rawBlocks[i];
+          }
+          if (i < existingSuica.rawBalances.length) {
+            blockBalances[i] = existingSuica.rawBalances[i];
+          }
+        }
+        balance = existingSuica.balance;
+      }
 
       // Suica history service code is 0x090F
       const int suicaServiceCode = 0x090F;
 
       final int blocksToRead = readExtended ? 20 : 1;
+      bool fullyLoaded = readExtended;
       for (int blockIndex = 0; blockIndex < blocksToRead; blockIndex++) {
+        if (blocksData[blockIndex] != null) {
+          continue; // Already read!
+        }
+
         // Read block using FeliCa Read Without Encryption
         final response = await felicaReadWithoutEncryption(tag.id, [
           blockIndex,
         ], serviceCode: suicaServiceCode);
 
+        debugPrint(
+          '[_tryReadSuica] Block $blockIndex response len=${response.length}: ${response.map((b) => b.toRadixString(16).padLeft(2, "0")).join(" ")}',
+        );
+
         // Response should contain length, response code, IDm, status flags, block count, block data
         // status flags are at index 10 and 11, block data starts at index 13
         if (response.length < 29) {
+          fullyLoaded = false;
           break; // Response too short or read finished
         }
 
         final status1 = response[10];
         final status2 = response[11];
         if (status1 != 0 || status2 != 0) {
+          fullyLoaded = false;
           break; // Non-zero status flags indicate end of records or error
         }
 
         final blockData = response.sublist(13, 29);
+        final blockBalance = blockData[10] | (blockData[11] << 8);
+
+        if (blockIndex == 0) {
+          balance = blockBalance.toDouble();
+        }
+
+        blocksData[blockIndex] = blockData;
+        blockBalances[blockIndex] = blockBalance.toDouble();
+      }
+
+      final List<TransitTransaction> transactions = [];
+      for (int i = 0; i < 20; i++) {
+        final blockData = blocksData[i];
+        if (blockData == null) continue;
 
         // Filter out empty transaction records (all zeros or all 0xFF, common on new cards)
         if (blockData.every((b) => b == 0 || b == 0xFF)) {
@@ -372,25 +416,12 @@ class CardReaderEngine {
           continue;
         }
 
-        // Bytes 10-11: Balance (stored in little-endian order)
-        final blockBalance = blockData[10] | (blockData[11] << 8);
-
-        if (blockIndex == 0) {
-          balance = blockBalance.toDouble();
-        }
-
-        blocksData.add(blockData);
-        blockBalances.add(blockBalance.toDouble());
-      }
-
-      final List<TransitTransaction> transactions = [];
-      for (int i = 0; i < blocksData.length; i++) {
         double amt = 0.0;
-        if (i + 1 < blockBalances.length) {
-          amt = blockBalances[i] - blockBalances[i + 1];
+        if (i + 1 < 20 && blockBalances[i + 1] != null) {
+          amt = blockBalances[i]! - blockBalances[i + 1]!;
         }
 
-        final tx = Suica.parseTransaction(blocksData[i], amt);
+        final tx = Suica.parseTransaction(blockData, amt);
         transactions.add(tx);
       }
 
@@ -401,9 +432,15 @@ class CardReaderEngine {
         balance: balance,
         transactions: transactions,
         snapshotTime: DateTime.now(),
+        rawBlocks: blocksData,
+        rawBalances: blockBalances,
       );
 
-      return ScannedCard(card: suica, source: source);
+      return ScannedCard(
+        card: suica,
+        source: source,
+        isExtendedInfoFullyLoaded: fullyLoaded,
+      );
     } catch (e) {
       log('CardReaderEngine Suica read error: $e');
       return null;
@@ -415,6 +452,7 @@ class CardReaderEngine {
     Iso14443 tag, {
     required String source,
     bool readExtended = true,
+    ScannedCard? existingCard,
   }) async {
     debugPrint('[_tryReadTUnion] Starting read. readExtended: $readExtended');
     try {
@@ -514,12 +552,25 @@ class CardReaderEngine {
       debugPrint('[_tryReadTUnion] parsed balance: $balance');
 
       // 4. READ TRANSACTION HISTORY: SFI 0x18 (read up to 10 records)
-      final List<TransitTransaction> transactions = [];
+      final List<Uint8List?> blocksData = List.filled(10, null);
+      if (existingCard != null && existingCard.card is TUnion) {
+        final existingTUnion = existingCard.card as TUnion;
+        for (int i = 0; i < 10; i++) {
+          if (i < existingTUnion.rawBlocks.length) {
+            blocksData[i] = existingTUnion.rawBlocks[i];
+          }
+        }
+      }
+
+      bool fullyLoaded = readExtended;
       if (readExtended) {
         debugPrint(
           '[_tryReadTUnion] readExtended is true, querying transaction logs...',
         );
         for (int recNum = 1; recNum <= 10; recNum++) {
+          if (blocksData[recNum - 1] != null) {
+            continue; // Already read!
+          }
           final readRecord = Uint8List.fromList([
             0x00,
             0xB2,
@@ -533,6 +584,7 @@ class CardReaderEngine {
           );
           if (recRes.length < 2) {
             debugPrint('[_tryReadTUnion] Record $recNum response too short');
+            fullyLoaded = false;
             break;
           }
 
@@ -565,58 +617,67 @@ class CardReaderEngine {
             debugPrint('[_tryReadTUnion] Record $recNum has sequence 0');
             continue;
           }
-          final amountCents =
-              (recordData[5] << 24) |
-              (recordData[6] << 16) |
-              (recordData[7] << 8) |
-              recordData[8];
-          final amount = amountCents / 100.0;
-          final typeCode = recordData[9];
 
-          final terminalId = recordData
-              .sublist(10, 16)
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join()
-              .toUpperCase();
-
-          // Date (YYYYMMDD) and Time (HHMMSS) in BCD format
-          final dateHex = recordData
-              .sublist(16, 20)
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join();
-          final timeHex = recordData
-              .sublist(20, 23)
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join();
-
-          final yearStr = dateHex.substring(0, 4);
-          final monthStr = dateHex.substring(4, 6);
-          final dayStr = dateHex.substring(6, 8);
-          final hourStr = timeHex.substring(0, 2);
-          final minStr = timeHex.substring(2, 4);
-          final secStr = timeHex.substring(4, 6);
-
-          final dateTimeStr =
-              "$yearStr-$monthStr-${dayStr}T$hourStr:$minStr:$secStr";
-          final txDateTime = DateTime.tryParse(dateTimeStr);
-
-          final typeStr = _getTUnionProcessType(typeCode, amountCents);
-          final details = "Terminal: $terminalId";
-
-          debugPrint(
-            '[_tryReadTUnion] Record $recNum parsed: Date=$txDateTime, Type=$typeStr, Amount=$amount, Seq=$seq',
-          );
-          transactions.add(
-            TransitTransaction(
-              date: txDateTime,
-              type: typeStr,
-              amount: typeStr == 'Top-up' ? amount : -amount,
-              details: details,
-              terminalId: terminalId,
-              seq: seq,
-            ),
-          );
+          blocksData[recNum - 1] = recordData;
         }
+      }
+
+      final List<TransitTransaction> transactions = [];
+      for (int i = 0; i < 10; i++) {
+        final recordData = blocksData[i];
+        if (recordData == null) continue;
+        final seq = (recordData[0] << 8) | recordData[1];
+        final amountCents =
+            (recordData[5] << 24) |
+            (recordData[6] << 16) |
+            (recordData[7] << 8) |
+            recordData[8];
+        final amount = amountCents / 100.0;
+        final typeCode = recordData[9];
+
+        final terminalId = recordData
+            .sublist(10, 16)
+            .map((b) => b.toRadixString(16).padLeft(2, '0'))
+            .join()
+            .toUpperCase();
+
+        // Date (YYYYMMDD) and Time (HHMMSS) in BCD format
+        final dateHex = recordData
+            .sublist(16, 20)
+            .map((b) => b.toRadixString(16).padLeft(2, '0'))
+            .join();
+        final timeHex = recordData
+            .sublist(20, 23)
+            .map((b) => b.toRadixString(16).padLeft(2, '0'))
+            .join();
+
+        final yearStr = dateHex.substring(0, 4);
+        final monthStr = dateHex.substring(4, 6);
+        final dayStr = dateHex.substring(6, 8);
+        final hourStr = timeHex.substring(0, 2);
+        final minStr = timeHex.substring(2, 4);
+        final secStr = timeHex.substring(4, 6);
+
+        final dateTimeStr =
+            "$yearStr-$monthStr-${dayStr}T$hourStr:$minStr:$secStr";
+        final txDateTime = DateTime.tryParse(dateTimeStr);
+
+        final typeStr = _getTUnionProcessType(typeCode, amountCents);
+        final details = "Terminal: $terminalId";
+
+        debugPrint(
+          '[_tryReadTUnion] Record ${i + 1} parsed: Date=$txDateTime, Type=$typeStr, Amount=$amount, Seq=$seq',
+        );
+        transactions.add(
+          TransitTransaction(
+            date: txDateTime,
+            type: typeStr,
+            amount: typeStr == 'Top-up' ? amount : -amount,
+            details: details,
+            terminalId: terminalId,
+            seq: seq,
+          ),
+        );
       }
 
       final tunion = TUnion(
@@ -627,12 +688,17 @@ class CardReaderEngine {
         balance: balance,
         transactions: transactions,
         snapshotTime: DateTime.now(),
+        rawBlocks: blocksData,
       );
 
       debugPrint(
         '[_tryReadTUnion] Reading successful. Transactions count: ${transactions.length}',
       );
-      return ScannedCard(card: tunion, source: source);
+      return ScannedCard(
+        card: tunion,
+        source: source,
+        isExtendedInfoFullyLoaded: fullyLoaded,
+      );
     } catch (e, s) {
       debugPrint('[_tryReadTUnion] Fatal error reading T-Union: $e\n$s');
       return null;

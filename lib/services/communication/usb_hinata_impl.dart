@@ -148,9 +148,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
       await _hinata.pn532Api.setRfCfg(0, 0);
     }
 
-    // RF field is off from the last failed FeliCa poll.
-    // inListPassiveTarget will re-enable it automatically.
-    final isoTag = null;
+    final isoTag = await _pollIsoTag();
     if (isoTag != null) {
       _activeTag = isoTag;
       final scanned = await engine.processTag(
@@ -207,6 +205,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
       tag,
       source: 'HINATA',
       readExtended: true,
+      existingCard: basicCard,
     );
     return _resolveReaderScan(scanned);
   }
@@ -284,6 +283,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     return null;
   }
 
+  // ignore: unused_element
   Future<Iso14443?> _pollIsoTag() async {
     final targets = await _hinata.pn532Api.inListPassiveTarget(0, 1, []);
     if (targets.isNotEmpty) {
