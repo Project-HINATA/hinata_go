@@ -144,7 +144,8 @@ class UsbHinataDeviceImpl implements DeviceInterface {
           readExtended: readExtended,
         );
       }
-      // await _hinata.pn532Api.setRfCfg(0, 0);
+      await _hinata.pn532Api.inRelease(1);
+      await _hinata.pn532Api.setRfCfg(0, 0);
     }
 
     // RF field is off from the last failed FeliCa poll.
