@@ -44,11 +44,13 @@ extension NfcTagConverter on NFCTag {
         type == NFCTagType.mifare_ultralight ||
         type == NFCTagType.iso7816) {
       final uid = _toUint8List(id);
-      int sakInt = 0x08;
+      int sakInt = (type == NFCTagType.iso7816) ? 0x20 : 0x08;
       int atqaInt = 0x0400;
 
       if (sak != null && sak!.isNotEmpty) {
-        sakInt = int.tryParse(sak!, radix: 16) ?? 0x08;
+        sakInt =
+            int.tryParse(sak!, radix: 16) ??
+            ((type == NFCTagType.iso7816) ? 0x20 : 0x08);
       }
       if (atqa != null && atqa!.isNotEmpty) {
         final atqaBytes = _toUint8List(atqa!);
