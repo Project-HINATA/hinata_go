@@ -5,7 +5,7 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.11+-02569B?logo=flutter&style=flat-square)](https://flutter.dev)
 [![Material 3](https://img.shields.io/badge/Material_3-Yes-757575?logo=materialdesign&style=flat-square)](https://m3.material.io)
 
-HINATA Go 是一款多平台 NFC 卡片工具，支持卡片信息查看（Normal 模式）与游戏读卡器（Sender 模式），并可与外接 HINATA 读卡器协同工作。
+HINATA Go 是一款多平台 NFC 卡片工具，支持卡片信息查看与读卡器模拟，并可与外接 HINATA 读卡器协同工作。
 
 ## 下载与访问
 

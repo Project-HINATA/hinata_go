@@ -3,7 +3,7 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.11+-02569B?logo=flutter&style=flat-square)](https://flutter.dev)
 [![Material 3](https://img.shields.io/badge/Material_3-Yes-757575?logo=materialdesign&style=flat-square)](https://m3.material.io)
 
-HINATA Go is a multi-platform NFC card tool that supports card information viewing (Normal Mode) and game card reader capability (Sender Mode), working seamlessly with external HINATA card readers.
+HINATA Go is a multi-platform NFC card tool that supports card information viewing and card reader emulation, and can work in conjunction with an external HINATA card reader.
 
 ## Downloads & Access
 
@@ -21,7 +21,7 @@ HINATA Go is a multi-platform NFC card tool that supports card information viewi
 
 ## Core Modes & Features
 
-### 1. Card Information Viewer (Normal Mode)
+### 1. Card Information Viewer
 Scan cards using the device's built-in NFC or a connected external HINATA reader to view detailed card data and save cards to the local card folder.
 
 * **Transit Cards**
@@ -31,7 +31,7 @@ Scan cards using the device's built-in NFC or a connected external HINATA reader
   * **Amusement IC**: Identify card manufacturers, display Access Codes, and view in-game legitimacy status.
   * **Other Game Cards (Aime, Bana Passport, E-Amusement Pass, FeliCa, ISO15693)**: Read basic card details, Access Codes, and validation data.
 
-### 2. Card Reader Mode (Sender Mode)
+### 2. Card Reader Mode
 Select an active game instance, and scan cards via device NFC, QR code scan, or a connected external HINATA reader to automatically send the card number to the target game for login.
 
 * **Instance Management**: Add and save multiple remote instances (HINATA AimeIO) or local instances (SpiceAPI).
