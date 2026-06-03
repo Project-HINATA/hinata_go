@@ -1,37 +1,50 @@
 # HINATA Go
-While connecting via HINATA AimeIO, turns your mobile phone into a card reader or QR code scanner for arcade games, and can be used with various other devices.
 
-## Downloads
+[![Flutter](https://img.shields.io/badge/Flutter-3.11+-02569B?logo=flutter&style=flat-square)](https://flutter.dev)
+[![Material 3](https://img.shields.io/badge/Material_3-Yes-757575?logo=materialdesign&style=flat-square)](https://m3.material.io)
 
-| iOS | Android |
-| --- | ------- |
-| [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/app/id6760301105) | [**APK Download**](https://github.com/nerimoe/hinata_go/releases) |
+HINATA Go is a multi-platform NFC card tool that supports card information viewing (Normal Mode) and game card reader capability (Sender Mode), working seamlessly with external HINATA card readers.
 
-## Features
+## Downloads & Access
 
-* Read card information
-* Connect to arcade games as a card reader
-* Configure & update HINATA Card Reader
+<p align="left">
+  <a href="https://apps.apple.com/app/id6760301105" target="_blank" rel="noopener noreferrer">
+    <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="40" />
+  </a>
+  <a href="https://github.com/nerimoe/hinata_go/releases" target="_blank" rel="noopener noreferrer">
+    <img src="readme_assets/download-on-android.svg" alt="Download APK for Android" height="40" />
+  </a>
+  <a href="https://go.neri.moe" target="_blank" rel="noopener noreferrer">
+    <img src="readme_assets/open-on-web.svg" alt="Launch App on Web Browser" height="40" />
+  </a>
+</p>
 
-## Read Card Information
+## Core Modes & Features
 
-Place the card in the mobile device's NFC recognition area to read its information.
+### 1. Card Information Viewer (Normal Mode)
+Scan cards using the device's built-in NFC or a connected external HINATA reader to view detailed card data and save cards to the local card folder.
 
-You may use your mobile device's USB-OTG port to connect the **HINATA Card Reader** as an external card reader now.
+* **Transit Cards**
+  * **Japanese Transit Cards (Suica, PASMO, etc.)**: View card balances, up to 20 recent transaction records (including transaction type, date, amount, and boarding/alighting station names resolved using the built-in database).
+  * **China T-Union (交通联合)**: View card numbers, balances, and up to 10 recent transaction records.
+* **Arcade/Amusement Cards**
+  * **Amusement IC**: Identify card manufacturers, display Access Codes, and view in-game legitimacy status.
+  * **Other Game Cards (Aime, Bana Passport, E-Amusement Pass, FeliCa, ISO15693)**: Read basic card details, Access Codes, and validation data.
 
-### Supported Card Types
+### 2. Card Reader Mode (Sender Mode)
+Select an active game instance, and scan cards via device NFC, QR code scan, or a connected external HINATA reader to automatically send the card number to the target game for login.
 
-* **Amusement IC**
-* **Legacy Aime**
-* **Bana Passport**
-* **E-Amusement Pass**
-* **FeliCa**
+* **Instance Management**: Add and save multiple remote instances (HINATA AimeIO) or local instances (SpiceAPI).
+* **Automatic Forwarding**: In Sender Mode, swiped card numbers are sent immediately to the selected active instance without manual interaction.
 
-## Connect to Games as a Card Reader
+---
 
-### Segatools
+## Connection Guide
+
+### HINATA AimeIO (Segatools)
 > **The following configuration uses the HINATA public card reader server ( `aime-ws.neri.moe` ) as an example. Please ensure your network environment can access Cloudflare services.**
-1. First, deploy [HINATA AimeIO](https://hinata.neri.moe/game-setting/sega/hinata-client/) to your game. Then configure the remote card server. You can edit the `segatools.ini` directly or use the HINATA Client
+
+1. Deploy [HINATA AimeIO](https://hinata.neri.moe/game-setting/sega/hinata-client/) to your game, and configure the remote card server in `segatools.ini` (or use the HINATA Client tool):
     ```ini
     [aime]
     enable=1
@@ -41,36 +54,31 @@ You may use your mobile device's USB-OTG port to connect the **HINATA Card Reade
     serverUrl=wss://aime-ws.neri.moe/REPLACEME
     ```
     ![alt text](readme_assets/image.png)
+    *Replace `REPLACEME` with your custom, unique string.*
 
-    **Replace `REPLACEME` with your custom serial string, and make sure it's unique enough to avoid conflicts with others.**
-2. Download the latest version of HINATA Go from [Downloads](#downloads), install, and open it.
-3. Add an Instance in the app, customize the name, and configure the URL as `https://aime-ws.neri.moe/REPLACEME`, as shown below ![alt text](readme_assets/image-1.png)
+2. Open HINATA Go.
+3. Add an Instance, customize the name, and configure the URL as `https://aime-ws.neri.moe/REPLACEME`.
+   ![alt text](readme_assets/image-1.png)
+4. Switch HINATA Go to **Sender Mode**, select the instance, and start the game to swipe and log in.
 
-4. Run the game and start your experience.
+### SpiceAPI (KONAMI Games)
+> **Limited to local area network (LAN) usage, or use tools like Cloudflare Tunnel to handle public forwarding.**
 
-### SpiceAPI
-> **⚠️ Since there is currently no forwarding server set up for SpiceAPI, it can only be used on a local network. Well, you can also use cloudflared for forwarding yourself.**
-1. Run `spicecfg.exe`.
-2. Find the SpiceAPI configuration, set the port, and leave the password blank.
-3. Add an Instance in HINATA Go, configure the URL as `<Your_IP_Address>:<Spice_Listening_Port>`, e.g. `192.168.0.114:1145`. No need to add `http://` from the begin.
+1. Open `spicecfg.exe`.
+2. Configure the SpiceAPI port and leave the password blank.
+3. Add an Instance in HINATA Go, and set the URL to `your_pc_lan_ip:spice_listening_port` (e.g., `192.168.0.114:1145`, do not include the `http://` prefix).
+4. Switch HINATA Go to **Sender Mode**, select the instance, and start the game.
 
-## HINATA Card Reader Configuration & Firmware Update 
+---
 
-Connect the HINATA Card Reader via the mobile device's USB-OTG port.
+## Hardware Reader Management
+* Connect physical HINATA card readers via USB-OTG.
+* Configure hardware settings (such as LED brightness, working mode restrictions) and perform OTA firmware updates directly inside the app.
 
-Once the device is connected at the bottom of HINATA Go, you can proceed with **Configuration** and **Firmware Updates**.
-
-
-## Special Features
-
-* Relies on a public card server, allowing the phone and arcade machine to function normally in different network environments.
-* Card IDs can be acquired via QR code and sent to the game.
-* Full support for Amusement IC cards.
-* Thanks to HINATA AimeIO, HINATA Go can also read old Banapass cards normally, provided you use supported segatools.
-* Also thanks to HINATA AimeIO, it can co-exist with enter-key card swiping, physical card readers, and various other card swiping schemes like hand controllers, amnet, mageki, etc., via the dllMux feature.
-* You can launch the app to swipe cards via Android system Intents, quickly sending the card ID to the target instance.
-* Complete Material Design 3 UI and icons.
-
+## Other Highlights
+* **QR Code Login**: Scan card QR/barcodes via the device camera and send card numbers directly to games.
+* **System Integration**: On Android, support `USB_DEVICE_ATTACHED` broadcasts to automatically prompt to launch the app when a reader is plugged in; support launching and sending card numbers via system Intents.
+* **Interface & Layout**: Follow Material Design 3 guidelines with Dynamic Color support; support responsive split-column layouts on landscape and tablet screens.
 
 ## Community Group
 [QQ 1085979135](https://qun.qq.com/universal-share/share?ac=1&authKey=YzIhakJWJ7BmvG%2F1JJLr27LFwpC050aWFeatFIjOhQM0i5RgEOVVZHuDop7nvlV%2F&busi_data=eyJncm91cENvZGUiOiIxMDg1OTc5MTM1IiwidG9rZW4iOiJHOHEwYmlqYWNyakJaeDlGQ1B2Mm5TUUNCUTZESUo2cGtpWUZwZEkrSVAyOTJwUmNsWWFnckd5NmdvMDJhMWtGIiwidWluIjoiMTAxNTkyOTQ1MiJ9&data=Dp-q7I-pDdniotBs8a4b6u7WM2CuxwRxphBKcVkxtF_IB8A1xp4oKNytX9NglpUJcpD0wc2hjgP4dIF4-7xpkw&svctype=4&tempid=h5_group_info)
