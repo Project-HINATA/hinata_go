@@ -218,7 +218,7 @@ class Pn532Api extends IoBase {
   Future<Pn532Packet> _sendAndReceive(
     Pn532Command command,
     List<int> payload, {
-    int timeout = 2000,
+    int timeout = 1000,
   }) async {
     var packet = Pn532Packet(
       direction: 0xD4,
