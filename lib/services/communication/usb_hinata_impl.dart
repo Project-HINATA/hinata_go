@@ -144,8 +144,8 @@ class UsbHinataDeviceImpl implements DeviceInterface {
           readExtended: readExtended,
         );
       }
-      await _hinata.pn532Api.inRelease(1);
-      await _hinata.pn532Api.setRfCfg(0, 0);
+      // await _hinata.pn532Api.inRelease(1);
+      // await _hinata.pn532Api.setRfCfg(0, 0);
     }
 
     final isoTag = await _pollIsoTag();
