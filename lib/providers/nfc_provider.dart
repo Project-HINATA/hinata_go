@@ -115,7 +115,9 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed && !kIsWeb && Platform.isAndroid) {
       startSession();
     } else if (state == AppLifecycleState.paused) {
-      stopSession();
+      if (kIsWeb || !Platform.isIOS) {
+        stopSession();
+      }
     }
   }
 

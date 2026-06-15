@@ -93,6 +93,7 @@ class _NfcDisplayInputs {
   }) {
     final nfcState = ref.watch(nfcProvider);
     final hardwareDeviceState = ref.watch(hardwareDeviceProvider);
+    final isIOS = !kIsWeb && Platform.isIOS;
 
     return _NfcDisplayInputs(
       colorScheme: context.colorScheme,
@@ -106,8 +107,8 @@ class _NfcDisplayInputs {
       isUsbConnected: hardwareDeviceState.connectedDevice != null,
       isScanningNfc: nfcState.isScanning,
       isProcessing: nfcState.isProcessing,
-      isIOS: !kIsWeb && Platform.isIOS,
-      isPaused: isPaused,
+      isIOS: isIOS,
+      isPaused: isIOS ? false : isPaused,
       isReadingExtendedInfo: ref.watch(
         currentScanSessionProvider.select((s) => s.isReadingExtendedInfo),
       ),
