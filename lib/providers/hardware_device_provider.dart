@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
+import 'package:hinata_nfc/hinata_nfc.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../models/card/transit.dart';
 import '../services/communication/device_interface.dart';
 import '../services/communication/usb_hinata_impl.dart';
-import 'package:hinata_nfc/hinata_nfc.dart';
 import 'current_scan_session_provider.dart';
-import 'package:flutter/foundation.dart';
-import 'nfc_provider.dart';
 import 'firmware_provider.dart';
-import '../models/card/transit.dart';
+import 'nfc_provider.dart';
 
 class HardwareDeviceState {
   final DeviceInterface? connectedDevice;
@@ -63,6 +63,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
   static const _hidReadyMaxAttempts = 60;
 
   int _connectGeneration = 0;
+  String? _connectingDeviceKey;
 
   @override
   HardwareDeviceState build() {
@@ -151,27 +152,42 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
   }
 
   Future<void> _connectToHidDeviceWhenReady(HIDDevice device) async {
+    final deviceKey = _hidDeviceKey(device);
+    if (_connectingDeviceKey == deviceKey) {
+      return;
+    }
+    if (_isConnectedToHidDevice(device)) {
+      return;
+    }
+
+    _connectingDeviceKey = deviceKey;
     final generation = ++_connectGeneration;
     state = state.copyWith(isConnecting: true, error: null);
 
-    for (var attempt = 0; attempt < _hidReadyMaxAttempts; attempt++) {
-      if (generation != _connectGeneration) {
-        return;
+    try {
+      for (var attempt = 0; attempt < _hidReadyMaxAttempts; attempt++) {
+        if (generation != _connectGeneration) {
+          return;
+        }
+
+        if (_isHidDeviceReady(device)) {
+          await _connectToHidDevice(device, generation: generation);
+          return;
+        }
+
+        await Future.delayed(_hidReadyCheckInterval);
       }
 
-      if (_isHidDeviceReady(device)) {
-        await _connectToHidDevice(device, generation: generation);
-        return;
+      if (generation == _connectGeneration) {
+        state = state.copyWith(
+          isConnecting: false,
+          error: 'HID device is not ready. Please reconnect the reader.',
+        );
       }
-
-      await Future.delayed(_hidReadyCheckInterval);
-    }
-
-    if (generation == _connectGeneration) {
-      state = state.copyWith(
-        isConnecting: false,
-        error: 'HID device is not ready. Please reconnect the reader.',
-      );
+    } finally {
+      if (_connectingDeviceKey == deviceKey) {
+        _connectingDeviceKey = null;
+      }
     }
   }
 
@@ -209,9 +225,8 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
         productId: pid,
       );
 
-      // Trigger background firmware status check immediately
       if (firmwareFeatureEnabled) {
-        ref.read(firmwareProvider.notifier).requestFirmware(usbImpl);
+        unawaited(ref.read(firmwareProvider.notifier).requestFirmware(usbImpl));
       }
 
       usbImpl.connectionState.addListener(() {
@@ -344,6 +359,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
 
   void disconnect() async {
     _connectGeneration++;
+    _connectingDeviceKey = null;
     await state.connectedDevice?.disconnect();
     ref
         .read(currentScanSessionProvider.notifier)
@@ -358,6 +374,19 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
       log('Failed to probe HID availability.', error: e, stackTrace: s);
       return false;
     }
+  }
+
+  String _hidDeviceKey(HIDDevice device) {
+    return '${device.vendorId}:${device.productId}:${device.productName}';
+  }
+
+  bool _isConnectedToHidDevice(HIDDevice device) {
+    final connectedDevice = state.connectedDevice;
+    if (connectedDevice is! UsbHinataDeviceImpl) {
+      return false;
+    }
+
+    return connectedDevice.deviceId == device.productId.toString();
   }
 }
 

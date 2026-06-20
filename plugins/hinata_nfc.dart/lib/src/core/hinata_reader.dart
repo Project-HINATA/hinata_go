@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../protocol/pn532.dart';
@@ -19,10 +20,6 @@ class HinataReader {
   int firmTimeStamp = 0;
   List<int> commitHash = [];
   List<int> chipId = [];
-
-  int? _lastReportId;
-  Uint8List? _lastReportData;
-  DateTime? _lastReportTime;
 
   final Map<int, Subscription> _subscriptions = {};
 
@@ -62,23 +59,14 @@ class HinataReader {
       await _device.open();
     }
     firmTimeStamp = await getFirmTimeStamp();
-    if (firmTimeStamp > 2025040400) commitHash = await getCommitHash();
-    if (firmTimeStamp >= 2025051301) chipId = await getChipId();
+    if (firmTimeStamp > 2025040400) {
+      commitHash = await getCommitHash();
+    }
+    if (firmTimeStamp >= 2025051301) {
+      chipId = await getChipId();
+    }
     if (firmTimeStamp >= 2025100522) {
-      segaBrightness = await getConfig(ConfigIndex.segaBrightness);
-      config0 = Config0.fromByte(await getConfig(ConfigIndex.config0));
-      idleRGB = Color.fromARGB(
-        255,
-        await getStorage(ConfigIndex.idleR),
-        await getStorage(ConfigIndex.idleG),
-        await getStorage(ConfigIndex.idleB),
-      );
-      busyRGB = Color.fromARGB(
-        255,
-        await getStorage(ConfigIndex.busyR),
-        await getStorage(ConfigIndex.busyG),
-        await getStorage(ConfigIndex.busyB),
-      );
+      await _loadStartupConfig();
     }
   }
 
@@ -113,24 +101,6 @@ class HinataReader {
   var count = 0;
   void _onInputReport(HIDInputReportEvent event) {
     var reportId = event.reportId;
-
-    if (reportId == 3) {
-      final now = DateTime.now();
-      final currentData = event.data.buffer.asUint8List();
-
-      if (_lastReportId == reportId &&
-          _lastReportTime != null &&
-          now.difference(_lastReportTime!) < const Duration(milliseconds: 15) &&
-          _lastReportData != null &&
-          listEquals(currentData, _lastReportData)) {
-        // Discard duplicate report fired by Windows WebHID
-        return;
-      }
-
-      _lastReportId = reportId;
-      _lastReportData = Uint8List.fromList(currentData);
-      _lastReportTime = now;
-    }
 
     if (reportId == 2) {
       var data = event.data.buffer.asUint8List(0, 8);
@@ -177,7 +147,15 @@ class HinataReader {
     final data = Uint8List.fromList(buffer);
     await _device.sendReport(1, data.buffer.asByteData(0));
 
-    return subscription.receive().timeout(Duration(milliseconds: timeout));
+    try {
+      return await subscription.receive().timeout(
+        Duration(milliseconds: timeout),
+      );
+    } finally {
+      if (_subscriptions[responseHeader] == subscription) {
+        _subscriptions.remove(responseHeader);
+      }
+    }
   }
 
   Future sendReqWithoutRes(int command, List<int> sendData) async {
@@ -199,31 +177,31 @@ class HinataReader {
     await sendReqWithoutRes(0xf0, []);
   }
 
-  Future<int> getFirmTimeStamp() async {
-    final data = await sendReq(1, [], getTimeStamp: true);
+  Future<int> getFirmTimeStamp({int timeout = 1000}) async {
+    final data = await sendReq(1, [], timeout: timeout, getTimeStamp: true);
     final versionStr = String.fromCharCodes(data);
     final sub = versionStr.substring(0, 10);
     final version = int.parse(sub);
     return version;
   }
 
-  Future<List<int>> getCommitHash() async {
-    final data = await sendReq(0xE5, []);
+  Future<List<int>> getCommitHash({int timeout = 1000}) async {
+    final data = await sendReq(0xE5, [], timeout: timeout);
     return data.sublist(1, 5);
   }
 
-  Future<List<int>> getChipId() async {
-    final data = await sendReq(0xE6, []);
+  Future<List<int>> getChipId({int timeout = 1000}) async {
+    final data = await sendReq(0xE6, [], timeout: timeout);
     return data.sublist(1, 5);
   }
 
-  Future<int> getConfig(ConfigIndex idx) async {
-    final data = await sendReq(0xD4, [idx.toInt()]);
+  Future<int> getConfig(ConfigIndex idx, {int timeout = 1000}) async {
+    final data = await sendReq(0xD4, [idx.toInt()], timeout: timeout);
     return data[1];
   }
 
-  Future<int> getStorage(ConfigIndex idx) async {
-    final data = await sendReq(0xD1, [idx.toInt()]);
+  Future<int> getStorage(ConfigIndex idx, {int timeout = 1000}) async {
+    final data = await sendReq(0xD1, [idx.toInt()], timeout: timeout);
     return data[1];
   }
 
@@ -250,6 +228,22 @@ class HinataReader {
   Future<int> getMainLoopState() async {
     var res = await sendReq(0xE3, []);
     return res[1];
+  }
+
+  Future<void> _loadStartupConfig() async {
+    segaBrightness = await getConfig(ConfigIndex.segaBrightness);
+    final config0Value = await getConfig(ConfigIndex.config0);
+    config0 = Config0.fromByte(config0Value);
+
+    final idleR = await getStorage(ConfigIndex.idleR);
+    final idleG = await getStorage(ConfigIndex.idleG);
+    final idleB = await getStorage(ConfigIndex.idleB);
+    idleRGB = Color.fromARGB(255, idleR, idleG, idleB);
+
+    final busyR = await getStorage(ConfigIndex.busyR);
+    final busyG = await getStorage(ConfigIndex.busyG);
+    final busyB = await getStorage(ConfigIndex.busyB);
+    busyRGB = Color.fromARGB(255, busyR, busyG, busyB);
   }
 
   Future<void> close() async {
