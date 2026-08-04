@@ -247,6 +247,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spiceApiPassword => 'Password (Optional)';
 
   @override
+  String get remotePassword => 'Password (Optional)';
+
+  @override
   String get selectIcon => 'Select Icon:';
 
   @override

@@ -1,3 +1,5 @@
+import 'package:hinata_go/services/remote_crypto.dart';
+
 enum InstanceType { hinataIo, spiceApi, spiceApiWebSocket }
 
 class RemoteInstance {
@@ -8,6 +10,7 @@ class RemoteInstance {
   final InstanceType type;
   final int unit;
   final String password;
+  final String encryptionSalt;
 
   RemoteInstance({
     required this.id,
@@ -17,7 +20,8 @@ class RemoteInstance {
     this.type = InstanceType.hinataIo,
     this.unit = 0,
     this.password = '',
-  });
+    String? encryptionSalt,
+  }) : encryptionSalt = encryptionSalt ?? RemoteCrypto.generateSalt();
 
   Map<String, dynamic> toJson() {
     return {
@@ -28,6 +32,7 @@ class RemoteInstance {
       'type': type.name,
       'unit': unit,
       'password': password,
+      'encryptionSalt': encryptionSalt,
     };
   }
 
@@ -51,6 +56,7 @@ class RemoteInstance {
       return 0;
     }
 
+    final storedSalt = json['encryptionSalt'] as String?;
     return RemoteInstance(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -59,6 +65,7 @@ class RemoteInstance {
       type: parseType(json['type']),
       unit: parseUnit(json),
       password: json['password'] as String? ?? '',
+      encryptionSalt: storedSalt?.isNotEmpty == true ? storedSalt : null,
     );
   }
 
@@ -70,6 +77,7 @@ class RemoteInstance {
     InstanceType? type,
     int? unit,
     String? password,
+    String? encryptionSalt,
   }) {
     return RemoteInstance(
       id: id ?? this.id,
@@ -79,6 +87,7 @@ class RemoteInstance {
       type: type ?? this.type,
       unit: unit ?? this.unit,
       password: password ?? this.password,
+      encryptionSalt: encryptionSalt ?? this.encryptionSalt,
     );
   }
 }

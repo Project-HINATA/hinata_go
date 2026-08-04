@@ -57,6 +57,7 @@ class InstanceDialog extends HookConsumerWidget {
         type: selectedTypeState.value,
         unit: selectedUnitState.value,
         password: password,
+        encryptionSalt: existingInstance?.encryptionSalt,
       );
 
       if (existingInstance != null) {
@@ -155,7 +156,7 @@ class InstanceDialog extends HookConsumerWidget {
   ) {
     return TextField(
       controller: controller,
-      decoration: InputDecoration(labelText: context.l10n.spiceApiPassword),
+      decoration: InputDecoration(labelText: context.l10n.remotePassword),
       obscureText: true,
     );
   }
@@ -236,12 +237,9 @@ class _InstanceDialogContent extends StatelessWidget {
           typeDropdown,
           const _DialogFieldGap(),
           urlField,
-          if (showSpiceFields) ...[
-            const _DialogFieldGap(),
-            passwordField,
-            const _DialogFieldGap(),
-            unitDropdown,
-          ],
+          const _DialogFieldGap(),
+          passwordField,
+          if (showSpiceFields) ...[const _DialogFieldGap(), unitDropdown],
           const _DialogFieldGap(),
           iconSelection,
         ],

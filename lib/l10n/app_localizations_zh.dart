@@ -242,6 +242,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get spiceApiPassword => '密码（可选）';
 
   @override
+  String get remotePassword => '密码（可选）';
+
+  @override
   String get selectIcon => '选择图标:';
 
   @override

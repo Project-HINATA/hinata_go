@@ -332,6 +332,10 @@
   "@spiceApiPassword": {
     "description": "可选字段"
   },
+  "remotePassword": "密码（可选）",
+  "@remotePassword": {
+    "description": "Remote 加密消息的可选密码"
+  },
   "selectIcon": "选择图标:",
   "@selectIcon": {
     "description": "图标选择标签"

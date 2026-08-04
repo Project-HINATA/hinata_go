@@ -66,6 +66,7 @@ HINATA Go 是一款多平台 NFC 卡片工具，支持卡片信息查看与读�
 2. 打开 HINATA Go。
 3. 添加一个 Instance，名称自定义，URL 配置为 `https://aime-ws.neri.moe/REPLACEME`。
    ![alt text](readme_assets/image-1.png)
+   密码为可选项。填写后，卡片消息会使用 `E2EE_V1` 加密发送；留空则保持旧的卡片明文兼容。
 4. 将 HINATA Go 切换为 **Sender 模式**，选择添加的实例，运行游戏即可刷卡登录。
 
 ### SpiceAPI (KONAMI 游戏)

@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:developer';
+import 'package:uuid/uuid.dart';
 import 'package:hinata_go/models/card/card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/remote_instance.dart';
+import 'remote_crypto.dart';
 import 'spiceapi/spiceapi.dart';
 import 'spiceapi-websocket/spiceapi.dart' as ws_spiceapi;
 
@@ -22,6 +24,11 @@ class ApiServiceResult {
 }
 
 class ApiService {
+  final http.Client _httpClient;
+
+  ApiService({http.Client? httpClient})
+    : _httpClient = httpClient ?? http.Client();
+
   Future<ApiServiceResult> sendCardData({
     required RemoteInstance instance,
     required ICCard card,
@@ -80,14 +87,26 @@ class ApiService {
     }
 
     final payload = {'type': card.type, 'value': card.gamePayload};
-    log('Sending payload to ${instance.url}: ${jsonEncode(payload)}');
+    late final Map<String, dynamic> requestPayload;
+    if (instance.password.isEmpty) {
+      requestPayload = payload;
+      log('Sending payload to ${instance.url}: ${jsonEncode(payload)}');
+    } else {
+      requestPayload = await RemoteCrypto.encryptMessage(
+        password: instance.password,
+        message: {'action': 'SET_CARD', 'body': payload},
+        salt: RemoteCrypto.decodeSalt(instance.encryptionSalt),
+        messageId: const Uuid().v4(),
+      );
+      log('Sending encrypted remote card payload to ${instance.url}');
+    }
 
     try {
-      final response = await http
+      final response = await _httpClient
           .post(
             Uri.parse(instance.url),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(payload),
+            body: jsonEncode(requestPayload),
           )
           .timeout(const Duration(seconds: 10));
 

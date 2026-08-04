@@ -332,6 +332,10 @@
   "@spiceApiPassword": {
     "description": "Password field for SpiceAPI"
   },
+  "remotePassword": "Password (Optional)",
+  "@remotePassword": {
+    "description": "Optional password for encrypted Remote messages"
+  },
   "selectIcon": "Select Icon:",
   "@selectIcon": {
     "description": "Label for icon picker"

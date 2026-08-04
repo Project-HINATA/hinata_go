@@ -536,6 +536,12 @@ abstract class AppLocalizations {
   /// **'Password (Optional)'**
   String get spiceApiPassword;
 
+  /// Optional password for encrypted Remote messages
+  ///
+  /// In en, this message translates to:
+  /// **'Password (Optional)'**
+  String get remotePassword;
+
   /// Label for icon picker
   ///
   /// In en, this message translates to:
