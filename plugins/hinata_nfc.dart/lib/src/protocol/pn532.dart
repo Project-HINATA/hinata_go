@@ -419,8 +419,41 @@ class Pn532Api extends IoBase {
     return Pn532Error.fromValue(res.payload[0]);
   }
 
-  Future setRfCfg(int autoRFCA, int rFOnOff) async {
-    await rfConfiguration(1, [0 | autoRFCA | rFOnOff]);
+  Future<void> setRfField({
+    required bool autoRfca,
+    required bool enabled,
+  }) async {
+    final value = (autoRfca ? 0x02 : 0x00) | (enabled ? 0x01 : 0x00);
+
+    await rfConfiguration(0x01, [value]);
+  }
+
+  Future<void> setTypeARfPower({int cwGsNOn = 0x0D, int cwGsP = 0x30}) async {
+    if (cwGsNOn < 0 || cwGsNOn > 0x0F) {
+      throw RangeError.range(cwGsNOn, 0, 0x0F, 'cwGsNOn');
+    }
+
+    if (cwGsP < 0 || cwGsP > 0x3F) {
+      throw RangeError.range(cwGsP, 0, 0x3F, 'cwGsP');
+    }
+
+    // 高 4 bit：连续载波 N-driver 导通度
+    // 低 4 bit：调制期间 N-driver 导通度，先保持默认 0x04
+    final gsNOn = (cwGsNOn << 4) | 0x04;
+
+    await rfConfiguration(0x0A, [
+      0x59, // CIU_RFCfg
+      gsNOn, // CIU_GsNOn
+      cwGsP, // CIU_CWGsP
+      0x11, // CIU_ModGsP
+      0x4D, // CIU_Demod RF on
+      0x85, // CIU_RxThreshold
+      0x61, // CIU_Demod RF off
+      0x6F, // CIU_GsNOff
+      0x26, // CIU_ModWidth
+      0x62, // CIU_MifNFC
+      0x87, // CIU_TxBitPhase
+    ]);
   }
 
   Future rfConfiguration(int cfgItem, List<int> payload) async {

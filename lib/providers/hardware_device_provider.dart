@@ -315,17 +315,22 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
                 '[_startPollLoop] Phase 2 read finished. extendedCard: ${extendedCard != null ? "found" : "null"}',
               );
               if (extendedCard != null) {
-                final txCount =
-                    (extendedCard.card as TransitCard).transactions.length;
-                debugPrint(
-                  '[_startPollLoop] extendedCard transactions: $txCount',
-                );
-                ref
-                    .read(currentScanSessionProvider.notifier)
-                    .updateCard(extendedCard);
-                await ref
-                    .read(nfcProvider.notifier)
-                    .updateExternalScan(extendedCard);
+                final extendedTransitCard = extendedCard.card;
+                if (extendedTransitCard is TransitCard) {
+                  debugPrint(
+                    '[_startPollLoop] extendedCard transactions: ${extendedTransitCard.transactions.length}',
+                  );
+                  ref
+                      .read(currentScanSessionProvider.notifier)
+                      .updateCard(extendedCard);
+                  await ref
+                      .read(nfcProvider.notifier)
+                      .updateExternalScan(extendedCard);
+                } else {
+                  debugPrint(
+                    '[_startPollLoop] Ignoring non-transit extended result: ${extendedCard.card.runtimeType}',
+                  );
+                }
               }
             } catch (e) {
               debugPrint(
@@ -338,9 +343,14 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
             }
           }
         } else {
-          ref
+          final cardRemoved = ref
               .read(currentScanSessionProvider.notifier)
-              .markCardRemoved(source: 'HINATA');
+              .markCardMissing(source: 'HINATA');
+          if (cardRemoved) {
+            debugPrint(
+              '[_startPollLoop] Marked HINATA card removed after transient poll misses',
+            );
+          }
         }
       } catch (e) {
         log("Polling error: $e");

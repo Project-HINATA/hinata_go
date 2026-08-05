@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../models/card/scanned_card.dart';
+import '../models/card/transit.dart';
 
 enum ScanPresenceMode { explicitRemoval, timeoutHeartbeat, immediate }
 
@@ -76,8 +77,10 @@ final currentScanResultProvider = Provider<ScannedCard?>((ref) {
 
 class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
   static const _defaultHeartbeatTimeout = Duration(milliseconds: 1500);
+  static const _pollMissesBeforeRemoval = 3;
 
   Timer? _presenceTimer;
+  int _consecutivePresenceMisses = 0;
 
   @override
   CurrentScanSessionState build() {
@@ -90,6 +93,7 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
     required ScanPresenceMode presenceMode,
     Duration heartbeatTimeout = _defaultHeartbeatTimeout,
   }) {
+    _consecutivePresenceMisses = 0;
     final dedupeKey = _buildDedupeKey(scannedCard);
     final isDuplicateWhilePresent =
         state.isCardPresent && state.dedupeKey == dedupeKey;
@@ -129,8 +133,20 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
     if (!state.hasScan || !state.isCardPresent) return;
     if (source != null && state.scannedCard!.source != source) return;
 
+    _consecutivePresenceMisses = 0;
     _cancelPresenceTimer();
     state = state.copyWith(isCardPresent: false, cardRemovedAt: DateTime.now());
+  }
+
+  bool markCardMissing({String? source}) {
+    if (!state.hasScan || !state.isCardPresent) return false;
+    if (source != null && state.scannedCard!.source != source) return false;
+
+    _consecutivePresenceMisses++;
+    if (_consecutivePresenceMisses < _pollMissesBeforeRemoval) return false;
+
+    markCardRemoved(source: source);
+    return true;
   }
 
   void setReadingExtendedInfo(bool value) {
@@ -148,6 +164,7 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
   }
 
   void clear() {
+    _consecutivePresenceMisses = 0;
     _cancelPresenceTimer();
     state = state.copyWith(clear: true);
   }
@@ -194,7 +211,10 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
 
   String _buildDedupeKey(ScannedCard scannedCard) {
     final card = scannedCard.card;
-    final cardIdentity = card.gamePayload ?? card.idString;
+    final cardNumber = card is TransitCard ? card.cardNumber : null;
+    final cardIdentity = cardNumber != null && cardNumber.isNotEmpty
+        ? cardNumber
+        : (card.gamePayload ?? card.idString);
     final cardType = card.type ?? card.runtimeType.toString();
     return '${scannedCard.source}|$cardType|$cardIdentity'.toUpperCase();
   }

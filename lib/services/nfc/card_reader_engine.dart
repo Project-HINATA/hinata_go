@@ -20,6 +20,9 @@ import '../../utils/spad0.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 class CardReaderEngine {
+  static const _tUnionInfoReadAttempts = 3;
+  static const _tUnionInfoRetryDelay = Duration(milliseconds: 50);
+
   final NfcCardChannel transceiver;
 
   CardReaderEngine(this.transceiver);
@@ -315,6 +318,15 @@ class CardReaderEngine {
         if (tunion != null) {
           return tunion;
         }
+
+        // Keep the basic card visible if a later extended read loses the
+        // ISO-DEP session instead of returning it as a different card type.
+        if (readExtended && existingCard?.card is TUnion) {
+          debugPrint(
+            '[CardReaderEngine] T-Union extended read failed; keeping basic card',
+          );
+          return existingCard;
+        }
       }
 
       // Path 3: Not Mifare, not T-Union → return as generic Iso14443.
@@ -486,7 +498,7 @@ class CardReaderEngine {
       final sw1 = selectRes[selectRes.length - 2];
       final sw2 = selectRes[selectRes.length - 1];
       debugPrint(
-        '[_tryReadTUnion] SELECT AID SW: ${sw1.toRadixString(16).toUpperCase()}${sw2.toRadixString(16).toUpperCase()}',
+        '[_tryReadTUnion] SELECT AID SW: ${_formatStatusWord(sw1, sw2)}',
       );
       if (sw1 != 0x90 || sw2 != 0x00) {
         debugPrint(
@@ -497,7 +509,23 @@ class CardReaderEngine {
 
       // 2. READ CARD BASIC INFO: SFI 0x15
       final readInfo = Uint8List.fromList([0x00, 0xB0, 0x95, 0x00, 0x1E]);
-      final infoRes = await transceiver.transceive(readInfo);
+      var infoRes = Uint8List(0);
+      for (var attempt = 1; attempt <= _tUnionInfoReadAttempts; attempt++) {
+        try {
+          infoRes = await transceiver.transceive(readInfo);
+        } catch (e) {
+          debugPrint('[_tryReadTUnion] READ INFO attempt $attempt failed: $e');
+          infoRes = Uint8List(0);
+        }
+
+        debugPrint(
+          '[_tryReadTUnion] READ INFO attempt $attempt response length: ${infoRes.length}',
+        );
+        if (infoRes.length >= 32 || attempt == _tUnionInfoReadAttempts) {
+          break;
+        }
+        await Future<void>.delayed(_tUnionInfoRetryDelay);
+      }
       debugPrint(
         '[_tryReadTUnion] READ INFO response length: ${infoRes.length}',
       );
@@ -591,7 +619,7 @@ class CardReaderEngine {
           final recSw1 = recRes[recRes.length - 2];
           final recSw2 = recRes[recRes.length - 1];
           debugPrint(
-            '[_tryReadTUnion] Record $recNum SW: ${recSw1.toRadixString(16).toUpperCase()}${recSw2.toRadixString(16).toUpperCase()}',
+            '[_tryReadTUnion] Record $recNum SW: ${_formatStatusWord(recSw1, recSw2)}',
           );
           if (recSw1 != 0x90 || recSw2 != 0x00) {
             break;
@@ -719,5 +747,11 @@ class CardReaderEngine {
       default:
         return 'Other';
     }
+  }
+
+  String _formatStatusWord(int sw1, int sw2) {
+    return '${sw1.toRadixString(16).padLeft(2, '0')}'
+            '${sw2.toRadixString(16).padLeft(2, '0')}'
+        .toUpperCase();
   }
 }

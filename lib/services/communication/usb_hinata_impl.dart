@@ -4,14 +4,25 @@ import 'package:flutter/foundation.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 import 'device_interface.dart';
-import 'package:hinata_go/models/card/aime.dart';
-import 'package:hinata_go/models/card/banapass.dart';
 import 'package:hinata_go/models/card/invalid_mifare.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
-import 'package:hinata_go/models/card/tunion.dart';
 import '../nfc/card_reader_engine.dart';
+
+// 三档功率用于补偿Lite版天线缺陷
+class TypeARfPower {
+  final int cwGsNOn;
+  final int cwGsP;
+
+  const TypeARfPower({required this.cwGsNOn, required this.cwGsP});
+}
+
+const typeAPowerProfiles = <TypeARfPower>[
+  TypeARfPower(cwGsNOn: 0x0C, cwGsP: 0x28), // 中
+  TypeARfPower(cwGsNOn: 0x06, cwGsP: 0x10), // 低
+  TypeARfPower(cwGsNOn: 0x0F, cwGsP: 0x3F), // 高
+];
 
 class UsbHinataDeviceImpl implements DeviceInterface {
   static const Duration _readFailureConfirmWindow = Duration(seconds: 1);
@@ -132,21 +143,17 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   Future<ScannedCard?> poll({bool readExtended = true}) async {
     final channel = HinataNfcCardChannel(_hinata.pn532Api);
     final engine = CardReaderEngine(channel);
-
-    for (int i = 0; i < 5; i++) {
-      final felicaTag = await _pollFelicaTag();
-      if (felicaTag != null) {
-        _clearReadFailureState();
-        _activeTag = felicaTag;
-        return await engine.processTag(
-          felicaTag,
-          source: 'HINATA',
-          readExtended: readExtended,
-        );
-      }
-      // await _hinata.pn532Api.inRelease(1);
-      // await _hinata.pn532Api.setRfCfg(0, 0);
+    final felicaTag = await _pollFelicaTag();
+    if (felicaTag != null) {
+      _clearReadFailureState();
+      _activeTag = felicaTag;
+      return await engine.processTag(
+        felicaTag,
+        source: 'HINATA',
+        readExtended: readExtended,
+      );
     }
+    await _hinata.pn532Api.inRelease(1);
 
     final isoTag = await _pollIsoTag();
     if (isoTag != null) {
@@ -163,7 +170,6 @@ class UsbHinataDeviceImpl implements DeviceInterface {
       // current target, reset RF field, and retry FeliCa once more.
       if (scanned != null && _isUnidentifiedIso14443(scanned)) {
         await _hinata.pn532Api.inRelease(1);
-        await _hinata.pn532Api.setRfCfg(0, 0);
 
         final retryTag = await _pollFelicaTag();
         if (retryTag != null) {
@@ -174,7 +180,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
           return await engine.processTag(
             retryTag,
             source: 'HINATA',
-            readExtended: true,
+            readExtended: readExtended,
           );
         }
 
@@ -259,11 +265,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
 
   bool _isUnidentifiedIso14443(ScannedCard card) {
     final c = card.card;
-    return c is Iso14443 &&
-        c is! TUnion &&
-        c is! Aime &&
-        c is! Banapass &&
-        c is! InvalidMifareCard;
+    return c is Iso14443 && c.type == null;
   }
 
   Future<Felica?> _pollFelicaTag() async {
@@ -285,10 +287,16 @@ class UsbHinataDeviceImpl implements DeviceInterface {
 
   // ignore: unused_element
   Future<Iso14443?> _pollIsoTag() async {
-    final targets = await _hinata.pn532Api.inListPassiveTarget(0, 1, []);
-    if (targets.isNotEmpty) {
-      final t = targets[0];
-      return Iso14443(t.id, t.sak!, t.atqa!);
+    for (final profile in typeAPowerProfiles) {
+      await _hinata.pn532Api.setTypeARfPower(
+        cwGsNOn: profile.cwGsNOn,
+        cwGsP: profile.cwGsP,
+      );
+      final targets = await _hinata.pn532Api.inListPassiveTarget(0, 1, []);
+      if (targets.isNotEmpty) {
+        final t = targets[0];
+        return Iso14443(t.id, t.sak!, t.atqa!);
+      }
     }
     return null;
   }
