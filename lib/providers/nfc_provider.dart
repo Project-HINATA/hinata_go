@@ -10,7 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/card/aime.dart';
 import '../models/card/banapass.dart';
-import '../models/card/invalid_mifare.dart';
+import '../models/card/card_read_result.dart';
 import '../models/card/iso14443a.dart';
 import '../models/card/scanned_card.dart';
 import '../models/card/saved_card.dart';
@@ -214,12 +214,21 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
     try {
       // 1. Read basic info first (extremely fast)
-      final scannedCard = await handleNfcTag(tag, readExtended: false);
+      final basicResult = await handleNfcTag(tag, readExtended: false);
 
       // Dismiss the global processing indicator overlay immediately so UI can update
       state = state.copyWith(isProcessing: false);
 
-      ScannedCard? finalCard = scannedCard;
+      if (basicResult.status == CardReadStatus.incomplete) {
+        final notificationService = ref.read(notificationServiceProvider);
+        notificationService.showInfo(
+          notificationService.l10n?.nfcReadIncomplete ??
+              'Card reading was interrupted. Please scan it again.',
+        );
+        return;
+      }
+
+      ScannedCard? finalCard = basicResult.card;
       NFCTag activeTag = tag;
 
       // 2. FeliCa fallback: if the card is an unidentified ISO14443A tag
@@ -232,8 +241,8 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           Platform.isAndroid &&
           !_isRetrying) {
         final retryResult = await _attemptFelicaRetry();
-        if (retryResult != null) {
-          finalCard = retryResult.$1;
+        if (retryResult?.$1.card != null) {
+          finalCard = retryResult!.$1.card;
           activeTag = retryResult.$2;
         }
       }
@@ -257,11 +266,12 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           await Future.delayed(const Duration(milliseconds: 50));
 
           try {
-            final extendedCard = await handleNfcTag(
+            final extendedResult = await handleNfcTag(
               activeTag,
               readExtended: true,
               existingCard: sessionState.scannedCard ?? finalCard,
             );
+            final extendedCard = extendedResult.card;
             if (extendedCard != null) {
               ref
                   .read(currentScanSessionProvider.notifier)
@@ -285,20 +295,14 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   /// Whether the scan result is an unidentified ISO14443A card.
   /// This includes plain [Iso14443] cards that were not recognized as any
   /// known subtype (T-Union, Aime, Banapass, etc.).
-  /// [InvalidMifareCard] is excluded — that is a genuine Mifare Classic
-  /// read failure and should not trigger a FeliCa retry.
   bool _isUnidentifiedIso14443(ScannedCard card) {
     final c = card.card;
-    return c is Iso14443 &&
-        c is! TUnion &&
-        c is! Aime &&
-        c is! Banapass &&
-        c is! InvalidMifareCard;
+    return c is Iso14443 && c is! TUnion && c is! Aime && c is! Banapass;
   }
 
   /// Finish the current NFC session and re-poll with FeliCa-only tech flags.
   /// Returns the new [ScannedCard] and the [NFCTag] if FeliCa was found, or null on failure.
-  Future<(ScannedCard, NFCTag)?> _attemptFelicaRetry() async {
+  Future<(CardReadResult, NFCTag)?> _attemptFelicaRetry() async {
     _isRetrying = true;
     bool success = false;
     try {
@@ -312,10 +316,10 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
         readIso15693: false,
       );
 
-      final scannedCard = await handleNfcTag(tag, readExtended: false);
-      if (scannedCard != null) {
+      final result = await handleNfcTag(tag, readExtended: false);
+      if (result.card != null) {
         success = true;
-        return (scannedCard, tag);
+        return (result, tag);
       }
       return null;
     } catch (e) {

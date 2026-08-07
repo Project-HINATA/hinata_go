@@ -1369,6 +1369,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deleted successfully'**
   String get deleteSuccess;
+
+  /// Message shown when a phone NFC read did not complete
+  ///
+  /// In en, this message translates to:
+  /// **'Card reading was interrupted. Please scan it again.'**
+  String get nfcReadIncomplete;
 }
 
 class _AppLocalizationsDelegate

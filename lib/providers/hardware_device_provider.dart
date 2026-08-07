@@ -258,7 +258,8 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
 
       try {
         // 1. Phase 1: Fast poll for basic info
-        final scannedCard = await usbImpl.poll(readExtended: false);
+        final pollResult = await usbImpl.pollResult(readExtended: false);
+        final scannedCard = pollResult.card;
 
         if (scannedCard != null) {
           debugPrint(

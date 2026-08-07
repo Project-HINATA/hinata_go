@@ -9,7 +9,6 @@ import '../../../models/card/aic.dart';
 import '../../../models/card/banapass.dart';
 import '../../../models/card/card.dart';
 import '../../../models/card/felica.dart';
-import '../../../models/card/invalid_mifare.dart';
 import '../../../models/card/iso15693.dart';
 import '../../../models/card/iso14443a.dart';
 import '../../../models/card/transit.dart';
@@ -20,12 +19,14 @@ class ScannedCardDetailV2 extends ConsumerWidget {
   final String? source;
   final bool showHeader;
   final bool showCloseButtonSpace;
+  final bool isUsable;
 
   const ScannedCardDetailV2({
     required this.card,
     this.source,
     this.showHeader = true,
     this.showCloseButtonSpace = false,
+    this.isUsable = true,
     super.key,
   });
 
@@ -60,7 +61,7 @@ class ScannedCardDetailV2 extends ConsumerWidget {
               source: source,
               showCloseButtonSpace: showCloseButtonSpace,
             ),
-          if (card is InvalidMifareCard)
+          if (!isUsable)
             _UnusableCardWarning(
               message: context.l10n.unusableMifareCardWarning,
             ),
@@ -71,7 +72,7 @@ class ScannedCardDetailV2 extends ConsumerWidget {
   }
 
   String _displayName(BuildContext context) {
-    return card is InvalidMifareCard ? context.l10n.unknownCardType : card.name;
+    return isUsable ? card.name : context.l10n.unknownCardType;
   }
 
   Widget _buildLogo(BuildContext context, ColorScheme colorScheme) {
@@ -180,7 +181,6 @@ List<_CardDetailField> _buildCardDetailFields(
     ..._extractFields<HasAccessCode>(card, _accessCodeFieldDefinitions),
     ..._extractFields<Aic>(card, _aicFieldDefinitions),
     ..._extractFields<Banapass>(card, _banapassFieldDefinitions),
-    ..._buildInvalidMifareFields(context, card),
     ..._extractFields<Felica>(card, _felicaPrimaryFieldDefinitions),
     ..._extractFields<Iso14443>(card, _iso14443FieldDefinitions),
     ..._extractFields<Iso15693>(card, _iso15693FieldDefinitions),
@@ -221,23 +221,6 @@ List<_CardDetailField> _extractFields<T>(
       )
       .whereType<_CardDetailField>()
       .toList();
-}
-
-List<_CardDetailField> _buildInvalidMifareFields(
-  BuildContext context,
-  ICCard card,
-) {
-  if (card is! InvalidMifareCard) {
-    return const [];
-  }
-
-  return [
-    _buildCardDetailField(
-      label: 'Access Code',
-      value: card.unusableAccessCode,
-      groupInFours: true,
-    ),
-  ].whereType<_CardDetailField>().toList();
 }
 
 _CardDetailField? _buildCardDetailField({

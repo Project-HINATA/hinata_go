@@ -967,5 +967,9 @@
   "deleteSuccess": "Deleted successfully",
   "@deleteSuccess": {
     "description": "Toast message for successful card deletion"
+  },
+  "nfcReadIncomplete": "Card reading was interrupted. Please scan it again.",
+  "@nfcReadIncomplete": {
+    "description": "Message shown when a phone NFC read did not complete"
   }
 }

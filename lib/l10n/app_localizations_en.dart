@@ -701,4 +701,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteSuccess => 'Deleted successfully';
+
+  @override
+  String get nfcReadIncomplete =>
+      'Card reading was interrupted. Please scan it again.';
 }

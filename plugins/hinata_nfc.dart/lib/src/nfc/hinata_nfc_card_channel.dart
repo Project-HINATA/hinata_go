@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:typed_data';
 
@@ -55,28 +56,34 @@ class HinataNfcCardChannel implements NfcCardChannel {
         ? MifareCommand.authA.toInt()
         : MifareCommand.authB.toInt();
 
+    final key = keyA ?? keyB!;
+    late final Pn532Error result;
     try {
-      final key = keyA ?? keyB!;
-
-      final result = await pn532.mifareClassicAuth(
+      result = await pn532.mifareClassicAuth(
         tg,
         uid.toList(),
         block,
         keyType,
         key.toList(),
       );
-
-      if (result != Pn532Error.none) {
-        throw NfcException(
-          type: NfcErrorType.authFailed,
-          message: 'PN532 Mifare Auth failed: $result',
-        );
-      }
+    } on TimeoutException catch (e) {
+      throw NfcException(
+        type: NfcErrorType.timeout,
+        message: 'HINATA Mifare authentication timed out',
+        originalError: e,
+      );
     } catch (e) {
       throw NfcException(
-        type: NfcErrorType.authFailed,
-        message: 'HINATA Mifare authentication failed $keyType',
+        type: NfcErrorType.readError,
+        message: 'HINATA Mifare authentication transport failed $keyType',
         originalError: e,
+      );
+    }
+
+    if (result != Pn532Error.none) {
+      throw NfcException(
+        type: NfcErrorType.authFailed,
+        message: 'PN532 Mifare Auth failed: $result',
       );
     }
   }

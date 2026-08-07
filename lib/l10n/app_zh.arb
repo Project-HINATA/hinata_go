@@ -964,5 +964,9 @@
   "deleteSuccess": "删除成功",
   "@deleteSuccess": {
     "description": "删除成功吐司提示"
+  },
+  "nfcReadIncomplete": "卡片读取未完成，请重新贴卡。",
+  "@nfcReadIncomplete": {
+    "description": "手机 NFC 读取未完成时显示的提示"
   }
 }

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 import 'device_interface.dart';
-import 'package:hinata_go/models/card/invalid_mifare.dart';
+import 'package:hinata_go/models/card/card_read_result.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
@@ -25,8 +25,6 @@ const typeAPowerProfiles = <TypeARfPower>[
 ];
 
 class UsbHinataDeviceImpl implements DeviceInterface {
-  static const Duration _readFailureConfirmWindow = Duration(seconds: 1);
-
   final HinataReader _hinata;
   final ValueNotifier<DeviceConnectionState> _connectionState = ValueNotifier(
     DeviceConnectionState.disconnected,
@@ -35,9 +33,9 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   final StreamController<List<int>> _cardioStreamController =
       StreamController<List<int>>.broadcast();
 
-  _PendingReadFailure? _pendingReadFailure;
-  _PendingReadFailure? _confirmedReadFailure;
   dynamic _activeTag;
+  String? _pendingUnsupportedFingerprint;
+  String? _confirmedUnsupportedFingerprint;
 
   UsbHinataDeviceImpl(this._hinata) {
     _hinata.subscribeCardioInput((data) {
@@ -141,60 +139,94 @@ class UsbHinataDeviceImpl implements DeviceInterface {
 
   @override
   Future<ScannedCard?> poll({bool readExtended = true}) async {
-    final channel = HinataNfcCardChannel(_hinata.pn532Api);
-    final engine = CardReaderEngine(channel);
-    final felicaTag = await _pollFelicaTag();
-    if (felicaTag != null) {
-      _clearReadFailureState();
-      _activeTag = felicaTag;
-      return await engine.processTag(
-        felicaTag,
-        source: 'HINATA',
-        readExtended: readExtended,
-      );
-    }
-    await _hinata.pn532Api.inRelease(1);
+    return (await pollResult(readExtended: readExtended)).card;
+  }
 
-    final isoTag = await _pollIsoTag();
-    if (isoTag != null) {
-      _activeTag = isoTag;
-      final scanned = await engine.processTag(
-        isoTag,
-        source: 'HINATA',
-        readExtended: readExtended,
-      );
-
-      // FeliCa fallback: if the ISO14443A tag could not be identified as any
-      // known card type (T-Union, Aime, Banapass), it may be an iPhone whose
-      // FeliCa interface was missed during the initial polls. Release the
-      // current target, reset RF field, and retry FeliCa once more.
-      if (scanned != null && _isUnidentifiedIso14443(scanned)) {
-        await _hinata.pn532Api.inRelease(1);
-
-        final retryTag = await _pollFelicaTag();
-        if (retryTag != null) {
-          _clearReadFailureState();
-          _activeTag = retryTag;
-          // Read with extended info directly — the FeliCa connection via
-          // iPhone is fragile, so avoid a separate readExtended() round-trip.
-          return await engine.processTag(
-            retryTag,
+  Future<CardReadResult> pollResult({bool readExtended = true}) async {
+    try {
+      final channel = HinataNfcCardChannel(_hinata.pn532Api);
+      final engine = CardReaderEngine(channel);
+      final felicaTag = await _pollFelicaTag();
+      if (felicaTag != null) {
+        _activeTag = felicaTag;
+        return _resolvePollResult(
+          await engine.processTag(
+            felicaTag,
             source: 'HINATA',
             readExtended: readExtended,
-          );
+          ),
+        );
+      }
+      await _hinata.pn532Api.inRelease(1);
+
+      final isoTag = await _pollIsoTag();
+      if (isoTag != null) {
+        _activeTag = isoTag;
+        final result = await engine.processTag(
+          isoTag,
+          source: 'HINATA',
+          readExtended: readExtended,
+        );
+
+        // Some phones expose their ISO14443A interface before FeliCa. Retry
+        // FeliCa once before confirming that the Type A card is unsupported.
+        if (result.status == CardReadStatus.confirmedUnsupported) {
+          await _hinata.pn532Api.inRelease(1);
+
+          final retryTag = await _pollFelicaTag();
+          if (retryTag != null) {
+            _activeTag = retryTag;
+            return _resolvePollResult(
+              await engine.processTag(
+                retryTag,
+                source: 'HINATA',
+                readExtended: readExtended,
+              ),
+            );
+          }
         }
 
-        // FeliCa retry also failed — suppress the unidentified ISO14443A
-        // result so it doesn't flash on the UI before the next poll cycle.
-        return null;
+        return _resolvePollResult(result);
       }
 
-      return _resolveReaderScan(scanned);
+      _activeTag = null;
+      return _resolvePollResult(const CardReadResult.noTarget());
+    } catch (error, stackTrace) {
+      debugPrint('USB NFC poll incomplete: $error\n$stackTrace');
+      _activeTag = null;
+      return _resolvePollResult(const CardReadResult.incomplete());
+    }
+  }
+
+  CardReadResult _resolvePollResult(CardReadResult result) {
+    if (result.status != CardReadStatus.confirmedUnsupported) {
+      _pendingUnsupportedFingerprint = null;
+      _confirmedUnsupportedFingerprint = null;
+      return result;
     }
 
-    _activeTag = null;
-    _clearReadFailureState();
-    return null;
+    final card = result.card?.card;
+    if (card is! Iso14443) {
+      _pendingUnsupportedFingerprint = null;
+      _confirmedUnsupportedFingerprint = null;
+      return result;
+    }
+
+    final fingerprint = '${card.idString}:${card.sak}:${card.atqa}';
+    if (_confirmedUnsupportedFingerprint != fingerprint) {
+      _confirmedUnsupportedFingerprint = null;
+    }
+    if (_confirmedUnsupportedFingerprint == fingerprint) {
+      return result;
+    }
+    if (_pendingUnsupportedFingerprint == fingerprint) {
+      _pendingUnsupportedFingerprint = null;
+      _confirmedUnsupportedFingerprint = fingerprint;
+      return result;
+    }
+
+    _pendingUnsupportedFingerprint = fingerprint;
+    return const CardReadResult.incomplete();
   }
 
   @override
@@ -207,65 +239,13 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     final channel = HinataNfcCardChannel(_hinata.pn532Api);
     final engine = CardReaderEngine(channel);
 
-    final scanned = await engine.processTag(
+    final result = await engine.processTag(
       tag,
       source: 'HINATA',
       readExtended: true,
       existingCard: basicCard,
     );
-    return _resolveReaderScan(scanned);
-  }
-
-  ScannedCard? _resolveReaderScan(ScannedCard? scannedCard) {
-    final card = scannedCard?.card;
-    if (scannedCard == null || card is! InvalidMifareCard) {
-      _clearReadFailureState();
-      return scannedCard;
-    }
-
-    if (card.reason != InvalidMifareReason.readFailure) {
-      _clearReadFailureState();
-      return scannedCard;
-    }
-
-    final now = DateTime.now();
-    final key = _readFailureKey(card);
-    final confirmed = _confirmedReadFailure;
-    if (confirmed != null && confirmed.key == key) {
-      return confirmed.scannedCard;
-    }
-
-    final pending = _pendingReadFailure;
-    if (pending == null || pending.key != key) {
-      _pendingReadFailure = _PendingReadFailure(
-        key: key,
-        firstSeenAt: now,
-        scannedCard: scannedCard,
-      );
-      return null;
-    }
-
-    if (now.difference(pending.firstSeenAt) < _readFailureConfirmWindow) {
-      return null;
-    }
-
-    _pendingReadFailure = null;
-    _confirmedReadFailure = pending;
-    return pending.scannedCard;
-  }
-
-  String _readFailureKey(InvalidMifareCard card) {
-    return '${card.idString}|${card.sak}|${card.atqa}'.toUpperCase();
-  }
-
-  void _clearReadFailureState() {
-    _pendingReadFailure = null;
-    _confirmedReadFailure = null;
-  }
-
-  bool _isUnidentifiedIso14443(ScannedCard card) {
-    final c = card.card;
-    return c is Iso14443 && c.type == null;
+    return result.status == CardReadStatus.recognized ? result.card : null;
   }
 
   Future<Felica?> _pollFelicaTag() async {
@@ -315,16 +295,4 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     _cardioStreamController.close();
     _hinata.destroy();
   }
-}
-
-class _PendingReadFailure {
-  const _PendingReadFailure({
-    required this.key,
-    required this.firstSeenAt,
-    required this.scannedCard,
-  });
-
-  final String key;
-  final DateTime firstSeenAt;
-  final ScannedCard scannedCard;
 }

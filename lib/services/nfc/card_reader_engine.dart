@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:hinata_go/models/card/aic.dart';
 import 'package:hinata_go/models/card/aime.dart';
 import 'package:hinata_go/models/card/banapass.dart';
+import 'package:hinata_go/models/card/card_read_result.dart';
 import 'package:hinata_go/models/card/felica.dart';
-import 'package:hinata_go/models/card/invalid_mifare.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
@@ -101,44 +101,38 @@ class CardReaderEngine {
     return defaultReturn;
   }
 
-  Future<ScannedCard?> readMifareWithBanaKey({
+  Future<CardReadResult> readMifareWithBanaKey({
     required Iso14443 tag,
     String source = 'NFC',
   }) async {
-    try {
-      await transceiver.authenticateMifare(
-        uid: tag.id,
-        block: 1, // Sector 0
-        keyA: Uint8List.fromList(banaKey),
-      );
+    await transceiver.authenticateMifare(
+      uid: tag.id,
+      block: 1, // Sector 0
+      keyA: Uint8List.fromList(banaKey),
+    );
 
-      final block1 = await transceiver.readMifareBlock(1);
-      final block2 = await transceiver.readMifareBlock(2);
-
-      final banapass = tag.toBanapass(
-        Uint8List.fromList(block1),
-        Uint8List.fromList(block2),
-      );
-      if (AccessCodeValidator.isValidDecodedBanapassAccessCode(
-        banapass.accessCodeString,
-      )) {
-        return ScannedCard(card: banapass, source: source);
-      }
-
-      return ScannedCard(
-        card: tag.toInvalidMifareCard(
-          unusableAccessCode: banapass.accessCodeString,
-          block1: Uint8List.fromList(block1),
-          block2: Uint8List.fromList(block2),
-        ),
-        source: source,
-      );
-    } catch (_) {
-      return null;
+    final block1 = await transceiver.readMifareBlock(1);
+    final block2 = await transceiver.readMifareBlock(2);
+    if (block1.length != 16 || block2.length != 16) {
+      return const CardReadResult.incomplete();
     }
+
+    final banapass = tag.toBanapass(
+      Uint8List.fromList(block1),
+      Uint8List.fromList(block2),
+    );
+    if (AccessCodeValidator.isValidDecodedBanapassAccessCode(
+      banapass.accessCodeString,
+    )) {
+      return CardReadResult.recognized(
+        ScannedCard(card: banapass, source: source),
+      );
+    }
+
+    return _unsupported(tag, source);
   }
 
-  Future<ScannedCard?> readMifareWithAimeKey({
+  Future<CardReadResult> readMifareWithAimeKey({
     required Iso14443 tag,
     String source = 'NFC',
   }) async {
@@ -149,11 +143,8 @@ class CardReaderEngine {
     );
 
     final block2 = await transceiver.readMifareBlock(2);
-    if (block2.length < _aimeAccessCodeEnd) {
-      return ScannedCard(
-        card: tag.toInvalidMifareCard(block2: Uint8List.fromList(block2)),
-        source: source,
-      );
+    if (block2.length != 16) {
+      return const CardReadResult.incomplete();
     }
 
     final accessCodeBytes = Uint8List.fromList(
@@ -168,53 +159,40 @@ class CardReaderEngine {
         block2: block2,
       );
       return banapass != null
-          ? ScannedCard(card: banapass, source: source)
-          : ScannedCard(
-              card: tag.toInvalidMifareCard(
-                unusableAccessCode: aimeAccessCode,
-                block2: Uint8List.fromList(block2),
-              ),
-              source: source,
-            );
+          ? CardReadResult.recognized(
+              ScannedCard(card: banapass, source: source),
+            )
+          : _unsupported(tag, source);
     }
 
     if (!AccessCodeValidator.isValidAimeAccessCode(aimeAccessCode)) {
-      return ScannedCard(
-        card: tag.toInvalidMifareCard(
-          unusableAccessCode: aimeAccessCode,
-          block2: Uint8List.fromList(block2),
-        ),
-        source: source,
-      );
+      return _unsupported(tag, source);
     }
 
-    return ScannedCard(card: aime, source: source);
+    return CardReadResult.recognized(ScannedCard(card: aime, source: source));
   }
 
   Future<Banapass?> _readBanapassFromAimeAuthenticatedSector({
     required Iso14443 tag,
     required Uint8List block2,
   }) async {
-    try {
-      final block1 = await transceiver.readMifareBlock(1);
-      final banapass = tag.toBanapass(
-        Uint8List.fromList(block1),
-        Uint8List.fromList(block2),
+    final block1 = await transceiver.readMifareBlock(1);
+    if (block1.length != 16) {
+      throw NfcException(
+        type: NfcErrorType.readError,
+        message: 'Incomplete Mifare block 1',
       );
-
-      return AccessCodeValidator.isValidDecodedBanapassAccessCode(
-            banapass.accessCodeString,
-          )
-          ? banapass
-          : null;
-    } catch (e, s) {
-      log(
-        'CardReaderEngine Banapass block1 decrypt error',
-        error: e,
-        stackTrace: s,
-      );
-      return null;
     }
+    final banapass = tag.toBanapass(
+      Uint8List.fromList(block1),
+      Uint8List.fromList(block2),
+    );
+
+    return AccessCodeValidator.isValidDecodedBanapassAccessCode(
+          banapass.accessCodeString,
+        )
+        ? banapass
+        : null;
   }
 
   /// Helper for FeliCa Read Without Encryption logic
@@ -266,19 +244,26 @@ class CardReaderEngine {
   }
 
   /// Unified entry point for resolving a tag
-  Future<ScannedCard?> processTag(
+  Future<CardReadResult> processTag(
     dynamic rawTag, {
     String source = 'NFC',
     bool readExtended = true,
     ScannedCard? existingCard,
   }) async {
     if (rawTag is Felica) {
-      return await handleFelica(
-        tag: rawTag,
-        source: source,
-        readExtended: readExtended,
-        existingCard: existingCard,
-      );
+      try {
+        final card = await handleFelica(
+          tag: rawTag,
+          source: source,
+          readExtended: readExtended,
+          existingCard: existingCard,
+        );
+        return card == null
+            ? const CardReadResult.incomplete()
+            : CardReadResult.recognized(card);
+      } catch (_) {
+        return const CardReadResult.incomplete();
+      }
     }
 
     if (rawTag is Iso14443) {
@@ -286,25 +271,22 @@ class CardReaderEngine {
       if (rawTag.isMifareClassicCandidate) {
         try {
           return await readMifareWithAimeKey(tag: rawTag, source: source);
-        } on NfcException catch (e) {
-          if (e.type != NfcErrorType.authFailed) {
-            rethrow;
+        } on NfcException catch (error) {
+          if (error.type != NfcErrorType.authFailed) {
+            return const CardReadResult.incomplete();
           }
         }
 
-        // Reactivate card (vital for PN532 as failure to auth halts the card).
-        await transceiver.reconnect();
-        final scanned = await readMifareWithBanaKey(
-          tag: rawTag,
-          source: source,
-        );
-        return scanned ??
-            ScannedCard(
-              card: rawTag.toInvalidMifareCard(
-                reason: InvalidMifareReason.readFailure,
-              ),
-              source: source,
-            );
+        try {
+          await transceiver.reconnect();
+          return await readMifareWithBanaKey(tag: rawTag, source: source);
+        } on NfcException catch (error) {
+          return error.type == NfcErrorType.authFailed
+              ? _unsupported(rawTag, source)
+              : const CardReadResult.incomplete();
+        } catch (_) {
+          return const CardReadResult.incomplete();
+        }
       }
 
       // Path 2: CPU card / ISO14443-4 (SAK bit 5) → try T-Union
@@ -315,7 +297,7 @@ class CardReaderEngine {
           readExtended: readExtended,
           existingCard: existingCard,
         );
-        if (tunion != null) {
+        if (tunion.status == CardReadStatus.recognized) {
           return tunion;
         }
 
@@ -325,21 +307,28 @@ class CardReaderEngine {
           debugPrint(
             '[CardReaderEngine] T-Union extended read failed; keeping basic card',
           );
-          return existingCard;
+          return CardReadResult.recognized(existingCard!);
         }
+        return tunion;
       }
 
-      // Path 3: Not Mifare, not T-Union → return as generic Iso14443.
-      // The NFC provider will attempt a FeliCa-only retry for this case.
-      return ScannedCard(card: rawTag, source: source);
+      return _unsupported(rawTag, source);
     }
 
     // Pass through Iso15693 or any other generic parsed tags
     if (rawTag is Iso15693) {
-      return ScannedCard(card: rawTag, source: source);
+      return CardReadResult.recognized(
+        ScannedCard(card: rawTag, source: source),
+      );
     }
 
-    return null;
+    return const CardReadResult.noTarget();
+  }
+
+  CardReadResult _unsupported(Iso14443 tag, String source) {
+    return CardReadResult.confirmedUnsupported(
+      ScannedCard(card: tag, source: source, isUsable: false),
+    );
   }
 
   Future<ScannedCard?> _tryReadSuica(
@@ -460,7 +449,7 @@ class CardReaderEngine {
   }
 
   /// Try to read ISO14443-4 T-Union card info, balance, and transaction history
-  Future<ScannedCard?> _tryReadTUnion(
+  Future<CardReadResult> _tryReadTUnion(
     Iso14443 tag, {
     required String source,
     bool readExtended = true,
@@ -492,7 +481,7 @@ class CardReaderEngine {
         debugPrint(
           '[_tryReadTUnion] SELECT AID response too short: ${selectRes.length}',
         );
-        return null;
+        return const CardReadResult.incomplete();
       }
 
       final sw1 = selectRes[selectRes.length - 2];
@@ -504,7 +493,7 @@ class CardReaderEngine {
         debugPrint(
           '[_tryReadTUnion] Not a China T-Union card (SELECT SW != 9000)',
         );
-        return null;
+        return _unsupported(tag, source);
       }
 
       // 2. READ CARD BASIC INFO: SFI 0x15
@@ -533,14 +522,14 @@ class CardReaderEngine {
         debugPrint(
           '[_tryReadTUnion] READ INFO response too short: ${infoRes.length}',
         );
-        return null;
+        return const CardReadResult.incomplete();
       }
 
       final infoSw1 = infoRes[infoRes.length - 2];
       final infoSw2 = infoRes[infoRes.length - 1];
       if (infoSw1 != 0x90 || infoSw2 != 0x00) {
         debugPrint('[_tryReadTUnion] READ INFO SW != 9000');
-        return null;
+        return const CardReadResult.incomplete();
       }
 
       // Extract Application Serial Number (bytes 10 to 19 of payload)
@@ -564,14 +553,14 @@ class CardReaderEngine {
         debugPrint(
           '[_tryReadTUnion] READ BALANCE response too short: ${balRes.length}',
         );
-        return null;
+        return const CardReadResult.incomplete();
       }
 
       final balSw1 = balRes[balRes.length - 2];
       final balSw2 = balRes[balRes.length - 1];
       if (balSw1 != 0x90 || balSw2 != 0x00) {
         debugPrint('[_tryReadTUnion] READ BALANCE SW != 9000');
-        return null;
+        return const CardReadResult.incomplete();
       }
 
       final balanceCents =
@@ -722,14 +711,16 @@ class CardReaderEngine {
       debugPrint(
         '[_tryReadTUnion] Reading successful. Transactions count: ${transactions.length}',
       );
-      return ScannedCard(
-        card: tunion,
-        source: source,
-        isExtendedInfoFullyLoaded: fullyLoaded,
+      return CardReadResult.recognized(
+        ScannedCard(
+          card: tunion,
+          source: source,
+          isExtendedInfoFullyLoaded: fullyLoaded,
+        ),
       );
     } catch (e, s) {
       debugPrint('[_tryReadTUnion] Fatal error reading T-Union: $e\n$s');
-      return null;
+      return const CardReadResult.incomplete();
     }
   }
 

@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../models/card/card.dart';
-import '../../models/card/invalid_mifare.dart';
 import '../../models/card/transit.dart';
 import '../../models/card/saved_card.dart';
 import '../../models/remote_instance.dart';
@@ -183,16 +182,12 @@ class CardDetailPage extends HookConsumerWidget {
           ],
         ],
       ),
-      actions: card is InvalidMifareCard
-          ? const SizedBox.shrink()
-          : CardDetailBottomActions(
-              onSend: card.gamePayload != null
-                  ? () => _sendCard(context, ref)
-                  : null,
-              onSave: () => _saveCard(context),
-              isSending: senderState.isSending,
-              isSaving: false,
-            ),
+      actions: CardDetailBottomActions(
+        onSend: card.gamePayload != null ? () => _sendCard(context, ref) : null,
+        onSave: () => _saveCard(context),
+        isSending: senderState.isSending,
+        isSaving: false,
+      ),
     );
   }
 }

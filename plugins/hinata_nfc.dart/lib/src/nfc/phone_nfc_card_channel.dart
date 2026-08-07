@@ -31,15 +31,32 @@ class PhoneNfcCardChannel implements NfcCardChannel {
     Uint8List? keyB,
   }) async {
     try {
+      late final bool authenticated;
       if (keyA != null) {
-        await FlutterNfcKit.authenticateSector(block ~/ 4, keyA: keyA);
+        authenticated = await FlutterNfcKit.authenticateSector(
+          block ~/ 4,
+          keyA: keyA,
+        );
       } else if (keyB != null) {
-        await FlutterNfcKit.authenticateSector(block ~/ 4, keyB: keyB);
+        authenticated = await FlutterNfcKit.authenticateSector(
+          block ~/ 4,
+          keyB: keyB,
+        );
+      } else {
+        throw ArgumentError('A Mifare key is required');
       }
+      if (!authenticated) {
+        throw NfcException(
+          type: NfcErrorType.authFailed,
+          message: 'Phone Mifare authentication rejected the key',
+        );
+      }
+    } on NfcException {
+      rethrow;
     } catch (e) {
       throw NfcException(
-        type: NfcErrorType.authFailed,
-        message: 'Phone Mifare authentication failed',
+        type: NfcErrorType.readError,
+        message: 'Phone Mifare authentication was interrupted',
         originalError: e,
       );
     }

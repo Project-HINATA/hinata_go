@@ -4,7 +4,6 @@ import 'aic.dart';
 import 'aime.dart';
 import 'banapass.dart';
 import 'felica.dart';
-import 'invalid_mifare.dart';
 import 'iso15693.dart';
 import 'iso14443a.dart';
 import 'suica.dart';
@@ -64,8 +63,6 @@ class ICCard {
         return Felica.fromJson(json);
       case 'mifare':
         return Banapass.fromJson(json);
-      case 'unknown':
-        return InvalidMifareCard.fromJson(json);
       case 'iso14443':
         return Iso14443.fromJson(json);
       case 'iso15693':

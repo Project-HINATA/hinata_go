@@ -225,49 +225,28 @@ class Pn532Api extends IoBase {
       command: command,
       payload: payload,
     );
-    try {
-      await write(packet.toList());
+    await write(packet.toList());
 
-      final effectiveTimeout = Duration(milliseconds: timeout);
+    final effectiveTimeout = Duration(milliseconds: timeout);
+    var count = 0;
 
-      List<int>? data;
-
-      List<List<int>> cache = [];
-      int count = 0;
-
-      while (true) {
-        List<int>? res;
-        try {
-          count++;
-          res = await read(timeout: effectiveTimeout);
-          cache.add(res);
-          log("PN532 Stream: $count: $res");
-        } catch (e) {
-          log("PN532 Stream warn: $e");
-          break;
-        }
-        if (res[3] == 0 && res[4] == 0xFF) {
-          continue;
-        } else if ((res[3] + res[4]) & 0xFF != 0) {
-          throw Exception("Invalid PN532 length checksum");
-        }
-        if (res[3] > 0) {
-          data = res;
-          break;
-        }
+    while (true) {
+      final res = await read(timeout: effectiveTimeout);
+      count++;
+      log("PN532 Stream: $count: $res");
+      if (res.length < 5) {
+        throw FormatException('PN532 response is shorter than its header');
       }
-      if (data != null) {
-        return Pn532Packet.fromList(data);
+      if (res[3] == 0 && res[4] == 0xFF) {
+        continue;
       }
-      log(cache.toString());
-      throw Exception("No response from PN532");
-    } catch (e) {
-      log("PN532 Error: $e");
-      return Pn532Packet(
-        direction: 0xD5,
-        command: Pn532Command.empty,
-        payload: [],
-      );
+      if (((res[3] + res[4]) & 0xFF) != 0) {
+        throw const FormatException('Invalid PN532 length checksum');
+      }
+      if (res[3] == 0) {
+        throw const FormatException('Unexpected empty PN532 frame');
+      }
+      return Pn532Packet.fromList(res);
     }
   }
 
@@ -282,10 +261,10 @@ class Pn532Api extends IoBase {
       Pn532Command.inListPassiveTarget,
       payload,
     );
-    if (res.command == Pn532Command.empty) return [];
     if (res.payload.isEmpty) {
-      log('PN532 inListPassiveTarget returned empty payload for brty=$brty');
-      return [];
+      throw FormatException(
+        'PN532 inListPassiveTarget returned an empty payload for brty=$brty',
+      );
     }
     final tagNum = res.payload[0];
     var tags = <NfcTarget>[];
@@ -294,11 +273,10 @@ class Pn532Api extends IoBase {
       switch (brty) {
         case 0: // 106 kbps type A (ISO/IEC14443 Type A)
           if (res.payload.length < idIdx + 5) {
-            log(
-              'PN532 ISO14443 payload too short for header: '
-              '${res.payload} (idIdx=$idIdx)',
+            throw FormatException(
+              'PN532 ISO14443 payload is too short for its header '
+              '(idIdx=$idIdx): ${res.payload}',
             );
-            return tags;
           }
 
           int atqa =
@@ -306,20 +284,34 @@ class Pn532Api extends IoBase {
           int sak = res.payload[idIdx + 3]; // SAK
           int idLen = res.payload[idIdx + 4]; // UID Length
           if (res.payload.length < idIdx + 5 + idLen) {
-            log(
-              'PN532 ISO14443 payload too short for UID: '
-              '${res.payload} (idIdx=$idIdx, idLen=$idLen)',
+            throw FormatException(
+              'PN532 ISO14443 payload is too short for its UID '
+              '(idIdx=$idIdx, idLen=$idLen): ${res.payload}',
             );
-            return tags;
           }
           var id = res.payload.sublist(idIdx + 5, idIdx + 5 + idLen); // UID
           idIdx += 5 + idLen;
           tags.add(NfcTarget(id: Uint8List.fromList(id), sak: sak, atqa: atqa));
         case 1: // 212 kbps (FeliCa polling)
         case 2: // 424 kbps (FeliCa polling)
-          if (res.payload.length < 16) return [];
+          if (res.payload.length < idIdx + 20) {
+            throw FormatException(
+              'PN532 FeliCa payload is too short (idIdx=$idIdx): '
+              '${res.payload}',
+            );
+          }
           var packetLen = res.payload[idIdx + 1];
+          if (packetLen < 18) {
+            throw FormatException(
+              'Invalid PN532 FeliCa packet length: $packetLen',
+            );
+          }
           var systemCodesCount = (packetLen - 2 - 8 - 8) >> 1;
+          if (res.payload.length < idIdx + 20 + systemCodesCount * 2) {
+            throw FormatException(
+              'PN532 FeliCa system-code payload is truncated: ${res.payload}',
+            );
+          }
 
           var idm = res.payload.sublist(idIdx + 3, idIdx + 11);
           var pmm = res.payload.sublist(idIdx + 11, idIdx + 19);
@@ -351,7 +343,6 @@ class Pn532Api extends IoBase {
   Future<List<int>> inDataExchange(int tg, int cmd, List<int> data) async {
     var payload = [tg, cmd, ...data];
     final res = await _sendAndReceive(Pn532Command.inDataExchange, payload);
-    if (res.command == Pn532Command.empty) return [-1];
     return res.payload;
   }
 
@@ -464,7 +455,6 @@ class Pn532Api extends IoBase {
 
   Future<int> getFirmwareVersion() async {
     final res = await _sendAndReceive(Pn532Command.getFirmwareVersion, <int>[]);
-    if (res.command == Pn532Command.empty) return -1;
     if (res.payload.length < 2) return -1;
     log("firmware version: ${res.payload[0]} ${res.payload[1]}");
     return (res.payload[0] << 8) | res.payload[1];

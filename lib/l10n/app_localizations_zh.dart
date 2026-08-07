@@ -691,4 +691,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteSuccess => '删除成功';
+
+  @override
+  String get nfcReadIncomplete => '卡片读取未完成，请重新贴卡。';
 }

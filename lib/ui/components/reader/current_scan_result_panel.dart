@@ -169,6 +169,7 @@ class _CurrentScanResultContent extends StatelessWidget {
         _ScanDetailStack(
           card: card,
           source: source,
+          isUsable: scannedCard.isUsable,
           showDismissControls: showDismissControls,
           animationController: animationController,
           onClear: onClear,
@@ -195,6 +196,7 @@ class _ScanDetailStack extends StatelessWidget {
   const _ScanDetailStack({
     required this.card,
     required this.source,
+    required this.isUsable,
     required this.showDismissControls,
     required this.animationController,
     required this.onClear,
@@ -202,6 +204,7 @@ class _ScanDetailStack extends StatelessWidget {
 
   final ICCard card;
   final String source;
+  final bool isUsable;
   final bool showDismissControls;
   final AnimationController animationController;
   final VoidCallback? onClear;
@@ -213,6 +216,7 @@ class _ScanDetailStack extends StatelessWidget {
         ScannedCardDetailV2(
           card: card,
           source: source,
+          isUsable: isUsable,
           showCloseButtonSpace: showDismissControls,
         ),
         if (showDismissControls)
