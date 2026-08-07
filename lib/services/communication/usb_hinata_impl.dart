@@ -267,15 +267,26 @@ class UsbHinataDeviceImpl implements DeviceInterface {
 
   // ignore: unused_element
   Future<Iso14443?> _pollIsoTag() async {
-    for (final profile in typeAPowerProfiles) {
-      await _hinata.pn532Api.setTypeARfPower(
-        cwGsNOn: profile.cwGsNOn,
-        cwGsP: profile.cwGsP,
-      );
-      final targets = await _hinata.pn532Api.inListPassiveTarget(0, 1, []);
-      if (targets.isNotEmpty) {
-        final t = targets[0];
-        return Iso14443(t.id, t.sak!, t.atqa!);
+    for (var i = 0; i < typeAPowerProfiles.length; i++) {
+      final profile = typeAPowerProfiles[i];
+      try {
+        await _hinata.pn532Api.setTypeARfPower(
+          cwGsNOn: profile.cwGsNOn,
+          cwGsP: profile.cwGsP,
+        );
+        final targets = await _hinata.pn532Api.inListPassiveTarget(0, 1, []);
+        if (targets.isNotEmpty) {
+          final t = targets[0];
+          return Iso14443(t.id, t.sak!, t.atqa!);
+        }
+      } on TimeoutException catch (error) {
+        throw TimeoutException(
+          'Type A profile $i '
+          '(cwGsNOn=0x${profile.cwGsNOn.toRadixString(16).toUpperCase()}, '
+          'cwGsP=0x${profile.cwGsP.toRadixString(16).toUpperCase()}): '
+          '${error.message}',
+          error.duration,
+        );
       }
     }
     return null;

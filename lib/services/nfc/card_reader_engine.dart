@@ -272,7 +272,29 @@ class CardReaderEngine {
         try {
           return await readMifareWithAimeKey(tag: rawTag, source: source);
         } on NfcException catch (error) {
+          if (error.type == NfcErrorType.readError) {
+            try {
+              await transceiver.reconnect();
+              return await readMifareWithAimeKey(tag: rawTag, source: source);
+            } on NfcException catch (retryError) {
+              debugPrint(
+                '[CardReaderEngine] MIFARE Key B fast retry incomplete: '
+                '$retryError; cause: ${retryError.originalError}',
+              );
+              return const CardReadResult.incomplete();
+            } catch (retryError) {
+              debugPrint(
+                '[CardReaderEngine] MIFARE Key B fast retry incomplete: '
+                '$retryError',
+              );
+              return const CardReadResult.incomplete();
+            }
+          }
           if (error.type != NfcErrorType.authFailed) {
+            debugPrint(
+              '[CardReaderEngine] MIFARE Key B path incomplete: '
+              '$error; cause: ${error.originalError}',
+            );
             return const CardReadResult.incomplete();
           }
         }
@@ -281,10 +303,19 @@ class CardReaderEngine {
           await transceiver.reconnect();
           return await readMifareWithBanaKey(tag: rawTag, source: source);
         } on NfcException catch (error) {
+          if (error.type != NfcErrorType.authFailed) {
+            debugPrint(
+              '[CardReaderEngine] MIFARE Key A path incomplete: '
+              '$error; cause: ${error.originalError}',
+            );
+          }
           return error.type == NfcErrorType.authFailed
               ? _unsupported(rawTag, source)
               : const CardReadResult.incomplete();
-        } catch (_) {
+        } catch (error) {
+          debugPrint(
+            '[CardReaderEngine] MIFARE reconnect/read incomplete: $error',
+          );
           return const CardReadResult.incomplete();
         }
       }

@@ -6,6 +6,7 @@ import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../models/card/card_read_result.dart';
 import '../models/card/transit.dart';
 import '../services/communication/device_interface.dart';
 import '../services/communication/usb_hinata_impl.dart';
@@ -61,6 +62,7 @@ class HardwareDeviceState {
 class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
   static const _hidReadyCheckInterval = Duration(milliseconds: 50);
   static const _hidReadyMaxAttempts = 60;
+  static const _pollInterval = Duration(milliseconds: 16);
 
   int _connectGeneration = 0;
   String? _connectingDeviceKey;
@@ -343,7 +345,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
                   .setReadingExtendedInfo(false);
             }
           }
-        } else {
+        } else if (pollResult.status == CardReadStatus.noTarget) {
           final cardRemoved = ref
               .read(currentScanSessionProvider.notifier)
               .markCardMissing(source: 'HINATA');
@@ -355,8 +357,9 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
         }
       } catch (e) {
         log("Polling error: $e");
-        continue;
       }
+
+      await Future.delayed(_pollInterval);
     }
 
     ref

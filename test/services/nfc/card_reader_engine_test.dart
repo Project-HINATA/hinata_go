@@ -75,13 +75,13 @@ class _MifareFallbackChannel implements NfcCardChannel {
   _MifareFallbackChannel({
     this.failKeyBAuth = false,
     this.failKeyAAuth = false,
-    this.failKeyBRead = false,
+    this.keyBReadFailures = 0,
     this.shortKeyBRead = false,
   });
 
   final bool failKeyBAuth;
   final bool failKeyAAuth;
-  final bool failKeyBRead;
+  int keyBReadFailures;
   final bool shortKeyBRead;
   final authKeyKinds = <String>[];
   final readBlocks = <int>[];
@@ -115,7 +115,8 @@ class _MifareFallbackChannel implements NfcCardChannel {
   @override
   Future<Uint8List> readMifareBlock(int block) async {
     readBlocks.add(block);
-    if (failKeyBRead && authKeyKinds.last == 'B') {
+    if (keyBReadFailures > 0 && authKeyKinds.last == 'B') {
+      keyBReadFailures--;
       throw NfcException(
         type: NfcErrorType.readError,
         message: 'scripted Key B read failure',
@@ -165,17 +166,29 @@ void main() {
   test(
     'does not try Key A after Key B authenticated but reading failed',
     () async {
-      final channel = _MifareFallbackChannel(failKeyBRead: true);
+      final channel = _MifareFallbackChannel(keyBReadFailures: 2);
       final tag = Iso14443(Uint8List.fromList([1, 2, 3, 4]), 0x08, 0x04);
 
       final result = await CardReaderEngine(channel).processTag(tag);
 
       expect(result.status, CardReadStatus.incomplete);
-      expect(channel.authKeyKinds, ['B']);
-      expect(channel.reconnectCount, 0);
-      expect(channel.readBlocks, [2]);
+      expect(channel.authKeyKinds, ['B', 'B']);
+      expect(channel.reconnectCount, 1);
+      expect(channel.readBlocks, [2, 2]);
     },
   );
+
+  test('fast retries a transient Key B block read failure', () async {
+    final channel = _MifareFallbackChannel(keyBReadFailures: 1);
+    final tag = Iso14443(Uint8List.fromList([1, 2, 3, 4]), 0x08, 0x04);
+
+    final result = await CardReaderEngine(channel).processTag(tag);
+
+    expect(result.status, CardReadStatus.recognized);
+    expect(channel.authKeyKinds, ['B', 'B']);
+    expect(channel.reconnectCount, 1);
+    expect(channel.readBlocks, [2, 2]);
+  });
 
   test('treats a short MIFARE block as incomplete', () async {
     final channel = _MifareFallbackChannel(shortKeyBRead: true);

@@ -39,6 +39,55 @@ void main() {
     }
   });
 
+  test('MIFARE reconnect polls Type A without releasing first', () async {
+    final writes = <List<int>>[];
+    final responses = <List<int>>[
+      _response(Pn532Command.inListPassiveTarget, [
+        1,
+        1,
+        0x00,
+        0x04,
+        0x08,
+        4,
+        1,
+        2,
+        3,
+        4,
+      ]),
+    ];
+    final api = Pn532Api(
+      (data) async => writes.add(List<int>.from(data)),
+      ({timeout}) async => responses.removeAt(0),
+    );
+
+    await HinataNfcCardChannel(api).reconnect();
+
+    expect(writes.map((packet) => packet[6]), [
+      Pn532Command.inListPassiveTarget.toInt(),
+    ]);
+  });
+
+  test('MIFARE reconnect rejects an absent target', () async {
+    final responses = <List<int>>[
+      _response(Pn532Command.inListPassiveTarget, [0]),
+    ];
+    final api = Pn532Api(
+      (_) async {},
+      ({timeout}) async => responses.removeAt(0),
+    );
+
+    await expectLater(
+      HinataNfcCardChannel(api).reconnect(),
+      throwsA(
+        isA<NfcException>().having(
+          (error) => error.type,
+          'type',
+          NfcErrorType.readError,
+        ),
+      ),
+    );
+  });
+
   test('inListPassiveTarget propagates transport timeout', () async {
     final api = Pn532Api(
       (_) async {},
@@ -47,8 +96,49 @@ void main() {
 
     await expectLater(
       api.inListPassiveTarget(0, 1, const []),
-      throwsA(isA<TimeoutException>()),
+      throwsA(
+        isA<TimeoutException>().having(
+          (error) => error.message,
+          'message',
+          allOf(
+            contains('inListPassiveTarget'),
+            contains('brty=0'),
+            contains('after 0 frame(s)'),
+          ),
+        ),
+      ),
     );
+  });
+
+  test('timeout reports an ACK received before the final response', () async {
+    var readCount = 0;
+    final api = Pn532Api((_) async {}, ({timeout}) async {
+      if (readCount++ == 0) return standardAck;
+      throw TimeoutException('test timeout');
+    });
+
+    await expectLater(
+      api.inListPassiveTarget(1, 1, const []),
+      throwsA(
+        isA<TimeoutException>().having(
+          (error) => error.message,
+          'message',
+          allOf(contains('brty=1'), contains('after 1 frame(s)')),
+        ),
+      ),
+    );
+  });
+
+  test('inListPassiveTarget uses a 500ms transport timeout', () async {
+    Duration? receivedTimeout;
+    final api = Pn532Api((_) async {}, ({timeout}) async {
+      receivedTimeout = timeout;
+      return _response(Pn532Command.inListPassiveTarget, []);
+    });
+
+    await api.inListPassiveTarget(0, 1, const []);
+
+    expect(receivedTimeout, const Duration(milliseconds: 500));
   });
 
   test('inListPassiveTarget rejects a malformed response', () async {
@@ -72,6 +162,15 @@ void main() {
     },
   );
 
+  test('inListPassiveTarget accepts an empty no-target payload', () async {
+    final api = Pn532Api(
+      (_) async {},
+      ({timeout}) async => _response(Pn532Command.inListPassiveTarget, []),
+    );
+
+    expect(await api.inListPassiveTarget(0, 1, const []), isEmpty);
+  });
+
   test('inListPassiveTarget rejects a truncated target payload', () async {
     final api = Pn532Api(
       (_) async {},
@@ -83,4 +182,44 @@ void main() {
       throwsA(isA<FormatException>()),
     );
   });
+
+  test(
+    'inListPassiveTarget accepts a complete FeliCa system-code payload',
+    (() async {
+      final api = Pn532Api(
+        (_) async {},
+        ({timeout}) async => _response(Pn532Command.inListPassiveTarget, [
+          1,
+          1,
+          20,
+          1,
+          1,
+          18,
+          2,
+          18,
+          228,
+          35,
+          239,
+          29,
+          5,
+          49,
+          67,
+          69,
+          70,
+          130,
+          183,
+          255,
+          0,
+          3,
+        ]),
+      );
+
+      final tags = await api.inListPassiveTarget(1, 1, const []);
+
+      expect(tags, hasLength(1));
+      expect(tags.single.id, [1, 18, 2, 18, 228, 35, 239, 29]);
+      expect(tags.single.pmm, [5, 49, 67, 69, 70, 130, 183, 255]);
+      expect(tags.single.systemCodes, [0x0003]);
+    }),
+  );
 }

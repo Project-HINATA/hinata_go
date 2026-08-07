@@ -218,7 +218,8 @@ class Pn532Api extends IoBase {
   Future<Pn532Packet> _sendAndReceive(
     Pn532Command command,
     List<int> payload, {
-    int timeout = 2000,
+    int timeout = 500,
+    String? context,
   }) async {
     var packet = Pn532Packet(
       direction: 0xD4,
@@ -231,7 +232,17 @@ class Pn532Api extends IoBase {
     var count = 0;
 
     while (true) {
-      final res = await read(timeout: effectiveTimeout);
+      late final List<int> res;
+      try {
+        res = await read(timeout: effectiveTimeout);
+      } on TimeoutException catch (error) {
+        final contextSuffix = context == null ? '' : ' ($context)';
+        throw TimeoutException(
+          'PN532 ${command.name}$contextSuffix timed out after '
+          '$count frame(s): ${error.message}',
+          error.duration ?? effectiveTimeout,
+        );
+      }
       count++;
       log("PN532 Stream: $count: $res");
       if (res.length < 5) {
@@ -260,11 +271,10 @@ class Pn532Api extends IoBase {
     final res = await _sendAndReceive(
       Pn532Command.inListPassiveTarget,
       payload,
+      context: 'brty=$brty',
     );
     if (res.payload.isEmpty) {
-      throw FormatException(
-        'PN532 inListPassiveTarget returned an empty payload for brty=$brty',
-      );
+      return [];
     }
     final tagNum = res.payload[0];
     var tags = <NfcTarget>[];
@@ -294,7 +304,7 @@ class Pn532Api extends IoBase {
           tags.add(NfcTarget(id: Uint8List.fromList(id), sak: sak, atqa: atqa));
         case 1: // 212 kbps (FeliCa polling)
         case 2: // 424 kbps (FeliCa polling)
-          if (res.payload.length < idIdx + 20) {
+          if (res.payload.length < idIdx + 2) {
             throw FormatException(
               'PN532 FeliCa payload is too short (idIdx=$idIdx): '
               '${res.payload}',
@@ -306,8 +316,9 @@ class Pn532Api extends IoBase {
               'Invalid PN532 FeliCa packet length: $packetLen',
             );
           }
+          final targetEnd = idIdx + 1 + packetLen;
           var systemCodesCount = (packetLen - 2 - 8 - 8) >> 1;
-          if (res.payload.length < idIdx + 20 + systemCodesCount * 2) {
+          if (res.payload.length < targetEnd) {
             throw FormatException(
               'PN532 FeliCa system-code payload is truncated: ${res.payload}',
             );
@@ -322,7 +333,7 @@ class Pn532Api extends IoBase {
                 (res.payload[idIdx + 20 + j * 2]);
             systemCodes.add(systemCode);
           }
-          idIdx += 20 + systemCodesCount * 2;
+          idIdx = targetEnd;
           tags.add(
             NfcTarget(
               id: Uint8List.fromList(idm),
@@ -342,7 +353,11 @@ class Pn532Api extends IoBase {
 
   Future<List<int>> inDataExchange(int tg, int cmd, List<int> data) async {
     var payload = [tg, cmd, ...data];
-    final res = await _sendAndReceive(Pn532Command.inDataExchange, payload);
+    final res = await _sendAndReceive(
+      Pn532Command.inDataExchange,
+      payload,
+      context: 'tg=$tg, dataCmd=0x${cmd.toRadixString(16).padLeft(2, '0')}',
+    );
     return res.payload;
   }
 
@@ -393,7 +408,11 @@ class Pn532Api extends IoBase {
 
   Future<Pn532Error> inRelease(int tg) async {
     var input = [tg];
-    final res = await _sendAndReceive(Pn532Command.inRelease, input);
+    final res = await _sendAndReceive(
+      Pn532Command.inRelease,
+      input,
+      context: 'tg=$tg',
+    );
     return Pn532Error.fromValue(res.payload[0]);
   }
 
@@ -406,7 +425,11 @@ class Pn532Api extends IoBase {
 
   Future<Pn532Error> inDeselect(int tg) async {
     var input = [tg];
-    final res = await _sendAndReceive(Pn532Command.inDeselect, input);
+    final res = await _sendAndReceive(
+      Pn532Command.inDeselect,
+      input,
+      context: 'tg=$tg',
+    );
     return Pn532Error.fromValue(res.payload[0]);
   }
 
@@ -450,7 +473,11 @@ class Pn532Api extends IoBase {
   Future rfConfiguration(int cfgItem, List<int> payload) async {
     var input = [cfgItem];
     input.addAll(payload);
-    await _sendAndReceive(Pn532Command.rfConfiguration, input);
+    await _sendAndReceive(
+      Pn532Command.rfConfiguration,
+      input,
+      context: 'cfgItem=0x${cfgItem.toRadixString(16).padLeft(2, '0')}',
+    );
   }
 
   Future<int> getFirmwareVersion() async {

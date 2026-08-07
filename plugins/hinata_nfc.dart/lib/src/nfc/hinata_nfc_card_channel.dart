@@ -110,9 +110,15 @@ class HinataNfcCardChannel implements NfcCardChannel {
 
   @override
   Future<void> reconnect() async {
-    // PN532 will put Mifare cards in HALT state after a failed Mifare auth.
-    // We send an inListPassiveTarget(brty=0, maxTg=1) to reactivate the ISO14443A card.
-    await pn532.inDeselect(tg);
+    // Re-run Type A activation at the current RF power. This both restores a
+    // halted MIFARE card and confirms that it is still present before retrying.
+    final targets = await pn532.inListPassiveTarget(0, 1, const []);
+    if (targets.isEmpty) {
+      throw NfcException(
+        type: NfcErrorType.readError,
+        message: 'MIFARE target disappeared while reconnecting',
+      );
+    }
   }
 
   @override
