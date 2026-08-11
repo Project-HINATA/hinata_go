@@ -41,12 +41,7 @@ class _NoTagHidDevice implements HIDDevice {
       data.offsetInBytes,
       data.lengthInBytes,
     );
-    final requestCommand = request.length > 7
-        ? Pn532Command.fromValue(request[7])
-        : null;
-    final responseCommand = requestCommand == Pn532Command.inRelease
-        ? Pn532Command.inRelease
-        : Pn532Command.inListPassiveTarget;
+    final responseCommand = Pn532Command.fromValue(request[7])!;
     final packet = Pn532Packet(
       direction: 0xD5,
       command: responseCommand,

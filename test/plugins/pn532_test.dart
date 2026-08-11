@@ -156,7 +156,7 @@ void main() {
     );
   });
 
-  test('inListPassiveTarget uses a 500ms transport timeout', () async {
+  test('inListPassiveTarget uses a 1000ms transport timeout', () async {
     Duration? receivedTimeout;
     final api = Pn532Api((_) async {}, ({timeout}) async {
       receivedTimeout = timeout;
@@ -165,7 +165,25 @@ void main() {
 
     await api.inListPassiveTarget(0, 1, const []);
 
-    expect(receivedTimeout, const Duration(milliseconds: 500));
+    expect(receivedTimeout, const Duration(milliseconds: 1000));
+  });
+
+  test('PN532 request ignores a response for another command', () async {
+    final responses = <List<int>>[
+      standardAck,
+      _response(Pn532Command.rfConfiguration, const []),
+      _response(Pn532Command.inListPassiveTarget, const [0]),
+    ];
+    var completed = false;
+    final api = Pn532Api(
+      (_) async {},
+      ({timeout}) async => responses.removeAt(0),
+      onComplete: () => completed = true,
+    );
+
+    expect(await api.inListPassiveTarget(0, 1, const []), isEmpty);
+    expect(responses, isEmpty);
+    expect(completed, isTrue);
   });
 
   test('inListPassiveTarget rejects a malformed response', () async {

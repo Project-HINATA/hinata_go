@@ -215,49 +215,64 @@ const int mifareBlockLength = 16;
 const standardAck = [0, 0, 0xFF, 0, 0xFF, 0];
 
 class Pn532Api extends IoBase {
+  final FutureOr<void> Function()? _onRequestComplete;
+
   Future<Pn532Packet> _sendAndReceive(
     Pn532Command command,
     List<int> payload, {
-    int timeout = 500,
+    int timeout = 1000,
     String? context,
   }) async {
-    var packet = Pn532Packet(
-      direction: 0xD4,
-      command: command,
-      payload: payload,
-    );
-    await write(packet.toList());
+    try {
+      var packet = Pn532Packet(
+        direction: 0xD4,
+        command: command,
+        payload: payload,
+      );
+      await write(packet.toList());
 
-    final effectiveTimeout = Duration(milliseconds: timeout);
-    var count = 0;
+      final effectiveTimeout = Duration(milliseconds: timeout);
+      var count = 0;
 
-    while (true) {
-      late final List<int> res;
-      try {
-        res = await read(timeout: effectiveTimeout);
-      } on TimeoutException catch (error) {
-        final contextSuffix = context == null ? '' : ' ($context)';
-        throw TimeoutException(
-          'PN532 ${command.name}$contextSuffix timed out after '
-          '$count frame(s): ${error.message}',
-          error.duration ?? effectiveTimeout,
-        );
+      while (true) {
+        late final List<int> res;
+        try {
+          res = await read(timeout: effectiveTimeout);
+        } on TimeoutException catch (error) {
+          final contextSuffix = context == null ? '' : ' ($context)';
+          throw TimeoutException(
+            'PN532 ${command.name}$contextSuffix timed out after '
+            '$count frame(s): ${error.message}',
+            error.duration ?? effectiveTimeout,
+          );
+        }
+        count++;
+        log("PN532 Stream: $count: $res");
+        if (res.length < 5) {
+          throw FormatException('PN532 response is shorter than its header');
+        }
+        if (res[3] == 0 && res[4] == 0xFF) {
+          continue;
+        }
+        if (((res[3] + res[4]) & 0xFF) != 0) {
+          throw const FormatException('Invalid PN532 length checksum');
+        }
+        if (res[3] == 0) {
+          throw const FormatException('Unexpected empty PN532 frame');
+        }
+        if (res.length < 7) {
+          throw FormatException('PN532 response is shorter than its payload');
+        }
+        if (res[5] != 0xD5 || res[6] != command.toInt() + 1) {
+          continue;
+        }
+        return Pn532Packet.fromList(res);
       }
-      count++;
-      log("PN532 Stream: $count: $res");
-      if (res.length < 5) {
-        throw FormatException('PN532 response is shorter than its header');
+    } finally {
+      final onRequestComplete = _onRequestComplete;
+      if (onRequestComplete != null) {
+        await onRequestComplete();
       }
-      if (res[3] == 0 && res[4] == 0xFF) {
-        continue;
-      }
-      if (((res[3] + res[4]) & 0xFF) != 0) {
-        throw const FormatException('Invalid PN532 length checksum');
-      }
-      if (res[3] == 0) {
-        throw const FormatException('Unexpected empty PN532 frame');
-      }
-      return Pn532Packet.fromList(res);
     }
   }
 
@@ -519,5 +534,6 @@ class Pn532Api extends IoBase {
     return res;
   }
 
-  Pn532Api(super.write, super.read);
+  Pn532Api(super.write, super.read, {FutureOr<void> Function()? onComplete})
+    : _onRequestComplete = onComplete;
 }

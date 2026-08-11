@@ -84,7 +84,7 @@ class HinataReader {
   Subscription? _pn532Sub;
   late final pn532Api = Pn532Api(
     (data) async {
-      _pn532Sub = _subscribe(0xE2, UnSubscribePolicy.specificNotOn(4, 0));
+      _pn532Sub = _subscribe(0xE2, UnSubscribePolicy.never());
       await sendReqWithoutRes(0xE2, data);
     },
     ({timeout}) async {
@@ -93,7 +93,19 @@ class HinataReader {
       );
       return res.sublist(1);
     },
+    onComplete: _clearPn532Subscription,
   );
+
+  void _clearPn532Subscription() {
+    final subscription = _pn532Sub;
+    if (subscription == null) return;
+
+    if (_subscriptions[0xE2] == subscription) {
+      _subscriptions.remove(0xE2);
+    }
+    subscription.close();
+    _pn532Sub = null;
+  }
 
   List<List<int>> cardIOData = List.empty(growable: true);
   Function(List<int> cardIOData)? _cardioCallback;
