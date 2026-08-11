@@ -442,7 +442,15 @@ class Pn532Api extends IoBase {
     await rfConfiguration(0x01, [value]);
   }
 
-  Future<void> setTypeARfPower({int cwGsNOn = 0x0D, int cwGsP = 0x30}) async {
+  Future<void> setTypeARfPower({
+    int rfCfg = 0x59,
+    int cwGsNOn = 0x0D,
+    int cwGsP = 0x30,
+  }) async {
+    if (rfCfg < 0 || rfCfg > 0xFF) {
+      throw RangeError.range(rfCfg, 0, 0xFF, 'rfCfg');
+    }
+
     if (cwGsNOn < 0 || cwGsNOn > 0x0F) {
       throw RangeError.range(cwGsNOn, 0, 0x0F, 'cwGsNOn');
     }
@@ -456,7 +464,7 @@ class Pn532Api extends IoBase {
     final gsNOn = (cwGsNOn << 4) | 0x04;
 
     await rfConfiguration(0x0A, [
-      0x59, // CIU_RFCfg
+      rfCfg, // CIU_RFCfg
       gsNOn, // CIU_GsNOn
       cwGsP, // CIU_CWGsP
       0x11, // CIU_ModGsP

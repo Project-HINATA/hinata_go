@@ -10,19 +10,42 @@ import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import '../nfc/card_reader_engine.dart';
 
-// 三档功率用于补偿Lite版天线缺陷
-class TypeARfPower {
+// 完整模拟配置用于覆盖不同卡片与耦合距离。
+class TypeARfProfile {
+  final int rfCfg;
   final int cwGsNOn;
   final int cwGsP;
 
-  const TypeARfPower({required this.cwGsNOn, required this.cwGsP});
+  const TypeARfProfile({
+    required this.rfCfg,
+    required this.cwGsNOn,
+    required this.cwGsP,
+  });
 }
 
-const typeAPowerProfiles = <TypeARfPower>[
-  TypeARfPower(cwGsNOn: 0x0C, cwGsP: 0x28), // 中
-  TypeARfPower(cwGsNOn: 0x06, cwGsP: 0x10), // 低
-  TypeARfPower(cwGsNOn: 0x0F, cwGsP: 0x3F), // 高
+const pn532DefaultTypeARfProfile = TypeARfProfile(
+  rfCfg: 0x59,
+  cwGsNOn: 0x0F,
+  cwGsP: 0x3F,
+);
+
+const standardTypeARfProfiles = <TypeARfProfile>[
+  pn532DefaultTypeARfProfile,
+  TypeARfProfile(rfCfg: 0x69, cwGsNOn: 0x0F, cwGsP: 0x2B),
 ];
+
+const liteTypeARfProfiles = <TypeARfProfile>[
+  TypeARfProfile(rfCfg: 0x29, cwGsNOn: 0x03, cwGsP: 0x11), // 档位 1
+  TypeARfProfile(rfCfg: 0x49, cwGsNOn: 0x0B, cwGsP: 0x0C), // 档位 2
+  pn532DefaultTypeARfProfile, // 档位 3
+];
+
+List<TypeARfProfile> typeARfProfilesForProductId(int productId) =>
+    switch (productId) {
+      0x0147 => standardTypeARfProfiles,
+      0x0148 => liteTypeARfProfiles,
+      _ => const [pn532DefaultTypeARfProfile],
+    };
 
 class UsbHinataDeviceImpl implements DeviceInterface {
   final HinataReader _hinata;
@@ -267,10 +290,12 @@ class UsbHinataDeviceImpl implements DeviceInterface {
 
   // ignore: unused_element
   Future<Iso14443?> _pollIsoTag() async {
-    for (var i = 0; i < typeAPowerProfiles.length; i++) {
-      final profile = typeAPowerProfiles[i];
+    final profiles = typeARfProfilesForProductId(_hinata.pid);
+    for (var i = 0; i < profiles.length; i++) {
+      final profile = profiles[i];
       try {
         await _hinata.pn532Api.setTypeARfPower(
+          rfCfg: profile.rfCfg,
           cwGsNOn: profile.cwGsNOn,
           cwGsP: profile.cwGsP,
         );
@@ -281,8 +306,9 @@ class UsbHinataDeviceImpl implements DeviceInterface {
         }
       } on TimeoutException catch (error) {
         throw TimeoutException(
-          'Type A profile $i '
-          '(cwGsNOn=0x${profile.cwGsNOn.toRadixString(16).toUpperCase()}, '
+          'Type A profile ${i + 1} '
+          '(rfCfg=0x${profile.rfCfg.toRadixString(16).toUpperCase()}, '
+          'cwGsNOn=0x${profile.cwGsNOn.toRadixString(16).toUpperCase()}, '
           'cwGsP=0x${profile.cwGsP.toRadixString(16).toUpperCase()}): '
           '${error.message}',
           error.duration,

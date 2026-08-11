@@ -129,6 +129,33 @@ class _ScriptedTagHidDevice implements HIDDevice {
 }
 
 void main() {
+  test('uses the Standard Type A RF profiles in order', () {
+    expect(
+      typeARfProfilesForProductId(
+        0x0147,
+      ).map((profile) => (profile.rfCfg, profile.cwGsNOn, profile.cwGsP)),
+      const [(0x59, 0x0F, 0x3F), (0x69, 0x0F, 0x2B)],
+    );
+  });
+
+  test('uses the measured Lite Type A RF profiles in order', () {
+    expect(
+      typeARfProfilesForProductId(
+        0x0148,
+      ).map((profile) => (profile.rfCfg, profile.cwGsNOn, profile.cwGsP)),
+      const [(0x29, 0x03, 0x11), (0x49, 0x0B, 0x0C), (0x59, 0x0F, 0x3F)],
+    );
+  });
+
+  test('uses only the PN532 default profile for unknown products', () {
+    expect(
+      typeARfProfilesForProductId(
+        0,
+      ).map((profile) => (profile.rfCfg, profile.cwGsNOn, profile.cwGsP)),
+      const [(0x59, 0x0F, 0x3F)],
+    );
+  });
+
   test('uses the USB product id as device id', () {
     final device = UsbHinataDeviceImpl(HinataReader(_NoTagHidDevice()));
 

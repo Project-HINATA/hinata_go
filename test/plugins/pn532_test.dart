@@ -88,6 +88,33 @@ void main() {
     );
   });
 
+  test('Type A RF settings include receiver gain and conductance', () async {
+    final writes = <List<int>>[];
+    final api = Pn532Api(
+      (data) async => writes.add(List<int>.from(data)),
+      ({timeout}) async => _response(Pn532Command.rfConfiguration, const []),
+    );
+
+    await api.setTypeARfPower(rfCfg: 0x29, cwGsNOn: 0x03, cwGsP: 0x11);
+
+    expect(writes, hasLength(1));
+    expect(writes.single[6], Pn532Command.rfConfiguration.toInt());
+    expect(writes.single.sublist(7, 19), [
+      0x0A,
+      0x29,
+      0x34,
+      0x11,
+      0x11,
+      0x4D,
+      0x85,
+      0x61,
+      0x6F,
+      0x26,
+      0x62,
+      0x87,
+    ]);
+  });
+
   test('inListPassiveTarget propagates transport timeout', () async {
     final api = Pn532Api(
       (_) async {},
