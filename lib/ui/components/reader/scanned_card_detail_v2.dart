@@ -57,7 +57,7 @@ class ScannedCardDetailV2 extends ConsumerWidget {
           if (showHeader)
             _CardDetailHeader(
               logo: _buildLogo(context, colorScheme),
-              name: _displayName(context),
+              name: card.name,
               source: source,
               showCloseButtonSpace: showCloseButtonSpace,
             ),
@@ -69,10 +69,6 @@ class ScannedCardDetailV2 extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  String _displayName(BuildContext context) {
-    return isUsable ? card.name : context.l10n.unknownCardType;
   }
 
   Widget _buildLogo(BuildContext context, ColorScheme colorScheme) {
