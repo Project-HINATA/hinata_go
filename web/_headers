@@ -1,0 +1,14 @@
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/flutter_bootstrap.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/flutter_service_worker.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/main.dart*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/canvaskit/*
+  Cache-Control: public, max-age=0, must-revalidate
