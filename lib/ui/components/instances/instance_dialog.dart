@@ -20,7 +20,9 @@ class InstanceDialog extends HookConsumerWidget {
     final nameController = useTextEditingController(
       text: existingInstance?.name,
     );
-    final urlController = useTextEditingController(text: existingInstance?.url);
+    final urlController = useTextEditingController(
+      text: existingInstance?.url ?? AppConstants.defaultHinataIoUrl,
+    );
     final passwordController = useTextEditingController(
       text: existingInstance?.password,
     );
@@ -82,7 +84,11 @@ class InstanceDialog extends HookConsumerWidget {
       ),
       content: _InstanceDialogContent(
         nameField: _buildNameField(context, nameController),
-        typeDropdown: _buildTypeDropdown(context, selectedTypeState),
+        typeDropdown: _buildTypeDropdown(
+          context,
+          selectedTypeState,
+          urlController,
+        ),
         urlField: _buildUrlField(context, urlController, url, isValidUrl),
         showHinataVersionWarning:
             selectedTypeState.value == InstanceType.hinataIo,
@@ -110,6 +116,7 @@ class InstanceDialog extends HookConsumerWidget {
   Widget _buildTypeDropdown(
     BuildContext context,
     ValueNotifier<InstanceType> typeState,
+    TextEditingController urlController,
   ) {
     return DropdownButtonFormField<InstanceType>(
       initialValue: typeState.value,
@@ -129,7 +136,15 @@ class InstanceDialog extends HookConsumerWidget {
         ),
       ],
       onChanged: (value) {
-        if (value != null) typeState.value = value;
+        if (value == null || value == typeState.value) return;
+        if (value == InstanceType.hinataIo &&
+            urlController.text.trim().isEmpty) {
+          urlController.text = AppConstants.defaultHinataIoUrl;
+        } else if (typeState.value == InstanceType.hinataIo &&
+            urlController.text.trim() == AppConstants.defaultHinataIoUrl) {
+          urlController.clear();
+        }
+        typeState.value = value;
       },
     );
   }
