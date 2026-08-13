@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/remote_instance.dart';
 import '../../../providers/app_state_provider.dart';
+import '../../../utils/constants.dart';
 import '../../../utils/icon_utils.dart';
 import '../../../utils/validators.dart';
 
@@ -83,6 +84,8 @@ class InstanceDialog extends HookConsumerWidget {
         nameField: _buildNameField(context, nameController),
         typeDropdown: _buildTypeDropdown(context, selectedTypeState),
         urlField: _buildUrlField(context, urlController, url, isValidUrl),
+        showHinataVersionWarning:
+            selectedTypeState.value == InstanceType.hinataIo,
         passwordField: _buildPasswordField(context, passwordController),
         unitDropdown: _buildUnitDropdown(context, selectedUnitState),
         showSpiceFields:
@@ -212,6 +215,7 @@ class _InstanceDialogContent extends StatelessWidget {
     required this.nameField,
     required this.typeDropdown,
     required this.urlField,
+    required this.showHinataVersionWarning,
     required this.passwordField,
     required this.unitDropdown,
     required this.showSpiceFields,
@@ -221,6 +225,7 @@ class _InstanceDialogContent extends StatelessWidget {
   final Widget nameField;
   final Widget typeDropdown;
   final Widget urlField;
+  final bool showHinataVersionWarning;
   final Widget passwordField;
   final Widget unitDropdown;
   final bool showSpiceFields;
@@ -237,6 +242,13 @@ class _InstanceDialogContent extends StatelessWidget {
           typeDropdown,
           const _DialogFieldGap(),
           urlField,
+          if (showHinataVersionWarning) ...[
+            const SizedBox(height: 4),
+            const Text(
+              '要求 IO 更新到 ${AppConstants.minimumHinataIoVersion} 以上',
+              style: TextStyle(color: Colors.orange),
+            ),
+          ],
           const _DialogFieldGap(),
           passwordField,
           if (showSpiceFields) ...[const _DialogFieldGap(), unitDropdown],

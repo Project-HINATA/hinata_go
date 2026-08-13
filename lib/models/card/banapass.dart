@@ -38,7 +38,7 @@ class Banapass extends Iso14443 implements HasAccessCode {
   String get name => "Banapass";
 
   @override
-  String? get type => "mifare";
+  String? get type => "banapass";
 
   @override
   String? get gamePayload => "$block1Hex$block2Hex";

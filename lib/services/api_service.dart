@@ -64,14 +64,14 @@ class ApiService {
   }
 
   ApiServiceResult? _validateCard(ICCard card) {
-    if (card.gamePayload != null && card.gamePayload!.isNotEmpty) {
+    if (card.type != null && card.type!.isNotEmpty) {
       return null;
     }
 
-    log('Card value is empty.');
+    log('Card type is not supported by the remote protocol.');
     return ApiServiceResult(
       success: false,
-      errorMessage: 'Card value is empty',
+      errorMessage: 'Card type is not supported by the remote protocol',
     );
   }
 
@@ -86,7 +86,10 @@ class ApiService {
       );
     }
 
-    final payload = {'type': card.type, 'value': card.gamePayload};
+    final payload = {
+      'action': 'SET_CARD_V2',
+      'body': {'card': card.toJson()},
+    };
     late final Map<String, dynamic> requestPayload;
     if (instance.password.isEmpty) {
       requestPayload = payload;
@@ -94,7 +97,7 @@ class ApiService {
     } else {
       requestPayload = await RemoteCrypto.encryptMessage(
         password: instance.password,
-        message: {'action': 'SET_CARD', 'body': payload},
+        message: payload,
         salt: RemoteCrypto.decodeSalt(instance.encryptionSalt),
         messageId: const Uuid().v4(),
       );

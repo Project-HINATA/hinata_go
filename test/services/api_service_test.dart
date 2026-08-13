@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hinata_go/models/card/aime.dart';
+import 'package:hinata_go/models/card/tunion.dart';
 import 'package:hinata_go/models/remote_instance.dart';
 import 'package:hinata_go/services/api_service.dart';
 import 'package:hinata_go/services/remote_crypto.dart';
@@ -30,7 +31,7 @@ void main() {
     Uint8List.fromList([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
   );
 
-  test('sends a legacy card body when password is empty', () async {
+  test('sends a V2 card body when password is empty', () async {
     final client = RecordingClient();
     final instance = RemoteInstance(
       id: 'id',
@@ -45,9 +46,45 @@ void main() {
 
     expect(result.success, isTrue);
     expect(jsonDecode((client.request! as http.Request).body), {
-      'type': 'aime',
-      'value': '00010203040506070809',
+      'action': 'SET_CARD_V2',
+      'body': {
+        'card': {
+          'type': 'aime',
+          'id': '01020304',
+          'sak': 8,
+          'atqa': 4,
+          'accessCode': '00010203040506070809',
+        },
+      },
     });
+  });
+
+  test('sends a T-Union model without a legacy game payload', () async {
+    final client = RecordingClient();
+    final instance = RemoteInstance(
+      id: 'id',
+      name: 'name',
+      icon: 'bear',
+      url: 'https://example.test/remote',
+    );
+    final tunion = TUnion(
+      Uint8List.fromList([1, 2, 3, 4]),
+      0x20,
+      0x0400,
+      cardNumber: '01234567890123456789',
+      balance: 0,
+      transactions: const [],
+    );
+
+    final result = await ApiService(
+      httpClient: client,
+    ).sendCardData(instance: instance, card: tunion);
+
+    expect(result.success, isTrue);
+    final request = jsonDecode((client.request! as http.Request).body);
+    expect(request['action'], 'SET_CARD_V2');
+    expect(request['body']['card']['type'], 'tunion');
+    expect(request['body']['card']['cardNumber'], '01234567890123456789');
   });
 
   test(
@@ -77,10 +114,15 @@ void main() {
 
       expect(result.success, isTrue);
       expect(envelope['action'], 'E2EE_V1');
-      expect(message['action'], 'SET_CARD');
+      expect(message['action'], 'SET_CARD_V2');
       expect(message['body'], {
-        'type': 'aime',
-        'value': '00010203040506070809',
+        'card': {
+          'type': 'aime',
+          'id': '01020304',
+          'sak': 8,
+          'atqa': 4,
+          'accessCode': '00010203040506070809',
+        },
       });
     },
   );

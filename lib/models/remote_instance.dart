@@ -61,12 +61,20 @@ class RemoteInstance {
       id: json['id'] as String,
       name: json['name'] as String,
       icon: json['icon'] as String,
-      url: json['url'] as String,
+      url: _migrateLegacyUrl(json['url'] as String),
       type: parseType(json['type']),
       unit: parseUnit(json),
       password: json['password'] as String? ?? '',
       encryptionSalt: storedSalt?.isNotEmpty == true ? storedSalt : null,
     );
+  }
+
+  static String _migrateLegacyUrl(String value) {
+    final uri = Uri.tryParse(value);
+    if (uri?.scheme == 'http' && uri?.host == 'aime-ws.neri.moe') {
+      return uri!.replace(scheme: 'https').toString();
+    }
+    return value;
   }
 
   RemoteInstance copyWith({

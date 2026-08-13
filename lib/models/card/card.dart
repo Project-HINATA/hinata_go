@@ -61,7 +61,8 @@ class ICCard {
         return Aime.fromJson(json);
       case 'felica':
         return Felica.fromJson(json);
-      case 'mifare':
+      case 'banapass':
+      case 'mifare': // Legacy V1 and persisted data.
         return Banapass.fromJson(json);
       case 'iso14443':
         return Iso14443.fromJson(json);

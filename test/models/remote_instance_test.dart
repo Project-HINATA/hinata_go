@@ -28,4 +28,15 @@ void main() {
       instance.encryptionSalt,
     );
   });
+
+  test('migrates the old HTTP public relay URL to HTTPS', () {
+    final instance = RemoteInstance.fromJson({
+      'id': 'legacy-id',
+      'name': 'Legacy',
+      'icon': 'bear',
+      'url': 'http://aime-ws.neri.moe/example',
+    });
+
+    expect(instance.url, 'https://aime-ws.neri.moe/example');
+  });
 }

@@ -8,7 +8,7 @@ class Validators {
 
     switch (type) {
       case InstanceType.hinataIo:
-        return 'http://$trimmed';
+        return 'https://$trimmed';
       case InstanceType.spiceApiWebSocket:
         return 'ws://$trimmed';
       case InstanceType.spiceApi:
