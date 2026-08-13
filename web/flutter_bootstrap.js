@@ -4,5 +4,6 @@
 _flutter.loader.load({
   config: {
     canvasKitBaseUrl: "runtime/__WEB_BUILD_ID__/canvaskit/",
+    entrypointBaseUrl: "runtime/__WEB_BUILD_ID__/",
   },
 });

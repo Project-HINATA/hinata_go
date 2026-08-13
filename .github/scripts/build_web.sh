@@ -15,6 +15,7 @@ flutter build web --release --wasm
 runtime_dir="build/web/runtime/$build_id"
 mkdir -p "$runtime_dir"
 cp -R build/web/canvaskit "$runtime_dir/canvaskit"
+cp build/web/main.dart.* "$runtime_dir/"
 
 for file in build/web/index.html build/web/flutter_bootstrap.js; do
   sed "s/__WEB_BUILD_ID__/$build_id/g" "$file" > "$file.tmp"
