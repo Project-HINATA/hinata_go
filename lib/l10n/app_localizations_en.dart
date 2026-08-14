@@ -250,6 +250,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get remotePassword => 'Password (Optional)';
 
   @override
+  String remotePasswordIoVersionRequirement(String version) {
+    return 'When a password is enabled, only IO version $version or later can receive cards.';
+  }
+
+  @override
   String get selectIcon => 'Select Icon:';
 
   @override

@@ -245,6 +245,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get remotePassword => '密码（可选）';
 
   @override
+  String remotePasswordIoVersionRequirement(String version) {
+    return '启用密码后，只有 IO $version 及以上版本才能接收卡片。';
+  }
+
+  @override
   String get selectIcon => '选择图标:';
 
   @override

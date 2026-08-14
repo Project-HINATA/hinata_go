@@ -542,6 +542,12 @@ abstract class AppLocalizations {
   /// **'Password (Optional)'**
   String get remotePassword;
 
+  /// Minimum IO version required for encrypted Remote card messages
+  ///
+  /// In en, this message translates to:
+  /// **'When a password is enabled, only IO version {version} or later can receive cards.'**
+  String remotePasswordIoVersionRequirement(String version);
+
   /// Label for icon picker
   ///
   /// In en, this message translates to:

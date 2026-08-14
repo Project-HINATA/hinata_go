@@ -268,26 +268,13 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
             '[_startPollLoop] Fast poll returned card: ${scannedCard.card.idString}, type: ${scannedCard.card.runtimeType}',
           );
 
-          // Record scan in current session. If it returns accepted, it's a new card scan!
-          final recordResult = ref
-              .read(currentScanSessionProvider.notifier)
-              .recordScan(
+          final recordResult = await ref
+              .read(nfcProvider.notifier)
+              .handleExternalScan(
                 scannedCard,
                 presenceMode: ScanPresenceMode.explicitRemoval,
               );
           debugPrint('[_startPollLoop] recordScan result: $recordResult');
-
-          final isNewScan = recordResult == ScanRecordResult.accepted;
-
-          if (isNewScan) {
-            // Process Phase 1 scanned card (create log, auto-save, auto-send)
-            await ref
-                .read(nfcProvider.notifier)
-                .handleExternalScan(
-                  scannedCard,
-                  presenceMode: ScanPresenceMode.explicitRemoval,
-                );
-          }
 
           // 2. If it is a transit card, read extended info sequentially if not yet loaded
           final sessionState = ref.read(currentScanSessionProvider);

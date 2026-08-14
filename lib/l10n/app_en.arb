@@ -336,6 +336,15 @@
   "@remotePassword": {
     "description": "Optional password for encrypted Remote messages"
   },
+  "remotePasswordIoVersionRequirement": "When a password is enabled, only IO version {version} or later can receive cards.",
+  "@remotePasswordIoVersionRequirement": {
+    "description": "Minimum IO version required for encrypted Remote card messages",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "selectIcon": "Select Icon:",
   "@selectIcon": {
     "description": "Label for icon picker"

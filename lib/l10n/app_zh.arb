@@ -336,6 +336,15 @@
   "@remotePassword": {
     "description": "Remote 加密消息的可选密码"
   },
+  "remotePasswordIoVersionRequirement": "启用密码后，只有 IO {version} 及以上版本才能接收卡片。",
+  "@remotePasswordIoVersionRequirement": {
+    "description": "接收 Remote 加密卡片消息所需的最低 IO 版本",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "selectIcon": "选择图标:",
   "@selectIcon": {
     "description": "图标选择标签"

@@ -94,7 +94,11 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
     ref.onDispose(() {
       WidgetsBinding.instance.removeObserver(this);
-      stopSession();
+      unawaited(() async {
+        try {
+          await FlutterNfcKit.finish();
+        } catch (_) {}
+      }());
     });
 
     final isIOS = !kIsWeb && Platform.isIOS;
@@ -335,7 +339,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _registerScan(
+  Future<ScanRecordResult> _registerScan(
     ScannedCard scannedCard, {
     required ScanPresenceMode presenceMode,
   }) async {
@@ -344,10 +348,11 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
         .recordScan(scannedCard, presenceMode: presenceMode);
 
     if (result == ScanRecordResult.duplicate) {
-      return;
+      return result;
     }
 
     await _processScannedCard(scannedCard);
+    return result;
   }
 
   Future<void> _processScannedCard(ScannedCard scannedCard) async {
@@ -433,11 +438,11 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   }
 
   // Also expose for external processing (like QR)
-  Future<void> handleExternalScan(
+  Future<ScanRecordResult> handleExternalScan(
     ScannedCard scannedCard, {
     ScanPresenceMode presenceMode = ScanPresenceMode.immediate,
   }) async {
-    await _registerScan(scannedCard, presenceMode: presenceMode);
+    return _registerScan(scannedCard, presenceMode: presenceMode);
   }
 
   /// Expose helper to allow external readers (like HINATA USB) to update scan logs

@@ -259,9 +259,11 @@ class _InstanceDialogContent extends StatelessWidget {
           urlField,
           if (showHinataVersionWarning) ...[
             const SizedBox(height: 4),
-            const Text(
-              '要求 IO 更新到 ${AppConstants.minimumHinataIoVersion} 以上',
-              style: TextStyle(color: Colors.orange),
+            Text(
+              context.l10n.remotePasswordIoVersionRequirement(
+                AppConstants.minimumHinataIoVersion,
+              ),
+              style: const TextStyle(color: Colors.orange),
             ),
           ],
           const _DialogFieldGap(),
