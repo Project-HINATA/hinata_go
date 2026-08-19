@@ -3,6 +3,7 @@ name: Flutter Android Build & Auto Release
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -47,13 +48,23 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 
-      - name: Build APK
-        run: flutter build apk --split-debug-info=build/symbols --obfuscate --split-per-abi --release
+      - name: Build Android release artifacts
+        run: |
+          flutter build apk --split-debug-info=build/symbols --obfuscate --split-per-abi --release
+          flutter build appbundle --split-debug-info=build/symbols --obfuscate --release
         env:
           ANDROID_KEYSTORE_PATH: "release.keystore"
           ANDROID_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload app bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-bundle
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Version Check & Generate Changelog
         id: meta
