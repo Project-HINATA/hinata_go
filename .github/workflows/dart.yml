@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     env:
       LOCAL_PLUGINS_REPO: ${{ secrets.LOCAL_PLUGINS_REPO }}
       LOCAL_PLUGINS_TOKEN: ${{ secrets.LOCAL_PLUGINS_TOKEN }}
@@ -50,8 +51,8 @@ jobs:
 
       - name: Build Android release artifacts
         run: |
-          flutter build apk --split-debug-info=build/symbols --obfuscate --split-per-abi --release
-          flutter build appbundle --split-debug-info=build/symbols --obfuscate --release
+          flutter build apk --build-number="${{ github.run_number }}" --split-debug-info=build/symbols --obfuscate --split-per-abi --release
+          flutter build appbundle --build-number="${{ github.run_number }}" --split-debug-info=build/symbols --obfuscate --release
         env:
           ANDROID_KEYSTORE_PATH: "release.keystore"
           ANDROID_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -87,3 +88,22 @@ jobs:
             **Build Info**: `${{ github.sha }}`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Authenticate to Google Cloud
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: project-f68012fd-bd02-44ba-907
+          workload_identity_provider: projects/411951881888/locations/global/workloadIdentityPools/github-actions/providers/github
+          service_account: hinata-go-play-release@project-f68012fd-bd02-44ba-907.iam.gserviceaccount.com
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ steps.google_auth.outputs.credentials_file_path }}
+          packageName: moe.neri.hinatago
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          mappingFile: build/app/outputs/mapping/release/mapping.txt
+          releaseName: ${{ steps.meta.outputs.mode_title }}
+          tracks: ${{ steps.meta.outputs.is_prerelease == 'true' && 'beta' || 'production' }}
+          status: completed
