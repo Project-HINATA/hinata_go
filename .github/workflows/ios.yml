@@ -1,0 +1,125 @@
+name: iOS Build & App Store Release
+
+on:
+  workflow_run:
+    workflows: ["Flutter Android Build & Auto Release"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Upload destination"
+        required: true
+        type: choice
+        options:
+          - beta
+          - production
+        default: beta
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and publish iOS
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, macOS, x64, ios-release]
+    env:
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+      IOS_BUNDLE_ID: moe.neri.hinatago
+      IOS_ASC_KEY_ID: ${{ secrets.IOS_ASC_KEY_ID }}
+      IOS_ASC_ISSUER_ID: ${{ secrets.IOS_ASC_ISSUER_ID }}
+      IOS_ASC_KEY_P8_BASE64: ${{ secrets.IOS_ASC_KEY_P8_BASE64 }}
+      LOCAL_PLUGINS_REPO: ${{ secrets.LOCAL_PLUGINS_REPO }}
+      LOCAL_PLUGINS_TOKEN: ${{ secrets.LOCAL_PLUGINS_TOKEN }}
+      LOCAL_PLUGINS_REF: ${{ secrets.LOCAL_PLUGINS_REF }}
+      CARDCIPHER_REPO: ${{ secrets.CARDCIPHER_REPO }}
+      CARDCIPHER_TOKEN: ${{ secrets.CARDCIPHER_TOKEN }}
+      CARDCIPHER_REF: ${{ secrets.CARDCIPHER_REF }}
+
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Check Apple build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          flutter --version
+          security find-identity -v -p codesigning
+
+      - name: Add Homebrew tools to PATH
+        run: echo "/usr/local/bin" >> "$GITHUB_PATH"
+
+      - name: Setup private plugins
+        if: ${{ env.LOCAL_PLUGINS_REPO != '' || env.CARDCIPHER_REPO != '' }}
+        shell: bash
+        run: ./.github/scripts/setup_private_plugins.sh
+
+      - name: Select release channel
+        id: channel
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_CHANNEL: ${{ inputs.channel }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            version="$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml | head -1)"
+            stable_tag="v${version}"
+            if git rev-parse --verify "refs/tags/${stable_tag}^{commit}" >/dev/null 2>&1 && \
+              [[ "$(git rev-parse "refs/tags/${stable_tag}^{commit}")" == "$(git rev-parse HEAD)" ]]; then
+              echo "value=production" >> "$GITHUB_OUTPUT"
+            else
+              echo "value=beta" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "value=${MANUAL_CHANNEL:-beta}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Calculate App Store build number
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml | head -1)"
+          test -n "$version"
+          echo "marketing=$version" >> "$GITHUB_OUTPUT"
+          build_number="$(fastlane ios next_build_number | sed -n 's/^NEXT_BUILD_NUMBER=//p' | tail -1)"
+          test -n "$build_number"
+          echo "build=$build_number" >> "$GITHUB_OUTPUT"
+
+      - name: Build IPA
+        run: |
+          flutter build ipa --release \
+            --build-name="${{ steps.version.outputs.marketing }}" \
+            --build-number="${{ steps.version.outputs.build }}" \
+            --export-method app-store \
+            --split-debug-info=build/symbols \
+            --obfuscate
+
+      - name: Publish IPA
+        env:
+          IOS_RELEASE_CHANNEL: ${{ steps.channel.outputs.value }}
+          IOS_IPA_PATH: build/ios/ipa/*.ipa
+        run: |
+          set -euo pipefail
+          ipa_path="$(find build/ios/ipa -maxdepth 1 -name '*.ipa' -print -quit)"
+          test -n "$ipa_path"
+          IOS_IPA_PATH="$ipa_path" fastlane ios publish
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-${{ steps.channel.outputs.value }}
+          path: build/ios/ipa/*.ipa
+          if-no-files-found: error
+          retention-days: 14
