@@ -30,6 +30,8 @@ jobs:
       IOS_ASC_KEY_ID: ${{ secrets.IOS_ASC_KEY_ID }}
       IOS_ASC_ISSUER_ID: ${{ secrets.IOS_ASC_ISSUER_ID }}
       IOS_ASC_KEY_P8_BASE64: ${{ secrets.IOS_ASC_KEY_P8_BASE64 }}
+      FASTLANE_SKIP_UPDATE_CHECK: "1"
+      FASTLANE_HIDE_TIMESTAMP: "1"
       LOCAL_PLUGINS_REPO: ${{ secrets.LOCAL_PLUGINS_REPO }}
       LOCAL_PLUGINS_TOKEN: ${{ secrets.LOCAL_PLUGINS_TOKEN }}
       LOCAL_PLUGINS_REF: ${{ secrets.LOCAL_PLUGINS_REF }}
@@ -93,7 +95,13 @@ jobs:
           version="$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml | head -1)"
           test -n "$version"
           echo "marketing=$version" >> "$GITHUB_OUTPUT"
-          build_number="$(fastlane ios next_build_number | sed -n 's/^NEXT_BUILD_NUMBER=//p' | tail -1)"
+          fastlane_output="$(mktemp)"
+          if ! fastlane ios next_build_number 2>&1 | tee "$fastlane_output"; then
+            cat "$fastlane_output" >&2
+            exit 1
+          fi
+          build_number="$(sed -n 's/^NEXT_BUILD_NUMBER=//p' "$fastlane_output" | tail -1)"
+          rm -f "$fastlane_output"
           test -n "$build_number"
           echo "build=$build_number" >> "$GITHUB_OUTPUT"
 
