@@ -88,6 +88,18 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
     return const CurrentScanSessionState();
   }
 
+  ScanRecordResult markCardPlaced(
+    ScannedCard scannedCard, {
+    ScanPresenceMode presenceMode = ScanPresenceMode.explicitRemoval,
+    Duration heartbeatTimeout = _defaultHeartbeatTimeout,
+  }) {
+    return recordScan(
+      scannedCard,
+      presenceMode: presenceMode,
+      heartbeatTimeout: heartbeatTimeout,
+    );
+  }
+
   ScanRecordResult recordScan(
     ScannedCard scannedCard, {
     required ScanPresenceMode presenceMode,
