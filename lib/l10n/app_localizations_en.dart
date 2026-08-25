@@ -740,4 +740,125 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get nfcReadIncomplete =>
       'Card reading was interrupted. Please scan it again.';
+
+  @override
+  String get noInstancesHint =>
+      'No instances configured. Add an instance to start remote management.';
+
+  @override
+  String get quickSendCard => 'Quick Send Card';
+
+  @override
+  String get noSavedCards => 'No saved cards available';
+
+  @override
+  String get viewCardLibrary => 'Card Library';
+
+  @override
+  String get virtualActions => 'Virtual Controls';
+
+  @override
+  String get serviceButton => 'Service';
+
+  @override
+  String get testButton => 'Test';
+
+  @override
+  String buttonPressed(String button) {
+    return 'Triggered $button';
+  }
+
+  @override
+  String coinsAmount(int count) {
+    return '$count Coins';
+  }
+
+  @override
+  String get ioInformation => 'IO Information';
+
+  @override
+  String get hostProcess => 'Host Process';
+
+  @override
+  String get activeBackends => 'Active Backends';
+
+  @override
+  String get logLevel => 'Log Level';
+
+  @override
+  String get brightness => 'Brightness';
+
+  @override
+  String get tunion => 'T-Union';
+
+  @override
+  String get autoUpdate => 'Auto Update';
+
+  @override
+  String get reportUrl => 'Report URL';
+
+  @override
+  String get saveIoConfig => 'Save IO Config';
+
+  @override
+  String get ioConfigSaved => 'IO configuration updated successfully!';
+
+  @override
+  String get hardwareInfo => 'Hardware Information';
+
+  @override
+  String pidLabel(String pid) {
+    return 'PID: $pid';
+  }
+
+  @override
+  String chipIdLabel(String chipId) {
+    return 'Chip ID: $chipId';
+  }
+
+  @override
+  String firmwareDateLabel(String date) {
+    return 'Firmware Date: $date';
+  }
+
+  @override
+  String get fastRead => 'Rapid Scan';
+
+  @override
+  String get checkFirmware => 'Check Firmware';
+
+  @override
+  String get firmwareUpToDate => 'Device firmware is up to date!';
+
+  @override
+  String newFirmwareFound(String version) {
+    return 'New Firmware Available: $version';
+  }
+
+  @override
+  String get changelog => 'Changelog';
+
+  @override
+  String get startingUpdate => 'Starting firmware update...';
+
+  @override
+  String get updateInProgress => 'Updating firmware...';
+
+  @override
+  String get updateCompleted => 'Firmware update completed successfully!';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get reconnect => 'Reconnect';
+
+  @override
+  String get remoteDeviceOffline => 'Remote AimeIO is currently offline.';
+
+  @override
+  String get connecting => 'Connecting...';
+
+  @override
+  String get checkingUpdate => 'Checking for updates...';
 }

@@ -1,4 +1,5 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'hardware_device_provider.dart';
 import 'storage_provider.dart';
 import '../models/remote_instance.dart';
 import '../models/card/saved_card.dart';
@@ -6,6 +7,7 @@ import '../models/card/card.dart';
 import '../models/card_folder.dart';
 import '../models/scan_log.dart';
 import '../models/scanning_mode.dart';
+import '../services/communication/remote_hinata_impl.dart';
 
 // --- Scanning Mode ---
 final scanningModeProvider =
@@ -80,6 +82,29 @@ final activeInstanceProvider = Provider<RemoteInstance?>((ref) {
     return null;
   }
 });
+
+final activeRemoteDeviceProvider =
+    Provider.autoDispose<RemoteHinataDeviceImpl?>((ref) {
+      final activeInstance = ref.watch(activeInstanceProvider);
+      if (activeInstance == null ||
+          activeInstance.type != InstanceType.hinataIo) {
+        return null;
+      }
+      final device = RemoteHinataDeviceImpl(instance: activeInstance);
+
+      Future.microtask(() {
+        ref.read(deviceRegistryProvider.notifier).registerRemoteDevice(device);
+      });
+
+      ref.onDispose(() {
+        ref
+            .read(deviceRegistryProvider.notifier)
+            .unregisterRemoteDevice(device.deviceId);
+        device.dispose();
+      });
+
+      return device;
+    });
 
 // --- Saved Cards ---
 final savedCardsProvider =

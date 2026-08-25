@@ -1441,6 +1441,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Card reading was interrupted. Please scan it again.'**
   String get nfcReadIncomplete;
+
+  /// Hint shown in remote page when no instances are configured
+  ///
+  /// In en, this message translates to:
+  /// **'No instances configured. Add an instance to start remote management.'**
+  String get noInstancesHint;
+
+  /// Title for quick card send section
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Send Card'**
+  String get quickSendCard;
+
+  /// Empty state for saved cards in remote page
+  ///
+  /// In en, this message translates to:
+  /// **'No saved cards available'**
+  String get noSavedCards;
+
+  /// Action to open card library
+  ///
+  /// In en, this message translates to:
+  /// **'Card Library'**
+  String get viewCardLibrary;
+
+  /// Title for virtual controls like coins and buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Virtual Controls'**
+  String get virtualActions;
+
+  /// Service button label
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get serviceButton;
+
+  /// Test button label
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get testButton;
+
+  /// Feedback when a button is triggered
+  ///
+  /// In en, this message translates to:
+  /// **'Triggered {button}'**
+  String buttonPressed(String button);
+
+  /// Label for coin insert count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Coins'**
+  String coinsAmount(int count);
+
+  /// Title for IO info section
+  ///
+  /// In en, this message translates to:
+  /// **'IO Information'**
+  String get ioInformation;
+
+  /// Process name label
+  ///
+  /// In en, this message translates to:
+  /// **'Host Process'**
+  String get hostProcess;
+
+  /// Active backends label
+  ///
+  /// In en, this message translates to:
+  /// **'Active Backends'**
+  String get activeBackends;
+
+  /// Log level label
+  ///
+  /// In en, this message translates to:
+  /// **'Log Level'**
+  String get logLevel;
+
+  /// Brightness label
+  ///
+  /// In en, this message translates to:
+  /// **'Brightness'**
+  String get brightness;
+
+  /// T-Union label
+  ///
+  /// In en, this message translates to:
+  /// **'T-Union'**
+  String get tunion;
+
+  /// Auto update label
+  ///
+  /// In en, this message translates to:
+  /// **'Auto Update'**
+  String get autoUpdate;
+
+  /// Report URL label
+  ///
+  /// In en, this message translates to:
+  /// **'Report URL'**
+  String get reportUrl;
+
+  /// Button to save IO configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Save IO Config'**
+  String get saveIoConfig;
+
+  /// Feedback when IO configuration is saved
+  ///
+  /// In en, this message translates to:
+  /// **'IO configuration updated successfully!'**
+  String get ioConfigSaved;
+
+  /// Title for hardware info section
+  ///
+  /// In en, this message translates to:
+  /// **'Hardware Information'**
+  String get hardwareInfo;
+
+  /// Product ID label
+  ///
+  /// In en, this message translates to:
+  /// **'PID: {pid}'**
+  String pidLabel(String pid);
+
+  /// Chip ID label
+  ///
+  /// In en, this message translates to:
+  /// **'Chip ID: {chipId}'**
+  String chipIdLabel(String chipId);
+
+  /// Firmware date label
+  ///
+  /// In en, this message translates to:
+  /// **'Firmware Date: {date}'**
+  String firmwareDateLabel(String date);
+
+  /// Fast read toggle label
+  ///
+  /// In en, this message translates to:
+  /// **'Rapid Scan'**
+  String get fastRead;
+
+  /// Button to check firmware update
+  ///
+  /// In en, this message translates to:
+  /// **'Check Firmware'**
+  String get checkFirmware;
+
+  /// Message when firmware is latest
+  ///
+  /// In en, this message translates to:
+  /// **'Device firmware is up to date!'**
+  String get firmwareUpToDate;
+
+  /// Message when update is found
+  ///
+  /// In en, this message translates to:
+  /// **'New Firmware Available: {version}'**
+  String newFirmwareFound(String version);
+
+  /// Changelog title
+  ///
+  /// In en, this message translates to:
+  /// **'Changelog'**
+  String get changelog;
+
+  /// Progress text when update begins
+  ///
+  /// In en, this message translates to:
+  /// **'Starting firmware update...'**
+  String get startingUpdate;
+
+  /// Progress title during update
+  ///
+  /// In en, this message translates to:
+  /// **'Updating firmware...'**
+  String get updateInProgress;
+
+  /// Success message after firmware update
+  ///
+  /// In en, this message translates to:
+  /// **'Firmware update completed successfully!'**
+  String get updateCompleted;
+
+  /// Close button label
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// Reconnect button label
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get reconnect;
+
+  /// Status message when remote device is disconnected
+  ///
+  /// In en, this message translates to:
+  /// **'Remote AimeIO is currently offline.'**
+  String get remoteDeviceOffline;
+
+  /// Status indicating remote device is connecting
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting...'**
+  String get connecting;
+
+  /// Status message while checking for firmware update
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for updates...'**
+  String get checkingUpdate;
 }
 
 class _AppLocalizationsDelegate

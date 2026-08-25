@@ -173,18 +173,19 @@ class RemoteHinataDeviceImpl implements DeviceInterface {
 
     try {
       final dynamic decodedJson = jsonDecode(raw);
-      if (decodedJson is! Map<String, dynamic>) {
+      if (decodedJson is! Map) {
         return;
       }
+      final decodedMap = Map<String, dynamic>.from(decodedJson);
 
       Map<String, dynamic> payload;
-      if (instance.password.isNotEmpty && decodedJson['action'] == 'E2EE_V1') {
+      if (instance.password.isNotEmpty && decodedMap['action'] == 'E2EE_V1') {
         payload = await RemoteCrypto.decryptMessage(
           password: instance.password,
-          envelope: decodedJson,
+          envelope: decodedMap,
         );
       } else {
-        payload = decodedJson;
+        payload = decodedMap;
       }
 
       _dispatchDecryptedMessage(payload);
