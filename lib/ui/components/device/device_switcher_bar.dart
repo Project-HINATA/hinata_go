@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
+import 'package:hinata_go/l10n/l10n.dart';
 import 'package:hinata_go/providers/hardware_device_provider.dart';
 import 'package:hinata_go/services/communication/device_interface.dart';
 import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
@@ -10,17 +11,22 @@ class DeviceSwitcherBar extends ConsumerWidget {
   final Map<String, DeviceInterface> devices;
   final String? activeDeviceId;
   final ValueChanged<String>? onSelectDevice;
+  final bool showAddButton;
+  final VoidCallback? onAddDevice;
 
   const DeviceSwitcherBar({
     required this.devices,
     required this.activeDeviceId,
     this.onSelectDevice,
+    this.showAddButton = true,
+    this.onAddDevice,
     super.key,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
+    final totalItems = devices.length + (showAddButton ? 1 : 0);
 
     return Container(
       height: 76,
@@ -38,29 +44,38 @@ class DeviceSwitcherBar extends ConsumerWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: devices.length,
+        itemCount: totalItems,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
-          final device = devices.values.elementAt(index);
-          final isSelected = device.deviceId == activeDeviceId;
-          final isConnected =
-              device.connectionState.value == DeviceConnectionState.connected;
+          if (index < devices.length) {
+            final device = devices.values.elementAt(index);
+            final isSelected = device.deviceId == activeDeviceId;
+            final isConnected =
+                device.connectionState.value == DeviceConnectionState.connected;
 
-          return _DeviceSwitcherCard(
-            device: device,
-            isSelected: isSelected,
-            isConnected: isConnected,
-            onTap: () {
-              if (onSelectDevice != null) {
-                onSelectDevice!(device.deviceId);
-              } else {
-                ref
-                    .read(hardwareDeviceProvider.notifier)
-                    .selectDevice(device.deviceId);
-              }
-            },
-            onEditAlias: () => showEditDeviceAliasDialog(context, ref, device),
-          );
+            return _DeviceSwitcherCard(
+              device: device,
+              isSelected: isSelected,
+              isConnected: isConnected,
+              onTap: () {
+                if (onSelectDevice != null) {
+                  onSelectDevice!(device.deviceId);
+                } else {
+                  ref
+                      .read(hardwareDeviceProvider.notifier)
+                      .selectDevice(device.deviceId);
+                }
+              },
+              onEditAlias: () => showEditDeviceAliasDialog(context, ref, device),
+            );
+          } else {
+            return _AddDeviceCard(
+              onTap: onAddDevice ??
+                  () {
+                    ref.read(hardwareDeviceProvider.notifier).requestUsbDevice();
+                  },
+            );
+          }
         },
       ),
     );
@@ -197,6 +212,62 @@ class _DeviceSwitcherCard extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                 onPressed: onEditAlias,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddDeviceCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddDeviceCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final l10n = context.l10n;
+
+    return Material(
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 22,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                l10n.pairNewDevice,
+                style: context.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
+                ),
               ),
             ],
           ),

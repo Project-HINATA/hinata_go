@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/hardware_device_provider.dart';
 import '../components/device/device_dashboard.dart';
+import '../components/device/device_manager_sheet.dart';
 import '../components/device/device_switcher_bar.dart';
 import '../components/device/disconnected_state.dart';
 
@@ -22,14 +23,29 @@ class DeviceControlPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.deviceHub),
         actions: [
-          if (isConnected)
+          if (isConnected) ...[
             IconButton(
-              icon: const Icon(Icons.link_off),
-              tooltip: 'Disconnect',
+              icon: const Icon(Icons.add_circle_outline_rounded),
+              tooltip: l10n.pairNewDevice,
               onPressed: () {
-                ref.read(hardwareDeviceProvider.notifier).disconnect();
+                ref.read(hardwareDeviceProvider.notifier).requestUsbDevice();
               },
             ),
+            IconButton(
+              icon: const Icon(Icons.devices_other_rounded),
+              tooltip: l10n.manageDevices,
+              onPressed: () {
+                showDeviceManagerSheet(context);
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.link_off_rounded),
+              tooltip: l10n.disconnectAll,
+              onPressed: () {
+                ref.read(hardwareDeviceProvider.notifier).disconnectAll();
+              },
+            ),
+          ],
         ],
       ),
       body: SafeArea(
@@ -41,11 +57,10 @@ class DeviceControlPage extends ConsumerWidget {
               ? Column(
                   key: const ValueKey('connected_content'),
                   children: [
-                    if (deviceState.devices.length > 1)
-                      DeviceSwitcherBar(
-                        devices: deviceState.devices,
-                        activeDeviceId: deviceState.activeDeviceId,
-                      ),
+                    DeviceSwitcherBar(
+                      devices: deviceState.devices,
+                      activeDeviceId: deviceState.activeDeviceId,
+                    ),
                     Expanded(
                       child: DeviceDashboard(
                         device: activeDevice,
@@ -61,12 +76,11 @@ class DeviceControlPage extends ConsumerWidget {
           ? null
           : FloatingActionButton.small(
               onPressed: () {
-                ref.read(hardwareDeviceProvider.notifier).disconnect();
+                ref.read(hardwareDeviceProvider.notifier).disconnectAll();
               },
-              tooltip: 'Disconnect',
-              child: const Icon(Icons.link_off),
+              tooltip: l10n.disconnectAll,
+              child: const Icon(Icons.link_off_rounded),
             ),
     );
   }
 }
-

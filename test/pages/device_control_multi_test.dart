@@ -11,6 +11,7 @@ import 'package:hinata_go/providers/hardware_device_provider.dart';
 import 'package:hinata_go/providers/storage_provider.dart';
 import 'package:hinata_go/services/communication/device_interface.dart';
 import 'package:hinata_go/ui/components/device/device_mini_bar.dart';
+import 'package:hinata_go/ui/components/device/device_switcher_bar.dart';
 import 'package:hinata_go/ui/components/reader/current_scan_result_panel.dart';
 import 'package:hinata_go/ui/pages/device_control_page.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -168,7 +169,7 @@ void main() {
     });
 
     testWidgets(
-      'renders single device dashboard without horizontal switcher bar',
+      'renders single device dashboard with top switcher bar and pair button',
       (tester) async {
         final container = await _createTestContainer();
         addTearDown(container.dispose);
@@ -188,9 +189,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('HINATA Reader 1'), findsOneWidget);
-        // Switcher bar is only shown when multiple devices exist
-        expect(find.byType(ListView), findsOneWidget); // Only the dashboard list
+        expect(find.byType(DeviceSwitcherBar), findsOneWidget);
+        expect(find.text('Pair Device'), findsOneWidget);
+        expect(find.text('HINATA Reader 1'), findsNWidgets(2)); // Switcher card & Dashboard header
       },
     );
 

@@ -27,6 +27,8 @@ class HinataReader {
     _device.onInputReport(_onInputReport);
   }
 
+  HIDDevice get device => _device;
+
   int get pid => _device.productId;
 
   String get firmVersion {

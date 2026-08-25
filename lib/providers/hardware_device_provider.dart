@@ -610,18 +610,13 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
   }
 
   String _hidDeviceKey(HIDDevice device) {
-    return '${device.vendorId}:${device.productId}:${device.productName}';
+    return '${device.vendorId}:${device.productId}:${identityHashCode(device)}';
   }
 
   bool _isConnectedToHidDevice(HIDDevice device) {
-    final targetKey = _usbDeviceId(device);
-    if (state.devices.containsKey(targetKey)) {
-      return true;
-    }
     for (final dev in state.devices.values) {
       if (dev is UsbHinataDeviceImpl) {
-        if (dev.deviceId == targetKey ||
-            dev.deviceId == device.productId.toString()) {
+        if (identical(dev.device, device) || dev.deviceId == _usbDeviceId(device)) {
           return true;
         }
       }

@@ -98,6 +98,9 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   @override
   String get displayTitle => _alias ?? productName;
 
+  HinataReader get hinata => _hinata;
+  HIDDevice get device => _hinata.device;
+
   String get firmVersion => _hinata.firmVersion;
   int get productId => _hinata.pid;
   Config0 get config0 => _hinata.config0;

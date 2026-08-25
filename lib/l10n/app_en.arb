@@ -1194,5 +1194,37 @@
   "checkingUpdate": "Checking for updates...",
   "@checkingUpdate": {
     "description": "Status message while checking for firmware update"
+  },
+  "connectedDevices": "Connected Devices",
+  "@connectedDevices": {
+    "description": "Title for connected devices list"
+  },
+  "pairNewDevice": "Pair Device",
+  "@pairNewDevice": {
+    "description": "Button label to pair a new device"
+  },
+  "pairDeviceTooltip": "Pair a new USB or Remote reader",
+  "@pairDeviceTooltip": {
+    "description": "Tooltip for pair device button"
+  },
+  "manageDevices": "Manage Devices",
+  "@manageDevices": {
+    "description": "Action to open device manager sheet"
+  },
+  "disconnectDevice": "Disconnect",
+  "@disconnectDevice": {
+    "description": "Button to disconnect a single device"
+  },
+  "disconnectAll": "Disconnect All",
+  "@disconnectAll": {
+    "description": "Button to disconnect all devices"
+  },
+  "activeDevice": "Active Device",
+  "@activeDevice": {
+    "description": "Label indicating active device"
+  },
+  "noDevicesConnected": "No card readers connected",
+  "@noDevicesConnected": {
+    "description": "Empty state message for devices"
   }
 }

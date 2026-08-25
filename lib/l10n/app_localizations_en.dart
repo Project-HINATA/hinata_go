@@ -861,4 +861,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkingUpdate => 'Checking for updates...';
+
+  @override
+  String get connectedDevices => 'Connected Devices';
+
+  @override
+  String get pairNewDevice => 'Pair Device';
+
+  @override
+  String get pairDeviceTooltip => 'Pair a new USB or Remote reader';
+
+  @override
+  String get manageDevices => 'Manage Devices';
+
+  @override
+  String get disconnectDevice => 'Disconnect';
+
+  @override
+  String get disconnectAll => 'Disconnect All';
+
+  @override
+  String get activeDevice => 'Active Device';
+
+  @override
+  String get noDevicesConnected => 'No card readers connected';
 }

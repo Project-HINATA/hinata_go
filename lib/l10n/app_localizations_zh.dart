@@ -849,4 +849,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get checkingUpdate => '正在检查更新...';
+
+  @override
+  String get connectedDevices => '已连接设备列表';
+
+  @override
+  String get pairNewDevice => '配对新设备';
+
+  @override
+  String get pairDeviceTooltip => '配对新的 USB 或远程读卡器';
+
+  @override
+  String get manageDevices => '设备管理';
+
+  @override
+  String get disconnectDevice => '断开连接';
+
+  @override
+  String get disconnectAll => '断开全部设备';
+
+  @override
+  String get activeDevice => '当前主控';
+
+  @override
+  String get noDevicesConnected => '暂无已连接的读卡器';
 }

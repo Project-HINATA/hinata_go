@@ -1657,6 +1657,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking for updates...'**
   String get checkingUpdate;
+
+  /// Title for connected devices list
+  ///
+  /// In en, this message translates to:
+  /// **'Connected Devices'**
+  String get connectedDevices;
+
+  /// Button label to pair a new device
+  ///
+  /// In en, this message translates to:
+  /// **'Pair Device'**
+  String get pairNewDevice;
+
+  /// Tooltip for pair device button
+  ///
+  /// In en, this message translates to:
+  /// **'Pair a new USB or Remote reader'**
+  String get pairDeviceTooltip;
+
+  /// Action to open device manager sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Devices'**
+  String get manageDevices;
+
+  /// Button to disconnect a single device
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get disconnectDevice;
+
+  /// Button to disconnect all devices
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect All'**
+  String get disconnectAll;
+
+  /// Label indicating active device
+  ///
+  /// In en, this message translates to:
+  /// **'Active Device'**
+  String get activeDevice;
+
+  /// Empty state message for devices
+  ///
+  /// In en, this message translates to:
+  /// **'No card readers connected'**
+  String get noDevicesConnected;
 }
 
 class _AppLocalizationsDelegate

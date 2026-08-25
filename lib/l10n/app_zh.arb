@@ -1191,5 +1191,37 @@
   "checkingUpdate": "正在检查更新...",
   "@checkingUpdate": {
     "description": "正在检查固件更新提示"
+  },
+  "connectedDevices": "已连接设备列表",
+  "@connectedDevices": {
+    "description": "已连接设备列表标题"
+  },
+  "pairNewDevice": "配对新设备",
+  "@pairNewDevice": {
+    "description": "配对新设备按钮"
+  },
+  "pairDeviceTooltip": "配对新的 USB 或远程读卡器",
+  "@pairDeviceTooltip": {
+    "description": "配对新设备提示"
+  },
+  "manageDevices": "设备管理",
+  "@manageDevices": {
+    "description": "打开设备管理面板"
+  },
+  "disconnectDevice": "断开连接",
+  "@disconnectDevice": {
+    "description": "断开单个设备"
+  },
+  "disconnectAll": "断开全部设备",
+  "@disconnectAll": {
+    "description": "断开所有设备"
+  },
+  "activeDevice": "当前主控",
+  "@activeDevice": {
+    "description": "主控设备标识"
+  },
+  "noDevicesConnected": "暂无已连接的读卡器",
+  "@noDevicesConnected": {
+    "description": "无设备连接提示"
   }
 }

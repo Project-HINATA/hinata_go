@@ -367,7 +367,7 @@ class _DeviceSheetContent extends StatelessWidget {
       child: Column(
         children: [
           const _DeviceSheetHandle(),
-          if (isConnected && state.devices.length > 1)
+          if (isConnected)
             DeviceSwitcherBar(
               devices: state.devices,
               activeDeviceId: state.activeDeviceId,
