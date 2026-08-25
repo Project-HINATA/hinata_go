@@ -77,6 +77,46 @@
   "@cards": {
     "description": "底部导航或功能项：卡片库"
   },
+  "remote": "远程",
+  "@remote": {
+    "description": "底部导航或功能项：远程控制中心"
+  },
+  "remoteHub": "远程中心",
+  "@remoteHub": {
+    "description": "远程控制中心页面标题"
+  },
+  "remoteReader": "远程读卡器",
+  "@remoteReader": {
+    "description": "远程读卡器模块标题"
+  },
+  "ioConfig": "IO 配置",
+  "@ioConfig": {
+    "description": "IO 配置模块标题"
+  },
+  "quickActions": "快捷操作",
+  "@quickActions": {
+    "description": "快捷操作模块标题"
+  },
+  "insertCoin": "投币",
+  "@insertCoin": {
+    "description": "虚拟投币按钮"
+  },
+  "coinInserted": "投币成功",
+  "@coinInserted": {
+    "description": "投币成功提示"
+  },
+  "remoteStatus": "远程状态",
+  "@remoteStatus": {
+    "description": "远程连接状态标签"
+  },
+  "online": "在线",
+  "@online": {
+    "description": "状态：在线"
+  },
+  "offline": "离线",
+  "@offline": {
+    "description": "状态：离线"
+  },
   "scanQrCode": "扫描二维码",
   "@scanQrCode": {
     "description": "二维码扫描功能"

@@ -77,6 +77,46 @@
   "@cards": {
     "description": "Navigation label for card library"
   },
+  "remote": "Remote",
+  "@remote": {
+    "description": "Navigation label for remote management center"
+  },
+  "remoteHub": "Remote Hub",
+  "@remoteHub": {
+    "description": "Title for the remote management hub"
+  },
+  "remoteReader": "Remote Reader",
+  "@remoteReader": {
+    "description": "Title for remote card reader section"
+  },
+  "ioConfig": "IO Configuration",
+  "@ioConfig": {
+    "description": "Title for IO configuration section"
+  },
+  "quickActions": "Quick Actions",
+  "@quickActions": {
+    "description": "Title for quick game actions"
+  },
+  "insertCoin": "Insert Coin",
+  "@insertCoin": {
+    "description": "Button to insert virtual coin"
+  },
+  "coinInserted": "Coin Inserted",
+  "@coinInserted": {
+    "description": "Toast message when coin is inserted"
+  },
+  "remoteStatus": "Remote Status",
+  "@remoteStatus": {
+    "description": "Status label for remote connection"
+  },
+  "online": "Online",
+  "@online": {
+    "description": "Status indicating remote device is connected"
+  },
+  "offline": "Offline",
+  "@offline": {
+    "description": "Status indicating remote device is disconnected"
+  },
   "scanQrCode": "Scan QR Code",
   "@scanQrCode": {
     "description": "Feature to scan QR codes"

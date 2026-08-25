@@ -194,6 +194,66 @@ abstract class AppLocalizations {
   /// **'Cards'**
   String get cards;
 
+  /// Navigation label for remote management center
+  ///
+  /// In en, this message translates to:
+  /// **'Remote'**
+  String get remote;
+
+  /// Title for the remote management hub
+  ///
+  /// In en, this message translates to:
+  /// **'Remote Hub'**
+  String get remoteHub;
+
+  /// Title for remote card reader section
+  ///
+  /// In en, this message translates to:
+  /// **'Remote Reader'**
+  String get remoteReader;
+
+  /// Title for IO configuration section
+  ///
+  /// In en, this message translates to:
+  /// **'IO Configuration'**
+  String get ioConfig;
+
+  /// Title for quick game actions
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Actions'**
+  String get quickActions;
+
+  /// Button to insert virtual coin
+  ///
+  /// In en, this message translates to:
+  /// **'Insert Coin'**
+  String get insertCoin;
+
+  /// Toast message when coin is inserted
+  ///
+  /// In en, this message translates to:
+  /// **'Coin Inserted'**
+  String get coinInserted;
+
+  /// Status label for remote connection
+  ///
+  /// In en, this message translates to:
+  /// **'Remote Status'**
+  String get remoteStatus;
+
+  /// Status indicating remote device is connected
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get online;
+
+  /// Status indicating remote device is disconnected
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get offline;
+
   /// Feature to scan QR codes
   ///
   /// In en, this message translates to:

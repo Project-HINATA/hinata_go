@@ -61,6 +61,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cards => '卡片';
 
   @override
+  String get remote => '远程';
+
+  @override
+  String get remoteHub => '远程中心';
+
+  @override
+  String get remoteReader => '远程读卡器';
+
+  @override
+  String get ioConfig => 'IO 配置';
+
+  @override
+  String get quickActions => '快捷操作';
+
+  @override
+  String get insertCoin => '投币';
+
+  @override
+  String get coinInserted => '投币成功';
+
+  @override
+  String get remoteStatus => '远程状态';
+
+  @override
+  String get online => '在线';
+
+  @override
+  String get offline => '离线';
+
+  @override
   String get scanQrCode => '扫描二维码';
 
   @override

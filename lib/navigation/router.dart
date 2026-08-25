@@ -10,6 +10,7 @@ import '../ui/pages/card_detail_page.dart';
 import '../ui/pages/device_control_page.dart';
 import '../ui/pages/firmware_update_page.dart';
 import '../ui/pages/instances_page.dart';
+import '../ui/pages/remote/remote_page.dart';
 import '../ui/pages/saved_cards_page.dart';
 import '../ui/pages/scan_logs_page.dart';
 import '../ui/pages/scan_page.dart';
@@ -70,6 +71,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/cards',
                 builder: (context, state) => const SavedCardsPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/remote',
+                builder: (context, state) => const RemotePage(),
               ),
             ],
           ),

@@ -150,7 +150,7 @@ class SavedCardsPage extends HookConsumerWidget {
       if (currentFolderIndex < folders.length - 1) {
         selectedFolderIdState.value = folders[currentFolderIndex + 1].id;
       } else {
-        context.go('/settings');
+        context.go('/remote');
       }
     }
   }

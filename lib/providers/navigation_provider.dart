@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Provider to track the current active branch index in the main scaffold.
-/// 0: Reader, 1: Cards, 2: Settings
+/// 0: Scan, 1: Cards, 2: Remote, 3: Settings
 final activeBranchProvider = NotifierProvider<ActiveBranchNotifier, int>(() {
   return ActiveBranchNotifier();
 });

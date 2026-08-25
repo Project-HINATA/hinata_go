@@ -63,6 +63,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cards => 'Cards';
 
   @override
+  String get remote => 'Remote';
+
+  @override
+  String get remoteHub => 'Remote Hub';
+
+  @override
+  String get remoteReader => 'Remote Reader';
+
+  @override
+  String get ioConfig => 'IO Configuration';
+
+  @override
+  String get quickActions => 'Quick Actions';
+
+  @override
+  String get insertCoin => 'Insert Coin';
+
+  @override
+  String get coinInserted => 'Coin Inserted';
+
+  @override
+  String get remoteStatus => 'Remote Status';
+
+  @override
+  String get online => 'Online';
+
+  @override
+  String get offline => 'Offline';
+
+  @override
   String get scanQrCode => 'Scan QR Code';
 
   @override
