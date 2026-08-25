@@ -78,6 +78,18 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   @override
   String get productName => _hinata.productName;
 
+  @override
+  bool get isRemote => false;
+
+  @override
+  String? get instanceId => null;
+
+  @override
+  String? get alias => null;
+
+  @override
+  String get displayTitle => productName;
+
   String get firmVersion => _hinata.firmVersion;
   int get productId => _hinata.pid;
   Config0 get config0 => _hinata.config0;
@@ -156,6 +168,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     await _hinata.reloadConfig();
   }
 
+  @override
   Future<void> resetLed() async {
     await _hinata.resetLed();
   }

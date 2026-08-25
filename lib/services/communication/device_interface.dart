@@ -16,6 +16,18 @@ abstract class DeviceInterface {
   /// Current connection state
   ValueNotifier<DeviceConnectionState> get connectionState;
 
+  /// Whether this is a remote device (e.g. AimeIO via WebSocket)
+  bool get isRemote => false;
+
+  /// Remote instance ID if this is a remote device
+  String? get instanceId => null;
+
+  /// User-customized alias/name for the device
+  String? get alias => null;
+
+  /// Display title for UI presentation (falls back to alias or productName)
+  String get displayTitle => alias ?? productName;
+
   /// Connects to the device
   Future<void> connect();
 
@@ -38,6 +50,10 @@ abstract class DeviceInterface {
 
   /// Set device indicator LEDs
   Future<void> setLed(Color color) async =>
+      throw UnsupportedError('Not supported');
+
+  /// Reset device indicator LEDs
+  Future<void> resetLed() async =>
       throw UnsupportedError('Not supported');
 
   /// Retrieve the firmware version timestamp
