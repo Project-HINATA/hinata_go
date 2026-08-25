@@ -8,13 +8,15 @@ import 'package:hinata_go/providers/hardware_device_provider.dart';
 import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
 
 import 'device_dashboard.dart';
+import 'device_switcher_bar.dart';
 import 'disconnected_state.dart';
 
 bool shouldShowBottomFloatingDeviceBar(
   BuildContext context, {
   required bool hidAvailable,
+  bool hasConnectedDevices = false,
 }) {
-  return hidAvailable;
+  return hidAvailable || hasConnectedDevices;
 }
 
 class DeviceMiniBar extends ConsumerWidget {
@@ -42,6 +44,7 @@ class DeviceMiniBar extends ConsumerWidget {
         message: displayData.title,
         child: _CompactDeviceMiniBar(
           isConnected: displayData.isConnected,
+          deviceCount: displayData.deviceCount,
           deviceSvg: displayData.deviceSvg,
           colorScheme: displayData.colorScheme,
           onTap: () => _showDeviceSheet(context),
@@ -52,6 +55,7 @@ class DeviceMiniBar extends ConsumerWidget {
     if (railExpanded) {
       return _RailExpandedDeviceMiniBar(
         isConnected: displayData.isConnected,
+        deviceCount: displayData.deviceCount,
         deviceSvg: displayData.deviceSvg,
         colorScheme: displayData.colorScheme,
         title: displayData.title,
@@ -97,6 +101,7 @@ class DeviceMiniBar extends ConsumerWidget {
 class _DeviceMiniBarDisplayData {
   const _DeviceMiniBarDisplayData({
     required this.isConnected,
+    required this.deviceCount,
     required this.hideOnCurrentPlatform,
     required this.title,
     required this.subtitle,
@@ -110,35 +115,56 @@ class _DeviceMiniBarDisplayData {
   ) {
     final l10n = context.l10n;
     final theme = context.theme;
-    final isConnected = deviceState.connectedDevice != null;
-    final isUsbHinata = deviceState.connectedDevice is UsbHinataDeviceImpl;
-    final hinataDevice = isUsbHinata
-        ? deviceState.connectedDevice as UsbHinataDeviceImpl
+    final deviceCount = deviceState.devices.length;
+    final isConnected = deviceCount > 0;
+    final activeDevice = deviceState.activeDevice;
+
+    final String title;
+    final String subtitle;
+    if (!isConnected) {
+      title = l10n.noDeviceConnected;
+      subtitle = l10n.tapToConnect;
+    } else if (deviceCount > 1) {
+      title = '$deviceCount Devices Connected';
+      subtitle = 'Active: ${activeDevice?.displayTitle ?? "None"}';
+    } else {
+      title =
+          activeDevice?.displayTitle ??
+          (activeDevice?.productName ?? l10n.deviceHub);
+      if (activeDevice is UsbHinataDeviceImpl) {
+        subtitle = l10n.firmwareVersion(deviceState.firmwareVersion ?? '...');
+      } else if (activeDevice?.isRemote == true) {
+        subtitle = 'Remote AimeIO';
+      } else {
+        subtitle = 'Connected';
+      }
+    }
+
+    final deviceSvg = deviceCount == 1
+        ? switch (deviceState.productId) {
+            0x0147 => 'assets/std.svg',
+            0x0148 => 'assets/lite.svg',
+            _ => null,
+          }
         : null;
-    final deviceSvg = switch (deviceState.productId) {
-      0x0147 => 'assets/std.svg',
-      0x0148 => 'assets/lite.svg',
-      _ => null,
-    };
 
     return _DeviceMiniBarDisplayData(
       isConnected: isConnected,
+      deviceCount: deviceCount,
       hideOnCurrentPlatform: !shouldShowBottomFloatingDeviceBar(
         context,
         hidAvailable: deviceState.hidAvailable,
+        hasConnectedDevices: isConnected,
       ),
-      title: isConnected
-          ? (hinataDevice?.productName ?? l10n.deviceHub)
-          : l10n.noDeviceConnected,
-      subtitle: isConnected
-          ? l10n.firmwareVersion(deviceState.firmwareVersion ?? '...')
-          : l10n.tapToConnect,
+      title: title,
+      subtitle: subtitle,
       deviceSvg: deviceSvg,
       colorScheme: theme.colorScheme,
     );
   }
 
   final bool isConnected;
+  final int deviceCount;
   final bool hideOnCurrentPlatform;
   final String title;
   final String subtitle;
@@ -220,6 +246,18 @@ class _DeviceMiniBarIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (displayData.deviceCount > 1) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Icon(
+          Icons.hub_rounded,
+          color: displayData.colorScheme.primary,
+          size: size - 4,
+        ),
+      );
+    }
+
     return SizedBox(
       width: size,
       height: size,
@@ -318,10 +356,8 @@ class _DeviceSheetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUsbHinata = state.connectedDevice is UsbHinataDeviceImpl;
-    final hinataDevice = isUsbHinata
-        ? state.connectedDevice as UsbHinataDeviceImpl
-        : null;
+    final activeDevice = state.activeDevice;
+    final isConnected = state.devices.isNotEmpty && activeDevice != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -331,10 +367,15 @@ class _DeviceSheetContent extends StatelessWidget {
       child: Column(
         children: [
           const _DeviceSheetHandle(),
+          if (isConnected && state.devices.length > 1)
+            DeviceSwitcherBar(
+              devices: state.devices,
+              activeDeviceId: state.activeDeviceId,
+            ),
           Expanded(
-            child: state.connectedDevice != null && hinataDevice != null
+            child: isConnected
                 ? DeviceDashboard(
-                    device: hinataDevice,
+                    device: activeDevice,
                     scrollController: scrollController,
                   )
                 : DisconnectedState(scrollController: scrollController),
@@ -364,12 +405,14 @@ class _DeviceSheetHandle extends StatelessWidget {
 
 class _CompactDeviceMiniBar extends StatelessWidget {
   final bool isConnected;
+  final int deviceCount;
   final String? deviceSvg;
   final ColorScheme colorScheme;
   final VoidCallback onTap;
 
   const _CompactDeviceMiniBar({
     required this.isConnected,
+    required this.deviceCount,
     required this.deviceSvg,
     required this.colorScheme,
     required this.onTap,
@@ -389,7 +432,13 @@ class _CompactDeviceMiniBar extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              if (isConnected && deviceSvg != null)
+              if (deviceCount > 1)
+                Icon(
+                  Icons.hub_rounded,
+                  color: colorScheme.primary,
+                  size: 26,
+                )
+              else if (isConnected && deviceSvg != null)
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: SvgPicture.asset(
@@ -432,6 +481,7 @@ class _CompactDeviceMiniBar extends StatelessWidget {
 
 class _RailExpandedDeviceMiniBar extends StatelessWidget {
   final bool isConnected;
+  final int deviceCount;
   final String? deviceSvg;
   final ColorScheme colorScheme;
   final String title;
@@ -440,6 +490,7 @@ class _RailExpandedDeviceMiniBar extends StatelessWidget {
 
   const _RailExpandedDeviceMiniBar({
     required this.isConnected,
+    required this.deviceCount,
     required this.deviceSvg,
     required this.colorScheme,
     required this.title,
@@ -465,7 +516,13 @@ class _RailExpandedDeviceMiniBar extends StatelessWidget {
                 SizedBox(
                   width: 28,
                   height: 28,
-                  child: isConnected && deviceSvg != null
+                  child: deviceCount > 1
+                      ? Icon(
+                          Icons.hub_rounded,
+                          color: colorScheme.primary,
+                          size: 24,
+                        )
+                      : isConnected && deviceSvg != null
                       ? SvgPicture.asset(
                           deviceSvg!,
                           colorFilter: ColorFilter.mode(

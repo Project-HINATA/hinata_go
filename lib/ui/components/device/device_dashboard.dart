@@ -5,13 +5,14 @@ import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 
 import 'package:hinata_go/context_extensions.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
+import 'package:hinata_go/services/communication/device_interface.dart';
 import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
 import 'package:hinata_go/services/notification_service.dart';
 import 'device_header.dart';
 import 'device_settings_cards.dart';
 
 class DeviceDashboard extends ConsumerWidget {
-  final UsbHinataDeviceImpl device;
+  final DeviceInterface device;
   final ScrollController? scrollController;
   const DeviceDashboard({
     required this.device,
@@ -21,35 +22,91 @@ class DeviceDashboard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isHinataLite = device.productName == "HINATA Lite";
+    if (device is UsbHinataDeviceImpl) {
+      final usbDevice = device as UsbHinataDeviceImpl;
+      final isHinataLite = usbDevice.productName == "HINATA Lite";
+
+      return ListView(
+        controller: scrollController,
+        padding: const EdgeInsets.all(16.0),
+        children: _buildSections(context, usbDevice, isHinataLite),
+      );
+    }
 
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.all(16.0),
-      children: _buildSections(context, isHinataLite),
+      children: [
+        DeviceHeader(device: device),
+        const SizedBox(height: 16),
+        _DashboardSection(
+          title: 'Device Details',
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Device ID: ${device.deviceId}',
+                    style: context.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Product Name: ${device.productName}',
+                    style: context.textTheme.bodyMedium,
+                  ),
+                  if (device.alias != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Alias: ${device.alias}',
+                      style: context.textTheme.bodyMedium,
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Status: ${device.connectionState.value.name.toUpperCase()}',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: device.connectionState.value ==
+                              DeviceConnectionState.connected
+                          ? Colors.green
+                          : context.colorScheme.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  List<Widget> _buildSections(BuildContext context, bool isHinataLite) {
+  List<Widget> _buildSections(
+    BuildContext context,
+    UsbHinataDeviceImpl usbDevice,
+    bool isHinataLite,
+  ) {
     final l10n = context.l10n;
 
     return [
-      DeviceHeader(device: device),
+      DeviceHeader(device: usbDevice),
       const SizedBox(height: 16),
       _DashboardSection(
         title: l10n.globalSettings,
-        child: GlobalSettingsCard(device: device),
+        child: GlobalSettingsCard(device: usbDevice),
       ),
       const SizedBox(height: 16),
       _DashboardSection(
         title: l10n.segaSerialSettings,
-        child: SegaSettingsCard(device: device),
+        child: SegaSettingsCard(device: usbDevice),
       ),
       if (!isHinataLite) ...[
         const SizedBox(height: 16),
         _DashboardSection(
           title: l10n.cardioSettings,
-          child: CardIOSettingsCard(device: device),
+          child: CardIOSettingsCard(device: usbDevice),
         ),
       ],
       if (firmwareFeatureEnabled) ...[
@@ -60,7 +117,7 @@ class DeviceDashboard extends ConsumerWidget {
         ),
       ],
       const SizedBox(height: 24),
-      _SaveToFlashButton(device: device),
+      _SaveToFlashButton(device: usbDevice),
       const SizedBox(height: 16),
       const _DashboardTips(),
       const SizedBox(height: 32),

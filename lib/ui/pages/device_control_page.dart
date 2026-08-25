@@ -3,9 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../providers/hardware_device_provider.dart';
-import '../../services/communication/usb_hinata_impl.dart';
-import '../components/device/disconnected_state.dart';
 import '../components/device/device_dashboard.dart';
+import '../components/device/device_switcher_bar.dart';
+import '../components/device/disconnected_state.dart';
 
 class DeviceControlPage extends ConsumerWidget {
   const DeviceControlPage({super.key});
@@ -13,11 +13,8 @@ class DeviceControlPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deviceState = ref.watch(hardwareDeviceProvider);
-    final isConnected = deviceState.connectedDevice != null;
-    final isUsbHinata = deviceState.connectedDevice is UsbHinataDeviceImpl;
-    final hinataDevice = isUsbHinata
-        ? deviceState.connectedDevice as UsbHinataDeviceImpl
-        : null;
+    final activeDevice = deviceState.activeDevice;
+    final isConnected = deviceState.devices.isNotEmpty && activeDevice != null;
 
     final l10n = context.l10n;
 
@@ -40,10 +37,22 @@ class DeviceControlPage extends ConsumerWidget {
         bottom: false,
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          child: isConnected && hinataDevice != null
-              ? DeviceDashboard(
-                  device: hinataDevice,
-                  key: ValueKey(hinataDevice.deviceId),
+          child: isConnected
+              ? Column(
+                  key: const ValueKey('connected_content'),
+                  children: [
+                    if (deviceState.devices.length > 1)
+                      DeviceSwitcherBar(
+                        devices: deviceState.devices,
+                        activeDeviceId: deviceState.activeDeviceId,
+                      ),
+                    Expanded(
+                      child: DeviceDashboard(
+                        device: activeDevice,
+                        key: ValueKey(activeDevice.deviceId),
+                      ),
+                    ),
+                  ],
                 )
               : const DisconnectedState(),
         ),
@@ -60,3 +69,4 @@ class DeviceControlPage extends ConsumerWidget {
     );
   }
 }
+
