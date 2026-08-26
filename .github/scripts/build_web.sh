@@ -10,7 +10,7 @@ if [[ ! "$build_id" =~ ^[0-9a-fA-F]{7,12}$ ]]; then
   exit 1
 fi
 
-flutter build web --release --wasm
+flutter build web --release --wasm --dart-define=GIT_COMMIT_HASH="$build_id"
 
 runtime_dir="build/web/runtime/$build_id"
 mkdir -p "$runtime_dir"
