@@ -428,49 +428,20 @@ class _SourceBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final isZh = Localizations.localeOf(context).languageCode == 'zh';
-    final prefix = isZh ? '来自: ' : 'From: ';
-    final trimmed = source.trim();
-    final displayText =
-        trimmed.startsWith('From: ') ||
-            trimmed.startsWith('FROM: ') ||
-            trimmed.startsWith('来自: ') ||
-            trimmed.startsWith('来自：')
-        ? trimmed
-        : '$prefix$trimmed';
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer.withValues(alpha: 0.6),
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: colorScheme.secondary.withValues(alpha: 0.25),
-          width: 0.5,
-        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.sensors_rounded,
-            size: 12,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              displayText,
-              style: context.textTheme.labelSmall?.copyWith(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.3,
-                color: colorScheme.onSecondaryContainer,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+      child: Text(
+        source.toUpperCase(),
+        style: context.textTheme.labelSmall?.copyWith(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+          color: colorScheme.onSecondaryContainer,
+        ),
       ),
     );
   }

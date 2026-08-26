@@ -42,8 +42,8 @@ class ScaffoldWithNavBar extends ConsumerWidget {
       }
     } else {
       // Swiped left -> go to next tab (right)
-      if (currentIndex < 3) {
-        // 3 is the max index (Settings)
+      if (currentIndex < 2) {
+        // 2 is the max index (Settings)
         _goBranch(currentIndex + 1);
       }
     }
@@ -121,10 +121,6 @@ class ScaffoldWithNavBar extends ConsumerWidget {
       NavigationDestination(
         icon: const Icon(Icons.credit_card),
         label: l10n.cards,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.sensors),
-        label: l10n.remote,
       ),
       NavigationDestination(
         icon: Badge(
@@ -251,10 +247,6 @@ class _RailColumn extends ConsumerWidget {
       NavigationRailDestination(
         icon: const Icon(Icons.credit_card),
         label: Text(l10n.cards),
-      ),
-      NavigationRailDestination(
-        icon: const Icon(Icons.sensors),
-        label: Text(l10n.remote),
       ),
       NavigationRailDestination(
         icon: Badge(

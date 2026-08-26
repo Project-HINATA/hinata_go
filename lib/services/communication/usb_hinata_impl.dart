@@ -49,8 +49,6 @@ List<TypeARfProfile> typeARfProfilesForProductId(int productId) =>
 
 class UsbHinataDeviceImpl implements DeviceInterface {
   final HinataReader _hinata;
-  final String? _customDeviceId;
-  String? _alias;
   final ValueNotifier<DeviceConnectionState> _connectionState = ValueNotifier(
     DeviceConnectionState.disconnected,
   );
@@ -62,12 +60,7 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   String? _pendingUnsupportedFingerprint;
   String? _confirmedUnsupportedFingerprint;
 
-  UsbHinataDeviceImpl(
-    this._hinata, {
-    String? deviceId,
-    String? alias,
-  })  : _customDeviceId = deviceId,
-        _alias = alias {
+  UsbHinataDeviceImpl(this._hinata) {
     _hinata.subscribeCardioInput((data) {
       if (!_cardioStreamController.isClosed) {
         _cardioStreamController.add(data);
@@ -80,26 +73,10 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   }
 
   @override
-  String get deviceId => _customDeviceId ?? _hinata.pid.toString();
+  String get deviceId => _hinata.pid.toString();
 
   @override
   String get productName => _hinata.productName;
-
-  @override
-  bool get isRemote => false;
-
-  @override
-  String? get instanceId => null;
-
-  @override
-  String? get alias => _alias;
-  set alias(String? value) => _alias = value;
-
-  @override
-  String get displayTitle => _alias ?? productName;
-
-  HinataReader get hinata => _hinata;
-  HIDDevice get device => _hinata.device;
 
   String get firmVersion => _hinata.firmVersion;
   int get productId => _hinata.pid;
@@ -179,7 +156,6 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     await _hinata.reloadConfig();
   }
 
-  @override
   Future<void> resetLed() async {
     await _hinata.resetLed();
   }

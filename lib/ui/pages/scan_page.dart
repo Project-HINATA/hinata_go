@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
-import 'package:hinata_go/l10n/l10n.dart';
 
 import '../../models/remote_instance.dart';
 import '../../models/scanning_mode.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/display_rotation_provider.dart';
-import '../../providers/hardware_device_provider.dart';
 import '../app_layout.dart';
-import '../components/device/device_manager_sheet.dart';
 import '../components/reader/current_scan_result_panel.dart';
 import '../components/reader/instance_card.dart';
 import '../components/reader/nfc_info_display.dart';
@@ -45,7 +42,7 @@ class ScanPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: context.colorScheme.surface,
-      appBar: layout.isLandscape ? null : _buildAppBar(context, ref),
+      appBar: layout.isLandscape ? null : _buildAppBar(context),
       body: SafeArea(
         top: layout.isLandscape,
         bottom: false,
@@ -59,35 +56,8 @@ class ScanPage extends ConsumerWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
-    final deviceState = ref.watch(hardwareDeviceProvider);
-    final count = deviceState.devices.length;
-    final l10n = context.l10n;
-
-    return AppBar(
-      title: _buildAppBarTitle(context),
-      centerTitle: false,
-      actions: [
-        if (count > 0)
-          TextButton.icon(
-            onPressed: () => showDeviceManagerSheet(context),
-            icon: const Icon(Icons.usb_rounded, size: 18),
-            label: Text(
-              count > 1
-                  ? '$count Readers'
-                  : (deviceState.activeDevice?.displayTitle ?? 'Reader'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          )
-        else if (deviceState.hidAvailable)
-          TextButton.icon(
-            onPressed: () =>
-                ref.read(hardwareDeviceProvider.notifier).requestUsbDevice(),
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: Text(l10n.pairNewDevice),
-          ),
-      ],
-    );
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(title: _buildAppBarTitle(context), centerTitle: false);
   }
 
   Widget _buildAppBarTitle(BuildContext context) {
@@ -147,86 +117,6 @@ class _ScanPageBody extends StatelessWidget {
                     );
             },
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ConnectedDevicesHeader extends ConsumerWidget {
-  const _ConnectedDevicesHeader();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final deviceState = ref.watch(hardwareDeviceProvider);
-    final colorScheme = context.colorScheme;
-    final l10n = context.l10n;
-    final devices = deviceState.devices;
-    final activeId = deviceState.activeDeviceId;
-
-    if (devices.isEmpty && !deviceState.hidAvailable) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (devices.isEmpty)
-              ActionChip(
-                avatar: const Icon(Icons.usb_rounded, size: 16),
-                label: Text(l10n.pairNewDevice),
-                onPressed: () {
-                  ref.read(hardwareDeviceProvider.notifier).requestUsbDevice();
-                },
-              )
-            else ...[
-              for (final dev in devices.values) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: FilterChip(
-                    avatar: Icon(
-                      dev.isRemote ? Icons.cloud_done_rounded : Icons.usb_rounded,
-                      size: 16,
-                      color: dev.deviceId == activeId
-                          ? colorScheme.onPrimary
-                          : colorScheme.primary,
-                    ),
-                    label: Text(dev.displayTitle),
-                    selected: dev.deviceId == activeId,
-                    onSelected: (_) {
-                      ref
-                          .read(hardwareDeviceProvider.notifier)
-                          .selectDevice(dev.deviceId);
-                    },
-                  ),
-                ),
-              ],
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ActionChip(
-                  avatar: const Icon(Icons.add_rounded, size: 16),
-                  label: Text(l10n.pairNewDevice),
-                  onPressed: () {
-                    ref
-                        .read(hardwareDeviceProvider.notifier)
-                        .requestUsbDevice();
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: IconButton(
-                  icon: const Icon(Icons.devices_other_rounded, size: 20),
-                  tooltip: l10n.manageDevices,
-                  onPressed: () => showDeviceManagerSheet(context),
-                ),
-              ),
-            ],
-          ],
         ),
       ),
     );
@@ -311,7 +201,6 @@ class _ScanPortraitBody extends StatelessWidget {
             contentQuarterTurns: 0,
           ),
           const SizedBox(height: 16),
-          const _ConnectedDevicesHeader(),
           Center(child: modeSelector),
           const SizedBox(height: 24),
           dynamicContent,
@@ -359,7 +248,6 @@ class _ScanControlColumn extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _ConnectedDevicesHeader(),
           if (showInlineModeSelector) ...[
             Center(child: modeSelector),
             const SizedBox(height: 24),
