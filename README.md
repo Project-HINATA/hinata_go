@@ -13,6 +13,9 @@ HINATA Go 是一款多平台 NFC 卡片工具，支持卡片信息查看与读�
   <a href="https://apps.apple.com/app/id6760301105" target="_blank" rel="noopener noreferrer">
     <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="40" />
   </a>
+  <a href="https://play.google.com/store/apps/details?id=moe.neri.hinatago&hl=zh" target="_blank" rel="noopener noreferrer">
+    <img src="readme_assets/get-it-on-google-play.svg" alt="Get it on Google Play" height="40" />
+  </a>
   <a href="https://github.com/Project-HINATA/hinata_go/releases/latest" target="_blank" rel="noopener noreferrer">
     <img src="readme_assets/download-on-android.svg" alt="Download APK for Android" height="40" />
   </a>
