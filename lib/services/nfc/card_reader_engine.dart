@@ -599,8 +599,11 @@ class CardReaderEngine {
       final balance = balanceCents / 100.0;
       debugPrint('[_tryReadTUnion] parsed balance: $balance');
 
-      // 4. READ TRANSACTION HISTORY: SFI 0x18 (read up to 10 records)
+      // 4. READ TRANSACTION HISTORY
+      // China T-Union cards store rich transit trip logs in SFI 0x1E (48-byte MOT Combined Log File, APDU: 00 B2 <rec> F4 00).
+      // Older / regional cards (e.g. Shanghai CU) store 23-byte PBOC records in SFI 0x18 (APDU: 00 B2 <rec> C4 00).
       final List<Uint8List?> blocksData = List.filled(10, null);
+      bool isFile1E = false;
 
       if (existingCard != null && existingCard.card is TUnion) {
         final existingTUnion = existingCard.card as TUnion;
@@ -613,15 +616,40 @@ class CardReaderEngine {
 
       bool fullyLoaded = readExtended;
       if (readExtended) {
-        debugPrint(
-          '[_tryReadTUnion] readExtended is true, querying transaction logs (SFI 0x18)...',
+        // First probe SFI 0x1E Record 1
+        final probe1ERes = await transceiver.transceive(
+          Uint8List.fromList([0x00, 0xB2, 0x01, 0xF4, 0x00]),
         );
 
-        for (int recNum = 1; recNum <= 10; recNum++) {
+        if (probe1ERes.length >= 50 &&
+            probe1ERes[probe1ERes.length - 2] == 0x90 &&
+            probe1ERes[probe1ERes.length - 1] == 0x00) {
+          final dateHex = probe1ERes
+              .sublist(14, 18)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
+          final year = int.tryParse(dateHex.substring(0, 4)) ?? 0;
+          final month = int.tryParse(dateHex.substring(4, 6)) ?? 0;
+          final day = int.tryParse(dateHex.substring(6, 8)) ?? 0;
+          if (year >= 2000 &&
+              year <= 2099 &&
+              month >= 1 &&
+              month <= 12 &&
+              day >= 1 &&
+              day <= 31) {
+            isFile1E = true;
+            blocksData[0] = probe1ERes.sublist(0, probe1ERes.length - 2);
+          }
+        }
+
+        final p2 = isFile1E ? 0xF4 : 0xC4;
+        final startRec = isFile1E ? 2 : 1;
+
+        for (int recNum = startRec; recNum <= 10; recNum++) {
           if (blocksData[recNum - 1] != null) continue;
 
-          final read18 = Uint8List.fromList([0x00, 0xB2, recNum, 0xC4, 0x00]);
-          final recRes = await transceiver.transceive(read18);
+          final readCmd = Uint8List.fromList([0x00, 0xB2, recNum, p2, 0x00]);
+          final recRes = await transceiver.transceive(readCmd);
           if (recRes.length < 2) {
             fullyLoaded = false;
             break;
@@ -632,7 +660,9 @@ class CardReaderEngine {
           if (sw1 != 0x90 || sw2 != 0x00) break;
 
           final recordData = recRes.sublist(0, recRes.length - 2);
-          if (recordData.length < 23 || recordData.every((b) => b == 0 || b == 0xFF)) {
+          final minLen = isFile1E ? 48 : 23;
+          if (recordData.length < minLen ||
+              recordData.every((b) => b == 0 || b == 0xFF)) {
             continue;
           }
 
@@ -644,83 +674,177 @@ class CardReaderEngine {
       }
 
       final List<TransitTransaction> transactions = [];
-      final cardCityCode = cardNumber.length >= 4 ? cardNumber.substring(0, 4) : '';
+      final cardCityCode =
+          cardNumber.length >= 4 ? cardNumber.substring(0, 4) : '';
 
       for (int i = 0; i < 10; i++) {
         final recordData = blocksData[i];
-        if (recordData == null || recordData.length < 23) continue;
+        if (recordData == null) continue;
 
-        // Parse Standard PBOC / T-Union SFI 0x18 Record (23 bytes)
-        // [0..1] Seq, [2..4] Overdraft, [5..8] Amount cents, [9] Type,
-        // [10..15] Terminal ID, [16..19] Date (YYYYMMDD BCD), [20..22] Time (HHMMSS BCD)
-        final seq = (recordData[0] << 8) | recordData[1];
-        final amountCents =
-            (recordData[5] << 24) |
-            (recordData[6] << 16) |
-            (recordData[7] << 8) |
-            recordData[8];
-        final amount = amountCents / 100.0;
-        final typeCode = recordData[9];
+        if (isFile1E && recordData.length >= 48) {
+          // Parse MOT SFI 0x1E 48-Byte Composite Record
+          final seq = (recordData[0] << 8) | recordData[1];
+          final typeCode = recordData[2];
+          final terminalId = recordData
+              .sublist(4, 10)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+          final amountCents =
+              (recordData[10] << 24) |
+              (recordData[11] << 16) |
+              (recordData[12] << 8) |
+              recordData[13];
+          final amount = amountCents / 100.0;
 
-        final terminalId = recordData
-            .sublist(10, 16)
-            .map((b) => b.toRadixString(16).padLeft(2, '0'))
-            .join()
-            .toUpperCase();
+          final dateHex = recordData
+              .sublist(14, 18)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
+          final timeHex = recordData
+              .sublist(18, 21)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
 
-        final dateHex = recordData
-            .sublist(16, 20)
-            .map((b) => b.toRadixString(16).padLeft(2, '0'))
-            .join();
-        final timeHex = recordData
-            .sublist(20, 23)
-            .map((b) => b.toRadixString(16).padLeft(2, '0'))
-            .join();
+          final cityCode = recordData
+              .sublist(21, 23)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+          final industryCode = recordData
+              .sublist(23, 25)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+          final stationCode = recordData
+              .sublist(25, 29)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
 
-        DateTime? txDateTime;
-        if (dateHex.length == 8 && timeHex.length == 6) {
-          final year = int.tryParse(dateHex.substring(0, 4)) ?? 0;
-          final month = int.tryParse(dateHex.substring(4, 6)) ?? 0;
-          final day = int.tryParse(dateHex.substring(6, 8)) ?? 0;
-          final hr = int.tryParse(timeHex.substring(0, 2)) ?? 0;
-          final min = int.tryParse(timeHex.substring(2, 4)) ?? 0;
-          final sec = int.tryParse(timeHex.substring(4, 6)) ?? 0;
+          final entryCityCode = recordData
+              .sublist(29, 31)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+          final entryIndustryCode = recordData
+              .sublist(31, 33)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+          final entryStationCode = recordData
+              .sublist(39, 43)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
 
-          if (year >= 2000 &&
-              year <= 2099 &&
-              month >= 1 &&
-              month <= 12 &&
-              day >= 1 &&
-              day <= 31 &&
-              hr < 24 &&
-              min < 60 &&
-              sec < 60) {
-            final yStr = year.toString().padLeft(4, '0');
-            final mStr = month.toString().padLeft(2, '0');
-            final dStr = day.toString().padLeft(2, '0');
-            final hStr = hr.toString().padLeft(2, '0');
-            final miStr = min.toString().padLeft(2, '0');
-            final sStr = sec.toString().padLeft(2, '0');
-            txDateTime = DateTime.tryParse('$yStr-$mStr-${dStr}T$hStr:$miStr:$sStr');
+          DateTime? txDateTime;
+          if (dateHex.length == 8 && timeHex.length == 6) {
+            final y = dateHex.substring(0, 4);
+            final m = dateHex.substring(4, 6);
+            final d = dateHex.substring(6, 8);
+            final hr = timeHex.substring(0, 2);
+            final min = timeHex.substring(2, 4);
+            final sec = timeHex.substring(4, 6);
+            txDateTime = DateTime.tryParse('$y-$m-${d}T$hr:$min:$sec');
           }
-        }
 
-        final typeStr = _getTUnionProcessType(typeCode, amountCents);
-        final details = TUnion.formatTransactionDetails(
-          cityCode: cardCityCode,
-          terminalId: terminalId,
-        );
+          final typeStr = _getTUnionProcessType(typeCode, amountCents);
+          final details = TUnion.formatTransactionDetails(
+            cityCode: cityCode != '0000' ? cityCode : cardCityCode,
+            stationCode: stationCode != '00000000' ? stationCode : null,
+            terminalId: terminalId != '000000000000' ? terminalId : null,
+            industryCode: industryCode,
+            entryCityCode: entryCityCode != '0000' ? entryCityCode : null,
+            entryStationCode:
+                entryStationCode != '00000000' ? entryStationCode : null,
+            entryIndustryCode: entryIndustryCode,
+            amount: amount,
+          );
 
-        transactions.add(
-          TransitTransaction(
-            date: txDateTime,
-            type: typeStr,
-            amount: typeStr == 'Top-up' ? amount : -amount,
-            details: details.isNotEmpty ? details : 'Terminal: $terminalId',
+          transactions.add(
+            TransitTransaction(
+              date: txDateTime,
+              type: typeStr,
+              amount: typeStr == 'Top-up' ? amount : -amount,
+              details: details.isNotEmpty ? details : 'Terminal: $terminalId',
+              terminalId: terminalId,
+              seq: seq,
+            ),
+          );
+        } else if (recordData.length >= 23) {
+          // Parse Standard PBOC SFI 0x18 Record (23 bytes)
+          final seq = (recordData[0] << 8) | recordData[1];
+          final amountCents =
+              (recordData[5] << 24) |
+              (recordData[6] << 16) |
+              (recordData[7] << 8) |
+              recordData[8];
+          final amount = amountCents / 100.0;
+          final typeCode = recordData[9];
+
+          final terminalId = recordData
+              .sublist(10, 16)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+
+          final dateHex = recordData
+              .sublist(16, 20)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
+          final timeHex = recordData
+              .sublist(20, 23)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
+
+          DateTime? txDateTime;
+          if (dateHex.length == 8 && timeHex.length == 6) {
+            final year = int.tryParse(dateHex.substring(0, 4)) ?? 0;
+            final month = int.tryParse(dateHex.substring(4, 6)) ?? 0;
+            final day = int.tryParse(dateHex.substring(6, 8)) ?? 0;
+            final hr = int.tryParse(timeHex.substring(0, 2)) ?? 0;
+            final min = int.tryParse(timeHex.substring(2, 4)) ?? 0;
+            final sec = int.tryParse(timeHex.substring(4, 6)) ?? 0;
+
+            if (year >= 2000 &&
+                year <= 2099 &&
+                month >= 1 &&
+                month <= 12 &&
+                day >= 1 &&
+                day <= 31 &&
+                hr < 24 &&
+                min < 60 &&
+                sec < 60) {
+              final yStr = year.toString().padLeft(4, '0');
+              final mStr = month.toString().padLeft(2, '0');
+              final dStr = day.toString().padLeft(2, '0');
+              final hStr = hr.toString().padLeft(2, '0');
+              final miStr = min.toString().padLeft(2, '0');
+              final sStr = sec.toString().padLeft(2, '0');
+              txDateTime =
+                  DateTime.tryParse('$yStr-$mStr-${dStr}T$hStr:$miStr:$sStr');
+            }
+          }
+
+          final typeStr = _getTUnionProcessType(typeCode, amountCents);
+          final details = TUnion.formatTransactionDetails(
+            cityCode: cardCityCode,
             terminalId: terminalId,
-            seq: seq,
-          ),
-        );
+            amount: amount,
+          );
+
+          transactions.add(
+            TransitTransaction(
+              date: txDateTime,
+              type: typeStr,
+              amount: typeStr == 'Top-up' ? amount : -amount,
+              details: details.isNotEmpty ? details : 'Terminal: $terminalId',
+              terminalId: terminalId,
+              seq: seq,
+            ),
+          );
+        }
       }
 
       final tunion = TUnion(

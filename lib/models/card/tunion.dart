@@ -58,15 +58,21 @@ class TUnion extends Iso14443 with TransitCard {
     required String cityCode,
     String? stationCode,
     String? terminalId,
+    String? industryCode,
     String? entryCityCode,
     String? entryStationCode,
+    String? entryIndustryCode,
+    double amount = 0.0,
   }) {
     final formatted = formatTUnionDetails(
       cityCode: cityCode,
       stationCode: stationCode,
       terminalId: terminalId,
+      industryCode: industryCode,
       entryCityCode: entryCityCode,
       entryStationCode: entryStationCode,
+      entryIndustryCode: entryIndustryCode,
+      amount: amount,
     );
     if (formatted.isNotEmpty) return formatted;
     if (terminalId != null && terminalId.isNotEmpty) {

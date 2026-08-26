@@ -96,15 +96,80 @@ void main() {
       expect(info3.line, '6号线');
     });
 
+    test('lookupTUnionStation matches Luoyang and Dalian Metro and Bus', () {
+      // Luoyang Line 1, Qingniangong (010014)
+      final luoyangExit = lookupTUnionStation(cityCode: '4930', stationCode: '010014');
+      expect(luoyangExit, isNotNull);
+      expect(luoyangExit!.cityName, '洛阳');
+      expect(luoyangExit.station, '青年宫');
+      expect(luoyangExit.line, '1号线');
+
+      // Luoyang Line 1, Qilihe (010008)
+      final luoyangEntry = lookupTUnionStation(cityCode: '4930', stationCode: '010008');
+      expect(luoyangEntry, isNotNull);
+      expect(luoyangEntry!.cityName, '洛阳');
+      expect(luoyangEntry.station, '七里河');
+      expect(luoyangEntry.line, '1号线');
+
+      // Dalian Line 2, Malan Square (020E)
+      final dalianMalan = lookupTUnionStation(cityCode: '2220', stationCode: '020E');
+      expect(dalianMalan, isNotNull);
+      expect(dalianMalan!.cityName, '大连');
+      expect(dalianMalan.station, '马栏广场');
+      expect(dalianMalan.line, '2号线');
+
+      // Dalian Line 2, Airport (0213)
+      final dalianAirport = lookupTUnionStation(cityCode: '2220', stationCode: '0213');
+      expect(dalianAirport, isNotNull);
+      expect(dalianAirport!.cityName, '大连');
+      expect(dalianAirport.station, '机场');
+
+      // Dalian Bus 1106 (stationCode 1106)
+      final dalianBus1106 = lookupTUnionStation(cityCode: '2220', stationCode: '1106', industryCode: '0001');
+      expect(dalianBus1106, isNotNull);
+      expect(dalianBus1106!.cityName, '大连');
+      expect(dalianBus1106.type, '公交');
+      expect(dalianBus1106.line, '1106');
+
+      // Dalian Bus 509 (stationCode 0509)
+      final dalianBus509 = lookupTUnionStation(cityCode: '2220', stationCode: '0509', industryCode: '0001');
+      expect(dalianBus509, isNotNull);
+      expect(dalianBus509!.cityName, '大连');
+      expect(dalianBus509.type, '公交');
+      expect(dalianBus509.line, '509');
+    });
+
     test('formatTUnionDetails formats route when entry and exit stations are provided', () {
       final formatted = formatTUnionDetails(
         cityCode: '2900',
         stationCode: '00010011', // Xinzhuang
         entryCityCode: '2900',
         entryStationCode: '00010023', // People's Square
+        amount: 3.0,
       );
       expect(formatted, contains('[上海地铁]'));
       expect(formatted, contains('人民广场 ──► 莘庄'));
+
+      // Luoyang entry tap (amount = 0)
+      final luoyangEntryOnly = formatTUnionDetails(
+        cityCode: '4930',
+        stationCode: '010008',
+        entryCityCode: '4930',
+        entryStationCode: '010008',
+        amount: 0.0,
+      );
+      expect(luoyangEntryOnly, contains('[洛阳地铁] 1号线 七里河'));
+      expect(luoyangEntryOnly, contains('(乘入)'));
+
+      // Luoyang completed trip (amount = 3.0)
+      final luoyangTrip = formatTUnionDetails(
+        cityCode: '4930',
+        stationCode: '010014',
+        entryCityCode: '4930',
+        entryStationCode: '010008',
+        amount: 3.0,
+      );
+      expect(luoyangTrip, '[洛阳地铁] 1号线 七里河 ──► 青年宫');
     });
   });
 }

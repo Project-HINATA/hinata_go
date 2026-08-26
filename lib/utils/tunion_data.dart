@@ -29029,6 +29029,7 @@ TUnionStationInfo? lookupTUnionStation({
   required String cityCode,
   String? stationCode,
   String? terminalId,
+  String? industryCode,
 }) {
   final cleanCity = cityCode.trim().toUpperCase();
   final cleanStation = stationCode?.trim().toUpperCase() ?? '';
@@ -29041,79 +29042,101 @@ TUnionStationInfo? lookupTUnionStation({
     return TUnionStationInfo(
       cityCode: city,
       cityName: tunionCityMap[city],
-      type: parts.isNotEmpty ? parts[0] : '',
+      type: parts.isNotEmpty && parts[0].isNotEmpty ? parts[0] : (industryCode == '0002' ? '地铁' : (industryCode == '0001' ? '公交' : '交通')),
       line: parts.length > 1 ? parts[1] : '',
       station: parts.length > 2 ? parts[2] : '',
     );
   }
 
-  // 1. Exact match for (cityCode, stationCode)
-  if (cleanStation.isNotEmpty) {
-    final exact = tunionStationMap['$cleanCity,$cleanStation'];
-    if (exact != null) {
-      return parseEntry(cleanCity, exact);
+  // 1. Station code matching within city
+  if (cleanCity.isNotEmpty && cleanStation.isNotEmpty) {
+    // 1.1 Direct candidates
+    final candidates = <String>[cleanStation];
+
+    if (cleanStation.length == 8) {
+      // 00LL00SS -> 010014 (6 chars)
+      candidates.add(cleanStation.substring(2));
+      // 00LL00SS -> 020E (2-digit line + 2-digit station)
+      candidates.add(cleanStation.substring(2, 4) + cleanStation.substring(6, 8));
+      // 00LL00SS -> 01 (Line only)
+      candidates.add(cleanStation.substring(2, 4));
+      // Bus line prefix: first 4 chars
+      candidates.add(cleanStation.substring(0, 4));
+    } else if (cleanStation.length == 6) {
+      candidates.add(cleanStation.substring(0, 2)); // Line prefix
+    } else if (cleanStation.length == 4) {
+      candidates.add(cleanStation.substring(0, 2)); // Line prefix
+    }
+
+    for (final cand in candidates) {
+      final match = tunionStationMap['$cleanCity,$cand'];
+      if (match != null) {
+        return parseEntry(cleanCity, match);
+      }
+    }
+
+    // 1.2 Bus line number decoding (if industry is bus or unmatched in CSV)
+    if (industryCode == '0001' || industryCode == null || industryCode.isEmpty) {
+      final busLinePfx = cleanStation.substring(0, cleanStation.length >= 4 ? 4 : cleanStation.length).replaceFirst(RegExp(r'^0+'), '');
+      if (busLinePfx.isNotEmpty && RegExp(r'^[0-9A-Za-z]+$').hasMatch(busLinePfx)) {
+        return TUnionStationInfo(
+          cityCode: cleanCity,
+          cityName: cityName,
+          type: '公交',
+          line: busLinePfx,
+          station: '',
+        );
+      }
     }
   }
 
-  // 2. Terminal ID exact match
-  if (cleanTerm.isNotEmpty) {
+  // 2. Terminal ID matching within city
+  if (cleanCity.isNotEmpty && cleanTerm.isNotEmpty) {
     final termMatch = tunionStationMap['$cleanCity,$cleanTerm'];
     if (termMatch != null) {
       return parseEntry(cleanCity, termMatch);
     }
 
-    // Check across any city with this exact terminal ID
+    final termPrefixes = <String>[];
+    if (cleanTerm.length >= 8) termPrefixes.add(cleanTerm.substring(0, 8));
+    if (cleanTerm.length >= 6) termPrefixes.add(cleanTerm.substring(0, 6));
+    if (cleanTerm.length >= 4) termPrefixes.add(cleanTerm.substring(0, 4));
+
+    for (final pfx in termPrefixes) {
+      final pfxMatch = tunionStationMap['$cleanCity,$pfx'];
+      if (pfxMatch != null) {
+        return parseEntry(cleanCity, pfxMatch);
+      }
+    }
+  }
+
+  // 3. Global Full Terminal ID (only for 8+ digits unique terminals like Hangzhou 413101784816 or Shanghai 310111744302)
+  if (cleanTerm.length >= 8) {
     for (final cityKey in tunionCityMap.keys) {
       final crossMatch = tunionStationMap['$cityKey,$cleanTerm'];
       if (crossMatch != null) {
         return parseEntry(cityKey, crossMatch);
       }
     }
-
-    // 3. Terminal ID prefix matching (8-char, 6-char, 4-char)
-    final prefixes = <String>[];
-    if (cleanTerm.length >= 8) prefixes.add(cleanTerm.substring(0, 8));
-    if (cleanTerm.length >= 6) prefixes.add(cleanTerm.substring(0, 6));
-    if (cleanTerm.length >= 4) prefixes.add(cleanTerm.substring(0, 4));
-
-    for (final pfx in prefixes) {
-      final pfxMatch = tunionStationMap['$cleanCity,$pfx'];
-      if (pfxMatch != null) {
-        return parseEntry(cleanCity, pfxMatch);
-      }
-      for (final cityKey in tunionCityMap.keys) {
-        final crossPfxMatch = tunionStationMap['$cityKey,$pfx'];
-        if (crossPfxMatch != null) {
-          return parseEntry(cityKey, crossPfxMatch);
-        }
+    // Shanghai CU terminal prefix 31LLSS
+    if (cleanTerm.startsWith('31') && cleanTerm.length >= 6) {
+      final pfx6 = cleanTerm.substring(0, 6);
+      final shMatch = tunionStationMap['2900,$pfx6'] ?? tunionStationMap['2000,$pfx6'] ?? tunionStationMap['3104,$pfx6'];
+      if (shMatch != null) {
+        return parseEntry('2900', shMatch);
       }
     }
   }
 
-  // 4. Prefix matching on stationCode (e.g. 8-char code with 4-char line prefix)
-  if (cleanStation.length >= 4) {
-    final lineCode = cleanStation.substring(0, 4);
-    final lineMatch = tunionStationMap['$cleanCity,$lineCode'];
-    if (lineMatch != null) {
-      final info = parseEntry(cleanCity, lineMatch);
-      return TUnionStationInfo(
-        cityCode: cleanCity,
-        cityName: cityName,
-        type: info.type,
-        line: info.line,
-        station: cleanStation,
-      );
-    }
-  }
-
-  // 5. If only City is known
-  if (cityName != null && (cleanStation.isNotEmpty || cleanTerm.isNotEmpty)) {
+  // 4. If only City is known
+  if (cityName != null) {
+    final typeStr = industryCode == '0002' ? '地铁' : (industryCode == '0001' ? '公交' : '交通');
     return TUnionStationInfo(
       cityCode: cleanCity,
       cityName: cityName,
-      type: '交通',
+      type: typeStr,
       line: '',
-      station: cleanStation.isNotEmpty ? '站点 $cleanStation' : (cleanTerm.isNotEmpty ? '终端 $cleanTerm' : ''),
+      station: '',
     );
   }
 
@@ -29125,32 +29148,52 @@ String formatTUnionDetails({
   required String cityCode,
   String? stationCode,
   String? terminalId,
+  String? industryCode,
   String? entryCityCode,
   String? entryStationCode,
+  String? entryIndustryCode,
+  double amount = 0.0,
 }) {
   final exitInfo = lookupTUnionStation(
     cityCode: cityCode,
     stationCode: stationCode,
     terminalId: terminalId,
+    industryCode: industryCode,
   );
 
+  // If entry station is provided
   if (entryCityCode != null && entryCityCode.isNotEmpty && entryStationCode != null && entryStationCode.isNotEmpty) {
     final entryInfo = lookupTUnionStation(
       cityCode: entryCityCode,
       stationCode: entryStationCode,
+      industryCode: entryIndustryCode,
     );
 
-    if (entryInfo != null && exitInfo != null) {
-      final entryName = entryInfo.station.isNotEmpty ? entryInfo.station : (entryInfo.line.isNotEmpty ? entryInfo.line : entryStationCode);
-      final exitName = exitInfo.station.isNotEmpty ? exitInfo.station : (exitInfo.line.isNotEmpty ? exitInfo.line : (stationCode ?? ''));
-      final linePrefix = exitInfo.line.isNotEmpty ? '${exitInfo.line} ' : '';
-      final city = exitInfo.cityName ?? entryInfo.cityName ?? '';
-      final cityTag = city.isNotEmpty ? '[$city${exitInfo.type}] ' : '';
-      return '$cityTag$linePrefix$entryName ──► $exitName';
+    if (amount == 0.0) {
+      // Entry-only transaction (tap in)
+      if (entryInfo != null) {
+        return '${entryInfo.formatted} (乘入)';
+      }
+    } else {
+      // Completed trip (entry -> exit)
+      if (entryInfo != null && exitInfo != null) {
+        final entryName = entryInfo.station.isNotEmpty ? entryInfo.station : (entryInfo.line.isNotEmpty ? entryInfo.line : entryStationCode);
+        final exitName = exitInfo.station.isNotEmpty ? exitInfo.station : (exitInfo.line.isNotEmpty ? exitInfo.line : (stationCode ?? ''));
+        final linePrefix = exitInfo.line.isNotEmpty ? '${exitInfo.line} ' : (entryInfo.line.isNotEmpty ? '${entryInfo.line} ' : '');
+        final city = exitInfo.cityName ?? entryInfo.cityName ?? '';
+        final cityTag = city.isNotEmpty ? '[$city${exitInfo.type}] ' : '';
+        if (entryName == exitName) {
+          return '$cityTag$linePrefix$exitName';
+        }
+        return '$cityTag$linePrefix$entryName ──► $exitName';
+      }
     }
   }
 
   if (exitInfo != null) {
+    if (amount == 0.0 && stationCode != null && stationCode.isNotEmpty) {
+      return '${exitInfo.formatted} (乘入)';
+    }
     return exitInfo.formatted;
   }
 
