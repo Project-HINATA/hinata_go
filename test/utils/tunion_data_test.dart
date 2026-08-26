@@ -76,6 +76,26 @@ void main() {
       expect(info.formatted, '[杭州地铁] 4 市民中心');
     });
 
+    test('lookupTUnionStation matches Shanghai CU terminal IDs by prefix', () {
+      // 310111744302 -> Line 1, Xinzhuang
+      final info1 = lookupTUnionStation(cityCode: '3104', terminalId: '310111744302');
+      expect(info1, isNotNull);
+      expect(info1!.station, '莘庄');
+      expect(info1.line, '1号线');
+
+      // 310125984402 -> Line 1, Hanzhonglu
+      final info2 = lookupTUnionStation(cityCode: '3104', terminalId: '310125984402');
+      expect(info2, isNotNull);
+      expect(info2!.station, '汉中路');
+      expect(info2.line, '1号线');
+
+      // 310623109401 -> Line 6, Shangnanlu
+      final info3 = lookupTUnionStation(cityCode: '3104', terminalId: '310623109401');
+      expect(info3, isNotNull);
+      expect(info3!.station, '上南路');
+      expect(info3.line, '6号线');
+    });
+
     test('formatTUnionDetails formats route when entry and exit stations are provided', () {
       final formatted = formatTUnionDetails(
         cityCode: '2900',

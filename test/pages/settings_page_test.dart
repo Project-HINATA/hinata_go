@@ -22,7 +22,7 @@ void main() {
         currentVersion: '2.4.3',
         commitHash: '',
       );
-      expect(stateWithoutHash.versionDisplay, 'HINATA Go v2.4.3');
+      expect(stateWithoutHash.versionDisplay, 'HINATA Go v2.4.3 (4d8ee97)');
     });
   });
 

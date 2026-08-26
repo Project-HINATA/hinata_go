@@ -10,9 +10,14 @@ import glob
 import csv
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+# If running in hinata_go/tool:
+if os.path.basename(SCRIPT_DIR) == "tool" and os.path.basename(os.path.dirname(SCRIPT_DIR)) == "hinata_go":
+    HINATA_GO_DIR = os.path.dirname(SCRIPT_DIR)
+else:
+    HINATA_GO_DIR = os.path.expanduser("~/Projects/hinata_go")
+
 TRIPREADER_DIR = os.path.expanduser("~/Projects/tripreader-data")
-OUTPUT_FILE = os.path.join(PROJECT_ROOT, "hinata_go", "lib", "utils", "tunion_data.dart")
+OUTPUT_FILE = os.path.join(HINATA_GO_DIR, "lib", "utils", "tunion_data.dart")
 
 # Known City Code to Chinese City Name mapping
 CITY_NAMES = {
@@ -31,6 +36,7 @@ CITY_NAMES = {
     "3040": "常州",
     "3050": "苏州",
     "3100": "杭州",
+    "3104": "上海",
     "3120": "绍兴",
     "3140": "嘉兴",
     "3310": "杭州",
@@ -88,7 +94,6 @@ def main():
     # 2. Parse all transit CSVs
     # Key: (city_code, code) -> (type, line, station)
     station_map = {}
-    terminal_map = {}
 
     for csv_file in sorted(glob.glob(os.path.join(TRIPREADER_DIR, "**", "*.csv"), recursive=True)):
         if "cardname-tu.csv" in csv_file:
@@ -106,18 +111,23 @@ def main():
                 if not t and not line and not station:
                     continue
 
-                key = f"{city},{code}"
-                # If entry already exists, prefer the one with station name or line
-                if key in station_map:
-                    prev_t, prev_line, prev_station = station_map[key].split("|")
-                    if not prev_station and station:
-                        station_map[key] = f"{t or prev_t}|{line or prev_line}|{station}"
-                else:
-                    station_map[key] = f"{t}|{line}|{station}"
+                def add_entry(c, cd, typ, l, st):
+                    k = f"{c},{cd}"
+                    if k in station_map:
+                        prev_t, prev_line, prev_station = station_map[k].split("|")
+                        if not prev_station and st:
+                            station_map[k] = f"{typ or prev_t}|{l or prev_line}|{st}"
+                    else:
+                        station_map[k] = f"{typ}|{l}|{st}"
 
-                # If code looks like a terminal ID (e.g. Hangzhou or POS), also index by terminal
-                if len(code) >= 8 and (code.isdigit() or all(c in '0123456789ABCDEF' for c in code)):
-                    terminal_map[code] = f"{city}|{t}|{line}|{station}"
+                add_entry(city, code, t, line, station)
+
+                # Special aliases for Shanghai CU metro codes: 11LLSS <-> 31LLSS
+                if city in ("2000", "2900") and code.startswith("11") and len(code) >= 4:
+                    sh_31 = "31" + code[2:]
+                    add_entry("2000", sh_31, t, line, station)
+                    add_entry("2900", sh_31, t, line, station)
+                    add_entry("3104", sh_31, t, line, station)
 
     print(f"Loaded {len(station_map)} station/line entries.")
 
@@ -260,30 +270,47 @@ TUnionStationInfo? lookupTUnionStation({
     }
   }
 
-  // 2. Terminal ID match for (cityCode, terminalId)
+  // 2. Terminal ID exact match
   if (cleanTerm.isNotEmpty) {
     final termMatch = tunionStationMap['$cleanCity,$cleanTerm'];
     if (termMatch != null) {
       return parseEntry(cleanCity, termMatch);
     }
 
-    // Check across any city with this terminal ID
+    // Check across any city with this exact terminal ID
     for (final cityKey in tunionCityMap.keys) {
       final crossMatch = tunionStationMap['$cityKey,$cleanTerm'];
       if (crossMatch != null) {
         return parseEntry(cityKey, crossMatch);
       }
     }
+
+    // 3. Terminal ID prefix matching (8-char, 6-char, 4-char)
+    final prefixes = <String>[];
+    if (cleanTerm.length >= 8) prefixes.add(cleanTerm.substring(0, 8));
+    if (cleanTerm.length >= 6) prefixes.add(cleanTerm.substring(0, 6));
+    if (cleanTerm.length >= 4) prefixes.add(cleanTerm.substring(0, 4));
+
+    for (final pfx in prefixes) {
+      final pfxMatch = tunionStationMap['$cleanCity,$pfx'];
+      if (pfxMatch != null) {
+        return parseEntry(cleanCity, pfxMatch);
+      }
+      for (final cityKey in tunionCityMap.keys) {
+        final crossPfxMatch = tunionStationMap['$cityKey,$pfx'];
+        if (crossPfxMatch != null) {
+          return parseEntry(cityKey, crossPfxMatch);
+        }
+      }
+    }
   }
 
-  // 3. Prefix matching on stationCode (e.g. 8-char code with 4-char line prefix)
+  // 4. Prefix matching on stationCode (e.g. 8-char code with 4-char line prefix)
   if (cleanStation.length >= 4) {
-    // Try 4-char line code
     final lineCode = cleanStation.substring(0, 4);
     final lineMatch = tunionStationMap['$cleanCity,$lineCode'];
     if (lineMatch != null) {
       final info = parseEntry(cleanCity, lineMatch);
-      // Return line match if found
       return TUnionStationInfo(
         cityCode: cleanCity,
         cityName: cityName,
@@ -294,7 +321,7 @@ TUnionStationInfo? lookupTUnionStation({
     }
   }
 
-  // 4. If only City is known
+  // 5. If only City is known
   if (cityName != null && (cleanStation.isNotEmpty || cleanTerm.isNotEmpty)) {
     return TUnionStationInfo(
       cityCode: cleanCity,
