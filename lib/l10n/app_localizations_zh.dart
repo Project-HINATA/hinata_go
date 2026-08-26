@@ -40,6 +40,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get updateViaGithub => 'GitHub 发布页';
+
+  @override
+  String get updateViaGooglePlay => 'Google Play';
+
+  @override
+  String get updateViaAppStore => 'App Store';
+
+  @override
   String get language => '语言';
 
   @override

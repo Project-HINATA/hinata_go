@@ -42,6 +42,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get updateViaGithub => 'GitHub Release';
+
+  @override
+  String get updateViaGooglePlay => 'Google Play';
+
+  @override
+  String get updateViaAppStore => 'App Store';
+
+  @override
   String get language => 'Language';
 
   @override

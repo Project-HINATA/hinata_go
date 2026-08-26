@@ -143,6 +143,7 @@ jobs:
           flutter build ipa --release \
             --build-name="${{ steps.version.outputs.marketing }}" \
             --build-number="${{ steps.version.outputs.build }}" \
+            --dart-define=GIT_COMMIT_HASH="${{ github.sha }}" \
             --export-method app-store \
             --split-debug-info=build/symbols \
             --obfuscate

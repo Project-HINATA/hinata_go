@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -14,8 +13,6 @@ final appUpdateProvider = NotifierProvider<AppUpdateNotifier, AppUpdateState>(
 );
 
 class AppUpdateNotifier extends Notifier<AppUpdateState> {
-  static const _appUpdateChannel = MethodChannel(AppConstants.appUpdateChannel);
-
   @override
   AppUpdateState build() {
     _init();
@@ -27,6 +24,7 @@ class AppUpdateNotifier extends Notifier<AppUpdateState> {
     final isUpdateSupported = await _resolveUpdateSupport();
     state = state.copyWith(
       currentVersion: packageInfo.version,
+      commitHash: AppConstants.gitCommitHash,
       isUpdateSupported: isUpdateSupported,
     );
 
@@ -93,15 +91,9 @@ class AppUpdateNotifier extends Notifier<AppUpdateState> {
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
-        return false;
+        return true;
       case TargetPlatform.android:
-        try {
-          final isSplitApk =
-              await _appUpdateChannel.invokeMethod<bool>('isSplitApk') ?? false;
-          return !isSplitApk;
-        } on PlatformException {
-          return true;
-        }
+        return true;
       default:
         return true;
     }

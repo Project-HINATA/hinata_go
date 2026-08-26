@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../../providers/app_update_provider.dart';
 import '../../providers/app_update_state.dart';
 import '../../providers/settings_provider.dart';
+import '../../utils/constants.dart';
 import '../app_layout.dart';
 import '../components/settings/data_management_sheet.dart';
 
@@ -146,7 +148,7 @@ class SettingsPage extends HookConsumerWidget {
   ) {
     return ListTile(
       title: Text(context.l10n.about),
-      subtitle: Text('HINATA Go v${updateState.currentVersion}'),
+      subtitle: Text(updateState.versionDisplay),
       leading: const Icon(Icons.info_outline),
       onTap: updateState.isUpdateSupported
           ? () {
@@ -160,15 +162,85 @@ class SettingsPage extends HookConsumerWidget {
     BuildContext context,
     AppUpdateState updateState,
   ) {
+    final platform = defaultTargetPlatform;
+    final githubUrl = updateState.downloadUrl ?? AppConstants.githubReleasesUrl;
+
+    if (platform == TargetPlatform.android) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final url = Uri.parse(githubUrl);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
+                icon: const Icon(Icons.code_rounded),
+                label: Text(context.l10n.updateViaGithub),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () async {
+                  final url = Uri.parse(AppConstants.googlePlayUrl);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
+                icon: const Icon(Icons.shop_outlined),
+                label: Text(context.l10n.updateViaGooglePlay),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (platform == TargetPlatform.iOS) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: FilledButton.icon(
+          onPressed: () async {
+            final url = Uri.parse(AppConstants.appStoreUrl);
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url, mode: LaunchMode.externalApplication);
+            }
+          },
+          icon: const Icon(Icons.apple),
+          label: Text(context.l10n.updateViaAppStore),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: FilledButton.icon(
         onPressed: () async {
-          if (updateState.downloadUrl != null) {
-            final url = Uri.parse(updateState.downloadUrl!);
-            if (await canLaunchUrl(url)) {
-              await launchUrl(url, mode: LaunchMode.externalApplication);
-            }
+          final url = Uri.parse(githubUrl);
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.externalApplication);
           }
         },
         icon: const Icon(Icons.system_update),

@@ -49,6 +49,18 @@
       }
     }
   },
+  "updateViaGithub": "GitHub Release",
+  "@updateViaGithub": {
+    "description": "Button to navigate to GitHub release page"
+  },
+  "updateViaGooglePlay": "Google Play",
+  "@updateViaGooglePlay": {
+    "description": "Button to navigate to Google Play store page"
+  },
+  "updateViaAppStore": "App Store",
+  "@updateViaAppStore": {
+    "description": "Button to navigate to Apple App Store page"
+  },
   "language": "Language",
   "@language": {
     "description": "Language selection setting"

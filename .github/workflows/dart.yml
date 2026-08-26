@@ -51,8 +51,8 @@ jobs:
 
       - name: Build Android release artifacts
         run: |
-          flutter build apk --build-number="${{ github.run_number }}" --split-debug-info=build/symbols --obfuscate --split-per-abi --release
-          flutter build appbundle --build-number="${{ github.run_number }}" --split-debug-info=build/symbols --obfuscate --release
+          flutter build apk --build-number="${{ github.run_number }}" --dart-define=GIT_COMMIT_HASH="${{ github.sha }}" --split-debug-info=build/symbols --obfuscate --split-per-abi --release
+          flutter build appbundle --build-number="${{ github.run_number }}" --dart-define=GIT_COMMIT_HASH="${{ github.sha }}" --split-debug-info=build/symbols --obfuscate --release
         env:
           ANDROID_KEYSTORE_PATH: "release.keystore"
           ANDROID_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}

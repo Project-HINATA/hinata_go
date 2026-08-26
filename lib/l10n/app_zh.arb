@@ -49,6 +49,18 @@
       }
     }
   },
+  "updateViaGithub": "GitHub 发布页",
+  "@updateViaGithub": {
+    "description": "导航至 GitHub 发布页按钮"
+  },
+  "updateViaGooglePlay": "Google Play",
+  "@updateViaGooglePlay": {
+    "description": "导航至 Google Play 商店页面按钮"
+  },
+  "updateViaAppStore": "App Store",
+  "@updateViaAppStore": {
+    "description": "导航至 Apple App Store 页面按钮"
+  },
   "language": "语言",
   "@language": {
     "description": "语言设置"

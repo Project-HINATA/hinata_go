@@ -152,6 +152,24 @@ abstract class AppLocalizations {
   /// **'UPDATE TO {version}'**
   String updateToVersion(String version);
 
+  /// Button to navigate to GitHub release page
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub Release'**
+  String get updateViaGithub;
+
+  /// Button to navigate to Google Play store page
+  ///
+  /// In en, this message translates to:
+  /// **'Google Play'**
+  String get updateViaGooglePlay;
+
+  /// Button to navigate to Apple App Store page
+  ///
+  /// In en, this message translates to:
+  /// **'App Store'**
+  String get updateViaAppStore;
+
   /// Language selection setting
   ///
   /// In en, this message translates to:
