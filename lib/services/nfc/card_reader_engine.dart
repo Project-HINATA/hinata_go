@@ -17,6 +17,7 @@ import 'package:hinata_go/models/card/transit.dart';
 import '../../constants/mifare_key.dart';
 import '../../utils/access_code_validator.dart';
 import '../../utils/spad0.dart';
+import '../../utils/tunion_data.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 class CardReaderEngine {
@@ -604,6 +605,8 @@ class CardReaderEngine {
       // Older / regional cards (e.g. Shanghai CU) store 23-byte PBOC records in SFI 0x18 (APDU: 00 B2 <rec> C4 00).
       final List<Uint8List?> blocksData = List.filled(10, null);
       bool isFile1E = false;
+      int recordSfi = 0x1E;
+      int expectedLen = 0x30;
 
       if (existingCard != null && existingCard.card is TUnion) {
         final existingTUnion = existingCard.card as TUnion;
@@ -616,15 +619,16 @@ class CardReaderEngine {
 
       bool fullyLoaded = readExtended;
       if (readExtended) {
-        // First probe SFI 0x1E Record 1
-        final probe1ERes = await transceiver.transceive(
-          Uint8List.fromList([0x00, 0xB2, 0x01, 0xF4, 0x00]),
+        // Probe SFI 0x1E Record 1
+        final rec1Data = await _readTUnionRecord(
+          transceiver,
+          recNum: 1,
+          sfi: 0x1E,
+          expectedLen: 0x30,
         );
 
-        if (probe1ERes.length >= 50 &&
-            probe1ERes[probe1ERes.length - 2] == 0x90 &&
-            probe1ERes[probe1ERes.length - 1] == 0x00) {
-          final dateHex = probe1ERes
+        if (rec1Data != null && rec1Data.length >= 48) {
+          final dateHex = rec1Data
               .sublist(14, 18)
               .map((b) => b.toRadixString(16).padLeft(2, '0'))
               .join();
@@ -638,28 +642,40 @@ class CardReaderEngine {
               day >= 1 &&
               day <= 31) {
             isFile1E = true;
-            blocksData[0] = probe1ERes.sublist(0, probe1ERes.length - 2);
+            blocksData[0] = rec1Data;
           }
         }
 
-        final p2 = isFile1E ? 0xF4 : 0xC4;
-        final startRec = isFile1E ? 2 : 1;
+        if (!isFile1E) {
+          // Fall back to SFI 0x18
+          recordSfi = 0x18;
+          expectedLen = 0x17;
+          if (blocksData[0] == null) {
+            final rec18Data = await _readTUnionRecord(
+              transceiver,
+              recNum: 1,
+              sfi: 0x18,
+              expectedLen: 0x17,
+            );
+            if (rec18Data != null && rec18Data.length >= 23) {
+              blocksData[0] = rec18Data;
+            }
+          }
+        }
 
+        final startRec = (blocksData[0] != null) ? 2 : 1;
         for (int recNum = startRec; recNum <= 10; recNum++) {
           if (blocksData[recNum - 1] != null) continue;
 
-          final readCmd = Uint8List.fromList([0x00, 0xB2, recNum, p2, 0x00]);
-          final recRes = await transceiver.transceive(readCmd);
-          if (recRes.length < 2) {
-            fullyLoaded = false;
-            break;
-          }
+          final recordData = await _readTUnionRecord(
+            transceiver,
+            recNum: recNum,
+            sfi: recordSfi,
+            expectedLen: expectedLen,
+          );
 
-          final sw1 = recRes[recRes.length - 2];
-          final sw2 = recRes[recRes.length - 1];
-          if (sw1 != 0x90 || sw2 != 0x00) break;
+          if (recordData == null) break;
 
-          final recordData = recRes.sublist(0, recRes.length - 2);
           final minLen = isFile1E ? 48 : 23;
           if (recordData.length < minLen ||
               recordData.every((b) => b == 0 || b == 0xFF)) {
@@ -828,8 +844,13 @@ class CardReaderEngine {
           }
 
           final typeStr = _getTUnionProcessType(typeCode, amountCents);
+          final termCity = terminalId.length >= 4 &&
+                  tunionCityMap.containsKey(terminalId.substring(0, 4))
+              ? terminalId.substring(0, 4)
+              : cardCityCode;
+
           final details = TUnion.formatTransactionDetails(
-            cityCode: cardCityCode,
+            cityCode: termCity,
             terminalId: terminalId,
             amount: amount,
           );
@@ -872,6 +893,55 @@ class CardReaderEngine {
       debugPrint('[_tryReadTUnion] Fatal error reading T-Union: $e\n$s');
       return const CardReadResult.incomplete();
     }
+  }
+
+  Future<Uint8List?> _readTUnionRecord(
+    NfcCardChannel transceiver, {
+    required int recNum,
+    required int sfi,
+    int expectedLen = 0,
+  }) async {
+    final p2 = (sfi << 3) | 0x04;
+    var cmd = Uint8List.fromList([0x00, 0xB2, recNum, p2, expectedLen]);
+    var res = await transceiver.transceive(cmd);
+
+    if (res.length >= 2 &&
+        res[res.length - 2] == 0x90 &&
+        res[res.length - 1] == 0x00) {
+      return res.sublist(0, res.length - 2);
+    }
+
+    // If card responds with 6C <La> (Wrong Le, re-issue with Le = La)
+    if (res.length == 2 && res[0] == 0x6C) {
+      final la = res[1];
+      cmd = Uint8List.fromList([0x00, 0xB2, recNum, p2, la]);
+      res = await transceiver.transceive(cmd);
+      if (res.length >= 2 &&
+          res[res.length - 2] == 0x90 &&
+          res[res.length - 1] == 0x00) {
+        return res.sublist(0, res.length - 2);
+      }
+    }
+
+    // If card responds with 67 00 (Wrong length Le)
+    if (res.length == 2 && res[0] == 0x67) {
+      final fallbackLen =
+          expectedLen == 0 ? (sfi == 0x1E ? 0x30 : 0x17) : 0x00;
+      cmd = Uint8List.fromList([0x00, 0xB2, recNum, p2, fallbackLen]);
+      res = await transceiver.transceive(cmd);
+      if (res.length == 2 && res[0] == 0x6C) {
+        final la = res[1];
+        cmd = Uint8List.fromList([0x00, 0xB2, recNum, p2, la]);
+        res = await transceiver.transceive(cmd);
+      }
+      if (res.length >= 2 &&
+          res[res.length - 2] == 0x90 &&
+          res[res.length - 1] == 0x00) {
+        return res.sublist(0, res.length - 2);
+      }
+    }
+
+    return null;
   }
 
   String _getTUnionProcessType(int typeCode, int amountCents) {

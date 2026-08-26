@@ -346,7 +346,11 @@ void main() {
     shanghaiInfo[18] = 0x90;
     shanghaiInfo[19] = 0x00;
 
-    final read1ERec1 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
+    final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
+    final read1ERec1_00 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
+    final read18Rec1_17 = <int>[0x00, 0xB2, 0x01, 0xC4, 0x17];
+    final read18Rec2_17 = <int>[0x00, 0xB2, 0x02, 0xC4, 0x17];
+    final read18Rec3_17 = <int>[0x00, 0xB2, 0x03, 0xC4, 0x17];
 
     final channel = _ScriptedChannel({
       _selectAid: [_successResponse(53)],
@@ -354,10 +358,11 @@ void main() {
       _readBalance: [
         [0, 0, 0x04, 0x00, 0x90, 0x00],
       ],
-      read1ERec1: [[0x6A, 0x82]], // SFI 0x1E not supported on this card
-      read18Rec1: [record1],
-      read18Rec2: [record2],
-      read18Rec3: [[0x6A, 0x83]], // Record not found / end of records
+      read1ERec1_30: [[0x6A, 0x82]], // SFI 0x1E not supported on this card
+      read1ERec1_00: [[0x6A, 0x82]],
+      read18Rec1_17: [record1],
+      read18Rec2_17: [record2],
+      read18Rec3_17: [[0x6A, 0x83]], // Record not found / end of records
     });
 
     final result = await CardReaderEngine(
@@ -374,23 +379,6 @@ void main() {
 
   test('reads and decodes SFI 0x1E MOT 48-byte composite records with entry and exit stations', () async {
     // 0x1E Record 1: Luoyang Metro completed trip (Qilihe -> Qingniangong, 3.00 CNY)
-    // 48-byte payload:
-    // [0..1] Seq: 0x011D (285)
-    // [2] Type: 0x09 (Ride)
-    // [3] Status: 0x00
-    // [4..9] Term: 41 31 01 00 00 01
-    // [10..13] Amount: 300 cents (00 00 01 2C)
-    // [14..17] Date: 2025 12 21 (20 25 12 21)
-    // [18..20] Time: 11 32 14
-    // [21..22] City: 49 30 (Luoyang)
-    // [23..24] Industry: 00 02 (Metro)
-    // [25..28] Exit Station: 01 00 14 (Qingniangong)
-    // [29..30] Entry City: 49 30 (Luoyang)
-    // [31..32] Entry Industry: 00 02
-    // [33..38] Entry Term: 00 00 00 00 00 00
-    // [39..42] Entry Station: 01 00 08 (Qilihe)
-    // [43..46] Entry Date: 20 25 12 21
-    // [47..49] Entry Time: 11 09 55
     final record1E_1 = <int>[
       0x01, 0x1D, // seq 285
       0x09, // type Ride
@@ -432,9 +420,9 @@ void main() {
       0x90, 0x00,
     ];
 
-    final read1ERec1 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
-    final read1ERec2 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x00];
-    final read1ERec3 = <int>[0x00, 0xB2, 0x03, 0xF4, 0x00];
+    final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
+    final read1ERec2_30 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x30];
+    final read1ERec3_30 = <int>[0x00, 0xB2, 0x03, 0xF4, 0x30];
 
     // Info response with Dalian IIN: 31 05 12 00 01 92 46 25 15 20
     final dalianInfo = _successResponse(32);
@@ -455,9 +443,9 @@ void main() {
       _readBalance: [
         [0, 0, 0x00, 0x0A, 0x90, 0x00], // 0.10 CNY
       ],
-      read1ERec1: [record1E_1],
-      read1ERec2: [record1E_2],
-      read1ERec3: [[0x6A, 0x83]], // End of records
+      read1ERec1_30: [record1E_1],
+      read1ERec2_30: [record1E_2],
+      read1ERec3_30: [[0x6A, 0x83]], // End of records
     });
 
     final result = await CardReaderEngine(
@@ -499,9 +487,10 @@ void main() {
       0x90, 0x00, // SW 9000
     ];
 
-    final read1ERec1 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
-    final read18Rec1 = <int>[0x00, 0xB2, 0x01, 0xC4, 0x00];
-    final read18Rec2 = <int>[0x00, 0xB2, 0x02, 0xC4, 0x00];
+    final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
+    final read1ERec1_00 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
+    final read18Rec1_17 = <int>[0x00, 0xB2, 0x01, 0xC4, 0x17];
+    final read18Rec2_17 = <int>[0x00, 0xB2, 0x02, 0xC4, 0x17];
 
     final channel = _ScriptedChannel({
       _selectAid: [_successResponse(53)],
@@ -509,9 +498,10 @@ void main() {
       _readBalance: [
         [0, 0, 0x02, 0x00, 0x90, 0x00],
       ],
-      read1ERec1: [[0x6A, 0x82]], // SFI 0x1E not supported
-      read18Rec1: [record18],
-      read18Rec2: [[0x6A, 0x83]],
+      read1ERec1_30: [[0x6A, 0x82]], // SFI 0x1E not supported
+      read1ERec1_00: [[0x6A, 0x82]],
+      read18Rec1_17: [record18],
+      read18Rec2_17: [[0x6A, 0x83]],
     });
 
     final result = await CardReaderEngine(
@@ -527,5 +517,55 @@ void main() {
     expect(tx.type, 'Ride');
     expect(tx.amount, -2.00);
     expect(tx.details, '[杭州地铁] 4 市民中心');
+  });
+
+  test('handles 6C <La> wrong Le status word and auto retries with Le = La', () async {
+    final record1E = <int>[
+      0x00, 0x01,
+      0x09,
+      0x00,
+      0x41, 0x31, 0x01, 0x00, 0x00, 0x01,
+      0x00, 0x00, 0x00, 0x00,
+      0x20, 0x25, 0x12, 0x21,
+      0x11, 0x09, 0x55,
+      0x49, 0x30,
+      0x00, 0x02,
+      0x00, 0x01, 0x00, 0x08,
+      0x49, 0x30,
+      0x00, 0x02,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x01, 0x00, 0x08,
+      0x20, 0x25, 0x12, 0x21,
+      0x11, 0x09, 0x55,
+      0x90, 0x00,
+    ];
+
+    // Initial probe with Le = 0x00 returns 6C 30
+    final read1ERec1_00 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
+    final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
+    final read1ERec2_30 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x30];
+
+    final channel = _ScriptedChannel({
+      _selectAid: [_successResponse(53)],
+      _readInfo: [_infoResponse()],
+      _readBalance: [
+        [0, 0, 0x01, 0x00, 0x90, 0x00],
+      ],
+      read1ERec1_30: [
+        [0x6C, 0x30], // First call returns 6C 30
+        record1E, // Auto-retry call returns the data!
+      ],
+      read1ERec1_00: [[0x6C, 0x30]],
+      read1ERec2_30: [[0x6A, 0x83]],
+    });
+
+    final result = await CardReaderEngine(
+      channel,
+    ).processTag(_tag(), readExtended: true);
+
+    expect(result.status, CardReadStatus.recognized);
+    final card = result.card?.card as TUnion;
+    expect(card.transactions.length, 1);
+    expect(card.transactions.first.details, contains('七里河'));
   });
 }

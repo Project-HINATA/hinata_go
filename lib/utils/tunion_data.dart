@@ -63,6 +63,7 @@ const Map<String, String> tunionCityMap = {
   '3620': '芜湖',
   '3910': '福州',
   '3930': '厦门',
+  '4131': '洛阳',
   '4210': '南昌',
   '4510': '济南',
   '4520': '青岛',
@@ -27059,6 +27060,26 @@ const Map<String, String> tunionStationMap = {
   '3930,2143': 'BRT||第三医院',
   '3930,2144': 'BRT||城南',
   '3930,2145': 'BRT||同安枢纽站',
+  '4131,01': '地铁|1号线|',
+  '4131,010001': '地铁|1号线|红山',
+  '4131,010002': '地铁|1号线|谷水',
+  '4131,010003': '地铁|1号线|秦岭路',
+  '4131,010004': '地铁|1号线|武汉路',
+  '4131,010005': '地铁|1号线|长安路',
+  '4131,010006': '地铁|1号线|上海市场',
+  '4131,010007': '地铁|1号线|牡丹广场',
+  '4131,010008': '地铁|1号线|七里河',
+  '4131,010009': '地铁|1号线|王城公园',
+  '4131,010010': '地铁|1号线|解放路',
+  '4131,010011': '地铁|1号线|周王城广场',
+  '4131,010012': '地铁|1号线|应天门',
+  '4131,010013': '地铁|1号线|丽景门',
+  '4131,010014': '地铁|1号线|青年宫',
+  '4131,010015': '地铁|1号线|夹马营',
+  '4131,010016': '地铁|1号线|启明南路',
+  '4131,010017': '地铁|1号线|塔湾',
+  '4131,010018': '地铁|1号线|史家湾',
+  '4131,010019': '地铁|1号线|杨湾',
   '4210,0002': '地铁|2号线|',
   '4210,00020220': '地铁|2号线|南路',
   '4210,00020221': '地铁|2号线|大岗',
@@ -29031,9 +29052,18 @@ TUnionStationInfo? lookupTUnionStation({
   String? terminalId,
   String? industryCode,
 }) {
-  final cleanCity = cityCode.trim().toUpperCase();
+  var cleanCity = cityCode.trim().toUpperCase();
   final cleanStation = stationCode?.trim().toUpperCase() ?? '';
   final cleanTerm = terminalId?.trim().toUpperCase() ?? '';
+
+  // If cityCode is not specified but terminalId starts with known 4-digit city prefix (e.g. 4131 for Luoyang)
+  if (cleanCity.isEmpty && cleanTerm.length >= 4) {
+    final pfx4 = cleanTerm.substring(0, 4);
+    if (tunionCityMap.containsKey(pfx4)) {
+      cleanCity = pfx4;
+    }
+  }
+
   final cityName = tunionCityMap[cleanCity];
 
   // Helper to parse Type|Line|Station

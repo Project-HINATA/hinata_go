@@ -47,6 +47,7 @@ CITY_NAMES = {
     "3620": "芜湖",
     "3910": "福州",
     "3930": "厦门",
+    "4131": "洛阳",
     "4210": "南昌",
     "4510": "济南",
     "4520": "青岛",
@@ -128,6 +129,10 @@ def main():
                     add_entry("2000", sh_31, t, line, station)
                     add_entry("2900", sh_31, t, line, station)
                     add_entry("3104", sh_31, t, line, station)
+
+                # Special aliases for Luoyang terminal city prefix: 4131 <-> 4930
+                if city == "4930":
+                    add_entry("4131", code, t, line, station)
 
     print(f"Loaded {len(station_map)} station/line entries.")
 
@@ -246,9 +251,18 @@ TUnionStationInfo? lookupTUnionStation({
   String? terminalId,
   String? industryCode,
 }) {
-  final cleanCity = cityCode.trim().toUpperCase();
+  var cleanCity = cityCode.trim().toUpperCase();
   final cleanStation = stationCode?.trim().toUpperCase() ?? '';
   final cleanTerm = terminalId?.trim().toUpperCase() ?? '';
+
+  // If cityCode is not specified but terminalId starts with known 4-digit city prefix (e.g. 4131 for Luoyang)
+  if (cleanCity.isEmpty && cleanTerm.length >= 4) {
+    final pfx4 = cleanTerm.substring(0, 4);
+    if (tunionCityMap.containsKey(pfx4)) {
+      cleanCity = pfx4;
+    }
+  }
+
   final cityName = tunionCityMap[cleanCity];
 
   // Helper to parse Type|Line|Station
