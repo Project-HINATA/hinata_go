@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import '../../utils/tunion_data.dart';
 import 'iso14443a.dart';
 import 'transit.dart';
 
@@ -35,14 +36,44 @@ class TUnion extends Iso14443 with TransitCard {
   @override
   String get showedValue => cardNumber;
 
+  String? get issuerName => lookupTUnionIssuer(cardNumber);
+
   @override
-  String get name => "China T-Union";
+  String get name => issuerName ?? "China T-Union";
 
   @override
   String? get logoPath => null; // Falls back to beautiful M3 icon avatar
 
   @override
   String? get type => "tunion";
+
+  /// Decode station details using T-Union station database
+  static String formatStation(String cityCode, String code) {
+    final info = lookupTUnionStation(cityCode: cityCode, stationCode: code);
+    return info?.formatted ?? (cityCode.isNotEmpty ? '[$cityCode] $code' : code);
+  }
+
+  /// Decode transaction details from city, station, and terminal information
+  static String formatTransactionDetails({
+    required String cityCode,
+    String? stationCode,
+    String? terminalId,
+    String? entryCityCode,
+    String? entryStationCode,
+  }) {
+    final formatted = formatTUnionDetails(
+      cityCode: cityCode,
+      stationCode: stationCode,
+      terminalId: terminalId,
+      entryCityCode: entryCityCode,
+      entryStationCode: entryStationCode,
+    );
+    if (formatted.isNotEmpty) return formatted;
+    if (terminalId != null && terminalId.isNotEmpty) {
+      return "Terminal: $terminalId";
+    }
+    return cityCode.isNotEmpty ? "City: $cityCode" : "";
+  }
 
   @override
   Map<String, dynamic> toJson() {

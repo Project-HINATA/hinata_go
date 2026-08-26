@@ -599,8 +599,10 @@ class CardReaderEngine {
       final balance = balanceCents / 100.0;
       debugPrint('[_tryReadTUnion] parsed balance: $balance');
 
-      // 4. READ TRANSACTION HISTORY: SFI 0x18 (read up to 10 records)
+      // 4. READ TRANSACTION HISTORY: Try SFI 0x1E (transit composite log), fallback to SFI 0x18
       final List<Uint8List?> blocksData = List.filled(10, null);
+      var isCompositeLog = false;
+
       if (existingCard != null && existingCard.card is TUnion) {
         final existingTUnion = existingCard.card as TUnion;
         for (int i = 0; i < 10; i++) {
@@ -615,58 +617,65 @@ class CardReaderEngine {
         debugPrint(
           '[_tryReadTUnion] readExtended is true, querying transaction logs...',
         );
+
+        // Try reading SFI 0x1E first (P2 = 0xF4)
+        bool sfi1eAvailable = true;
         for (int recNum = 1; recNum <= 10; recNum++) {
-          if (blocksData[recNum - 1] != null) {
-            continue; // Already read!
-          }
-          final readRecord = Uint8List.fromList([
-            0x00,
-            0xB2,
-            recNum,
-            0xC4,
-            0x00,
-          ]);
-          final recRes = await transceiver.transceive(readRecord);
-          debugPrint(
-            '[_tryReadTUnion] Record $recNum response length: ${recRes.length}',
-          );
+          if (blocksData[recNum - 1] != null) continue;
+
+          final read1e = Uint8List.fromList([0x00, 0xB2, recNum, 0xF4, 0x00]);
+          final recRes = await transceiver.transceive(read1e);
           if (recRes.length < 2) {
-            debugPrint('[_tryReadTUnion] Record $recNum response too short');
-            fullyLoaded = false;
+            if (recNum == 1) sfi1eAvailable = false;
             break;
           }
 
-          final recSw1 = recRes[recRes.length - 2];
-          final recSw2 = recRes[recRes.length - 1];
-          debugPrint(
-            '[_tryReadTUnion] Record $recNum SW: ${_formatStatusWord(recSw1, recSw2)}',
-          );
-          if (recSw1 != 0x90 || recSw2 != 0x00) {
+          final sw1 = recRes[recRes.length - 2];
+          final sw2 = recRes[recRes.length - 1];
+          if (sw1 != 0x90 || sw2 != 0x00) {
+            if (recNum == 1) sfi1eAvailable = false;
             break;
           }
 
           final recordData = recRes.sublist(0, recRes.length - 2);
-          if (recordData.length < 23) {
-            debugPrint(
-              '[_tryReadTUnion] Record $recNum payload too short: ${recordData.length}',
-            );
-            continue;
-          }
-
-          if (recordData.every((b) => b == 0 || b == 0xFF)) {
-            debugPrint(
-              '[_tryReadTUnion] Record $recNum is empty (all zeros/FF)',
-            );
+          if (recordData.length < 25 || recordData.every((b) => b == 0 || b == 0xFF)) {
             continue;
           }
 
           final seq = (recordData[0] << 8) | recordData[1];
-          if (seq == 0) {
-            debugPrint('[_tryReadTUnion] Record $recNum has sequence 0');
-            continue;
-          }
+          if (seq == 0) continue;
 
           blocksData[recNum - 1] = recordData;
+          isCompositeLog = true;
+        }
+
+        // If SFI 0x1E is not available / has no records, fallback to SFI 0x18 (P2 = 0xC4)
+        if (!sfi1eAvailable || blocksData.every((b) => b == null)) {
+          debugPrint('[_tryReadTUnion] Falling back to SFI 0x18 transaction log...');
+          for (int recNum = 1; recNum <= 10; recNum++) {
+            if (blocksData[recNum - 1] != null) continue;
+
+            final read18 = Uint8List.fromList([0x00, 0xB2, recNum, 0xC4, 0x00]);
+            final recRes = await transceiver.transceive(read18);
+            if (recRes.length < 2) {
+              fullyLoaded = false;
+              break;
+            }
+
+            final sw1 = recRes[recRes.length - 2];
+            final sw2 = recRes[recRes.length - 1];
+            if (sw1 != 0x90 || sw2 != 0x00) break;
+
+            final recordData = recRes.sublist(0, recRes.length - 2);
+            if (recordData.length < 23 || recordData.every((b) => b == 0 || b == 0xFF)) {
+              continue;
+            }
+
+            final seq = (recordData[0] << 8) | recordData[1];
+            if (seq == 0) continue;
+
+            blocksData[recNum - 1] = recordData;
+          }
         }
       }
 
@@ -674,58 +683,142 @@ class CardReaderEngine {
       for (int i = 0; i < 10; i++) {
         final recordData = blocksData[i];
         if (recordData == null) continue;
-        final seq = (recordData[0] << 8) | recordData[1];
-        final amountCents =
-            (recordData[5] << 24) |
-            (recordData[6] << 16) |
-            (recordData[7] << 8) |
-            recordData[8];
-        final amount = amountCents / 100.0;
-        final typeCode = recordData[9];
 
-        final terminalId = recordData
-            .sublist(10, 16)
-            .map((b) => b.toRadixString(16).padLeft(2, '0'))
-            .join()
-            .toUpperCase();
+        if (isCompositeLog && recordData.length >= 29) {
+          // Parse SFI 0x1E Record
+          final seq = (recordData[0] << 8) | recordData[1];
+          final typeCode = recordData[2];
+          final terminalId = recordData
+              .sublist(4, 10)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+          final amountCents =
+              (recordData[10] << 24) |
+              (recordData[11] << 16) |
+              (recordData[12] << 8) |
+              recordData[13];
+          final amount = amountCents / 100.0;
 
-        // Date (YYYYMMDD) and Time (HHMMSS) in BCD format
-        final dateHex = recordData
-            .sublist(16, 20)
-            .map((b) => b.toRadixString(16).padLeft(2, '0'))
-            .join();
-        final timeHex = recordData
-            .sublist(20, 23)
-            .map((b) => b.toRadixString(16).padLeft(2, '0'))
-            .join();
+          final dateHex = recordData
+              .sublist(14, 18)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
+          final timeHex = recordData
+              .sublist(18, 21)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
 
-        final yearStr = dateHex.substring(0, 4);
-        final monthStr = dateHex.substring(4, 6);
-        final dayStr = dateHex.substring(6, 8);
-        final hourStr = timeHex.substring(0, 2);
-        final minStr = timeHex.substring(2, 4);
-        final secStr = timeHex.substring(4, 6);
+          final cityCode = recordData
+              .sublist(21, 23)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+          final stationCode = recordData
+              .sublist(25, 29)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
 
-        final dateTimeStr =
-            "$yearStr-$monthStr-${dayStr}T$hourStr:$minStr:$secStr";
-        final txDateTime = DateTime.tryParse(dateTimeStr);
+          String? entryCityCode;
+          String? entryStationCode;
+          if (recordData.length >= 43) {
+            entryCityCode = recordData
+                .sublist(29, 31)
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join()
+                .toUpperCase();
+            entryStationCode = recordData
+                .sublist(39, 43)
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join()
+                .toUpperCase();
+          }
 
-        final typeStr = _getTUnionProcessType(typeCode, amountCents);
-        final details = "Terminal: $terminalId";
+          DateTime? txDateTime;
+          if (dateHex.length == 8 && timeHex.length == 6) {
+            final y = dateHex.substring(0, 4);
+            final m = dateHex.substring(4, 6);
+            final d = dateHex.substring(6, 8);
+            final hr = timeHex.substring(0, 2);
+            final min = timeHex.substring(2, 4);
+            final sec = timeHex.substring(4, 6);
+            txDateTime = DateTime.tryParse('$y-$m-${d}T$hr:$min:$sec');
+          }
 
-        debugPrint(
-          '[_tryReadTUnion] Record ${i + 1} parsed: Date=$txDateTime, Type=$typeStr, Amount=$amount, Seq=$seq',
-        );
-        transactions.add(
-          TransitTransaction(
-            date: txDateTime,
-            type: typeStr,
-            amount: typeStr == 'Top-up' ? amount : -amount,
-            details: details,
+          final typeStr = _getTUnionProcessType(typeCode, amountCents);
+          final details = TUnion.formatTransactionDetails(
+            cityCode: cityCode,
+            stationCode: stationCode,
             terminalId: terminalId,
-            seq: seq,
-          ),
-        );
+            entryCityCode: entryCityCode,
+            entryStationCode: entryStationCode,
+          );
+
+          transactions.add(
+            TransitTransaction(
+              date: txDateTime,
+              type: typeStr,
+              amount: typeStr == 'Top-up' ? amount : -amount,
+              details: details,
+              terminalId: terminalId,
+              seq: seq,
+            ),
+          );
+        } else if (recordData.length >= 23) {
+          // Parse SFI 0x18 Record
+          final seq = (recordData[0] << 8) | recordData[1];
+          final amountCents =
+              (recordData[5] << 24) |
+              (recordData[6] << 16) |
+              (recordData[7] << 8) |
+              recordData[8];
+          final amount = amountCents / 100.0;
+          final typeCode = recordData[9];
+
+          final terminalId = recordData
+              .sublist(10, 16)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+
+          final dateHex = recordData
+              .sublist(16, 20)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
+          final timeHex = recordData
+              .sublist(20, 23)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join();
+
+          DateTime? txDateTime;
+          if (dateHex.length == 8 && timeHex.length == 6) {
+            final y = dateHex.substring(0, 4);
+            final m = dateHex.substring(4, 6);
+            final d = dateHex.substring(6, 8);
+            final hr = timeHex.substring(0, 2);
+            final min = timeHex.substring(2, 4);
+            final sec = timeHex.substring(4, 6);
+            txDateTime = DateTime.tryParse('$y-$m-${d}T$hr:$min:$sec');
+          }
+
+          final typeStr = _getTUnionProcessType(typeCode, amountCents);
+          final details = TUnion.formatTransactionDetails(
+            cityCode: '',
+            terminalId: terminalId,
+          );
+
+          transactions.add(
+            TransitTransaction(
+              date: txDateTime,
+              type: typeStr,
+              amount: typeStr == 'Top-up' ? amount : -amount,
+              details: details,
+              terminalId: terminalId,
+              seq: seq,
+            ),
+          );
+        }
       }
 
       final tunion = TUnion(
