@@ -30,6 +30,8 @@ jobs:
       IOS_ASC_KEY_ID: ${{ secrets.IOS_ASC_KEY_ID }}
       IOS_ASC_ISSUER_ID: ${{ secrets.IOS_ASC_ISSUER_ID }}
       IOS_ASC_KEY_P8_BASE64: ${{ secrets.IOS_ASC_KEY_P8_BASE64 }}
+      IOS_SIGNING_P12_BASE64: ${{ secrets.IOS_SIGNING_P12_BASE64 }}
+      IOS_SIGNING_P12_PASSWORD: ${{ secrets.IOS_SIGNING_P12_PASSWORD }}
       FASTLANE_SKIP_UPDATE_CHECK: "1"
       FASTLANE_HIDE_TIMESTAMP: "1"
       LOCAL_PLUGINS_REPO: ${{ secrets.LOCAL_PLUGINS_REPO }}
@@ -45,6 +47,37 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Import Apple signing identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$IOS_SIGNING_P12_BASE64"
+          test -n "$IOS_SIGNING_P12_PASSWORD"
+
+          keychain_path="$RUNNER_TEMP/hinata-signing-${GITHUB_RUN_ID}.keychain-db"
+          p12_path="$RUNNER_TEMP/hinata-signing-${GITHUB_RUN_ID}.p12"
+          keychain_password="$(openssl rand -base64 32)"
+          printf '%s' "$IOS_SIGNING_P12_BASE64" | base64 --decode > "$p12_path"
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$p12_path" \
+            -k "$keychain_path" \
+            -P "$IOS_SIGNING_P12_PASSWORD" \
+            -A \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$keychain_password" \
+            "$keychain_path"
+          security list-keychains -d user -s \
+            "$keychain_path" \
+            "$HOME/Library/Keychains/login.keychain-db"
+          security default-keychain -d user -s "$keychain_path"
+          security find-identity -v -p codesigning "$keychain_path"
 
       - name: Check Apple build tools
         shell: bash
@@ -131,3 +164,14 @@ jobs:
           path: build/ios/ipa/*.ipa
           if-no-files-found: error
           retention-days: 14
+
+      - name: Remove temporary signing keychain
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          keychain_path="$RUNNER_TEMP/hinata-signing-${GITHUB_RUN_ID}.keychain-db"
+          p12_path="$RUNNER_TEMP/hinata-signing-${GITHUB_RUN_ID}.p12"
+          security default-keychain -d user -s "$HOME/Library/Keychains/login.keychain-db" || true
+          security list-keychains -d user -s "$HOME/Library/Keychains/login.keychain-db" || true
+          security delete-keychain "$keychain_path" || true
+          test ! -e "$p12_path" || unlink "$p12_path"
