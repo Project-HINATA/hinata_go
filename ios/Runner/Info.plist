@@ -26,12 +26,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NFCReaderUsageDescription</key>
 	<string>We need NFC access to read your smart cards.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>We need camera access to scan card QR codes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need photo library access to import and export data</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need location access when capturing or selecting media with location information.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
