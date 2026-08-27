@@ -601,56 +601,54 @@ class CardReaderEngine {
       debugPrint('[_tryReadTUnion] parsed balance: $balance');
 
       // 4. READ TRANSACTION HISTORY
-      // China T-Union cards store rich transit trip logs in SFI 0x1E (48-byte MOT Combined Log File, APDU: 00 B2 <rec> F4 00).
-      // Older / regional cards (e.g. Shanghai CU) store 23-byte PBOC records in SFI 0x18 (APDU: 00 B2 <rec> C4 00).
-      final List<Uint8List?> blocksData = List.filled(10, null);
+      // China T-Union cards store rich transit trip logs in SFI 0x1E (48-byte MOT Combined Log File, up to 30~60 records).
+      // Older / regional cards (e.g. Shanghai CU) store 23-byte PBOC records in SFI 0x18 (up to 10~30 records).
+      final List<Uint8List?> blocksData = [];
       bool isFile1E = false;
       int recordSfi = 0x1E;
       int expectedLen = 0x30;
 
       if (existingCard != null && existingCard.card is TUnion) {
         final existingTUnion = existingCard.card as TUnion;
-        for (int i = 0; i < 10; i++) {
-          if (i < existingTUnion.rawBlocks.length) {
-            blocksData[i] = existingTUnion.rawBlocks[i];
-          }
+        for (final blk in existingTUnion.rawBlocks) {
+          if (blk != null) blocksData.add(blk);
         }
       }
 
       bool fullyLoaded = readExtended;
       if (readExtended) {
-        // Probe SFI 0x1E Record 1
-        final rec1Data = await _readTUnionRecord(
-          transceiver,
-          recNum: 1,
-          sfi: 0x1E,
-          expectedLen: 0x30,
-        );
+        if (blocksData.isEmpty) {
+          // Probe SFI 0x1E Record 1
+          final rec1Data = await _readTUnionRecord(
+            transceiver,
+            recNum: 1,
+            sfi: 0x1E,
+            expectedLen: 0x30,
+          );
 
-        if (rec1Data != null && rec1Data.length >= 48) {
-          final dateHex = rec1Data
-              .sublist(25, 29)
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join();
-          final year = int.tryParse(dateHex.substring(0, 4)) ?? 0;
-          final month = int.tryParse(dateHex.substring(4, 6)) ?? 0;
-          final day = int.tryParse(dateHex.substring(6, 8)) ?? 0;
-          if (year >= 2000 &&
-              year <= 2099 &&
-              month >= 1 &&
-              month <= 12 &&
-              day >= 1 &&
-              day <= 31) {
-            isFile1E = true;
-            blocksData[0] = rec1Data;
+          if (rec1Data != null && rec1Data.length >= 48) {
+            final dateHex = rec1Data
+                .sublist(25, 29)
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join();
+            final year = int.tryParse(dateHex.substring(0, 4)) ?? 0;
+            final month = int.tryParse(dateHex.substring(4, 6)) ?? 0;
+            final day = int.tryParse(dateHex.substring(6, 8)) ?? 0;
+            if (year >= 2000 &&
+                year <= 2099 &&
+                month >= 1 &&
+                month <= 12 &&
+                day >= 1 &&
+                day <= 31) {
+              isFile1E = true;
+              blocksData.add(rec1Data);
+            }
           }
-        }
 
-        if (!isFile1E) {
-          // Fall back to SFI 0x18
-          recordSfi = 0x18;
-          expectedLen = 0x17;
-          if (blocksData[0] == null) {
+          if (!isFile1E) {
+            // Fall back to SFI 0x18
+            recordSfi = 0x18;
+            expectedLen = 0x17;
             final rec18Data = await _readTUnionRecord(
               transceiver,
               recNum: 1,
@@ -658,15 +656,25 @@ class CardReaderEngine {
               expectedLen: 0x17,
             );
             if (rec18Data != null && rec18Data.length >= 23) {
-              blocksData[0] = rec18Data;
+              blocksData.add(rec18Data);
             }
+          }
+        } else {
+          // Detect whether existing records are 0x1E or 0x18 based on length
+          if (blocksData.first != null && blocksData.first!.length >= 48) {
+            isFile1E = true;
+            recordSfi = 0x1E;
+            expectedLen = 0x30;
+          } else {
+            isFile1E = false;
+            recordSfi = 0x18;
+            expectedLen = 0x17;
           }
         }
 
-        final startRec = (blocksData[0] != null) ? 2 : 1;
-        for (int recNum = startRec; recNum <= 10; recNum++) {
-          if (blocksData[recNum - 1] != null) continue;
-
+        final maxRecords = isFile1E ? 60 : 30;
+        final startRec = blocksData.length + 1;
+        for (int recNum = startRec; recNum <= maxRecords; recNum++) {
           final recordData = await _readTUnionRecord(
             transceiver,
             recNum: recNum,
@@ -679,10 +687,21 @@ class CardReaderEngine {
           final minLen = isFile1E ? 48 : 23;
           if (recordData.length < minLen ||
               recordData.every((b) => b == 0 || b == 0xFF)) {
-            continue;
+            break;
           }
 
-          blocksData[recNum - 1] = recordData;
+          if (isFile1E) {
+            final dateHex = recordData
+                .sublist(25, 29)
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join();
+            final year = int.tryParse(dateHex.substring(0, 4)) ?? 0;
+            if (year < 2000 || year > 2099) {
+              break;
+            }
+          }
+
+          blocksData.add(recordData);
         }
       }
 
@@ -690,7 +709,7 @@ class CardReaderEngine {
       final cardCityCode =
           cardNumber.length >= 4 ? cardNumber.substring(0, 4) : '';
 
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < blocksData.length; i++) {
         final recordData = blocksData[i];
         if (recordData == null) continue;
 
