@@ -271,7 +271,7 @@ TUnionStationInfo? lookupTUnionStation({
     return TUnionStationInfo(
       cityCode: city,
       cityName: tunionCityMap[city],
-      type: parts.isNotEmpty && parts[0].isNotEmpty ? parts[0] : (industryCode == '0002' ? '地铁' : (industryCode == '0001' ? '公交' : '交通')),
+      type: parts.isNotEmpty && parts[0].isNotEmpty ? parts[0] : (industryCode == '0002' || industryCode == '01' ? '地铁' : (industryCode == '0001' || industryCode == '02' ? '公交' : '交通')),
       line: parts.length > 1 ? parts[1] : '',
       station: parts.length > 2 ? parts[2] : '',
     );
@@ -280,7 +280,24 @@ TUnionStationInfo? lookupTUnionStation({
   // 1. Station code matching within city
   if (cleanCity.isNotEmpty && cleanStation.isNotEmpty) {
     // 1.1 Direct candidates
-    final candidates = <String>[cleanStation];
+    final candidates = <String>[];
+    
+    // Strip trailing zero pairs (e.g. 01001400000000 -> 010014)
+    final strippedTrailingZeros = cleanStation.replaceAll(RegExp(r'(00)+$'), '');
+    if (strippedTrailingZeros.isNotEmpty) {
+      candidates.add(strippedTrailingZeros);
+    }
+    candidates.add(cleanStation);
+
+    if (cleanStation.length >= 6) {
+      candidates.add(cleanStation.substring(0, 6));
+    }
+    if (cleanStation.length >= 4) {
+      candidates.add(cleanStation.substring(0, 4));
+    }
+    if (cleanStation.length >= 2) {
+      candidates.add(cleanStation.substring(0, 2));
+    }
 
     if (cleanStation.length == 8) {
       // 00LL00SS -> 010014 (6 chars)
@@ -289,12 +306,6 @@ TUnionStationInfo? lookupTUnionStation({
       candidates.add(cleanStation.substring(2, 4) + cleanStation.substring(6, 8));
       // 00LL00SS -> 01 (Line only)
       candidates.add(cleanStation.substring(2, 4));
-      // Bus line prefix: first 4 chars
-      candidates.add(cleanStation.substring(0, 4));
-    } else if (cleanStation.length == 6) {
-      candidates.add(cleanStation.substring(0, 2)); // Line prefix
-    } else if (cleanStation.length == 4) {
-      candidates.add(cleanStation.substring(0, 2)); // Line prefix
     }
 
     for (final cand in candidates) {
@@ -305,8 +316,10 @@ TUnionStationInfo? lookupTUnionStation({
     }
 
     // 1.2 Bus line number decoding (if industry is bus or unmatched in CSV)
-    if (industryCode == '0001' || industryCode == null || industryCode.isEmpty) {
-      final busLinePfx = cleanStation.substring(0, cleanStation.length >= 4 ? 4 : cleanStation.length).replaceFirst(RegExp(r'^0+'), '');
+    if (industryCode == '0001' || industryCode == '02' || industryCode == null || industryCode.isEmpty) {
+      final busLinePfx = (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation)
+          .substring(0, (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation).length >= 4 ? 4 : (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation).length)
+          .replaceFirst(RegExp(r'^0+'), '');
       if (busLinePfx.isNotEmpty && RegExp(r'^[0-9A-Za-z]+$').hasMatch(busLinePfx)) {
         return TUnionStationInfo(
           cityCode: cleanCity,
@@ -359,7 +372,7 @@ TUnionStationInfo? lookupTUnionStation({
 
   // 4. If only City is known
   if (cityName != null) {
-    final typeStr = industryCode == '0002' ? '地铁' : (industryCode == '0001' ? '公交' : '交通');
+    final typeStr = (industryCode == '0002' || industryCode == '01') ? '地铁' : ((industryCode == '0001' || industryCode == '02') ? '公交' : '交通');
     return TUnionStationInfo(
       cityCode: cleanCity,
       cityName: cityName,
@@ -378,6 +391,7 @@ String formatTUnionDetails({
   String? stationCode,
   String? terminalId,
   String? industryCode,
+  int typeCode = 0,
   String? entryCityCode,
   String? entryStationCode,
   String? entryIndustryCode,
@@ -398,7 +412,7 @@ String formatTUnionDetails({
       industryCode: entryIndustryCode,
     );
 
-    if (amount == 0.0) {
+    if (amount == 0.0 || typeCode == 0x03) {
       // Entry-only transaction (tap in)
       if (entryInfo != null) {
         return '${entryInfo.formatted} (乘入)';
@@ -420,8 +434,11 @@ String formatTUnionDetails({
   }
 
   if (exitInfo != null) {
-    if (amount == 0.0 && stationCode != null && stationCode.isNotEmpty) {
+    if (typeCode == 0x03 || (amount == 0.0 && stationCode != null && stationCode.isNotEmpty)) {
       return '${exitInfo.formatted} (乘入)';
+    }
+    if (typeCode == 0x04) {
+      return '${exitInfo.formatted} (乘出)';
     }
     return exitInfo.formatted;
   }

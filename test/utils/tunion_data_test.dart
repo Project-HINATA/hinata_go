@@ -150,16 +150,23 @@ void main() {
       expect(formatted, contains('[上海地铁]'));
       expect(formatted, contains('人民广场 ──► 莘庄'));
 
-      // Luoyang entry tap (amount = 0)
+      // Luoyang entry tap (typeCode = 0x03)
       final luoyangEntryOnly = formatTUnionDetails(
         cityCode: '4930',
-        stationCode: '010008',
-        entryCityCode: '4930',
-        entryStationCode: '010008',
+        stationCode: '01000800000000',
+        typeCode: 0x03,
         amount: 0.0,
       );
-      expect(luoyangEntryOnly, contains('[洛阳地铁] 1号线 七里河'));
-      expect(luoyangEntryOnly, contains('(乘入)'));
+      expect(luoyangEntryOnly, '[洛阳地铁] 1号线 七里河 (乘入)');
+
+      // Luoyang exit tap (typeCode = 0x04)
+      final luoyangExitOnly = formatTUnionDetails(
+        cityCode: '4930',
+        stationCode: '01001400000000',
+        typeCode: 0x04,
+        amount: 3.0,
+      );
+      expect(luoyangExitOnly, '[洛阳地铁] 1号线 青年宫 (乘出)');
 
       // Luoyang completed trip (amount = 3.0)
       final luoyangTrip = formatTUnionDetails(

@@ -629,7 +629,7 @@ class CardReaderEngine {
 
         if (rec1Data != null && rec1Data.length >= 48) {
           final dateHex = rec1Data
-              .sublist(14, 18)
+              .sublist(25, 29)
               .map((b) => b.toRadixString(16).padLeft(2, '0'))
               .join();
           final year = int.tryParse(dateHex.substring(0, 4)) ?? 0;
@@ -682,9 +682,6 @@ class CardReaderEngine {
             continue;
           }
 
-          final seq = (recordData[0] << 8) | recordData[1];
-          if (seq == 0) continue;
-
           blocksData[recNum - 1] = recordData;
         }
       }
@@ -698,58 +695,40 @@ class CardReaderEngine {
         if (recordData == null) continue;
 
         if (isFile1E && recordData.length >= 48) {
-          // Parse MOT SFI 0x1E 48-Byte Composite Record
-          final seq = (recordData[0] << 8) | recordData[1];
-          final typeCode = recordData[2];
+          // Parse JT/T 978 SFI 0x1E 48-Byte Composite Record
+          final typeCode = recordData[0];
           final terminalId = recordData
-              .sublist(4, 10)
+              .sublist(1, 9)
+              .map((b) => b.toRadixString(16).padLeft(2, '0'))
+              .join()
+              .toUpperCase();
+          final industryByte = recordData[9];
+          final industryCode = industryByte == 0x01
+              ? '0002'
+              : (industryByte == 0x02 ? '0001' : '');
+          final stationCode = recordData
+              .sublist(10, 17)
               .map((b) => b.toRadixString(16).padLeft(2, '0'))
               .join()
               .toUpperCase();
           final amountCents =
-              (recordData[10] << 24) |
-              (recordData[11] << 16) |
-              (recordData[12] << 8) |
-              recordData[13];
+              (recordData[17] << 24) |
+              (recordData[18] << 16) |
+              (recordData[19] << 8) |
+              recordData[20];
           final amount = amountCents / 100.0;
 
           final dateHex = recordData
-              .sublist(14, 18)
+              .sublist(25, 29)
               .map((b) => b.toRadixString(16).padLeft(2, '0'))
               .join();
           final timeHex = recordData
-              .sublist(18, 21)
+              .sublist(29, 32)
               .map((b) => b.toRadixString(16).padLeft(2, '0'))
               .join();
 
           final cityCode = recordData
-              .sublist(21, 23)
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join()
-              .toUpperCase();
-          final industryCode = recordData
-              .sublist(23, 25)
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join()
-              .toUpperCase();
-          final stationCode = recordData
-              .sublist(25, 29)
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join()
-              .toUpperCase();
-
-          final entryCityCode = recordData
-              .sublist(29, 31)
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join()
-              .toUpperCase();
-          final entryIndustryCode = recordData
-              .sublist(31, 33)
-              .map((b) => b.toRadixString(16).padLeft(2, '0'))
-              .join()
-              .toUpperCase();
-          final entryStationCode = recordData
-              .sublist(39, 43)
+              .sublist(32, 34)
               .map((b) => b.toRadixString(16).padLeft(2, '0'))
               .join()
               .toUpperCase();
@@ -768,13 +747,12 @@ class CardReaderEngine {
           final typeStr = _getTUnionProcessType(typeCode, amountCents);
           final details = TUnion.formatTransactionDetails(
             cityCode: cityCode != '0000' ? cityCode : cardCityCode,
-            stationCode: stationCode != '00000000' ? stationCode : null,
-            terminalId: terminalId != '000000000000' ? terminalId : null,
+            stationCode: stationCode.replaceAll(RegExp(r'(00)+$'), '').isNotEmpty
+                ? stationCode
+                : null,
+            terminalId: terminalId != '0000000000000000' ? terminalId : null,
             industryCode: industryCode,
-            entryCityCode: entryCityCode != '0000' ? entryCityCode : null,
-            entryStationCode:
-                entryStationCode != '00000000' ? entryStationCode : null,
-            entryIndustryCode: entryIndustryCode,
+            typeCode: typeCode,
             amount: amount,
           );
 
@@ -785,7 +763,7 @@ class CardReaderEngine {
               amount: typeStr == 'Top-up' ? amount : -amount,
               details: details.isNotEmpty ? details : 'Terminal: $terminalId',
               terminalId: terminalId,
-              seq: seq,
+              seq: i + 1,
             ),
           );
         } else if (recordData.length >= 23) {
@@ -946,17 +924,19 @@ class CardReaderEngine {
 
   String _getTUnionProcessType(int typeCode, int amountCents) {
     switch (typeCode) {
+      case 0x03:
+      case 0x04:
       case 0x09:
+      case 0x02:
         return 'Ride';
       case 0x06:
-        return 'Shopping';
+        return 'Ride';
       case 0x01:
-      case 0x02:
         return 'Top-up';
       case 0x05:
         return 'Refund';
       default:
-        return 'Other';
+        return 'Ride';
     }
   }
 
