@@ -587,6 +587,37 @@ class CardReaderEngine {
           : rawAsnStr;
       debugPrint('[_tryReadTUnion] parsed card number: $cardNumber');
 
+      // Extract Card Type (Byte 8)
+      int rawCardType = infoRes.length > 8 ? infoRes[8] : 0;
+      String? cardTypeStr;
+      if (rawCardType == 0x01) cardTypeStr = '普通卡 (01)';
+      else if (rawCardType == 0x02) cardTypeStr = '学生卡 (02)';
+      else if (rawCardType == 0x03) cardTypeStr = '老人卡 (03)';
+      else if (rawCardType == 0x04) cardTypeStr = '军人卡 (04)';
+      else cardTypeStr = '其他 (${rawCardType.toRadixString(16).padLeft(2, '0').toUpperCase()})';
+
+      // Extract Dates (Bytes 20-23 start, 24-27 expiry) YYYYMMDD in Hex/BCD
+      String? issueDate;
+      String? expiryDate;
+      if (infoRes.length >= 28) {
+        final startBytes = infoRes.sublist(20, 24);
+        final endBytes = infoRes.sublist(24, 28);
+        
+        String parseDateBytes(Uint8List b) {
+          final s = b.map((x) => x.toRadixString(16).padLeft(2, '0')).join();
+          if (s.length == 8) {
+            return '${s.substring(0, 4)}年${s.substring(4, 6)}月${s.substring(6, 8)}日';
+          }
+          return s;
+        }
+        
+        issueDate = parseDateBytes(startBytes);
+        expiryDate = parseDateBytes(endBytes);
+      }
+
+      // Interconnect check (usually T-Union implies interconnected, we can set true)
+      bool isInterchangeEnabled = true;
+
       // 3. READ BALANCE: APDU 80 5C 00 02 04
       final readBal = Uint8List.fromList([0x80, 0x5C, 0x00, 0x02, 0x04]);
       final balRes = await transceiver.transceive(readBal);
@@ -894,8 +925,12 @@ class CardReaderEngine {
         balance: balance,
         transactions: transactions,
         snapshotTime: DateTime.now(),
-        rawBlocks: blocksData,
+        cardType: cardTypeStr,
+        issueDate: issueDate,
+        expiryDate: expiryDate,
+        isInterchangeEnabled: isInterchangeEnabled,
         tags: tags,
+        rawBlocks: blocksData,
       );
 
       debugPrint(

@@ -17,6 +17,11 @@ class TUnion extends Iso14443 with TransitCard {
   @override
   final DateTime? snapshotTime;
 
+  final String? issueDate;
+  final String? expiryDate;
+  final String? cardType;
+  final bool? isInterchangeEnabled;
+
   final List<Uint8List?> rawBlocks;
 
   TUnion(
@@ -27,6 +32,10 @@ class TUnion extends Iso14443 with TransitCard {
     required this.balance,
     required this.transactions,
     this.snapshotTime,
+    this.issueDate,
+    this.expiryDate,
+    this.cardType,
+    this.isInterchangeEnabled,
     super.tags,
     this.rawBlocks = const [],
   });
@@ -93,6 +102,10 @@ class TUnion extends Iso14443 with TransitCard {
       'balance': balance,
       'transactions': transactions.map((t) => t.toJson()).toList(),
       if (snapshotTime != null) 'snapshotTime': snapshotTime!.toIso8601String(),
+      if (issueDate != null) 'issueDate': issueDate,
+      if (expiryDate != null) 'expiryDate': expiryDate,
+      if (cardType != null) 'cardType': cardType,
+      if (isInterchangeEnabled != null) 'isInterchangeEnabled': isInterchangeEnabled,
     };
   }
 
@@ -111,6 +124,10 @@ class TUnion extends Iso14443 with TransitCard {
       snapshotTime: json['snapshotTime'] != null
           ? DateTime.tryParse(json['snapshotTime'] as String)
           : null,
+      issueDate: json['issueDate'] as String?,
+      expiryDate: json['expiryDate'] as String?,
+      cardType: json['cardType'] as String?,
+      isInterchangeEnabled: json['isInterchangeEnabled'] as bool?,
       tags: iso.tags,
     );
   }
