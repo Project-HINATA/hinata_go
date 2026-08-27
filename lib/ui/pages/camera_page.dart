@@ -231,7 +231,7 @@ class _ScannerInstruction extends StatelessWidget {
       right: 0,
       child: Center(
         child: Text(
-          context.l10n.cameraScanInstruction,
+          l10n.cameraScanInstruction,
           style: const TextStyle(
             color: Colors.white38,
             fontSize: 18,

@@ -1010,45 +1010,21 @@
   "@transitIssueDate": {
     "description": "交通卡发卡日期字段标签"
   },
-  "transitCardTypeStandard": "普通卡 ({code})",
+  "transitCardTypeStandard": "普通卡",
   "@transitCardTypeStandard": {
-    "description": "普通交通卡类型描述",
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "01"
-      }
-    }
+    "description": "普通交通卡类型描述"
   },
-  "transitCardTypeStudent": "学生卡 ({code})",
+  "transitCardTypeStudent": "学生卡",
   "@transitCardTypeStudent": {
-    "description": "学生交通卡类型描述",
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "02"
-      }
-    }
+    "description": "学生交通卡类型描述"
   },
-  "transitCardTypeSenior": "老人卡 ({code})",
+  "transitCardTypeSenior": "老人卡",
   "@transitCardTypeSenior": {
-    "description": "老年人交通卡类型描述",
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "03"
-      }
-    }
+    "description": "老年人交通卡类型描述"
   },
-  "transitCardTypeMilitary": "军人卡 ({code})",
+  "transitCardTypeMilitary": "军人卡",
   "@transitCardTypeMilitary": {
-    "description": "军人交通卡类型描述",
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "04"
-      }
-    }
+    "description": "军人交通卡类型描述"
   },
   "transitCardTypeOther": "其他 ({code})",
   "@transitCardTypeOther": {

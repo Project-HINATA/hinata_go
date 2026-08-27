@@ -95,6 +95,6 @@ class InstanceItem extends ConsumerWidget {
     ref.read(activeInstanceIdProvider.notifier).setActiveId(instance.id);
     ref
         .read(notificationServiceProvider)
-        .showSuccess(context.l10n.instanceNowActive(instance.name));
+        .showSuccess(l10n.instanceNowActive(instance.name));
   }
 }

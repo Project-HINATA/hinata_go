@@ -38,7 +38,7 @@ class InstancesPage extends HookConsumerWidget {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(title: Text(context.l10n.remoteInstances));
+    return AppBar(title: Text(l10n.remoteInstances));
   }
 
   Widget _buildBody(
@@ -53,7 +53,7 @@ class InstancesPage extends HookConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(child: Text(context.l10n.noInstancesConfigured));
+    return Center(child: Text(l10n.noInstancesConfigured));
   }
 
   Widget _buildInstancesList(
@@ -86,7 +86,7 @@ class InstancesPage extends HookConsumerWidget {
     return FloatingActionButton.extended(
       onPressed: () => _showInstanceDialog(context),
       icon: const Icon(Icons.add),
-      label: Text(context.l10n.addInstance),
+      label: Text(l10n.addInstance),
     );
   }
 }

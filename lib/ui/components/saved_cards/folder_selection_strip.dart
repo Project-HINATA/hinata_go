@@ -33,7 +33,7 @@ class FolderSelectionStrip extends ConsumerWidget {
             child: GestureDetector(
               onLongPress: () => onFolderLongPress(folder),
               child: FilterChip(
-                label: Text(folderDisplayName(context, folder.id, folder.name)),
+                label: Text(folderDisplayName(folder.id, folder.name)),
                 selected: isSelected,
                 onSelected: (selected) {
                   if (selected) {

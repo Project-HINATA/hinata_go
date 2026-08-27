@@ -588,12 +588,12 @@ class _PromptText {
 
     return _PromptText(
       text: isIosScanning
-          ? context.l10n.nfcIosAlert
+          ? l10n.nfcIosAlert
           : isIOS
-          ? context.l10n.tapToScan
+          ? l10n.tapToScan
           : isActive
-          ? context.l10n.holdCardNearReader
-          : context.l10n.nfcInactive,
+          ? l10n.holdCardNearReader
+          : l10n.nfcInactive,
       icon: isIosScanning
           ? Icons.phone_iphone_rounded
           : isActive

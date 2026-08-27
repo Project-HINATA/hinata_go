@@ -725,24 +725,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get transitIssueDate => '发卡日期';
 
   @override
-  String transitCardTypeStandard(String code) {
-    return '普通卡 ($code)';
-  }
+  String get transitCardTypeStandard => '普通卡';
 
   @override
-  String transitCardTypeStudent(String code) {
-    return '学生卡 ($code)';
-  }
+  String get transitCardTypeStudent => '学生卡';
 
   @override
-  String transitCardTypeSenior(String code) {
-    return '老人卡 ($code)';
-  }
+  String get transitCardTypeSenior => '老人卡';
 
   @override
-  String transitCardTypeMilitary(String code) {
-    return '军人卡 ($code)';
-  }
+  String get transitCardTypeMilitary => '军人卡';
 
   @override
   String transitCardTypeOther(String code) {

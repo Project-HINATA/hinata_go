@@ -58,20 +58,20 @@ class CardDetailPage extends HookConsumerWidget {
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(context.l10n.renameCard),
+        title: Text(l10n.renameCard),
         content: TextField(
           controller: controller,
-          decoration: InputDecoration(labelText: context.l10n.cardNameLabel),
+          decoration: InputDecoration(labelText: l10n.cardNameLabel),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.cancel),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(context.l10n.save),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -85,7 +85,7 @@ class CardDetailPage extends HookConsumerWidget {
       ref.read(savedCardsProvider.notifier).updateCard(updatedCard);
       ref
           .read(notificationServiceProvider)
-          .showSuccess(context.l10n.renameSuccess);
+          .showSuccess(l10n.renameSuccess);
     }
   }
 
@@ -97,17 +97,17 @@ class CardDetailPage extends HookConsumerWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(context.l10n.deleteCard),
-        content: Text(context.l10n.confirmDeleteCard),
+        title: Text(l10n.deleteCard),
+        content: Text(l10n.confirmDeleteCard),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(context.l10n.cancel),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              context.l10n.delete,
+              l10n.delete,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
@@ -120,7 +120,7 @@ class CardDetailPage extends HookConsumerWidget {
       ref.read(savedCardsProvider.notifier).removeCard(activeSavedCard.id);
       ref
           .read(notificationServiceProvider)
-          .showSuccess(context.l10n.deleteSuccess);
+          .showSuccess(l10n.deleteSuccess);
       Navigator.pop(context); // Pop back out of detail page
     }
   }
@@ -175,19 +175,19 @@ class CardDetailPage extends HookConsumerWidget {
   ) {
     return AppBar(
       title: Text(
-        context.l10n.cardDetails(activeSavedCard?.name ?? activeCard.name),
+        l10n.cardDetails(activeSavedCard?.name ?? activeCard.name),
       ),
       actions: [
         if (activeSavedCard != null) ...[
           IconButton(
             icon: const Icon(Icons.edit_note),
             onPressed: () => _renameCard(context, ref, activeSavedCard),
-            tooltip: context.l10n.renameCard,
+            tooltip: l10n.renameCard,
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () => _deleteCard(context, ref, activeSavedCard),
-            tooltip: context.l10n.deleteCard,
+            tooltip: l10n.deleteCard,
           ),
         ],
       ],
@@ -212,7 +212,7 @@ class CardDetailPage extends HookConsumerWidget {
           ),
           if (activeCard is TransitCard) ...[
             const SizedBox(height: 16),
-            TransitHistoryCard(card: activeCard as TransitCard),
+            TransitHistoryCard(card: activeCard),
           ],
         ],
       ),

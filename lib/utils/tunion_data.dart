@@ -29085,7 +29085,6 @@ TUnionStationInfo? lookupTUnionStation({
   // 1. Station code matching within city
   if (cleanCity.isNotEmpty && cleanStation.isNotEmpty) {
     final strippedTrailingZeros = cleanStation.replaceAll(RegExp(r'(00)+$'), '');
-    final cleanCode = strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation;
 
     // 1.1 First priority: Match exact station entries (with non-empty station name)
     final candidates = <String>[];
@@ -29115,63 +29114,61 @@ TUnionStationInfo? lookupTUnionStation({
     }
 
     // 1.2 Second priority: Decode Bus Line Number from stationCode for verified cities
-    if (fallbackBusMatch == null) {
-      String? parsedLine;
-      final c = cleanCity;
-      final paddedStation = cleanStation.padRight(8, '0');
+    String? parsedLine;
+    final c = cleanCity;
+    final paddedStation = cleanStation.padRight(8, '0');
 
-      if (['2900', '3104', '3100', '2000', '4520', '4510', '7910', '3930', '4210', '7310', '3030', '3010', '3610', '8810', '8210'].contains(c)) {
-        // 前4位，10进制 (Shanghai, Qingdao, Jinan, Xi'an, Xiamen, Nanchang, Kunming, Xuzhou, Nanjing, Hefei, Urumqi, Lanzhou)
-        final pfx4 = paddedStation.substring(0, 4);
-        if (RegExp(r'^\d+$').hasMatch(pfx4)) {
-          final val = int.tryParse(pfx4);
-          if (val != null && val > 0) parsedLine = '${val}路';
-        }
-      } else if (['1000', '5180'].contains(c)) {
-        // 前4位，16进制 (Beijing, Shenzhen)
-        final pfx4 = paddedStation.substring(0, 4);
-        if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4)) {
-          final val = int.tryParse(pfx4, radix: 16);
-          if (val != null && val > 0) parsedLine = '${val}路';
-        }
-      } else if (c == '2220') {
-        // 大连: 前4位，10或16进制
-        final pfx4 = paddedStation.substring(0, 4);
-        if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) && RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
-          final val = int.tryParse(pfx4, radix: 16);
-          if (val != null && val > 0) parsedLine = '${val}路';
-        } else if (RegExp(r'^\d+$').hasMatch(pfx4)) {
-          final val = int.tryParse(pfx4);
-          if (val != null && val > 0) parsedLine = '${val}路';
-        }
-      } else if (c == '2210' || c == '3910') {
-        // 沈阳, 福州: 5-8位，10进制
-        final pfx = paddedStation.substring(4, 8);
-        if (RegExp(r'^\d+$').hasMatch(pfx)) {
-          final val = int.tryParse(pfx);
-          if (val != null && val > 0) parsedLine = '${val}路';
-        }
-      } else if (c == '3050') {
-        // 苏州: 3-6位或5-8位，10进制
-        final pfx36 = paddedStation.substring(2, 6);
-        final pfx58 = paddedStation.substring(4, 8);
-        if (RegExp(r'^\d+$').hasMatch(pfx36) && int.parse(pfx36) > 0) {
-          parsedLine = '${int.parse(pfx36)}路';
-        } else if (RegExp(r'^\d+$').hasMatch(pfx58)) {
-          final val = int.tryParse(pfx58);
-          if (val != null && val > 0) parsedLine = '${val}路';
-        }
+    if (['2900', '3104', '3100', '2000', '4520', '4510', '7910', '3930', '4210', '7310', '3030', '3010', '3610', '8810', '8210'].contains(c)) {
+      // 前4位，10进制 (Shanghai, Qingdao, Jinan, Xi'an, Xiamen, Nanchang, Kunming, Xuzhou, Nanjing, Hefei, Urumqi, Lanzhou)
+      final pfx4 = paddedStation.substring(0, 4);
+      if (RegExp(r'^\d+$').hasMatch(pfx4)) {
+        final val = int.tryParse(pfx4);
+        if (val != null && val > 0) parsedLine = '$val路';
       }
+    } else if (['1000', '5180'].contains(c)) {
+      // 前4位，16进制 (Beijing, Shenzhen)
+      final pfx4 = paddedStation.substring(0, 4);
+      if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4)) {
+        final val = int.tryParse(pfx4, radix: 16);
+        if (val != null && val > 0) parsedLine = '$val路';
+      }
+    } else if (c == '2220') {
+      // 大连: 前4位，10或16进制
+      final pfx4 = paddedStation.substring(0, 4);
+      if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) && RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
+        final val = int.tryParse(pfx4, radix: 16);
+        if (val != null && val > 0) parsedLine = '$val路';
+      } else if (RegExp(r'^\d+$').hasMatch(pfx4)) {
+        final val = int.tryParse(pfx4);
+        if (val != null && val > 0) parsedLine = '$val路';
+      }
+    } else if (c == '2210' || c == '3910') {
+      // 沈阳, 福州: 5-8位，10进制
+      final pfx = paddedStation.substring(4, 8);
+      if (RegExp(r'^\d+$').hasMatch(pfx)) {
+        final val = int.tryParse(pfx);
+        if (val != null && val > 0) parsedLine = '$val路';
+      }
+    } else if (c == '3050') {
+      // 苏州: 3-6位或5-8位，10进制
+      final pfx36 = paddedStation.substring(2, 6);
+      final pfx58 = paddedStation.substring(4, 8);
+      if (RegExp(r'^\d+$').hasMatch(pfx36) && int.parse(pfx36) > 0) {
+        parsedLine = '${int.parse(pfx36)}路';
+      } else if (RegExp(r'^\d+$').hasMatch(pfx58)) {
+        final val = int.tryParse(pfx58);
+        if (val != null && val > 0) parsedLine = '$val路';
+      }
+    }
 
-      if (parsedLine != null) {
-        fallbackBusMatch = TUnionStationInfo(
-          cityCode: cleanCity,
-          cityName: cityName,
-          type: '公交',
-          line: parsedLine,
-          station: '',
-        );
-      }
+    if (parsedLine != null) {
+      fallbackBusMatch = TUnionStationInfo(
+        cityCode: cleanCity,
+        cityName: cityName,
+        type: '公交',
+        line: parsedLine,
+        station: '',
+      );
     }
   }
 

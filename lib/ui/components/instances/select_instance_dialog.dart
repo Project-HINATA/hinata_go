@@ -15,11 +15,11 @@ class SelectInstanceDialog extends ConsumerWidget {
     final colorScheme = context.colorScheme;
 
     return AlertDialog(
-      title: Text(context.l10n.selectInstance),
+      title: Text(l10n.selectInstance),
       content: SizedBox(
         width: double.maxFinite,
         child: instances.isEmpty
-            ? Center(child: Text(context.l10n.noInstances))
+            ? Center(child: Text(l10n.noInstances))
             : ListView.builder(
                 shrinkWrap: true,
                 itemCount: instances.length,
@@ -52,7 +52,7 @@ class SelectInstanceDialog extends ConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => context.navigator.pop(),
-          child: Text(context.l10n.cancel),
+          child: Text(l10n.cancel),
         ),
       ],
     );

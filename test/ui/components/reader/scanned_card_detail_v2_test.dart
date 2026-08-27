@@ -109,7 +109,7 @@ void main() {
 
     // Check localized fields
     expect(find.text('Card Type'), findsOneWidget);
-    expect(find.text('Standard Card (01)'), findsOneWidget);
+    expect(find.text('Standard Card'), findsOneWidget);
     expect(find.text('Valid Until'), findsOneWidget);
     expect(find.text('2030-12-31'), findsOneWidget);
     expect(find.text('Issue Date'), findsOneWidget);

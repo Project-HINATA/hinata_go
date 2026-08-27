@@ -38,14 +38,14 @@ class _GlobalSettingsCardState extends State<GlobalSettingsCard> {
         actions: [
           TextButton(
             onPressed: () => context.navigator.pop(),
-            child: Text(context.l10n.cancel),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               onColorChanged(_pickerColor);
               context.navigator.pop();
             },
-            child: Text(context.l10n.confirmColorChoice),
+            child: Text(l10n.confirmColorChoice),
           ),
         ],
       ),

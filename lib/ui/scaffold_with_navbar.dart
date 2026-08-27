@@ -113,7 +113,6 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final l10n = context.l10n;
     final hasUpdate = ref.watch(appUpdateProvider).hasUpdate;
 
     return [
@@ -237,7 +236,6 @@ class _RailColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
     final hasUpdate = ref.watch(appUpdateProvider).hasUpdate;
     final railDestinations = [
       NavigationRailDestination(

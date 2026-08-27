@@ -1013,45 +1013,21 @@
   "@transitIssueDate": {
     "description": "Transit card issue date field label"
   },
-  "transitCardTypeStandard": "Standard Card ({code})",
+  "transitCardTypeStandard": "Standard Card",
   "@transitCardTypeStandard": {
-    "description": "Standard transit card type description",
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "01"
-      }
-    }
+    "description": "Standard transit card type description"
   },
-  "transitCardTypeStudent": "Student Card ({code})",
+  "transitCardTypeStudent": "Student Card",
   "@transitCardTypeStudent": {
-    "description": "Student transit card type description",
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "02"
-      }
-    }
+    "description": "Student transit card type description"
   },
-  "transitCardTypeSenior": "Senior Card ({code})",
+  "transitCardTypeSenior": "Senior Card",
   "@transitCardTypeSenior": {
-    "description": "Senior transit card type description",
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "03"
-      }
-    }
+    "description": "Senior transit card type description"
   },
-  "transitCardTypeMilitary": "Military Card ({code})",
+  "transitCardTypeMilitary": "Military Card",
   "@transitCardTypeMilitary": {
-    "description": "Military transit card type description",
-    "placeholders": {
-      "code": {
-        "type": "String",
-        "example": "04"
-      }
-    }
+    "description": "Military transit card type description"
   },
   "transitCardTypeOther": "Other ({code})",
   "@transitCardTypeOther": {

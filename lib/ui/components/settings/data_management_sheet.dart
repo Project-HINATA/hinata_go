@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:hinata_go/context_extensions.dart';
+import 'package:hinata_go/l10n/l10n.dart';
 
 import '../../../providers/data_management_provider.dart';
 import '../../../services/notification_service.dart';
 
 class DataManagementSheet extends HookConsumerWidget {
-  final BuildContext parentContext;
-
-  const DataManagementSheet({super.key, required this.parentContext});
+  const DataManagementSheet({super.key});
 
   Future<void> _handleImport(
     BuildContext sheetContext,
@@ -17,20 +16,19 @@ class DataManagementSheet extends HookConsumerWidget {
     Future<Map<String, dynamic>?> Function() importMethod,
     DataManagementService dataManagement,
   ) async {
-    final l10n = parentContext.l10n;
     sheetContext.navigator.pop();
     try {
       final data = await importMethod();
       if (data == null) return;
 
-      if (!parentContext.mounted) return;
+      if (!sheetContext.mounted) return;
 
       final cardsCount = (data['saved_cards'] as List?)?.length ?? 0;
       final foldersCount = (data['card_folders'] as List?)?.length ?? 0;
       final instancesCount = (data['instances'] as List?)?.length ?? 0;
 
       final result = await showDialog<String>(
-        context: parentContext,
+        context: sheetContext,
         builder: (dialogContext) => AlertDialog(
           title: Text(l10n.importPreviewTitle),
           content: Column(
@@ -56,8 +54,8 @@ class DataManagementSheet extends HookConsumerWidget {
             FilledButton(
               onPressed: () => dialogContext.navigator.pop('overwrite'),
               style: FilledButton.styleFrom(
-                backgroundColor: parentContext.colorScheme.error,
-                foregroundColor: parentContext.colorScheme.onError,
+                backgroundColor: sheetContext.colorScheme.error,
+                foregroundColor: sheetContext.colorScheme.onError,
               ),
               child: Text(l10n.importOverwrite),
             ),
@@ -68,9 +66,9 @@ class DataManagementSheet extends HookConsumerWidget {
       if (result == 'cancel' || result == null) return;
 
       if (result == 'overwrite') {
-        if (!parentContext.mounted) return;
+        if (!sheetContext.mounted) return;
         final confirmOverwrite = await showDialog<bool>(
-          context: parentContext,
+          context: sheetContext,
           builder: (dialogContext) => AlertDialog(
             title: Text(l10n.confirmOverwriteTitle),
             content: Text(l10n.confirmOverwriteMessage),
@@ -82,8 +80,8 @@ class DataManagementSheet extends HookConsumerWidget {
               FilledButton(
                 onPressed: () => dialogContext.navigator.pop(true),
                 style: FilledButton.styleFrom(
-                  backgroundColor: parentContext.colorScheme.error,
-                  foregroundColor: parentContext.colorScheme.onError,
+                  backgroundColor: sheetContext.colorScheme.error,
+                  foregroundColor: sheetContext.colorScheme.onError,
                 ),
                 child: Text(l10n.importOverwrite),
               ),
@@ -94,18 +92,14 @@ class DataManagementSheet extends HookConsumerWidget {
       }
 
       await dataManagement.applyImport(data, merge: result == 'merge');
-      if (parentContext.mounted) {
-        ref.read(notificationServiceProvider).showSuccess(l10n.importSuccess);
-      }
+      ref.read(notificationServiceProvider).showSuccess(l10n.importSuccess);
     } catch (e) {
       final message = e.toString().contains('invalidDataFormat')
           ? l10n.invalidDataFormat
           : e.toString();
-      if (parentContext.mounted) {
-        ref
-            .read(notificationServiceProvider)
-            .showError(l10n.importFailed(message));
-      }
+      ref
+          .read(notificationServiceProvider)
+          .showError(l10n.importFailed(message));
     }
   }
 
@@ -115,7 +109,7 @@ class DataManagementSheet extends HookConsumerWidget {
 
     return SafeArea(
       child: _DataManagementSheetBody(
-        header: _buildHeader(context),
+        header: _buildHeader(),
         exportFileItem: _buildExportFileItem(context, ref, dataManagement),
         exportClipboardItem: _buildExportClipboardItem(
           context,
@@ -132,10 +126,10 @@ class DataManagementSheet extends HookConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader() {
     return ListTile(
       title: Text(
-        context.l10n.dataManagement,
+        l10n.dataManagement,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
     );
@@ -148,22 +142,18 @@ class DataManagementSheet extends HookConsumerWidget {
   ) {
     return _DataManagementTile(
       leading: const Icon(Icons.upload_file),
-      title: Text(context.l10n.exportToFile),
+      title: Text(l10n.exportToFile),
       onTap: () async {
         context.navigator.pop();
         try {
           await dataManagement.exportToFile();
-          if (parentContext.mounted) {
-            ref
-                .read(notificationServiceProvider)
-                .showSuccess(context.l10n.exportSuccess);
-          }
+          ref
+              .read(notificationServiceProvider)
+              .showSuccess(l10n.exportSuccess);
         } catch (e) {
-          if (parentContext.mounted) {
-            ref
-                .read(notificationServiceProvider)
-                .showError(context.l10n.exportFailed(e.toString()));
-          }
+          ref
+              .read(notificationServiceProvider)
+              .showError(l10n.exportFailed(e.toString()));
         }
       },
     );
@@ -176,22 +166,18 @@ class DataManagementSheet extends HookConsumerWidget {
   ) {
     return _DataManagementTile(
       leading: const Icon(Icons.content_copy),
-      title: Text(context.l10n.exportToClipboard),
+      title: Text(l10n.exportToClipboard),
       onTap: () async {
         context.navigator.pop();
         try {
           await dataManagement.exportToClipboard();
-          if (parentContext.mounted) {
-            ref
-                .read(notificationServiceProvider)
-                .showSuccess(context.l10n.exportSuccess);
-          }
+          ref
+              .read(notificationServiceProvider)
+              .showSuccess(l10n.exportSuccess);
         } catch (e) {
-          if (parentContext.mounted) {
-            ref
-                .read(notificationServiceProvider)
-                .showError(context.l10n.exportFailed(e.toString()));
-          }
+          ref
+              .read(notificationServiceProvider)
+              .showError(l10n.exportFailed(e.toString()));
         }
       },
     );
@@ -204,7 +190,7 @@ class DataManagementSheet extends HookConsumerWidget {
   ) {
     return _DataManagementTile(
       leading: const Icon(Icons.file_download),
-      title: Text(context.l10n.importFromFile),
+      title: Text(l10n.importFromFile),
       onTap: () => _handleImport(
         context,
         ref,
@@ -221,7 +207,7 @@ class DataManagementSheet extends HookConsumerWidget {
   ) {
     return _DataManagementTile(
       leading: const Icon(Icons.content_paste),
-      title: Text(context.l10n.importFromClipboard),
+      title: Text(l10n.importFromClipboard),
       onTap: () => _handleImport(
         context,
         ref,

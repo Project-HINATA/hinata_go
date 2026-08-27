@@ -47,11 +47,10 @@ class SaveCardDialog extends HookConsumerWidget {
     }, []);
 
     return AlertDialog(
-      title: Text(context.l10n.saveToFolder),
+      title: Text(l10n.saveToFolder),
       content: _SaveCardDialogContent(
         nameField: _buildNameField(context, nameController),
         folderDropdown: _buildFolderDropdown(
-          context,
           selectedFolderIdState,
           folders,
         ),
@@ -76,7 +75,7 @@ class SaveCardDialog extends HookConsumerWidget {
     return [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: Text(context.l10n.cancel),
+        child: Text(l10n.cancel),
       ),
       FilledButton(
         onPressed: () => _saveCard(
@@ -86,7 +85,7 @@ class SaveCardDialog extends HookConsumerWidget {
           selectedFolderIdState,
           folders,
         ),
-        child: Text(context.l10n.save),
+        child: Text(l10n.save),
       ),
     ];
   }
@@ -97,23 +96,22 @@ class SaveCardDialog extends HookConsumerWidget {
   ) {
     return TextField(
       controller: nameController,
-      decoration: InputDecoration(labelText: context.l10n.nameDescription),
+      decoration: InputDecoration(labelText: l10n.nameDescription),
       autofocus: true,
     );
   }
 
   Widget _buildFolderDropdown(
-    BuildContext context,
     ValueNotifier<String> selectedFolderIdState,
     List<CardFolder> folders,
   ) {
     return DropdownButtonFormField<String>(
       initialValue: selectedFolderIdState.value,
-      decoration: InputDecoration(labelText: context.l10n.folder),
+      decoration: InputDecoration(labelText: l10n.folder),
       items: folders.map((folder) {
         return DropdownMenuItem(
           value: folder.id,
-          child: Text(folderDisplayName(context, folder.id, folder.name)),
+          child: Text(folderDisplayName(folder.id, folder.name)),
         );
       }).toList(),
       onChanged: (val) {
@@ -151,17 +149,17 @@ class SaveCardDialog extends HookConsumerWidget {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(context.l10n.duplicateCardTitle),
-          content: Text(context.l10n.duplicateCardPrompt),
+          title: Text(l10n.duplicateCardTitle),
+          content: Text(l10n.duplicateCardPrompt),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text(context.l10n.cancel),
+              child: Text(l10n.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
-                context.l10n.overwrite,
+                l10n.overwrite,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
@@ -194,9 +192,9 @@ class SaveCardDialog extends HookConsumerWidget {
       ref
           .read(notificationServiceProvider)
           .showSuccess(
-            context.l10n.savedToFolder(
+            l10n.savedToFolder(
               cardName,
-              folderDisplayName(context, folderId, folder.name),
+              folderDisplayName(folderId, folder.name),
             ),
           );
     } catch (_) {

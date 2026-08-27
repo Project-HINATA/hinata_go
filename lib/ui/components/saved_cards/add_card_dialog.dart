@@ -68,17 +68,17 @@ class AddCardDialog extends HookConsumerWidget {
         final confirm = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text(context.l10n.duplicateCardTitle),
-            content: Text(context.l10n.duplicateCardPrompt),
+            title: Text(l10n.duplicateCardTitle),
+            content: Text(l10n.duplicateCardPrompt),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: Text(context.l10n.cancel),
+                child: Text(l10n.cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(
-                  context.l10n.overwrite,
+                  l10n.overwrite,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
@@ -103,7 +103,7 @@ class AddCardDialog extends HookConsumerWidget {
         .toList();
 
     return AlertDialog(
-      title: Text(context.l10n.addCardManually),
+      title: Text(l10n.addCardManually),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -111,27 +111,27 @@ class AddCardDialog extends HookConsumerWidget {
             TextField(
               controller: nameController,
               decoration: InputDecoration(
-                labelText: context.l10n.nameDescription,
+                labelText: l10n.nameDescription,
               ),
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               key: ValueKey(selectedFolderIdState.value),
               initialValue: selectedFolderIdState.value,
-              decoration: InputDecoration(labelText: context.l10n.folder),
+              decoration: InputDecoration(labelText: l10n.folder),
               items: [
                 ...folders.map(
                   (folder) => DropdownMenuItem(
                     value: folder.id,
                     child: Text(
-                      folderDisplayName(context, folder.id, folder.name),
+                      folderDisplayName(folder.id, folder.name),
                     ),
                   ),
                 ),
                 DropdownMenuItem(
                   value: 'CREATE_NEW',
                   child: Text(
-                    context.l10n.newFolderOption,
+                    l10n.newFolderOption,
                     style: const TextStyle(color: Colors.blue),
                   ),
                 ),
@@ -149,11 +149,11 @@ class AddCardDialog extends HookConsumerWidget {
             TextField(
               controller: valueController,
               decoration: InputDecoration(
-                labelText: context.l10n.accessCode,
+                labelText: l10n.accessCode,
                 helperText:
                     value.isNotEmpty &&
                         !AccessCodeValidator.isValidAimeAccessCode(value)
-                    ? context.l10n.invalidAccessCodeLength
+                    ? l10n.invalidAccessCodeLength
                     : null,
                 helperMaxLines: 3,
                 helperStyle: const TextStyle(color: Colors.orange),
@@ -170,11 +170,11 @@ class AddCardDialog extends HookConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.cancel),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: isFormValid ? onSave : null,
-          child: Text(context.l10n.save),
+          child: Text(l10n.save),
         ),
       ],
     );

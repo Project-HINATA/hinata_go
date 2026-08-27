@@ -96,7 +96,7 @@ class _NoInstanceRow extends StatelessWidget {
         const SizedBox(width: 16),
         Expanded(
           child: Text(
-            context.l10n.noActiveInstanceSelectedTap,
+            l10n.noActiveInstanceSelectedTap,
             style: TextStyle(color: fgColor, fontWeight: FontWeight.bold),
           ),
         ),

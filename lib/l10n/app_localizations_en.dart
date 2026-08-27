@@ -736,24 +736,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transitIssueDate => 'Issue Date';
 
   @override
-  String transitCardTypeStandard(String code) {
-    return 'Standard Card ($code)';
-  }
+  String get transitCardTypeStandard => 'Standard Card';
 
   @override
-  String transitCardTypeStudent(String code) {
-    return 'Student Card ($code)';
-  }
+  String get transitCardTypeStudent => 'Student Card';
 
   @override
-  String transitCardTypeSenior(String code) {
-    return 'Senior Card ($code)';
-  }
+  String get transitCardTypeSenior => 'Senior Card';
 
   @override
-  String transitCardTypeMilitary(String code) {
-    return 'Military Card ($code)';
-  }
+  String get transitCardTypeMilitary => 'Military Card';
 
   @override
   String transitCardTypeOther(String code) {

@@ -19,8 +19,6 @@ class DeviceControlPage extends ConsumerWidget {
         ? deviceState.connectedDevice as UsbHinataDeviceImpl
         : null;
 
-    final l10n = context.l10n;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.deviceHub),

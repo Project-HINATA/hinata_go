@@ -62,22 +62,22 @@ class SavedCardsPage extends HookConsumerWidget {
     if (folder.id == 'history_folder' || folder.id == 'favorites_folder') {
       ref
           .read(notificationServiceProvider)
-          .showError(context.l10n.cannotDeleteDefaultFolders);
+          .showError(l10n.cannotDeleteDefaultFolders);
       return;
     }
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(context.l10n.deleteFolder),
+        title: Text(l10n.deleteFolder),
         content: Text(
-          context.l10n.deleteFolderMessage(
-            folderDisplayName(context, folder.id, folder.name),
+          l10n.deleteFolderMessage(
+            folderDisplayName(folder.id, folder.name),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(context.l10n.cancel),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -85,7 +85,7 @@ class SavedCardsPage extends HookConsumerWidget {
               setSelectedFolderId('favorites_folder');
               Navigator.pop(dialogContext);
             },
-            child: Text(context.l10n.delete),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -187,7 +187,7 @@ class SavedCardsPage extends HookConsumerWidget {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(title: Text(context.l10n.savedCards));
+    return AppBar(title: Text(l10n.savedCards));
   }
 
   Widget _buildBody(
@@ -263,7 +263,7 @@ class SavedCardsPage extends HookConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(child: Text(context.l10n.noCardsInFolder));
+    return Center(child: Text(l10n.noCardsInFolder));
   }
 
   Widget _buildCardsList(
@@ -413,7 +413,7 @@ class _SavedCardsFolderRail extends StatelessWidget {
               size: 20,
             ),
             title: Text(
-              folderDisplayName(context, folder.id, folder.name),
+              folderDisplayName(folder.id, folder.name),
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
@@ -447,9 +447,9 @@ class _SavedCardsFabGroup extends StatelessWidget {
         FloatingActionButton.extended(
           heroTag: 'saved_cards_new_folder',
           onPressed: onAddFolder,
-          tooltip: context.l10n.newFolder,
+          tooltip: l10n.newFolder,
           icon: const Icon(Icons.create_new_folder),
-          label: Text(context.l10n.newFolder),
+          label: Text(l10n.newFolder),
         ),
         if (showAddCard) ...[
           const SizedBox(height: 12),
@@ -457,7 +457,7 @@ class _SavedCardsFabGroup extends StatelessWidget {
             heroTag: 'saved_cards_new_card',
             onPressed: onAddCard,
             icon: const Icon(Icons.add),
-            label: Text(context.l10n.addCard),
+            label: Text(l10n.addCard),
           ),
         ],
       ],

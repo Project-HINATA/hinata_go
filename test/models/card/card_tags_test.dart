@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hinata_go/l10n/app_localizations.dart';
+import 'package:hinata_go/l10n/l10n.dart';
 import 'package:hinata_go/models/card/aic.dart';
 import 'package:hinata_go/models/card/aime.dart';
 import 'package:hinata_go/models/card/banapass.dart';
@@ -33,6 +33,12 @@ void main() {
 
       expect(CardTag.japanTransit.localizedName(l10nEn), 'Japan Transit IC');
       expect(CardTag.japanTransit.localizedName(l10nZh), '交通系 IC');
+
+      // Global context-free getter
+      L10nHolder.update(l10nZh);
+      expect(CardTag.tUnion.label, '交通联合');
+      L10nHolder.update(l10nEn);
+      expect(CardTag.tUnion.label, 'China T-Union');
 
       // Card issuers without official English translation retain native name
       expect(CardTag.issuer('大连明珠卡').localizedName(l10nEn), '大连明珠卡');

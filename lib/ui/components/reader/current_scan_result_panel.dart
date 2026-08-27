@@ -288,7 +288,7 @@ class _ScanActionRow extends StatelessWidget {
         Expanded(
           child: _ScanActionButton.outlined(
             icon: Icons.save_alt,
-            label: context.l10n.saveUpper,
+            label: l10n.saveUpper,
             onPressed: onSave,
           ),
         ),
@@ -297,7 +297,7 @@ class _ScanActionRow extends StatelessWidget {
           Expanded(
             child: _ScanActionButton.filled(
               icon: Icons.send_rounded,
-              label: context.l10n.sendUpper,
+              label: l10n.sendUpper,
               onPressed: () => onSend!(),
             ),
           ),

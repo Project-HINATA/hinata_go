@@ -1433,26 +1433,26 @@ abstract class AppLocalizations {
   /// Standard transit card type description
   ///
   /// In en, this message translates to:
-  /// **'Standard Card ({code})'**
-  String transitCardTypeStandard(String code);
+  /// **'Standard Card'**
+  String get transitCardTypeStandard;
 
   /// Student transit card type description
   ///
   /// In en, this message translates to:
-  /// **'Student Card ({code})'**
-  String transitCardTypeStudent(String code);
+  /// **'Student Card'**
+  String get transitCardTypeStudent;
 
   /// Senior transit card type description
   ///
   /// In en, this message translates to:
-  /// **'Senior Card ({code})'**
-  String transitCardTypeSenior(String code);
+  /// **'Senior Card'**
+  String get transitCardTypeSenior;
 
   /// Military transit card type description
   ///
   /// In en, this message translates to:
-  /// **'Military Card ({code})'**
-  String transitCardTypeMilitary(String code);
+  /// **'Military Card'**
+  String get transitCardTypeMilitary;
 
   /// Generic/other transit card type description
   ///

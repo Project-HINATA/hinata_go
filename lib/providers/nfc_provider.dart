@@ -8,6 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:uuid/uuid.dart';
 
+import '../l10n/l10n.dart';
 import '../models/card/aime.dart';
 import '../models/card/banapass.dart';
 import '../models/card/card_read_result.dart';
@@ -154,9 +155,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       // Android uses continuous background scanning.
       if (!kIsWeb && Platform.isIOS) {
         try {
-          final iosAlert =
-              ref.read(notificationServiceProvider).l10n?.nfcIosAlert ??
-              'Hold your card near the top of your iPhone';
+          final iosAlert = l10n.nfcIosAlert;
           NFCTag tag = await FlutterNfcKit.poll(
             iosAlertMessage: iosAlert,
             readIso18092: true,
@@ -225,10 +224,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
       if (basicResult.status == CardReadStatus.incomplete) {
         final notificationService = ref.read(notificationServiceProvider);
-        notificationService.showInfo(
-          notificationService.l10n?.nfcReadIncomplete ??
-              'Card reading was interrupted. Please scan it again.',
-        );
+        notificationService.showInfo(l10n.nfcReadIncomplete);
         return;
       }
 

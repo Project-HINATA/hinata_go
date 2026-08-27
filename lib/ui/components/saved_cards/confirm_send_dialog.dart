@@ -10,16 +10,16 @@ class ConfirmSendDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.confirmSend),
-      content: Text(context.l10n.confirmSendWithValue(card.showValue)),
+      title: Text(l10n.confirmSend),
+      content: Text(l10n.confirmSendWithValue(card.showValue)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: Text(context.l10n.cancel),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: Text(context.l10n.send),
+          child: Text(l10n.send),
         ),
       ],
     );

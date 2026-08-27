@@ -26,17 +26,17 @@ class AddFolderDialog extends HookConsumerWidget {
     }
 
     return AlertDialog(
-      title: Text(context.l10n.newFolder),
+      title: Text(l10n.newFolder),
       content: TextField(
         controller: nameController,
-        decoration: InputDecoration(labelText: context.l10n.folderName),
+        decoration: InputDecoration(labelText: l10n.folderName),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.cancel),
+          child: Text(l10n.cancel),
         ),
-        FilledButton(onPressed: onCreate, child: Text(context.l10n.create)),
+        FilledButton(onPressed: onCreate, child: Text(l10n.create)),
       ],
     );
   }

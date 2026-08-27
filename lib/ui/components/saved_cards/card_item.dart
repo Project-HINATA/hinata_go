@@ -62,7 +62,7 @@ class CardItem extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  card.card.tags.first.localizedName(context.l10n),
+                  card.card.tags.first.label,
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w600,
@@ -92,7 +92,7 @@ class CardItem extends ConsumerWidget {
             : IconButton(
                 icon: const Icon(Icons.send_rounded),
                 onPressed: isAnyCardSending ? null : () => onSend(card),
-                tooltip: context.l10n.quickSend,
+                tooltip: l10n.quickSend,
                 color: isAnyCardSending ? colorScheme.outline : null,
               ),
         onTap: () => context.push('/card_detail', extra: card),

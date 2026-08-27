@@ -330,10 +330,6 @@ void main() {
       0x90, 0x00, // SW 9000
     ];
 
-    final read18Rec1 = <int>[0x00, 0xB2, 0x01, 0xC4, 0x00];
-    final read18Rec2 = <int>[0x00, 0xB2, 0x02, 0xC4, 0x00];
-    final read18Rec3 = <int>[0x00, 0xB2, 0x03, 0xC4, 0x00];
-
     // Info response with Shanghai IIN: 31 04 77 00 12 34 56 78 90 00
     final shanghaiInfo = _successResponse(32);
     shanghaiInfo[10] = 0x31;

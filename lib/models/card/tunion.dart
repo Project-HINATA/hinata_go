@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n.dart';
 import '../../utils/tunion_data.dart';
 import 'iso14443a.dart';
 import 'transit.dart';
@@ -58,26 +58,29 @@ class TUnion extends Iso14443 with TransitCard {
   @override
   String? get type => "tunion";
 
-  /// Localized card type string (e.g. Standard Card (01), Student Card (02), etc.)
-  String? getLocalizedCardType(AppLocalizations l10n) {
+  /// Localized card type string (e.g. Standard Card, Student Card, etc.)
+  String? get localizedCardType => getLocalizedCardType();
+
+  String? getLocalizedCardType([AppLocalizations? customL10n]) {
+    final activeL10n = customL10n ?? l10n;
     if (cardType == null || cardType!.isEmpty) return null;
     final code = cardType!.trim();
     if (code == '01' || code == '1' || code.startsWith('普通卡') || code.contains('(01)')) {
-      return l10n.transitCardTypeStandard('01');
+      return activeL10n.transitCardTypeStandard;
     }
     if (code == '02' || code == '2' || code.startsWith('学生卡') || code.contains('(02)')) {
-      return l10n.transitCardTypeStudent('02');
+      return activeL10n.transitCardTypeStudent;
     }
     if (code == '03' || code == '3' || code.startsWith('老人卡') || code.contains('(03)')) {
-      return l10n.transitCardTypeSenior('03');
+      return activeL10n.transitCardTypeSenior;
     }
     if (code == '04' || code == '4' || code.startsWith('军人卡') || code.contains('(04)')) {
-      return l10n.transitCardTypeMilitary('04');
+      return activeL10n.transitCardTypeMilitary;
     }
     // Extract hex code if formatted like "其他 (05)" or raw "05"
     final hexMatch = RegExp(r'([0-9a-fA-F]{2})').firstMatch(code);
     final displayCode = hexMatch != null ? hexMatch.group(1)!.toUpperCase() : code;
-    return l10n.transitCardTypeOther(displayCode);
+    return activeL10n.transitCardTypeOther(displayCode);
   }
 
   /// Decode station details using T-Union station database

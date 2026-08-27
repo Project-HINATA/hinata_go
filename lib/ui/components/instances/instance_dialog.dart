@@ -79,8 +79,8 @@ class InstanceDialog extends HookConsumerWidget {
     return AlertDialog(
       title: Text(
         existingInstance != null
-            ? context.l10n.editInstance
-            : context.l10n.addInstance,
+            ? l10n.editInstance
+            : l10n.addInstance,
       ),
       content: _InstanceDialogContent(
         nameField: _buildNameField(context, nameController),
@@ -109,7 +109,7 @@ class InstanceDialog extends HookConsumerWidget {
   ) {
     return TextField(
       controller: controller,
-      decoration: InputDecoration(labelText: context.l10n.nameExample),
+      decoration: InputDecoration(labelText: l10n.nameExample),
     );
   }
 
@@ -120,19 +120,19 @@ class InstanceDialog extends HookConsumerWidget {
   ) {
     return DropdownButtonFormField<InstanceType>(
       initialValue: typeState.value,
-      decoration: InputDecoration(labelText: context.l10n.instanceType),
+      decoration: InputDecoration(labelText: l10n.instanceType),
       items: [
         DropdownMenuItem(
           value: InstanceType.hinataIo,
-          child: Text(context.l10n.instanceTypeHinataIo),
+          child: Text(l10n.instanceTypeHinataIo),
         ),
         DropdownMenuItem(
           value: InstanceType.spiceApi,
-          child: Text(context.l10n.instanceTypeSpiceApi),
+          child: Text(l10n.instanceTypeSpiceApi),
         ),
         DropdownMenuItem(
           value: InstanceType.spiceApiWebSocket,
-          child: Text(context.l10n.instanceTypeSpiceApiWebSocket),
+          child: Text(l10n.instanceTypeSpiceApiWebSocket),
         ),
       ],
       onChanged: (value) {
@@ -158,9 +158,9 @@ class InstanceDialog extends HookConsumerWidget {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
-        labelText: context.l10n.endpointLabel,
+        labelText: l10n.endpointLabel,
         helperText: currentUrl.isNotEmpty && !isValid
-            ? context.l10n.invalidEndpoint
+            ? l10n.invalidEndpoint
             : null,
         helperStyle: const TextStyle(color: Colors.orange),
       ),
@@ -174,7 +174,7 @@ class InstanceDialog extends HookConsumerWidget {
   ) {
     return TextField(
       controller: controller,
-      decoration: InputDecoration(labelText: context.l10n.remotePassword),
+      decoration: InputDecoration(labelText: l10n.remotePassword),
       obscureText: true,
     );
   }
@@ -185,7 +185,7 @@ class InstanceDialog extends HookConsumerWidget {
   ) {
     return DropdownButtonFormField<int>(
       initialValue: unitState.value,
-      decoration: InputDecoration(labelText: context.l10n.spiceApiUnit),
+      decoration: InputDecoration(labelText: l10n.spiceApiUnit),
       items: const [
         DropdownMenuItem(value: 0, child: Text('0')),
         DropdownMenuItem(value: 1, child: Text('1')),
@@ -201,7 +201,7 @@ class InstanceDialog extends HookConsumerWidget {
     ValueNotifier<String> iconState,
   ) {
     return _InstanceIconSelection(
-      title: context.l10n.selectIcon,
+      title: l10n.selectIcon,
       selectedIcon: iconState.value,
       onIconSelected: (iconName) => iconState.value = iconName,
     );
@@ -215,11 +215,11 @@ class InstanceDialog extends HookConsumerWidget {
     return [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: Text(context.l10n.cancel),
+        child: Text(l10n.cancel),
       ),
       FilledButton(
         onPressed: isValid ? onSave : null,
-        child: Text(context.l10n.save),
+        child: Text(l10n.save),
       ),
     ];
   }
@@ -260,7 +260,7 @@ class _InstanceDialogContent extends StatelessWidget {
           if (showHinataVersionWarning) ...[
             const SizedBox(height: 4),
             Text(
-              context.l10n.remotePasswordIoVersionRequirement(
+              l10n.remotePasswordIoVersionRequirement(
                 AppConstants.minimumHinataIoVersion,
               ),
               style: const TextStyle(color: Colors.orange),

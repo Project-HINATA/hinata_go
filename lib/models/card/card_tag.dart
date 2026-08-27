@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:hinata_go/context_extensions.dart';
-import 'package:hinata_go/l10n/app_localizations.dart';
+import 'package:hinata_go/l10n/l10n.dart';
 
 /// Represents a card tag badge with localized display and search capabilities.
 @immutable
@@ -48,19 +47,20 @@ class CardTag {
 
   // --- Localization & Display ---
 
-  /// Returns the localized display label using the given [BuildContext].
-  String label(BuildContext context) => localizedName(context.l10n);
+  /// Returns the localized display label using global [l10n].
+  String get label => localizedName();
 
-  /// Returns the localized display label using [AppLocalizations].
-  String localizedName(AppLocalizations l10n) {
+  /// Returns the localized display label using [l10n] or an optional custom [customL10n].
+  String localizedName([AppLocalizations? customL10n]) {
+    final activeL10n = customL10n ?? l10n;
     if (customName != null && customName!.isNotEmpty) {
       return customName!;
     }
     switch (id) {
       case 'tunion':
-        return l10n.tagTUnion;
+        return activeL10n.tagTUnion;
       case 'japan_transit':
-        return l10n.tagJapanTransit;
+        return activeL10n.tagJapanTransit;
       case 'iso_dep':
         return 'ISO-DEP';
       case 'felica':
@@ -98,7 +98,7 @@ class CardTag {
   // --- Search / Filter Matching ---
 
   /// Checks if this tag matches a given query string (by ID, custom name, or localized name).
-  bool matchesSearch(String query, [AppLocalizations? l10n]) {
+  bool matchesSearch(String query, [AppLocalizations? customL10n]) {
     final cleanQuery = query.trim().toLowerCase();
     if (cleanQuery.isEmpty) return true;
 
@@ -106,7 +106,8 @@ class CardTag {
     if (customName != null && customName!.toLowerCase().contains(cleanQuery)) {
       return true;
     }
-    if (l10n != null && localizedName(l10n).toLowerCase().contains(cleanQuery)) {
+    final activeL10n = customL10n ?? l10n;
+    if (localizedName(activeL10n).toLowerCase().contains(cleanQuery)) {
       return true;
     }
     return false;

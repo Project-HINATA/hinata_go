@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:hinata_go/context_extensions.dart';
-import '../l10n/app_localizations.dart';
+import 'package:hinata_go/l10n/l10n.dart';
 import '../navigation/router.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
@@ -15,11 +14,7 @@ class NotificationService {
   final GlobalKey<ScaffoldMessengerState> messengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
-  AppLocalizations? get l10n {
-    final context = rootNavigatorKey.currentContext;
-    if (context == null) return null;
-    return AppLocalizations.of(context);
-  }
+  AppLocalizations get l10n => L10nHolder.current;
 
   void showSuccess(String message) {
     _showToast(message, Icons.check_circle_rounded, Colors.green);

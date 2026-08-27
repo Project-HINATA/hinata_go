@@ -69,7 +69,7 @@ class CardDetailBottomActions extends StatelessWidget {
         ),
         icon: isSaving ? _buildSpinner() : const Icon(Icons.folder_special),
         label: Text(
-          isSaving ? context.l10n.savingUpper : context.l10n.saveUpper,
+          isSaving ? l10n.savingUpper : l10n.saveUpper,
         ),
       ),
     );
@@ -90,7 +90,7 @@ class CardDetailBottomActions extends StatelessWidget {
             ? _buildSpinner(color: Colors.white)
             : const Icon(Icons.send),
         label: Text(
-          isSending ? context.l10n.sendingUpper : context.l10n.sendUpper,
+          isSending ? l10n.sendingUpper : l10n.sendUpper,
         ),
       ),
     );

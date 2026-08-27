@@ -28,14 +28,13 @@ class ScanLogsPage extends HookConsumerWidget {
           ? null
           : FloatingActionButton.small(
               onPressed: () => ref.read(scanLogsProvider.notifier).clearLogs(),
-              tooltip: context.l10n.clearHistory,
+              tooltip: l10n.clearHistory,
               child: const Icon(Icons.delete_sweep),
             ),
     );
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
     return AppBar(
       title: Text(l10n.scanHistoryLogs),
       actions: [
@@ -52,7 +51,7 @@ class ScanLogsPage extends HookConsumerWidget {
 
   Widget _buildBody(BuildContext context, List<ScanLog> logs) {
     if (logs.isEmpty) {
-      return Center(child: Text(context.l10n.noScanHistoryYet));
+      return Center(child: Text(l10n.noScanHistoryYet));
     }
 
     return ListView.builder(
@@ -77,7 +76,7 @@ class ScanLogsPage extends HookConsumerWidget {
     ScanLog log,
     void Function(ScanLog) onSave,
   ) {
-    final displaySource = scanSourceDisplayName(context, log);
+    final displaySource = scanSourceDisplayName(log);
 
     IconData sourceIcon = Icons.qr_code;
     if (log.source == 'NFC') sourceIcon = Icons.nfc;

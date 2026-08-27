@@ -35,6 +35,7 @@ class ScannedCardDetailV2 extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    L10nHolder.update(AppLocalizations.of(context));
     final colorScheme = context.colorScheme;
 
     return Container(
@@ -67,9 +68,9 @@ class ScannedCardDetailV2 extends ConsumerWidget {
             ),
           if (!isUsable)
             _UnusableCardWarning(
-              message: context.l10n.unusableMifareCardWarning,
+              message: l10n.unusableMifareCardWarning,
             ),
-          _TechnicalFieldsSection(children: _buildTechnicalFields(context)),
+          _TechnicalFieldsSection(children: _buildTechnicalFields()),
         ],
       ),
     );
@@ -108,8 +109,8 @@ class ScannedCardDetailV2 extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildTechnicalFields(BuildContext context) {
-    return _buildCardDetailFields(context, card)
+  List<Widget> _buildTechnicalFields() {
+    return _buildCardDetailFields(card)
         .map(
           (field) => _NativeInfoRow(
             label: field.label,
@@ -145,23 +146,20 @@ class _CardFieldDefinition<T> {
   final bool groupInFours;
 }
 
-List<_CardDetailField> _buildCardDetailFields(
-  BuildContext context,
-  ICCard card,
-) {
+List<_CardDetailField> _buildCardDetailFields(ICCard card) {
   final fields = <_CardDetailField>[];
 
   if (card is TransitCard) {
     fields.add(
       _CardDetailField(
-        label: context.l10n.transitBalance,
+        label: l10n.transitBalance,
         value: card.balanceFormatted,
       ),
     );
     if (card.cardNumber != null) {
       fields.add(
         _CardDetailField(
-          label: context.l10n.cardNumber,
+          label: l10n.cardNumber,
           value: card.cardNumber!,
           groupInFours: true,
         ),
@@ -170,7 +168,7 @@ List<_CardDetailField> _buildCardDetailFields(
     if (card.snapshotTime != null) {
       fields.add(
         _CardDetailField(
-          label: context.l10n.snapshotTime,
+          label: l10n.snapshotTime,
           value: DateFormat('yyyy-MM-dd HH:mm:ss').format(card.snapshotTime!),
         ),
       );
@@ -178,11 +176,11 @@ List<_CardDetailField> _buildCardDetailFields(
   }
 
   if (card is TUnion) {
-    final localizedType = card.getLocalizedCardType(context.l10n);
+    final localizedType = card.localizedCardType;
     if (localizedType != null) {
       fields.add(
         _CardDetailField(
-          label: context.l10n.transitCardType,
+          label: l10n.transitCardType,
           value: localizedType,
         ),
       );
@@ -190,7 +188,7 @@ List<_CardDetailField> _buildCardDetailFields(
     if (card.expiryDate != null && card.expiryDate!.isNotEmpty) {
       fields.add(
         _CardDetailField(
-          label: context.l10n.transitExpiryDate,
+          label: l10n.transitExpiryDate,
           value: card.expiryDate!,
         ),
       );
@@ -198,7 +196,7 @@ List<_CardDetailField> _buildCardDetailFields(
     if (card.issueDate != null && card.issueDate!.isNotEmpty) {
       fields.add(
         _CardDetailField(
-          label: context.l10n.transitIssueDate,
+          label: l10n.transitIssueDate,
           value: card.issueDate!,
         ),
       );
@@ -425,7 +423,7 @@ class _CardTagBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        tag.localizedName(context.l10n),
+        tag.label,
         style: context.textTheme.labelSmall?.copyWith(
           fontSize: 11,
           fontWeight: FontWeight.w600,

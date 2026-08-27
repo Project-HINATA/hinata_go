@@ -1,7 +1,9 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:hinata_go/l10n/app_localizations.dart';
+import 'package:hinata_go/l10n/l10n.dart';
+
+export 'package:hinata_go/l10n/l10n.dart';
 
 extension BuildContextX on BuildContext {
   ThemeData get theme => Theme.of(this);

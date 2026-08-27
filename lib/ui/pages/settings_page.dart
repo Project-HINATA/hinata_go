@@ -49,7 +49,7 @@ class SettingsPage extends HookConsumerWidget {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(title: Text(context.l10n.settings));
+    return AppBar(title: Text(l10n.settings));
   }
 
   Widget _buildExpirationSettings(
@@ -58,8 +58,8 @@ class SettingsPage extends HookConsumerWidget {
     AppSettings settings,
   ) {
     return ListTile(
-      title: Text(context.l10n.cardExpiration),
-      subtitle: Text(context.l10n.cardExpirationDescription),
+      title: Text(l10n.cardExpiration),
+      subtitle: Text(l10n.cardExpirationDescription),
       trailing: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: settings.cardExpirationSeconds,
@@ -73,7 +73,7 @@ class SettingsPage extends HookConsumerWidget {
           items: [5, 10, 15, 30, 60].map((int val) {
             return DropdownMenuItem<int>(
               value: val,
-              child: Text(context.l10n.cardExpirationValue(val.toString())),
+              child: Text(l10n.cardExpirationValue(val.toString())),
             );
           }).toList(),
         ),
@@ -87,8 +87,8 @@ class SettingsPage extends HookConsumerWidget {
     AppSettings settings,
   ) {
     return ListTile(
-      title: Text(context.l10n.language),
-      subtitle: Text(context.l10n.languageDescription),
+      title: Text(l10n.language),
+      subtitle: Text(l10n.languageDescription),
       trailing: DropdownButtonHideUnderline(
         child: DropdownButton<AppLanguage>(
           value: settings.language,
@@ -100,15 +100,15 @@ class SettingsPage extends HookConsumerWidget {
           items: [
             DropdownMenuItem(
               value: AppLanguage.system,
-              child: Text(context.l10n.languageSystem),
+              child: Text(l10n.languageSystem),
             ),
             DropdownMenuItem(
               value: AppLanguage.english,
-              child: Text(context.l10n.languageEnglishNative),
+              child: Text(l10n.languageEnglishNative),
             ),
             DropdownMenuItem(
               value: AppLanguage.simplifiedChinese,
-              child: Text(context.l10n.languageChineseNative),
+              child: Text(l10n.languageChineseNative),
             ),
           ],
         ),
@@ -118,8 +118,8 @@ class SettingsPage extends HookConsumerWidget {
 
   Widget _buildDataManagementItem(BuildContext context) {
     return ListTile(
-      title: Text(context.l10n.dataManagement),
-      subtitle: Text(context.l10n.dataManagementDescription),
+      title: Text(l10n.dataManagement),
+      subtitle: Text(l10n.dataManagementDescription),
       leading: const Icon(Icons.import_export),
       onTap: () {
         showDialog<void>(
@@ -132,7 +132,7 @@ class SettingsPage extends HookConsumerWidget {
               ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
-                child: DataManagementSheet(parentContext: context),
+                child: const DataManagementSheet(),
               ),
             );
           },
@@ -147,7 +147,7 @@ class SettingsPage extends HookConsumerWidget {
     AppUpdateState updateState,
   ) {
     return ListTile(
-      title: Text(context.l10n.about),
+      title: Text(l10n.about),
       subtitle: Text(updateState.versionDisplay),
       leading: const Icon(Icons.info_outline),
       onTap: updateState.isUpdateSupported
@@ -179,7 +179,7 @@ class SettingsPage extends HookConsumerWidget {
                   }
                 },
                 icon: const Icon(Icons.code_rounded),
-                label: Text(context.l10n.updateViaGithub),
+                label: Text(l10n.updateViaGithub),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(0, 56),
                   shape: RoundedRectangleBorder(
@@ -198,7 +198,7 @@ class SettingsPage extends HookConsumerWidget {
                   }
                 },
                 icon: const Icon(Icons.shop_outlined),
-                label: Text(context.l10n.updateViaGooglePlay),
+                label: Text(l10n.updateViaGooglePlay),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(0, 56),
                   shape: RoundedRectangleBorder(
@@ -223,7 +223,7 @@ class SettingsPage extends HookConsumerWidget {
             }
           },
           icon: const Icon(Icons.apple),
-          label: Text(context.l10n.updateViaAppStore),
+          label: Text(l10n.updateViaAppStore),
           style: FilledButton.styleFrom(
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(
@@ -244,7 +244,7 @@ class SettingsPage extends HookConsumerWidget {
           }
         },
         icon: const Icon(Icons.system_update),
-        label: Text(context.l10n.updateToVersion(updateState.latestVersion)),
+        label: Text(l10n.updateToVersion(updateState.latestVersion)),
         style: FilledButton.styleFrom(
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(

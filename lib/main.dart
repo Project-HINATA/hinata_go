@@ -6,7 +6,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:hinata_go/l10n/app_localizations.dart';
 import 'package:hinata_go/l10n/l10n.dart';
 import 'package:hinata_go/providers/nfc_provider.dart';
 import 'package:hinata_go/providers/settings_provider.dart';
@@ -56,9 +55,10 @@ class MyApp extends ConsumerWidget {
 
         return MaterialApp.router(
           builder: (context, child) {
+            L10nHolder.update(AppLocalizations.of(context));
             return _SystemUiController(child: child ?? const SizedBox.shrink());
           },
-          onGenerateTitle: (context) => context.l10n.appTitle,
+          onGenerateTitle: (context) => l10n.appTitle,
           scaffoldMessengerKey: notificationService.messengerKey,
           theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
           darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),

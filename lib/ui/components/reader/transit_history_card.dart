@@ -12,26 +12,26 @@ class TransitHistoryCard extends HookWidget {
 
   const TransitHistoryCard({required this.card, super.key});
 
-  String _localizeType(BuildContext context, String type) {
+  String _localizeType(String type) {
     switch (type) {
       case 'Ride':
-        return context.l10n.transitTypeRide;
+        return l10n.transitTypeRide;
       case 'Top-up':
-        return context.l10n.transitTypeTopup;
+        return l10n.transitTypeTopup;
       case 'Shopping':
-        return context.l10n.transitTypeShopping;
+        return l10n.transitTypeShopping;
       case 'Adjustment':
-        return context.l10n.transitTypeAdjustment;
+        return l10n.transitTypeAdjustment;
       case 'Refund':
-        return context.l10n.transitTypeRefund;
+        return l10n.transitTypeRefund;
       case 'Issue':
-        return context.l10n.transitTypeIssue;
+        return l10n.transitTypeIssue;
       case 'Deduction':
-        return context.l10n.transitTypeDeduction;
+        return l10n.transitTypeDeduction;
       case 'Reissue':
-        return context.l10n.transitTypeReissue;
+        return l10n.transitTypeReissue;
       default:
-        return context.l10n.transitTypeOther;
+        return l10n.transitTypeOther;
     }
   }
 
@@ -122,7 +122,7 @@ class TransitHistoryCard extends HookWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        context.l10n.transactionHistory,
+                        l10n.transactionHistory,
                         style: context.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
@@ -221,7 +221,7 @@ class TransitHistoryCard extends HookWidget {
                       title: Row(
                         children: [
                           Text(
-                            _localizeType(context, tx.type),
+                            _localizeType(tx.type),
                             style: context.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.onSurface,
