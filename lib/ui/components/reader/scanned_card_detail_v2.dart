@@ -286,7 +286,6 @@ const List<_CardFieldDefinition<Iso14443>> _iso14443FieldDefinitions = [
 const List<_CardFieldDefinition<TUnion>> _tunionFieldDefinitions = [
   _CardFieldDefinition(label: '发卡地', extractor: _tunionIssuerLocation),
   _CardFieldDefinition(label: '卡种', extractor: _tunionCardType),
-  _CardFieldDefinition(label: '全国互联互通', extractor: _tunionInterchangeEnabled),
   _CardFieldDefinition(label: '有效期至', extractor: _tunionExpiryDate),
 ];
 
@@ -312,7 +311,6 @@ String? _tunionIssuerLocation(TUnion card) {
 
 String? _tunionCardType(TUnion card) => card.cardType;
 String? _tunionExpiryDate(TUnion card) => card.expiryDate;
-String? _tunionInterchangeEnabled(TUnion card) => (card.isInterchangeEnabled == true) ? '启用' : null;
 
 String? _accessCodeValue(HasAccessCode card) => card.accessCodeString;
 String? _aicManufacturer(Aic card) => card.manufacturer;
