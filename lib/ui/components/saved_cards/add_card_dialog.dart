@@ -43,7 +43,13 @@ class AddCardDialog extends HookConsumerWidget {
       if (!isFormValid) return;
 
       final accessCodeBytes = HexUtils.hexToBytes(value);
-      final aime = Aime(Uint8List(4), 0x08, 0x0004, accessCodeBytes);
+      final aime = Aime(
+        Uint8List(4),
+        0x08,
+        0x0004,
+        accessCodeBytes,
+        tags: const ['Aime', 'MIFARE Classic'],
+      );
       final notifier = ref.read(savedCardsProvider.notifier);
       final folderId = selectedFolderIdState.value;
 

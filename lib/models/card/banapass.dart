@@ -17,6 +17,7 @@ class Banapass extends Iso14443 implements HasAccessCode {
     this.block1,
     this.block2, {
     String? persistedAccessCode,
+    super.tags,
   }) : _persistedAccessCode = persistedAccessCode;
 
   String get block1Hex =>
@@ -64,6 +65,7 @@ class Banapass extends Iso14443 implements HasAccessCode {
           ? ICCard.hexToBytes(json['block2'] as String)
           : null,
       persistedAccessCode: json['accessCode'] as String?,
+      tags: iso.tags,
     );
   }
 
@@ -77,6 +79,9 @@ class Banapass extends Iso14443 implements HasAccessCode {
 }
 
 extension ToBanapass on Iso14443 {
-  Banapass toBanapass(Uint8List block1, Uint8List? block2) =>
-      Banapass(id, sak, atqa, block1, block2);
+  Banapass toBanapass(
+    Uint8List block1,
+    Uint8List? block2, {
+    List<String>? tags,
+  }) => Banapass(id, sak, atqa, block1, block2, tags: tags ?? this.tags);
 }

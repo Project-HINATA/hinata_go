@@ -17,8 +17,13 @@ class Felica extends ICCard implements HasEPass {
   final Uint16List systemCode;
   final String? _persistedEpass;
 
-  Felica(super.id, this.pmm, this.systemCode, {String? persistedEpass})
-    : _persistedEpass = persistedEpass;
+  Felica(
+    super.id,
+    this.pmm,
+    this.systemCode, {
+    String? persistedEpass,
+    super.tags,
+  }) : _persistedEpass = persistedEpass;
 
   String get pmmString =>
       pmm.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
@@ -63,6 +68,11 @@ class Felica extends ICCard implements HasEPass {
         (json['systemCode'] as List<dynamic>?)?.cast<int>() ?? [],
       ),
       persistedEpass: json['epass'] as String?,
+      tags:
+          (json['tags'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 

@@ -16,22 +16,28 @@ import '../components/reader/transit_history_card.dart';
 import '../widgets/save_card_dialog.dart';
 
 class CardDetailPage extends HookConsumerWidget {
-  final ICCard card;
+  final SavedCard? savedCard;
+  final ICCard? card;
 
-  const CardDetailPage({super.key, required this.card});
+  const CardDetailPage({super.key, this.savedCard, this.card})
+    : assert(savedCard != null || card != null);
 
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
 
-  Future<void> _saveCard(BuildContext context) async {
+  Future<void> _saveCard(BuildContext context, ICCard activeCard) async {
     await showDialog<bool>(
       context: context,
-      builder: (context) => SaveCardDialog(card: card, source: 'Saved'),
+      builder: (context) => SaveCardDialog(card: activeCard, source: 'Saved'),
     );
   }
 
-  Future<void> _sendCard(BuildContext context, WidgetRef ref) async {
+  Future<void> _sendCard(
+    BuildContext context,
+    WidgetRef ref,
+    ICCard activeCard,
+  ) async {
     final selectedInstance = await showDialog<RemoteInstance>(
       context: context,
       builder: (context) => const SelectInstanceDialog(),
@@ -40,15 +46,15 @@ class CardDetailPage extends HookConsumerWidget {
 
     await ref
         .read(cardSenderProvider.notifier)
-        .sendCard(card, targetInstance: selectedInstance);
+        .sendCard(activeCard, targetInstance: selectedInstance);
   }
 
   Future<void> _renameCard(
     BuildContext context,
     WidgetRef ref,
-    SavedCard savedCard,
+    SavedCard activeSavedCard,
   ) async {
-    final controller = TextEditingController(text: savedCard.name);
+    final controller = TextEditingController(text: activeSavedCard.name);
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -71,9 +77,11 @@ class CardDetailPage extends HookConsumerWidget {
       ),
     );
 
-    if (newName != null && newName.isNotEmpty && newName != savedCard.name) {
+    if (newName != null &&
+        newName.isNotEmpty &&
+        newName != activeSavedCard.name) {
       if (!context.mounted) return;
-      final updatedCard = savedCard.copyWith(name: newName);
+      final updatedCard = activeSavedCard.copyWith(name: newName);
       ref.read(savedCardsProvider.notifier).updateCard(updatedCard);
       ref
           .read(notificationServiceProvider)
@@ -84,7 +92,7 @@ class CardDetailPage extends HookConsumerWidget {
   Future<void> _deleteCard(
     BuildContext context,
     WidgetRef ref,
-    SavedCard savedCard,
+    SavedCard activeSavedCard,
   ) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -109,7 +117,7 @@ class CardDetailPage extends HookConsumerWidget {
 
     if (confirm == true) {
       if (!context.mounted) return;
-      ref.read(savedCardsProvider.notifier).removeCard(savedCard.id);
+      ref.read(savedCardsProvider.notifier).removeCard(activeSavedCard.id);
       ref
           .read(notificationServiceProvider)
           .showSuccess(context.l10n.deleteSuccess);
@@ -125,19 +133,36 @@ class CardDetailPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final senderState = ref.watch(cardSenderProvider);
     final savedCards = ref.watch(savedCardsProvider);
-    SavedCard? savedCard;
-    try {
-      savedCard = savedCards.firstWhere((c) => c.card.isSameCard(card));
-    } catch (_) {
-      savedCard = null;
+
+    SavedCard? activeSavedCard;
+    if (savedCard != null) {
+      activeSavedCard =
+          savedCards.where((c) => c.id == savedCard!.id).firstOrNull ??
+          savedCard;
+    } else if (card != null) {
+      try {
+        activeSavedCard = savedCards.firstWhere(
+          (c) => c.card.isSameCard(card!),
+        );
+      } catch (_) {
+        activeSavedCard = null;
+      }
     }
 
+    final activeCard = activeSavedCard?.card ?? card!;
+
     return Scaffold(
-      appBar: _buildAppBar(context, ref, savedCard),
+      appBar: _buildAppBar(context, ref, activeSavedCard, activeCard),
       body: SafeArea(
         top: false,
         bottom: false,
-        child: _buildBody(context, ref, senderState),
+        child: _buildBody(
+          context,
+          ref,
+          senderState,
+          activeSavedCard,
+          activeCard,
+        ),
       ),
     );
   }
@@ -145,20 +170,23 @@ class CardDetailPage extends HookConsumerWidget {
   PreferredSizeWidget _buildAppBar(
     BuildContext context,
     WidgetRef ref,
-    SavedCard? savedCard,
+    SavedCard? activeSavedCard,
+    ICCard activeCard,
   ) {
     return AppBar(
-      title: Text(context.l10n.cardDetails(savedCard?.name ?? card.name)),
+      title: Text(
+        context.l10n.cardDetails(activeSavedCard?.name ?? activeCard.name),
+      ),
       actions: [
-        if (savedCard != null) ...[
+        if (activeSavedCard != null) ...[
           IconButton(
             icon: const Icon(Icons.edit_note),
-            onPressed: () => _renameCard(context, ref, savedCard),
+            onPressed: () => _renameCard(context, ref, activeSavedCard),
             tooltip: context.l10n.renameCard,
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => _deleteCard(context, ref, savedCard),
+            onPressed: () => _deleteCard(context, ref, activeSavedCard),
             tooltip: context.l10n.deleteCard,
           ),
         ],
@@ -170,21 +198,29 @@ class CardDetailPage extends HookConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     CardSenderState senderState,
+    SavedCard? activeSavedCard,
+    ICCard activeCard,
   ) {
     return _CardDetailBody(
       detail: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ScannedCardDetailV2(card: card, showHeader: true),
-          if (card is TransitCard) ...[
+          ScannedCardDetailV2(
+            card: activeCard,
+            title: activeSavedCard?.name,
+            showHeader: true,
+          ),
+          if (activeCard is TransitCard) ...[
             const SizedBox(height: 16),
-            TransitHistoryCard(card: card as TransitCard),
+            TransitHistoryCard(card: activeCard as TransitCard),
           ],
         ],
       ),
       actions: CardDetailBottomActions(
-        onSend: card.gamePayload != null ? () => _sendCard(context, ref) : null,
-        onSave: () => _saveCard(context),
+        onSend: activeCard.gamePayload != null
+            ? () => _sendCard(context, ref, activeCard)
+            : null,
+        onSave: () => _saveCard(context, activeCard),
         isSending: senderState.isSending,
         isSaving: false,
       ),

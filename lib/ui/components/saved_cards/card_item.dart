@@ -51,11 +51,35 @@ class CardItem extends ConsumerWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          card.showValue,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
+        subtitle: Row(
+          children: [
+            if (card.card.tags.isNotEmpty) ...[
+              Container(
+                margin: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  card.card.tags.first,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+            ],
+            Expanded(
+              child: Text(
+                card.showValue,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+              ),
+            ),
+          ],
         ),
         trailing: card.card.gamePayload == null
             ? null
@@ -71,7 +95,7 @@ class CardItem extends ConsumerWidget {
                 tooltip: context.l10n.quickSend,
                 color: isAnyCardSending ? colorScheme.outline : null,
               ),
-        onTap: () => context.push('/card_detail', extra: card.card),
+        onTap: () => context.push('/card_detail', extra: card),
       ),
     );
   }

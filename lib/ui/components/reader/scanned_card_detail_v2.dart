@@ -16,6 +16,7 @@ import '../../../services/notification_service.dart';
 
 class ScannedCardDetailV2 extends ConsumerWidget {
   final ICCard card;
+  final String? title;
   final String? source;
   final bool showHeader;
   final bool showCloseButtonSpace;
@@ -23,6 +24,7 @@ class ScannedCardDetailV2 extends ConsumerWidget {
 
   const ScannedCardDetailV2({
     required this.card,
+    this.title,
     this.source,
     this.showHeader = true,
     this.showCloseButtonSpace = false,
@@ -57,7 +59,8 @@ class ScannedCardDetailV2 extends ConsumerWidget {
           if (showHeader)
             _CardDetailHeader(
               logo: _buildLogo(context, colorScheme),
-              name: card.name,
+              name: title ?? card.name,
+              tags: card.tags,
               source: source,
               showCloseButtonSpace: showCloseButtonSpace,
             ),
@@ -305,12 +308,14 @@ class _CardDetailHeader extends StatelessWidget {
   const _CardDetailHeader({
     required this.logo,
     required this.name,
+    this.tags = const [],
     required this.source,
     required this.showCloseButtonSpace,
   });
 
   final Widget logo;
   final String name;
+  final List<String> tags;
   final String? source;
   final bool showCloseButtonSpace;
 
@@ -326,7 +331,7 @@ class _CardDetailHeader extends StatelessWidget {
           logo,
           const SizedBox(width: 12),
           Expanded(
-            child: _CardTitleBlock(name: name, source: source),
+            child: _CardTitleBlock(name: name, tags: tags, source: source),
           ),
           if (showCloseButtonSpace) const SizedBox(width: 32),
         ],
@@ -336,9 +341,14 @@ class _CardDetailHeader extends StatelessWidget {
 }
 
 class _CardTitleBlock extends StatelessWidget {
-  const _CardTitleBlock({required this.name, required this.source});
+  const _CardTitleBlock({
+    required this.name,
+    this.tags = const [],
+    required this.source,
+  });
 
   final String name;
+  final List<String> tags;
   final String? source;
 
   @override
@@ -355,11 +365,44 @@ class _CardTitleBlock extends StatelessWidget {
             color: colorScheme.onSurface,
           ),
         ),
-        if (source != null) ...[
-          const SizedBox(height: 2),
-          _SourceBadge(source: source!),
+        if (tags.isNotEmpty || source != null) ...[
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ...tags.map((tag) => _CardTagBadge(tag: tag)),
+              if (source != null) _SourceBadge(source: source!),
+            ],
+          ),
         ],
       ],
+    );
+  }
+}
+
+class _CardTagBadge extends StatelessWidget {
+  final String tag;
+  const _CardTagBadge({required this.tag});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        tag,
+        style: context.textTheme.labelSmall?.copyWith(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSecondaryContainer,
+        ),
+      ),
     );
   }
 }

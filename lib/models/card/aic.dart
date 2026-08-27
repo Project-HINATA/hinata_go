@@ -11,6 +11,7 @@ class Aic extends Felica implements HasAccessCode {
     super.systemCode,
     this.accessCode, {
     super.persistedEpass,
+    super.tags,
   });
 
   @override
@@ -57,10 +58,12 @@ class Aic extends Felica implements HasAccessCode {
       felica.systemCode,
       ICCard.hexToBytes(json['accessCode'] as String? ?? ''),
       persistedEpass: json['epass'] as String?,
+      tags: felica.tags,
     );
   }
 }
 
 extension ToAIC on Felica {
-  Aic toAic(Uint8List accessCode) => Aic(id, pmm, systemCode, accessCode);
+  Aic toAic(Uint8List accessCode, {List<String>? tags}) =>
+      Aic(id, pmm, systemCode, accessCode, tags: tags ?? this.tags);
 }

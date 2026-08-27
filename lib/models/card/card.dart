@@ -11,7 +11,9 @@ import 'tunion.dart';
 
 class ICCard {
   final Uint8List id;
-  ICCard(this.id);
+  final List<String> tags;
+
+  ICCard(this.id, {this.tags = const []});
   String get idString =>
       id.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
   String get name => "Generic IC Card";
@@ -48,7 +50,11 @@ class ICCard {
   }
 
   Map<String, dynamic> toJson() {
-    return {'type': type, 'id': _bytesToHex(id)};
+    return {
+      'type': type,
+      'id': _bytesToHex(id),
+      if (tags.isNotEmpty) 'tags': tags,
+    };
   }
 
   /// Dispatch deserialization to the correct subclass based on `type`.
@@ -73,7 +79,14 @@ class ICCard {
       case 'tunion':
         return TUnion.fromJson(json);
       default:
-        return ICCard(hexToBytes(json['id'] as String? ?? ''));
+        return ICCard(
+          hexToBytes(json['id'] as String? ?? ''),
+          tags:
+              (json['tags'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [],
+        );
     }
   }
 

@@ -24,6 +24,7 @@ class Suica extends Felica with TransitCard {
     required this.transactions,
     this.snapshotTime,
     super.persistedEpass,
+    super.tags,
     this.rawBlocks = const [],
     this.rawBalances = const [],
   });
@@ -176,6 +177,7 @@ class Suica extends Felica with TransitCard {
           ? DateTime.tryParse(json['snapshotTime'] as String)
           : null,
       persistedEpass: felica.epass,
+      tags: felica.tags,
     );
   }
 }

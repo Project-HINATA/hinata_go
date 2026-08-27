@@ -27,6 +27,7 @@ class TUnion extends Iso14443 with TransitCard {
     required this.balance,
     required this.transactions,
     this.snapshotTime,
+    super.tags,
     this.rawBlocks = const [],
   });
 
@@ -110,6 +111,7 @@ class TUnion extends Iso14443 with TransitCard {
       snapshotTime: json['snapshotTime'] != null
           ? DateTime.tryParse(json['snapshotTime'] as String)
           : null,
+      tags: iso.tags,
     );
   }
 }

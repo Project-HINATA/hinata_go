@@ -88,7 +88,13 @@ class CardReaderEngine {
       final prefix = dec[6] & 0xF0;
       if (prefix == 0x50) {
         final accessCodeBytes = Uint8List.fromList(dec.sublist(6, 16));
-        final aic = tag.toAic(accessCodeBytes);
+        final tempAic = tag.toAic(accessCodeBytes);
+        final aicTags = [
+          'Amusement IC',
+          if (tempAic.manufacturer != 'Unknown') tempAic.manufacturer,
+          'FeliCa',
+        ];
+        final aic = tag.toAic(accessCodeBytes, tags: aicTags);
         return ScannedCard(card: aic, source: source);
       }
     } catch (e) {
@@ -121,6 +127,7 @@ class CardReaderEngine {
     final banapass = tag.toBanapass(
       Uint8List.fromList(block1),
       Uint8List.fromList(block2),
+      tags: const ['Banapass', 'MIFARE Classic'],
     );
     if (AccessCodeValidator.isValidDecodedBanapassAccessCode(
       banapass.accessCodeString,
@@ -151,7 +158,10 @@ class CardReaderEngine {
     final accessCodeBytes = Uint8List.fromList(
       block2.sublist(_aimeAccessCodeStart, _aimeAccessCodeEnd),
     );
-    final aime = tag.toAime(accessCodeBytes);
+    final aime = tag.toAime(
+      accessCodeBytes,
+      tags: const ['Aime', 'MIFARE Classic'],
+    );
     final aimeAccessCode = aime.accessCodeString;
 
     if (AccessCodeValidator.startsWithBanapassPrefix(aimeAccessCode)) {
@@ -187,6 +197,7 @@ class CardReaderEngine {
     final banapass = tag.toBanapass(
       Uint8List.fromList(block1),
       Uint8List.fromList(block2),
+      tags: const ['Banapass', 'MIFARE Classic'],
     );
 
     return AccessCodeValidator.isValidDecodedBanapassAccessCode(
@@ -467,6 +478,7 @@ class CardReaderEngine {
         snapshotTime: DateTime.now(),
         rawBlocks: blocksData,
         rawBalances: blockBalances,
+        tags: const ['Suica', '交通系 IC', 'FeliCa'],
       );
 
       return ScannedCard(
@@ -865,6 +877,13 @@ class CardReaderEngine {
         }
       }
 
+      final issuer = lookupTUnionIssuer(cardNumber);
+      final tags = [
+        if (issuer != null && issuer.isNotEmpty) issuer,
+        '交通联合',
+        'ISO-DEP',
+      ];
+
       final tunion = TUnion(
         tag.id,
         tag.sak,
@@ -874,6 +893,7 @@ class CardReaderEngine {
         transactions: transactions,
         snapshotTime: DateTime.now(),
         rawBlocks: blocksData,
+        tags: tags,
       );
 
       debugPrint(

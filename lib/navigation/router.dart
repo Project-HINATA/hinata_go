@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 
 import '../models/card/card.dart';
+import '../models/card/saved_card.dart';
 import '../ui/app_layout.dart';
 import '../ui/pages/camera_page.dart';
 import '../ui/pages/card_detail_page.dart';
@@ -35,8 +36,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/card_detail',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
-          final card = state.extra as ICCard;
-          return CardDetailPage(card: card);
+          final extra = state.extra;
+          if (extra is SavedCard) {
+            return CardDetailPage(savedCard: extra);
+          } else if (extra is ICCard) {
+            return CardDetailPage(card: extra);
+          }
+          throw ArgumentError('Invalid extra for /card_detail: $extra');
         },
       ),
       StatefulShellRoute(

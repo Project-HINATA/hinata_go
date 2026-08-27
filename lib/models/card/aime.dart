@@ -5,7 +5,7 @@ import 'iso14443a.dart';
 
 class Aime extends Iso14443 implements HasAccessCode {
   final Uint8List accessCode;
-  Aime(super.id, super.sak, super.atqa, this.accessCode);
+  Aime(super.id, super.sak, super.atqa, this.accessCode, {super.tags});
 
   @override
   String get accessCodeString =>
@@ -37,10 +37,12 @@ class Aime extends Iso14443 implements HasAccessCode {
       iso.sak,
       iso.atqa,
       ICCard.hexToBytes(json['accessCode'] as String? ?? ''),
+      tags: iso.tags,
     );
   }
 }
 
 extension ToAime on Iso14443 {
-  Aime toAime(Uint8List accessCode) => Aime(id, sak, atqa, accessCode);
+  Aime toAime(Uint8List accessCode, {List<String>? tags}) =>
+      Aime(id, sak, atqa, accessCode, tags: tags ?? this.tags);
 }

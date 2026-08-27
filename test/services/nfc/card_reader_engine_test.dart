@@ -369,11 +369,12 @@ void main() {
       channel,
     ).processTag(_tag(), readExtended: true);
 
-    expect(result.status, CardReadStatus.recognized);
+expect(result.status, CardReadStatus.recognized);
     final card = result.card?.card;
     expect(card, isA<TUnion>());
     final tunion = card as TUnion;
     expect(tunion.name, '上海公共交通卡');
+    expect(tunion.tags, ['上海公共交通卡', '交通联合', 'ISO-DEP']);
     expect(tunion.transactions.length, 2);
   });
 
@@ -393,15 +394,15 @@ void main() {
       0x90, 0x00, // SW 9000
     ];
 
-    // 0x1E Record 2: Luoyang Metro entry tap (Qilihe, 0 CNY)
+    // 0x1E Record 2: Luoyang Metro entry tap (Qilihe, 0.00 CNY)
     final record1E_2 = <int>[
       0x03, // 0x00: typeCode (Entry)
-      0x41, 0x31, 0x06, 0x23, 0x14, 0x96, 0x00, 0x00, // 0x01..0x09: terminalId
+      0x41, 0x31, 0x06, 0x23, 0x10, 0x94, 0x00, 0x00, // 0x01..0x09: terminalId
       0x01, // 0x09: industry (0x01 = Metro)
       0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, // 0x0A..0x11: station 010008 (Qilihe)
-      0x00, 0x00, 0x00, 0x00, // 0x11..0x15: amount 0 cents
-      0x00, 0x00, 0x05, 0x14, // 0x15..0x19: balance 1300 cents
-      0x20, 0x25, 0x12, 0x21, 0x11, 0x09, 0x55, // 0x19..0x20: timestamp 20251221110955
+      0x00, 0x00, 0x00, 0x00, // 0x11..0x15: amount 0 cents (0.00 CNY)
+      0x00, 0x00, 0x03, 0xE8, // 0x15..0x19: balance 1000 cents
+      0x20, 0x25, 0x12, 0x21, 0x10, 0x15, 0x30, // 0x19..0x20: timestamp 20251221101530
       0x49, 0x30, // 0x20..0x22: city Luoyang (4930)
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x22..0x2A: acquirerId
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x2A..0x30: reserved
@@ -412,8 +413,8 @@ void main() {
     final read1ERec2_30 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x30];
     final read1ERec3_30 = <int>[0x00, 0xB2, 0x03, 0xF4, 0x30];
 
-    // Info response with Dalian IIN: 31 05 12 00 01 92 46 25 15 20
     final dalianInfo = _successResponse(32);
+    // Card Number: 31051200019246251520 (Dalian Mingzhu Card, IIN 31051200)
     dalianInfo[10] = 0x31;
     dalianInfo[11] = 0x05;
     dalianInfo[12] = 0x12;
@@ -445,6 +446,7 @@ void main() {
     expect(card, isA<TUnion>());
     final tunion = card as TUnion;
     expect(tunion.name, '大连明珠卡');
+    expect(tunion.tags, ['大连明珠卡', '交通联合', 'ISO-DEP']);
     expect(tunion.transactions.length, 2);
 
     final tx1 = tunion.transactions[0];

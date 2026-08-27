@@ -5,7 +5,7 @@ import 'card.dart';
 class Iso15693 extends ICCard implements HasEPass {
   final String? _persistedEpass;
 
-  Iso15693(super.id, {String? persistedEpass})
+  Iso15693(super.id, {String? persistedEpass, super.tags})
     : _persistedEpass = persistedEpass;
 
   @override
@@ -29,6 +29,11 @@ class Iso15693 extends ICCard implements HasEPass {
     return Iso15693(
       ICCard.hexToBytes(json['id'] as String? ?? ''),
       persistedEpass: json['epass'] as String?,
+      tags:
+          (json['tags'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 

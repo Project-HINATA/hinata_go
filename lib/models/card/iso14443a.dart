@@ -3,7 +3,7 @@ import 'card.dart';
 class Iso14443 extends ICCard {
   final int sak;
   final int atqa;
-  Iso14443(super.id, this.sak, this.atqa);
+  Iso14443(super.id, this.sak, this.atqa, {super.tags});
 
   bool get isMifareClassicCandidate => (sak & 0x08) != 0;
 
@@ -43,6 +43,11 @@ class Iso14443 extends ICCard {
       ICCard.hexToBytes(json['id'] as String? ?? ''),
       json['sak'] as int? ?? 0x08,
       json['atqa'] as int? ?? 0x0004,
+      tags:
+          (json['tags'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 }
