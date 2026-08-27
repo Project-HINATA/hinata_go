@@ -29080,6 +29080,8 @@ TUnionStationInfo? lookupTUnionStation({
     );
   }
 
+  TUnionStationInfo? fallbackBusMatch;
+
   // 1. Station code matching within city
   if (cleanCity.isNotEmpty && cleanStation.isNotEmpty) {
     final strippedTrailingZeros = cleanStation.replaceAll(RegExp(r'(00)+$'), '');
@@ -29106,24 +29108,13 @@ TUnionStationInfo? lookupTUnionStation({
       if (match != null) {
         final parsed = parseEntry(cleanCity, match);
         // If it has a specific station name, it is a confirmed station match!
-        if (parsed.station.isNotEmpty) {
+        if (parsed.station.isNotEmpty || parsed.type == '公交' || parsed.type == 'BRT') {
           return parsed;
         }
       }
     }
 
-    // 1.2 Second priority: Bus / BRT CSV entries
-    for (final cand in candidates) {
-      final match = tunionStationMap['$cleanCity,$cand'];
-      if (match != null) {
-        final parsed = parseEntry(cleanCity, match);
-        if (parsed.type == '公交' || parsed.type == 'BRT') {
-          return parsed;
-        }
-      }
-    }
-
-    // 1.3 Third priority: Decode Bus Line Number from stationCode for verified cities (e.g. Dalian 2220, Shanghai 2900/3104)
+    // 1.2 Second priority: Decode Bus Line Number from stationCode for verified cities (e.g. Dalian 2220, Shanghai 2900/3104)
     final isDalian = cleanCity == '2220';
     final isShanghai = cleanCity == '2900' || cleanCity == '3104' || cleanCity == '3100';
 
@@ -29133,7 +29124,7 @@ TUnionStationInfo? lookupTUnionStation({
       if (pfx4.length >= 4 && RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) && RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
         final hexVal = int.tryParse(pfx4, radix: 16);
         if (hexVal != null && hexVal > 0 && hexVal <= 2000) {
-          return TUnionStationInfo(
+          fallbackBusMatch = TUnionStationInfo(
             cityCode: cleanCity,
             cityName: cityName,
             type: '公交',
@@ -29144,10 +29135,10 @@ TUnionStationInfo? lookupTUnionStation({
       }
 
       // BCD / Decimal integer (e.g. 0509 -> 509路, 1106 -> 1106路, 0001 -> 1路)
-      if (RegExp(r'^\d+$').hasMatch(pfx4)) {
+      if (fallbackBusMatch == null && RegExp(r'^\d+$').hasMatch(pfx4)) {
         final decNum = int.tryParse(pfx4);
         if (decNum != null && decNum > 0 && decNum <= 2000) {
-          return TUnionStationInfo(
+          fallbackBusMatch = TUnionStationInfo(
             cityCode: cleanCity,
             cityName: cityName,
             type: '公交',
@@ -29161,7 +29152,7 @@ TUnionStationInfo? lookupTUnionStation({
       if (RegExp(r'^\d+$').hasMatch(pfx4)) {
         final decNum = int.tryParse(pfx4);
         if (decNum != null && decNum > 0 && decNum <= 2000) {
-          return TUnionStationInfo(
+          fallbackBusMatch = TUnionStationInfo(
             cityCode: cleanCity,
             cityName: cityName,
             type: '公交',
@@ -29171,15 +29162,6 @@ TUnionStationInfo? lookupTUnionStation({
         }
       }
     }
-
-    // Default fallback for bus transactions without verified line format: cleanly return [城市公交]
-    return TUnionStationInfo(
-      cityCode: cleanCity,
-      cityName: cityName,
-      type: '公交',
-      line: '',
-      station: '',
-    );
   }
 
   // 2. Terminal ID matching within city
@@ -29218,6 +29200,10 @@ TUnionStationInfo? lookupTUnionStation({
         return parseEntry('2900', shMatch);
       }
     }
+  }
+
+  if (fallbackBusMatch != null) {
+    return fallbackBusMatch;
   }
 
   // 4. If only City is known

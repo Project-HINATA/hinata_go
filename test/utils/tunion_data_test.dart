@@ -155,20 +155,28 @@ void main() {
       expect(dalianBus1.line, '1路');
       expect(dalianBus1.formatted, '[大连公交] 1路');
 
-      // Luoyang Bus (2453 / 244B) - terminal dispatch codes, should cleanly format as [洛阳公交]
+      // Luoyang fallback (2453 / 244B) - terminal dispatch codes, should cleanly format as [洛阳交通] if no industry code provided
       final luoyangBus1 = lookupTUnionStation(cityCode: '4930', stationCode: '24530000000000');
       expect(luoyangBus1, isNotNull);
       expect(luoyangBus1!.cityName, '洛阳');
-      expect(luoyangBus1.type, '公交');
+      expect(luoyangBus1.type, '交通');
       expect(luoyangBus1.line, '');
-      expect(luoyangBus1.formatted, '[洛阳公交]');
+      expect(luoyangBus1.formatted, '[洛阳交通]');
 
       final luoyangBus2 = lookupTUnionStation(cityCode: '4930', stationCode: '244B0000000000');
       expect(luoyangBus2, isNotNull);
       expect(luoyangBus2!.cityName, '洛阳');
-      expect(luoyangBus2.type, '公交');
+      expect(luoyangBus2.type, '交通');
       expect(luoyangBus2.line, '');
-      expect(luoyangBus2.formatted, '[洛阳公交]');
+      expect(luoyangBus2.formatted, '[洛阳交通]');
+      
+      // Dalian BRT fallback matching terminalId even when an unmapped stationCode is provided
+      // Assuming a random stationCode '99999999' but a known BRT terminalId '1F480000'
+      final dalianBrt = lookupTUnionStation(cityCode: '2220', stationCode: '99999999000000', terminalId: '1F480000');
+      expect(dalianBrt, isNotNull);
+      expect(dalianBrt!.cityName, '大连');
+      expect(dalianBrt.type, 'BRT');
+      expect(dalianBrt.line, '');
     });
 
     test('formatTUnionDetails formats route when entry and exit stations are provided', () {
