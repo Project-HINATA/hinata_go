@@ -284,7 +284,6 @@ const List<_CardFieldDefinition<Iso14443>> _iso14443FieldDefinitions = [
 ];
 
 const List<_CardFieldDefinition<TUnion>> _tunionFieldDefinitions = [
-  _CardFieldDefinition(label: '发卡地', extractor: _tunionIssuerLocation),
   _CardFieldDefinition(label: '卡种', extractor: _tunionCardType),
   _CardFieldDefinition(label: '有效期至', extractor: _tunionExpiryDate),
 ];
@@ -298,16 +297,6 @@ const List<_CardFieldDefinition<Iso15693>> _iso15693FieldDefinitions = [
 ];
 
 String _upperHex(String value) => value.toUpperCase();
-
-String? _tunionIssuerLocation(TUnion card) {
-  if (card.cardNumber.length < 8) return null;
-  final String cityCode = card.cardNumber.substring(4, 8);
-  final String? cityName = card.issuerName;
-  if (cityName != null) {
-    return '$cityName ($cityCode)';
-  }
-  return '城市 $cityCode';
-}
 
 String? _tunionCardType(TUnion card) => card.cardType;
 String? _tunionExpiryDate(TUnion card) => card.expiryDate;

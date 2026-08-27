@@ -587,8 +587,8 @@ class CardReaderEngine {
           : rawAsnStr;
       debugPrint('[_tryReadTUnion] parsed card number: $cardNumber');
 
-      // Extract Card Type (Byte 8)
-      int rawCardType = infoRes.length > 8 ? infoRes[8] : 0;
+      // Extract Card Type (Byte 9)
+      int rawCardType = infoRes.length > 9 ? infoRes[9] : 0;
       String? cardTypeStr;
       if (rawCardType == 0x01) cardTypeStr = '普通卡 (01)';
       else if (rawCardType == 0x02) cardTypeStr = '学生卡 (02)';
