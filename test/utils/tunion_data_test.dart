@@ -131,20 +131,34 @@ void main() {
       expect(dalianBus1106.type, '公交');
       expect(dalianBus1106.line, '1106路');
 
-      // Dalian Bus 509 (stationCode 0509)
-      final dalianBus509 = lookupTUnionStation(cityCode: '2220', stationCode: '0509', industryCode: '0001');
-      expect(dalianBus509, isNotNull);
-      expect(dalianBus509!.cityName, '大连');
-      expect(dalianBus509.type, '公交');
-      expect(dalianBus509.line, '509路');
+      // Dalian Bus 509 (stationCode 0509 in BCD)
+      final dalianBus509Bcd = lookupTUnionStation(cityCode: '2220', stationCode: '05090000000000', industryCode: '0001');
+      expect(dalianBus509Bcd, isNotNull);
+      expect(dalianBus509Bcd!.cityName, '大连');
+      expect(dalianBus509Bcd.type, '公交');
+      expect(dalianBus509Bcd.line, '509路');
+      expect(dalianBus509Bcd.formatted, '[大连公交] 509路');
 
-      // Dalian Bus 1 (stationCode 01 / 0100 with industryCode 0001) - should NOT match Dalian Metro Line 1
-      final dalianBus1 = lookupTUnionStation(cityCode: '2220', stationCode: '01000000000000', industryCode: '0001');
+      // Dalian Bus 509 (stationCode 01FD in Hex, 0x01FD == 509) - should NOT match Dalian Metro Line 1 (01)
+      final dalianBus509Hex = lookupTUnionStation(cityCode: '2220', stationCode: '01FD0000000000', industryCode: '0001');
+      expect(dalianBus509Hex, isNotNull);
+      expect(dalianBus509Hex!.cityName, '大连');
+      expect(dalianBus509Hex.type, '公交');
+      expect(dalianBus509Hex.line, '509路');
+      expect(dalianBus509Hex.formatted, '[大连公交] 509路');
+
+      // Dalian Bus 1 (stationCode 0001 in BCD, 00010000000000)
+      final dalianBus1 = lookupTUnionStation(cityCode: '2220', stationCode: '00010000000000', industryCode: '0001');
       expect(dalianBus1, isNotNull);
       expect(dalianBus1!.cityName, '大连');
       expect(dalianBus1.type, '公交');
       expect(dalianBus1.line, '1路');
       expect(dalianBus1.formatted, '[大连公交] 1路');
+
+      // Dalian Bus 100 (stationCode 0100 in BCD)
+      final dalianBus100 = lookupTUnionStation(cityCode: '2220', stationCode: '01000000000000', industryCode: '0001');
+      expect(dalianBus100, isNotNull);
+      expect(dalianBus100!.line, '100路');
     });
 
     test('formatTUnionDetails formats route when entry and exit stations are provided', () {
@@ -158,15 +172,15 @@ void main() {
       expect(formatted, contains('[上海地铁]'));
       expect(formatted, contains('人民广场 ──► 莘庄'));
 
-      // Dalian bus fare (-0.90 CNY) should NOT append (乘出)
+      // Dalian 509 bus fare (-0.90 CNY) should NOT append (乘出)
       final dalianBusFormatted = formatTUnionDetails(
         cityCode: '2220',
-        stationCode: '01000000000000',
+        stationCode: '01FD0000000000',
         industryCode: '0001',
         typeCode: 0x04,
         amount: 0.90,
       );
-      expect(dalianBusFormatted, '[大连公交] 1路');
+      expect(dalianBusFormatted, '[大连公交] 509路');
 
       // Luoyang entry tap (typeCode = 0x03)
       final luoyangEntryOnly = formatTUnionDetails(

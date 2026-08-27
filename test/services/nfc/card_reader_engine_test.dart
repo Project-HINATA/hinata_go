@@ -553,12 +553,12 @@ expect(result.status, CardReadStatus.recognized);
   });
 
   test('reads and decodes Dalian Bus SFI 0x1E records as Bus instead of Metro', () async {
-    // 0x1E Record: Dalian Bus 1路 (0.90 CNY fare, industry = 0x01 Bus)
-    final dalianBusRec = <int>[
+    // 0x1E Record: Dalian Bus 509路 (0.90 CNY fare, industry = 0x01 Bus, stationCode = 01FD0000000000 -> 0x01FD == 509)
+    final dalianBus509Rec = <int>[
       0x04, // 0x00: typeCode (Deduction)
       0x22, 0x20, 0x01, 0x12, 0x34, 0x56, 0x00, 0x00, // 0x01..0x09: terminalId
       0x01, // 0x09: industry (0x01 = Bus)
-      0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x0A..0x11: station/line code (01000000000000 = 1路)
+      0x01, 0xFD, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x0A..0x11: station/line code (01FD = 509 in hex)
       0x00, 0x00, 0x00, 0x5A, // 0x11..0x15: amount 90 cents (0.90 CNY)
       0x00, 0x00, 0x03, 0xE8, // 0x15..0x19: balance 1000 cents
       0x20, 0x25, 0x02, 0x21, 0x21, 0x07, 0x25, // 0x19..0x20: timestamp 20250221210725
@@ -590,7 +590,7 @@ expect(result.status, CardReadStatus.recognized);
       _readBalance: [
         [0, 0, 0x03, 0xE8, 0x90, 0x00],
       ],
-      read1ERec1_30: [dalianBusRec],
+      read1ERec1_30: [dalianBus509Rec],
       read1ERec2_30: [[0x6A, 0x83]],
     });
 
@@ -605,6 +605,6 @@ expect(result.status, CardReadStatus.recognized);
     expect(card.transactions.length, 1);
     final tx = card.transactions.first;
     expect(tx.amount, -0.90);
-    expect(tx.details, '[大连公交] 1路');
+    expect(tx.details, '[大连公交] 509路');
   });
 }

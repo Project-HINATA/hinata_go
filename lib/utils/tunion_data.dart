@@ -29132,8 +29132,35 @@ TUnionStationInfo? lookupTUnionStation({
 
     // 1.2 Bus line number decoding (if industry is bus or unmatched in CSV)
     if (isBus || (!isMetro && (industryCode == null || industryCode.isEmpty))) {
+      final pfx4 = (cleanStation.length >= 4 ? cleanStation.substring(0, 4) : cleanStation);
+
+      // Try BCD decimal first (e.g. 0509 -> 509, 1106 -> 1106, 0001 -> 1)
+      if (RegExp(r'^\d+$').hasMatch(pfx4)) {
+        final decNum = int.tryParse(pfx4);
+        if (decNum != null && decNum > 0) {
+          return TUnionStationInfo(
+            cityCode: cleanCity,
+            cityName: cityName,
+            type: '公交',
+            line: '${decNum}路',
+            station: '',
+          );
+        }
+      }
+
+      // Try Hexadecimal integer (e.g. 01FD -> 509, 0452 -> 1106)
+      final hexNum = int.tryParse(pfx4, radix: 16);
+      if (hexNum != null && hexNum > 0 && hexNum < 10000) {
+        return TUnionStationInfo(
+          cityCode: cleanCity,
+          cityName: cityName,
+          type: '公交',
+          line: '${hexNum}路',
+          station: '',
+        );
+      }
+
       final rawLinePfx = (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation)
-          .substring(0, (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation).length >= 4 ? 4 : (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation).length)
           .replaceFirst(RegExp(r'^0+'), '');
       if (rawLinePfx.isNotEmpty && RegExp(r'^[0-9A-Za-z]+$').hasMatch(rawLinePfx)) {
         final formattedLine = RegExp(r'^\d+$').hasMatch(rawLinePfx) ? '${rawLinePfx}路' : rawLinePfx;
