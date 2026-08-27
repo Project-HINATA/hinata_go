@@ -29071,13 +29071,10 @@ TUnionStationInfo? lookupTUnionStation({
   // Helper to parse Type|Line|Station
   TUnionStationInfo parseEntry(String city, String rawVal) {
     final parts = rawVal.split('|');
-    final rawType = parts.isNotEmpty && parts[0].isNotEmpty
-        ? parts[0]
-        : (isMetro ? '地铁' : (isBus ? '公交' : '交通'));
     return TUnionStationInfo(
       cityCode: city,
       cityName: tunionCityMap[city],
-      type: rawType,
+      type: parts.isNotEmpty && parts[0].isNotEmpty ? parts[0] : '交通',
       line: parts.length > 1 ? parts[1] : '',
       station: parts.length > 2 ? parts[2] : '',
     );
@@ -29085,93 +29082,95 @@ TUnionStationInfo? lookupTUnionStation({
 
   // 1. Station code matching within city
   if (cleanCity.isNotEmpty && cleanStation.isNotEmpty) {
-    // 1.1 Direct candidates
-    final candidates = <String>[];
-    
-    // Strip trailing zero pairs (e.g. 01001400000000 -> 010014)
     final strippedTrailingZeros = cleanStation.replaceAll(RegExp(r'(00)+$'), '');
-    if (strippedTrailingZeros.isNotEmpty) {
-      candidates.add(strippedTrailingZeros);
-    }
-    candidates.add(cleanStation);
+    final cleanCode = strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation;
 
-    if (cleanStation.length >= 6) {
-      candidates.add(cleanStation.substring(0, 6));
-    }
-    if (cleanStation.length >= 4) {
-      candidates.add(cleanStation.substring(0, 4));
-    }
-    if (cleanStation.length >= 2) {
-      candidates.add(cleanStation.substring(0, 2));
-    }
+    // 1.1 First priority: Match exact station entries (with non-empty station name)
+    final candidates = <String>[];
+    if (strippedTrailingZeros.isNotEmpty) candidates.add(strippedTrailingZeros);
+    candidates.add(cleanStation);
+    if (cleanStation.length >= 8) candidates.add(cleanStation.substring(0, 8));
+    if (cleanStation.length >= 6) candidates.add(cleanStation.substring(0, 6));
+    if (cleanStation.length >= 4) candidates.add(cleanStation.substring(0, 4));
 
     if (cleanStation.length == 8) {
       // 00LL00SS -> 010014 (6 chars)
       candidates.add(cleanStation.substring(2));
       // 00LL00SS -> 020E (2-digit line + 2-digit station)
       candidates.add(cleanStation.substring(2, 4) + cleanStation.substring(6, 8));
-      // 00LL00SS -> 01 (Line only)
-      candidates.add(cleanStation.substring(2, 4));
     }
 
+    // Try finding an exact station match in CSV (e.g. 七里河, 青年宫, 马栏广场, 机场, 莘庄)
     for (final cand in candidates) {
       final match = tunionStationMap['$cleanCity,$cand'];
       if (match != null) {
         final parsed = parseEntry(cleanCity, match);
-        // If the transaction is explicitly Bus, do not match a Metro line
-        if (isBus && parsed.type == '地铁') {
-          continue;
+        // If it has a specific station name, it is a confirmed station match!
+        if (parsed.station.isNotEmpty) {
+          return parsed;
         }
-        // If the transaction is explicitly Metro, do not match a Bus line
-        if (isMetro && parsed.type == '公交') {
-          continue;
-        }
-        return parsed;
       }
     }
 
-    // 1.2 Bus line number decoding (if industry is bus or unmatched in CSV)
-    if (isBus || (!isMetro && (industryCode == null || industryCode.isEmpty))) {
-      final pfx4 = (cleanStation.length >= 4 ? cleanStation.substring(0, 4) : cleanStation);
-
-      // Try BCD decimal first (e.g. 0509 -> 509, 1106 -> 1106, 0001 -> 1)
-      if (RegExp(r'^\d+$').hasMatch(pfx4)) {
-        final decNum = int.tryParse(pfx4);
-        if (decNum != null && decNum > 0) {
-          return TUnionStationInfo(
-            cityCode: cleanCity,
-            cityName: cityName,
-            type: '公交',
-            line: '${decNum}路',
-            station: '',
-          );
+    // 1.2 Second priority: Bus / BRT CSV entries
+    for (final cand in candidates) {
+      final match = tunionStationMap['$cleanCity,$cand'];
+      if (match != null) {
+        final parsed = parseEntry(cleanCity, match);
+        if (parsed.type == '公交' || parsed.type == 'BRT') {
+          return parsed;
         }
       }
+    }
 
-      // Try Hexadecimal integer (e.g. 01FD -> 509, 0452 -> 1106)
-      final hexNum = int.tryParse(pfx4, radix: 16);
-      if (hexNum != null && hexNum > 0 && hexNum < 10000) {
+    // 1.3 Third priority: Decode Bus Line Number from stationCode (e.g. 01FD -> 509路, 0509 -> 509路, 1106 -> 1106路, 244B -> 244B)
+    final pfx4 = cleanCode.length >= 4 ? cleanCode.substring(0, 4) : cleanCode;
+
+    // Check Hexadecimal integer if it contains hex letters A-F (e.g. 01FD = 509)
+    if (pfx4.length >= 4 && RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) && RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
+      final hexVal = int.tryParse(pfx4, radix: 16);
+      if (hexVal != null && hexVal > 0 && hexVal <= 1000) {
         return TUnionStationInfo(
           cityCode: cleanCity,
           cityName: cityName,
           type: '公交',
-          line: '${hexNum}路',
+          line: '${hexVal}路',
           station: '',
         );
       }
+      // If it contains letters (e.g. 244B)
+      return TUnionStationInfo(
+        cityCode: cleanCity,
+        cityName: cityName,
+        type: '公交',
+        line: pfx4.replaceFirst(RegExp(r'^0+'), ''),
+        station: '',
+      );
+    }
 
-      final rawLinePfx = (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation)
-          .replaceFirst(RegExp(r'^0+'), '');
-      if (rawLinePfx.isNotEmpty && RegExp(r'^[0-9A-Za-z]+$').hasMatch(rawLinePfx)) {
-        final formattedLine = RegExp(r'^\d+$').hasMatch(rawLinePfx) ? '${rawLinePfx}路' : rawLinePfx;
+    // Check BCD / Decimal integer (e.g. 0509 -> 509路, 1106 -> 1106路, 0001 -> 1路)
+    if (RegExp(r'^\d+$').hasMatch(pfx4)) {
+      final decNum = int.tryParse(pfx4);
+      if (decNum != null && decNum > 0) {
         return TUnionStationInfo(
           cityCode: cleanCity,
           cityName: cityName,
           type: '公交',
-          line: formattedLine,
+          line: '${decNum}路',
           station: '',
         );
       }
+    }
+
+    final rawLine = cleanCode.replaceFirst(RegExp(r'^0+'), '');
+    if (rawLine.isNotEmpty && RegExp(r'^[0-9A-Za-z]+$').hasMatch(rawLine)) {
+      return TUnionStationInfo(
+        cityCode: cleanCity,
+        cityName: cityName,
+        type: '公交',
+        line: rawLine,
+        station: '',
+      );
     }
   }
 

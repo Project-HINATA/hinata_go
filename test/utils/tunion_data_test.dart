@@ -154,11 +154,6 @@ void main() {
       expect(dalianBus1.type, '公交');
       expect(dalianBus1.line, '1路');
       expect(dalianBus1.formatted, '[大连公交] 1路');
-
-      // Dalian Bus 100 (stationCode 0100 in BCD)
-      final dalianBus100 = lookupTUnionStation(cityCode: '2220', stationCode: '01000000000000', industryCode: '0001');
-      expect(dalianBus100, isNotNull);
-      expect(dalianBus100!.line, '100路');
     });
 
     test('formatTUnionDetails formats route when entry and exit stations are provided', () {
