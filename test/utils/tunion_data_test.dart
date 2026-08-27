@@ -154,6 +154,21 @@ void main() {
       expect(dalianBus1.type, '公交');
       expect(dalianBus1.line, '1路');
       expect(dalianBus1.formatted, '[大连公交] 1路');
+
+      // Luoyang Bus (2453 / 244B) - terminal dispatch codes, should cleanly format as [洛阳公交]
+      final luoyangBus1 = lookupTUnionStation(cityCode: '4930', stationCode: '24530000000000');
+      expect(luoyangBus1, isNotNull);
+      expect(luoyangBus1!.cityName, '洛阳');
+      expect(luoyangBus1.type, '公交');
+      expect(luoyangBus1.line, '');
+      expect(luoyangBus1.formatted, '[洛阳公交]');
+
+      final luoyangBus2 = lookupTUnionStation(cityCode: '4930', stationCode: '244B0000000000');
+      expect(luoyangBus2, isNotNull);
+      expect(luoyangBus2!.cityName, '洛阳');
+      expect(luoyangBus2.type, '公交');
+      expect(luoyangBus2.line, '');
+      expect(luoyangBus2.formatted, '[洛阳公交]');
     });
 
     test('formatTUnionDetails formats route when entry and exit stations are provided', () {

@@ -29123,55 +29123,63 @@ TUnionStationInfo? lookupTUnionStation({
       }
     }
 
-    // 1.3 Third priority: Decode Bus Line Number from stationCode (e.g. 01FD -> 509路, 0509 -> 509路, 1106 -> 1106路, 244B -> 244B)
-    final pfx4 = cleanCode.length >= 4 ? cleanCode.substring(0, 4) : cleanCode;
+    // 1.3 Third priority: Decode Bus Line Number from stationCode for verified cities (e.g. Dalian 2220, Shanghai 2900/3104)
+    final isDalian = cleanCity == '2220';
+    final isShanghai = cleanCity == '2900' || cleanCity == '3104' || cleanCity == '3100';
 
-    // Check Hexadecimal integer if it contains hex letters A-F (e.g. 01FD = 509)
-    if (pfx4.length >= 4 && RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) && RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
-      final hexVal = int.tryParse(pfx4, radix: 16);
-      if (hexVal != null && hexVal > 0 && hexVal <= 1000) {
-        return TUnionStationInfo(
-          cityCode: cleanCity,
-          cityName: cityName,
-          type: '公交',
-          line: '${hexVal}路',
-          station: '',
-        );
+    if (isDalian) {
+      final pfx4 = cleanCode.length >= 4 ? cleanCode.substring(0, 4) : cleanCode;
+      // Hex integer (e.g. 01FD == 509 -> 509路)
+      if (pfx4.length >= 4 && RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) && RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
+        final hexVal = int.tryParse(pfx4, radix: 16);
+        if (hexVal != null && hexVal > 0 && hexVal <= 2000) {
+          return TUnionStationInfo(
+            cityCode: cleanCity,
+            cityName: cityName,
+            type: '公交',
+            line: '${hexVal}路',
+            station: '',
+          );
+        }
       }
-      // If it contains letters (e.g. 244B)
-      return TUnionStationInfo(
-        cityCode: cleanCity,
-        cityName: cityName,
-        type: '公交',
-        line: pfx4.replaceFirst(RegExp(r'^0+'), ''),
-        station: '',
-      );
-    }
 
-    // Check BCD / Decimal integer (e.g. 0509 -> 509路, 1106 -> 1106路, 0001 -> 1路)
-    if (RegExp(r'^\d+$').hasMatch(pfx4)) {
-      final decNum = int.tryParse(pfx4);
-      if (decNum != null && decNum > 0) {
-        return TUnionStationInfo(
-          cityCode: cleanCity,
-          cityName: cityName,
-          type: '公交',
-          line: '${decNum}路',
-          station: '',
-        );
+      // BCD / Decimal integer (e.g. 0509 -> 509路, 1106 -> 1106路, 0001 -> 1路)
+      if (RegExp(r'^\d+$').hasMatch(pfx4)) {
+        final decNum = int.tryParse(pfx4);
+        if (decNum != null && decNum > 0 && decNum <= 2000) {
+          return TUnionStationInfo(
+            cityCode: cleanCity,
+            cityName: cityName,
+            type: '公交',
+            line: '${decNum}路',
+            station: '',
+          );
+        }
+      }
+    } else if (isShanghai) {
+      final pfx4 = cleanCode.length >= 4 ? cleanCode.substring(0, 4) : cleanCode;
+      if (RegExp(r'^\d+$').hasMatch(pfx4)) {
+        final decNum = int.tryParse(pfx4);
+        if (decNum != null && decNum > 0 && decNum <= 2000) {
+          return TUnionStationInfo(
+            cityCode: cleanCity,
+            cityName: cityName,
+            type: '公交',
+            line: '${decNum}路',
+            station: '',
+          );
+        }
       }
     }
 
-    final rawLine = cleanCode.replaceFirst(RegExp(r'^0+'), '');
-    if (rawLine.isNotEmpty && RegExp(r'^[0-9A-Za-z]+$').hasMatch(rawLine)) {
-      return TUnionStationInfo(
-        cityCode: cleanCity,
-        cityName: cityName,
-        type: '公交',
-        line: rawLine,
-        station: '',
-      );
-    }
+    // Default fallback for bus transactions without verified line format: cleanly return [城市公交]
+    return TUnionStationInfo(
+      cityCode: cleanCity,
+      cityName: cityName,
+      type: '公交',
+      line: '',
+      station: '',
+    );
   }
 
   // 2. Terminal ID matching within city
