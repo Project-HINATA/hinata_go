@@ -29161,16 +29161,6 @@ TUnionStationInfo? lookupTUnionStation({
           final val = int.tryParse(pfx58);
           if (val != null && val > 0) parsedLine = '${val}路';
         }
-      } else if (c == '4930' || c == '4131') {
-        // 洛阳: 前2位16进制，或6-8位10进制
-        final pfx2 = paddedStation.substring(0, 2);
-        final pfx68 = paddedStation.substring(5, 8);
-        if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx2) && int.parse(pfx2, radix: 16) > 0) {
-          parsedLine = '${int.parse(pfx2, radix: 16)}路';
-        } else if (RegExp(r'^\d+$').hasMatch(pfx68)) {
-          final val = int.tryParse(pfx68);
-          if (val != null && val > 0) parsedLine = '${val}路';
-        }
       }
 
       if (parsedLine != null) {
