@@ -313,52 +313,73 @@ TUnionStationInfo? lookupTUnionStation({
       }
     }
 
-    // 1.2 Second priority: Decode Bus Line Number from stationCode for verified cities (e.g. Dalian 2220, Shanghai 2900/3104)
-    final isDalian = cleanCity == '2220';
-    final isShanghai = cleanCity == '2900' || cleanCity == '3104' || cleanCity == '3100';
+    // 1.2 Second priority: Decode Bus Line Number from stationCode for verified cities
+    if (fallbackBusMatch == null) {
+      String? parsedLine;
+      final c = cleanCity;
+      final paddedStation = cleanStation.padRight(8, '0');
 
-    if (isDalian) {
-      final pfx4 = cleanCode.length >= 4 ? cleanCode.substring(0, 4) : cleanCode;
-      // Hex integer (e.g. 01FD == 509 -> 509路)
-      if (pfx4.length >= 4 && RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) && RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
-        final hexVal = int.tryParse(pfx4, radix: 16);
-        if (hexVal != null && hexVal > 0 && hexVal <= 2000) {
-          fallbackBusMatch = TUnionStationInfo(
-            cityCode: cleanCity,
-            cityName: cityName,
-            type: '公交',
-            line: '${hexVal}路',
-            station: '',
-          );
+      if (['2900', '3104', '3100', '2000', '4520', '4510', '7910', '3930', '4210', '7310', '3030', '3010', '3610', '8810', '8210'].contains(c)) {
+        // 前4位，10进制 (Shanghai, Qingdao, Jinan, Xi'an, Xiamen, Nanchang, Kunming, Xuzhou, Nanjing, Hefei, Urumqi, Lanzhou)
+        final pfx4 = paddedStation.substring(0, 4);
+        if (RegExp(r'^\d+$').hasMatch(pfx4)) {
+          final val = int.tryParse(pfx4);
+          if (val != null && val > 0) parsedLine = '${val}路';
+        }
+      } else if (['1000', '5180'].contains(c)) {
+        // 前4位，16进制 (Beijing, Shenzhen)
+        final pfx4 = paddedStation.substring(0, 4);
+        if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4)) {
+          final val = int.tryParse(pfx4, radix: 16);
+          if (val != null && val > 0) parsedLine = '${val}路';
+        }
+      } else if (c == '2220') {
+        // 大连: 前4位，10或16进制
+        final pfx4 = paddedStation.substring(0, 4);
+        if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) && RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
+          final val = int.tryParse(pfx4, radix: 16);
+          if (val != null && val > 0) parsedLine = '${val}路';
+        } else if (RegExp(r'^\d+$').hasMatch(pfx4)) {
+          final val = int.tryParse(pfx4);
+          if (val != null && val > 0) parsedLine = '${val}路';
+        }
+      } else if (c == '2210' || c == '3910') {
+        // 沈阳, 福州: 5-8位，10进制
+        final pfx = paddedStation.substring(4, 8);
+        if (RegExp(r'^\d+$').hasMatch(pfx)) {
+          final val = int.tryParse(pfx);
+          if (val != null && val > 0) parsedLine = '${val}路';
+        }
+      } else if (c == '3050') {
+        // 苏州: 3-6位或5-8位，10进制
+        final pfx36 = paddedStation.substring(2, 6);
+        final pfx58 = paddedStation.substring(4, 8);
+        if (RegExp(r'^\d+$').hasMatch(pfx36) && int.parse(pfx36) > 0) {
+          parsedLine = '${int.parse(pfx36)}路';
+        } else if (RegExp(r'^\d+$').hasMatch(pfx58)) {
+          final val = int.tryParse(pfx58);
+          if (val != null && val > 0) parsedLine = '${val}路';
+        }
+      } else if (c == '4930' || c == '4131') {
+        // 洛阳: 前2位16进制，或6-8位10进制
+        final pfx2 = paddedStation.substring(0, 2);
+        final pfx68 = paddedStation.substring(5, 8);
+        if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx2) && int.parse(pfx2, radix: 16) > 0) {
+          parsedLine = '${int.parse(pfx2, radix: 16)}路';
+        } else if (RegExp(r'^\d+$').hasMatch(pfx68)) {
+          final val = int.tryParse(pfx68);
+          if (val != null && val > 0) parsedLine = '${val}路';
         }
       }
 
-      // BCD / Decimal integer (e.g. 0509 -> 509路, 1106 -> 1106路, 0001 -> 1路)
-      if (fallbackBusMatch == null && RegExp(r'^\d+$').hasMatch(pfx4)) {
-        final decNum = int.tryParse(pfx4);
-        if (decNum != null && decNum > 0 && decNum <= 2000) {
-          fallbackBusMatch = TUnionStationInfo(
-            cityCode: cleanCity,
-            cityName: cityName,
-            type: '公交',
-            line: '${decNum}路',
-            station: '',
-          );
-        }
-      }
-    } else if (isShanghai) {
-      final pfx4 = cleanCode.length >= 4 ? cleanCode.substring(0, 4) : cleanCode;
-      if (RegExp(r'^\d+$').hasMatch(pfx4)) {
-        final decNum = int.tryParse(pfx4);
-        if (decNum != null && decNum > 0 && decNum <= 2000) {
-          fallbackBusMatch = TUnionStationInfo(
-            cityCode: cleanCity,
-            cityName: cityName,
-            type: '公交',
-            line: '${decNum}路',
-            station: '',
-          );
-        }
+      if (parsedLine != null) {
+        fallbackBusMatch = TUnionStationInfo(
+          cityCode: cleanCity,
+          cityName: cityName,
+          type: '公交',
+          line: parsedLine,
+          station: '',
+        );
       }
     }
   }
