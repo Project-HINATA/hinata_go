@@ -254,6 +254,8 @@ TUnionStationInfo? lookupTUnionStation({
   var cleanCity = cityCode.trim().toUpperCase();
   final cleanStation = stationCode?.trim().toUpperCase() ?? '';
   final cleanTerm = terminalId?.trim().toUpperCase() ?? '';
+  final isBus = industryCode == '0001' || industryCode == '01';
+  final isMetro = industryCode == '0002' || industryCode == '02';
 
   // If cityCode is not specified but terminalId starts with known 4-digit city prefix (e.g. 4131 for Luoyang)
   if (cleanCity.isEmpty && cleanTerm.length >= 4) {
@@ -268,10 +270,13 @@ TUnionStationInfo? lookupTUnionStation({
   // Helper to parse Type|Line|Station
   TUnionStationInfo parseEntry(String city, String rawVal) {
     final parts = rawVal.split('|');
+    final rawType = parts.isNotEmpty && parts[0].isNotEmpty
+        ? parts[0]
+        : (isMetro ? '地铁' : (isBus ? '公交' : '交通'));
     return TUnionStationInfo(
       cityCode: city,
       cityName: tunionCityMap[city],
-      type: parts.isNotEmpty && parts[0].isNotEmpty ? parts[0] : (industryCode == '0002' || industryCode == '01' ? '地铁' : (industryCode == '0001' || industryCode == '02' ? '公交' : '交通')),
+      type: rawType,
       line: parts.length > 1 ? parts[1] : '',
       station: parts.length > 2 ? parts[2] : '',
     );
@@ -311,21 +316,31 @@ TUnionStationInfo? lookupTUnionStation({
     for (final cand in candidates) {
       final match = tunionStationMap['$cleanCity,$cand'];
       if (match != null) {
-        return parseEntry(cleanCity, match);
+        final parsed = parseEntry(cleanCity, match);
+        // If the transaction is explicitly Bus, do not match a Metro line
+        if (isBus && parsed.type == '地铁') {
+          continue;
+        }
+        // If the transaction is explicitly Metro, do not match a Bus line
+        if (isMetro && parsed.type == '公交') {
+          continue;
+        }
+        return parsed;
       }
     }
 
     // 1.2 Bus line number decoding (if industry is bus or unmatched in CSV)
-    if (industryCode == '0001' || industryCode == '02' || industryCode == null || industryCode.isEmpty) {
-      final busLinePfx = (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation)
+    if (isBus || (!isMetro && (industryCode == null || industryCode.isEmpty))) {
+      final rawLinePfx = (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation)
           .substring(0, (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation).length >= 4 ? 4 : (strippedTrailingZeros.isNotEmpty ? strippedTrailingZeros : cleanStation).length)
           .replaceFirst(RegExp(r'^0+'), '');
-      if (busLinePfx.isNotEmpty && RegExp(r'^[0-9A-Za-z]+$').hasMatch(busLinePfx)) {
+      if (rawLinePfx.isNotEmpty && RegExp(r'^[0-9A-Za-z]+$').hasMatch(rawLinePfx)) {
+        final formattedLine = RegExp(r'^\d+$').hasMatch(rawLinePfx) ? '${rawLinePfx}路' : rawLinePfx;
         return TUnionStationInfo(
           cityCode: cleanCity,
           cityName: cityName,
           type: '公交',
-          line: busLinePfx,
+          line: formattedLine,
           station: '',
         );
       }
@@ -372,7 +387,7 @@ TUnionStationInfo? lookupTUnionStation({
 
   // 4. If only City is known
   if (cityName != null) {
-    final typeStr = (industryCode == '0002' || industryCode == '01') ? '地铁' : ((industryCode == '0001' || industryCode == '02') ? '公交' : '交通');
+    final typeStr = isMetro ? '地铁' : (isBus ? '公交' : '交通');
     return TUnionStationInfo(
       cityCode: cleanCity,
       cityName: cityName,
@@ -437,7 +452,7 @@ String formatTUnionDetails({
     if (typeCode == 0x03 || (amount == 0.0 && stationCode != null && stationCode.isNotEmpty)) {
       return '${exitInfo.formatted} (乘入)';
     }
-    if (typeCode == 0x04) {
+    if (typeCode == 0x04 && exitInfo.type != '公交') {
       return '${exitInfo.formatted} (乘出)';
     }
     return exitInfo.formatted;

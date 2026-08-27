@@ -735,8 +735,10 @@ class CardReaderEngine {
               .toUpperCase();
           final industryByte = recordData[9];
           final industryCode = industryByte == 0x01
-              ? '0002'
-              : (industryByte == 0x02 ? '0001' : '');
+              ? '0001'
+              : (industryByte == 0x02
+                  ? '0002'
+                  : (industryByte == 0x03 ? '0003' : ''));
           final stationCode = recordData
               .sublist(10, 17)
               .map((b) => b.toRadixString(16).padLeft(2, '0'))
