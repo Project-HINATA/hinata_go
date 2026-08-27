@@ -3,15 +3,18 @@ import 'dart:typed_data';
 import 'aic.dart';
 import 'aime.dart';
 import 'banapass.dart';
+import 'card_tag.dart';
 import 'felica.dart';
 import 'iso15693.dart';
 import 'iso14443a.dart';
 import 'suica.dart';
 import 'tunion.dart';
 
+export 'card_tag.dart';
+
 class ICCard {
   final Uint8List id;
-  final List<String> tags;
+  final List<CardTag> tags;
 
   ICCard(this.id, {this.tags = const []});
   String get idString =>
@@ -53,7 +56,7 @@ class ICCard {
     return {
       'type': type,
       'id': _bytesToHex(id),
-      if (tags.isNotEmpty) 'tags': tags,
+      if (tags.isNotEmpty) 'tags': tags.map((t) => t.toJson()).toList(),
     };
   }
 
@@ -83,7 +86,7 @@ class ICCard {
           hexToBytes(json['id'] as String? ?? ''),
           tags:
               (json['tags'] as List<dynamic>?)
-                  ?.map((e) => e.toString())
+                  ?.map(CardTag.fromJson)
                   .toList() ??
               const [],
         );

@@ -70,7 +70,7 @@ class Felica extends ICCard implements HasEPass {
       persistedEpass: json['epass'] as String?,
       tags:
           (json['tags'] as List<dynamic>?)
-              ?.map((e) => e.toString())
+              ?.map(CardTag.fromJson)
               .toList() ??
           const [],
     );

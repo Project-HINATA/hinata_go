@@ -45,7 +45,7 @@ class Iso14443 extends ICCard {
       json['atqa'] as int? ?? 0x0004,
       tags:
           (json['tags'] as List<dynamic>?)
-              ?.map((e) => e.toString())
+              ?.map(CardTag.fromJson)
               .toList() ??
           const [],
     );

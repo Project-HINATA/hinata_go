@@ -64,6 +64,6 @@ class Aic extends Felica implements HasAccessCode {
 }
 
 extension ToAIC on Felica {
-  Aic toAic(Uint8List accessCode, {List<String>? tags}) =>
+  Aic toAic(Uint8List accessCode, {List<CardTag>? tags}) =>
       Aic(id, pmm, systemCode, accessCode, tags: tags ?? this.tags);
 }

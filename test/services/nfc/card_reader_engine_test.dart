@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hinata_go/models/card/card_read_result.dart';
+import 'package:hinata_go/models/card/card_tag.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/tunion.dart';
 import 'package:hinata_go/services/nfc/card_reader_engine.dart';
@@ -374,7 +375,11 @@ expect(result.status, CardReadStatus.recognized);
     expect(card, isA<TUnion>());
     final tunion = card as TUnion;
     expect(tunion.name, '上海公共交通卡');
-    expect(tunion.tags, ['上海公共交通卡', '交通联合', 'ISO-DEP']);
+    expect(tunion.tags, [
+      CardTag.issuer('上海公共交通卡'),
+      CardTag.tUnion,
+      CardTag.isoDep,
+    ]);
     expect(tunion.transactions.length, 2);
   });
 
@@ -446,7 +451,11 @@ expect(result.status, CardReadStatus.recognized);
     expect(card, isA<TUnion>());
     final tunion = card as TUnion;
     expect(tunion.name, '大连明珠卡');
-    expect(tunion.tags, ['大连明珠卡', '交通联合', 'ISO-DEP']);
+    expect(tunion.tags, [
+      CardTag.issuer('大连明珠卡'),
+      CardTag.tUnion,
+      CardTag.isoDep,
+    ]);
     expect(tunion.transactions.length, 2);
 
     final tx1 = tunion.transactions[0];
@@ -601,7 +610,11 @@ expect(result.status, CardReadStatus.recognized);
     expect(result.status, CardReadStatus.recognized);
     final card = result.card?.card as TUnion;
     expect(card.name, '大连明珠卡');
-    expect(card.tags, ['大连明珠卡', '交通联合', 'ISO-DEP']);
+    expect(card.tags, [
+      CardTag.issuer('大连明珠卡'),
+      CardTag.tUnion,
+      CardTag.isoDep,
+    ]);
     expect(card.transactions.length, 1);
     final tx = card.transactions.first;
     expect(tx.amount, -0.90);

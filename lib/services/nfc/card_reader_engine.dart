@@ -6,6 +6,7 @@ import 'package:hinata_go/models/card/aic.dart';
 import 'package:hinata_go/models/card/aime.dart';
 import 'package:hinata_go/models/card/banapass.dart';
 import 'package:hinata_go/models/card/card_read_result.dart';
+import 'package:hinata_go/models/card/card_tag.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
@@ -90,9 +91,10 @@ class CardReaderEngine {
         final accessCodeBytes = Uint8List.fromList(dec.sublist(6, 16));
         final tempAic = tag.toAic(accessCodeBytes);
         final aicTags = [
-          'Amusement IC',
-          if (tempAic.manufacturer != 'Unknown') tempAic.manufacturer,
-          'FeliCa',
+          CardTag.amusementIc,
+          if (tempAic.manufacturer != 'Unknown')
+            CardTag.fromRawString(tempAic.manufacturer),
+          CardTag.felica,
         ];
         final aic = tag.toAic(accessCodeBytes, tags: aicTags);
         return ScannedCard(card: aic, source: source);
@@ -127,7 +129,7 @@ class CardReaderEngine {
     final banapass = tag.toBanapass(
       Uint8List.fromList(block1),
       Uint8List.fromList(block2),
-      tags: const ['Banapass', 'MIFARE Classic'],
+      tags: const [CardTag.banapass, CardTag.mifareClassic],
     );
     if (AccessCodeValidator.isValidDecodedBanapassAccessCode(
       banapass.accessCodeString,
@@ -160,7 +162,7 @@ class CardReaderEngine {
     );
     final aime = tag.toAime(
       accessCodeBytes,
-      tags: const ['Aime', 'MIFARE Classic'],
+      tags: const [CardTag.aime, CardTag.mifareClassic],
     );
     final aimeAccessCode = aime.accessCodeString;
 
@@ -197,7 +199,7 @@ class CardReaderEngine {
     final banapass = tag.toBanapass(
       Uint8List.fromList(block1),
       Uint8List.fromList(block2),
-      tags: const ['Banapass', 'MIFARE Classic'],
+      tags: const [CardTag.banapass, CardTag.mifareClassic],
     );
 
     return AccessCodeValidator.isValidDecodedBanapassAccessCode(
@@ -478,7 +480,7 @@ class CardReaderEngine {
         snapshotTime: DateTime.now(),
         rawBlocks: blocksData,
         rawBalances: blockBalances,
-        tags: const ['Suica', '交通系 IC', 'FeliCa'],
+        tags: const [CardTag.suica, CardTag.japanTransit, CardTag.felica],
       );
 
       return ScannedCard(
@@ -589,12 +591,8 @@ class CardReaderEngine {
 
       // Extract Card Type (Byte 9)
       int rawCardType = infoRes.length > 9 ? infoRes[9] : 0;
-      String? cardTypeStr;
-      if (rawCardType == 0x01) cardTypeStr = '普通卡 (01)';
-      else if (rawCardType == 0x02) cardTypeStr = '学生卡 (02)';
-      else if (rawCardType == 0x03) cardTypeStr = '老人卡 (03)';
-      else if (rawCardType == 0x04) cardTypeStr = '军人卡 (04)';
-      else cardTypeStr = '其他 (${rawCardType.toRadixString(16).padLeft(2, '0').toUpperCase()})';
+      String cardTypeStr =
+          rawCardType.toRadixString(16).padLeft(2, '0').toUpperCase();
 
       // Extract Dates (Bytes 20-23 start, 24-27 expiry) YYYYMMDD in Hex/BCD
       String? issueDate;
@@ -602,15 +600,15 @@ class CardReaderEngine {
       if (infoRes.length >= 28) {
         final startBytes = infoRes.sublist(20, 24);
         final endBytes = infoRes.sublist(24, 28);
-        
+
         String parseDateBytes(Uint8List b) {
           final s = b.map((x) => x.toRadixString(16).padLeft(2, '0')).join();
           if (s.length == 8) {
-            return '${s.substring(0, 4)}年${s.substring(4, 6)}月${s.substring(6, 8)}日';
+            return '${s.substring(0, 4)}-${s.substring(4, 6)}-${s.substring(6, 8)}';
           }
           return s;
         }
-        
+
         issueDate = parseDateBytes(startBytes);
         expiryDate = parseDateBytes(endBytes);
       }
@@ -912,9 +910,9 @@ class CardReaderEngine {
 
       final issuer = lookupTUnionIssuer(cardNumber);
       final tags = [
-        if (issuer != null && issuer.isNotEmpty) issuer,
-        '交通联合',
-        'ISO-DEP',
+        if (issuer != null && issuer.isNotEmpty) CardTag.issuer(issuer),
+        CardTag.tUnion,
+        CardTag.isoDep,
       ];
 
       final tunion = TUnion(

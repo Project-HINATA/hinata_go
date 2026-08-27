@@ -992,5 +992,75 @@
   "nfcReadIncomplete": "Card reading was interrupted. Please scan it again.",
   "@nfcReadIncomplete": {
     "description": "Message shown when a phone NFC read did not complete"
+  },
+  "tagTUnion": "China T-Union",
+  "@tagTUnion": {
+    "description": "Badge tag for China T-Union transit cards"
+  },
+  "tagJapanTransit": "Japan Transit IC",
+  "@tagJapanTransit": {
+    "description": "Badge tag for Japanese transit IC cards (Suica, Pasmo, etc.)"
+  },
+  "transitCardType": "Card Type",
+  "@transitCardType": {
+    "description": "Transit card type field label"
+  },
+  "transitExpiryDate": "Valid Until",
+  "@transitExpiryDate": {
+    "description": "Transit card expiration date field label"
+  },
+  "transitIssueDate": "Issue Date",
+  "@transitIssueDate": {
+    "description": "Transit card issue date field label"
+  },
+  "transitCardTypeStandard": "Standard Card ({code})",
+  "@transitCardTypeStandard": {
+    "description": "Standard transit card type description",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "01"
+      }
+    }
+  },
+  "transitCardTypeStudent": "Student Card ({code})",
+  "@transitCardTypeStudent": {
+    "description": "Student transit card type description",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "02"
+      }
+    }
+  },
+  "transitCardTypeSenior": "Senior Card ({code})",
+  "@transitCardTypeSenior": {
+    "description": "Senior transit card type description",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "03"
+      }
+    }
+  },
+  "transitCardTypeMilitary": "Military Card ({code})",
+  "@transitCardTypeMilitary": {
+    "description": "Military transit card type description",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "04"
+      }
+    }
+  },
+  "transitCardTypeOther": "Other ({code})",
+  "@transitCardTypeOther": {
+    "description": "Generic/other transit card type description",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "05"
+      }
+    }
   }
 }

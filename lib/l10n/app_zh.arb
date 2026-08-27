@@ -989,5 +989,75 @@
   "nfcReadIncomplete": "卡片读取未完成，请重新贴卡。",
   "@nfcReadIncomplete": {
     "description": "手机 NFC 读取未完成时显示的提示"
+  },
+  "tagTUnion": "交通联合",
+  "@tagTUnion": {
+    "description": "交通联合卡片标签"
+  },
+  "tagJapanTransit": "交通系 IC",
+  "@tagJapanTransit": {
+    "description": "日本交通系IC卡标签"
+  },
+  "transitCardType": "卡片类型",
+  "@transitCardType": {
+    "description": "交通卡卡片类型字段标签"
+  },
+  "transitExpiryDate": "有效期至",
+  "@transitExpiryDate": {
+    "description": "交通卡有效截止日期字段标签"
+  },
+  "transitIssueDate": "发卡日期",
+  "@transitIssueDate": {
+    "description": "交通卡发卡日期字段标签"
+  },
+  "transitCardTypeStandard": "普通卡 ({code})",
+  "@transitCardTypeStandard": {
+    "description": "普通交通卡类型描述",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "01"
+      }
+    }
+  },
+  "transitCardTypeStudent": "学生卡 ({code})",
+  "@transitCardTypeStudent": {
+    "description": "学生交通卡类型描述",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "02"
+      }
+    }
+  },
+  "transitCardTypeSenior": "老人卡 ({code})",
+  "@transitCardTypeSenior": {
+    "description": "老年人交通卡类型描述",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "03"
+      }
+    }
+  },
+  "transitCardTypeMilitary": "军人卡 ({code})",
+  "@transitCardTypeMilitary": {
+    "description": "军人交通卡类型描述",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "04"
+      }
+    }
+  },
+  "transitCardTypeOther": "其他 ({code})",
+  "@transitCardTypeOther": {
+    "description": "其他类型交通卡描述",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "05"
+      }
+    }
   }
 }

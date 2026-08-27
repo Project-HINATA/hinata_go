@@ -1399,6 +1399,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Card reading was interrupted. Please scan it again.'**
   String get nfcReadIncomplete;
+
+  /// Badge tag for China T-Union transit cards
+  ///
+  /// In en, this message translates to:
+  /// **'China T-Union'**
+  String get tagTUnion;
+
+  /// Badge tag for Japanese transit IC cards (Suica, Pasmo, etc.)
+  ///
+  /// In en, this message translates to:
+  /// **'Japan Transit IC'**
+  String get tagJapanTransit;
+
+  /// Transit card type field label
+  ///
+  /// In en, this message translates to:
+  /// **'Card Type'**
+  String get transitCardType;
+
+  /// Transit card expiration date field label
+  ///
+  /// In en, this message translates to:
+  /// **'Valid Until'**
+  String get transitExpiryDate;
+
+  /// Transit card issue date field label
+  ///
+  /// In en, this message translates to:
+  /// **'Issue Date'**
+  String get transitIssueDate;
+
+  /// Standard transit card type description
+  ///
+  /// In en, this message translates to:
+  /// **'Standard Card ({code})'**
+  String transitCardTypeStandard(String code);
+
+  /// Student transit card type description
+  ///
+  /// In en, this message translates to:
+  /// **'Student Card ({code})'**
+  String transitCardTypeStudent(String code);
+
+  /// Senior transit card type description
+  ///
+  /// In en, this message translates to:
+  /// **'Senior Card ({code})'**
+  String transitCardTypeSenior(String code);
+
+  /// Military transit card type description
+  ///
+  /// In en, this message translates to:
+  /// **'Military Card ({code})'**
+  String transitCardTypeMilitary(String code);
+
+  /// Generic/other transit card type description
+  ///
+  /// In en, this message translates to:
+  /// **'Other ({code})'**
+  String transitCardTypeOther(String code);
 }
 
 class _AppLocalizationsDelegate

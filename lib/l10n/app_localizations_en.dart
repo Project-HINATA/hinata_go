@@ -719,4 +719,44 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get nfcReadIncomplete =>
       'Card reading was interrupted. Please scan it again.';
+
+  @override
+  String get tagTUnion => 'China T-Union';
+
+  @override
+  String get tagJapanTransit => 'Japan Transit IC';
+
+  @override
+  String get transitCardType => 'Card Type';
+
+  @override
+  String get transitExpiryDate => 'Valid Until';
+
+  @override
+  String get transitIssueDate => 'Issue Date';
+
+  @override
+  String transitCardTypeStandard(String code) {
+    return 'Standard Card ($code)';
+  }
+
+  @override
+  String transitCardTypeStudent(String code) {
+    return 'Student Card ($code)';
+  }
+
+  @override
+  String transitCardTypeSenior(String code) {
+    return 'Senior Card ($code)';
+  }
+
+  @override
+  String transitCardTypeMilitary(String code) {
+    return 'Military Card ($code)';
+  }
+
+  @override
+  String transitCardTypeOther(String code) {
+    return 'Other ($code)';
+  }
 }

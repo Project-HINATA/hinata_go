@@ -177,8 +177,35 @@ List<_CardDetailField> _buildCardDetailFields(
     }
   }
 
+  if (card is TUnion) {
+    final localizedType = card.getLocalizedCardType(context.l10n);
+    if (localizedType != null) {
+      fields.add(
+        _CardDetailField(
+          label: context.l10n.transitCardType,
+          value: localizedType,
+        ),
+      );
+    }
+    if (card.expiryDate != null && card.expiryDate!.isNotEmpty) {
+      fields.add(
+        _CardDetailField(
+          label: context.l10n.transitExpiryDate,
+          value: card.expiryDate!,
+        ),
+      );
+    }
+    if (card.issueDate != null && card.issueDate!.isNotEmpty) {
+      fields.add(
+        _CardDetailField(
+          label: context.l10n.transitIssueDate,
+          value: card.issueDate!,
+        ),
+      );
+    }
+  }
+
   fields.addAll([
-    ..._extractFields<TUnion>(card, _tunionFieldDefinitions),
     ..._extractFields<HasAccessCode>(card, _accessCodeFieldDefinitions),
     ..._extractFields<Aic>(card, _aicFieldDefinitions),
     ..._extractFields<Banapass>(card, _banapassFieldDefinitions),
@@ -283,11 +310,6 @@ const List<_CardFieldDefinition<Iso14443>> _iso14443FieldDefinitions = [
   _CardFieldDefinition(label: 'ATQA', extractor: _iso14443Atqa),
 ];
 
-const List<_CardFieldDefinition<TUnion>> _tunionFieldDefinitions = [
-  _CardFieldDefinition(label: '卡种', extractor: _tunionCardType),
-  _CardFieldDefinition(label: '有效期至', extractor: _tunionExpiryDate),
-];
-
 const List<_CardFieldDefinition<Iso15693>> _iso15693FieldDefinitions = [
   _CardFieldDefinition(
     label: 'UID',
@@ -297,9 +319,6 @@ const List<_CardFieldDefinition<Iso15693>> _iso15693FieldDefinitions = [
 ];
 
 String _upperHex(String value) => value.toUpperCase();
-
-String? _tunionCardType(TUnion card) => card.cardType;
-String? _tunionExpiryDate(TUnion card) => card.expiryDate;
 
 String? _accessCodeValue(HasAccessCode card) => card.accessCodeString;
 String? _aicManufacturer(Aic card) => card.manufacturer;
@@ -325,7 +344,7 @@ class _CardDetailHeader extends StatelessWidget {
 
   final Widget logo;
   final String name;
-  final List<String> tags;
+  final List<CardTag> tags;
   final String? source;
   final bool showCloseButtonSpace;
 
@@ -358,7 +377,7 @@ class _CardTitleBlock extends StatelessWidget {
   });
 
   final String name;
-  final List<String> tags;
+  final List<CardTag> tags;
   final String? source;
 
   @override
@@ -393,7 +412,7 @@ class _CardTitleBlock extends StatelessWidget {
 }
 
 class _CardTagBadge extends StatelessWidget {
-  final String tag;
+  final CardTag tag;
   const _CardTagBadge({required this.tag});
 
   @override
@@ -406,7 +425,7 @@ class _CardTagBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        tag,
+        tag.localizedName(context.l10n),
         style: context.textTheme.labelSmall?.copyWith(
           fontSize: 11,
           fontWeight: FontWeight.w600,

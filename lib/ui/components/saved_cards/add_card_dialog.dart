@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:uuid/uuid.dart';
 import '../../../models/card/aime.dart';
+import '../../../models/card/card_tag.dart';
 import '../../../models/card/saved_card.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../utils/access_code_validator.dart';
@@ -48,7 +49,7 @@ class AddCardDialog extends HookConsumerWidget {
         0x08,
         0x0004,
         accessCodeBytes,
-        tags: const ['Aime', 'MIFARE Classic'],
+        tags: const [CardTag.aime, CardTag.mifareClassic],
       );
       final notifier = ref.read(savedCardsProvider.notifier);
       final folderId = selectedFolderIdState.value;

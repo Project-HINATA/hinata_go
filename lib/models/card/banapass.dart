@@ -82,6 +82,6 @@ extension ToBanapass on Iso14443 {
   Banapass toBanapass(
     Uint8List block1,
     Uint8List? block2, {
-    List<String>? tags,
+    List<CardTag>? tags,
   }) => Banapass(id, sak, atqa, block1, block2, tags: tags ?? this.tags);
 }

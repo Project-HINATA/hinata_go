@@ -43,6 +43,6 @@ class Aime extends Iso14443 implements HasAccessCode {
 }
 
 extension ToAime on Iso14443 {
-  Aime toAime(Uint8List accessCode, {List<String>? tags}) =>
+  Aime toAime(Uint8List accessCode, {List<CardTag>? tags}) =>
       Aime(id, sak, atqa, accessCode, tags: tags ?? this.tags);
 }

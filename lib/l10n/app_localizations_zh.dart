@@ -708,4 +708,44 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get nfcReadIncomplete => '卡片读取未完成，请重新贴卡。';
+
+  @override
+  String get tagTUnion => '交通联合';
+
+  @override
+  String get tagJapanTransit => '交通系 IC';
+
+  @override
+  String get transitCardType => '卡片类型';
+
+  @override
+  String get transitExpiryDate => '有效期至';
+
+  @override
+  String get transitIssueDate => '发卡日期';
+
+  @override
+  String transitCardTypeStandard(String code) {
+    return '普通卡 ($code)';
+  }
+
+  @override
+  String transitCardTypeStudent(String code) {
+    return '学生卡 ($code)';
+  }
+
+  @override
+  String transitCardTypeSenior(String code) {
+    return '老人卡 ($code)';
+  }
+
+  @override
+  String transitCardTypeMilitary(String code) {
+    return '军人卡 ($code)';
+  }
+
+  @override
+  String transitCardTypeOther(String code) {
+    return '其他 ($code)';
+  }
 }

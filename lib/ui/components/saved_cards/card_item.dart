@@ -62,7 +62,7 @@ class CardItem extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  card.card.tags.first,
+                  card.card.tags.first.localizedName(context.l10n),
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w600,
