@@ -341,7 +341,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       }
 
       final tag = await FlutterNfcKit.poll(
-        timeout: Duration(seconds: isIOS ? 4 : 3),
+        timeout: Duration(seconds: isIOS ? 10 : 3),
         iosAlertMessage: l10n.nfcIosFelicaRetryAlert,
         readIso14443A: false,
         readIso14443B: false,
