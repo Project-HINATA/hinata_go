@@ -226,6 +226,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
       ScannedCard? finalCard = basicResult.card;
       NFCTag activeTag = tag;
+      bool didRetry = false;
 
       // 2. FeliCa fallback: if the card is an unsupported ISO14443A tag
       //    (CPU card that failed T-Union, or unknown type) or an incomplete
@@ -237,6 +238,10 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
         if (retryResult?.$1.card != null) {
           finalCard = retryResult!.$1.card;
           activeTag = retryResult.$2;
+          didRetry = true;
+          // _isRetrying stays true here — the retry session is still
+          // active and needed for extended read. We manage its lifecycle
+          // below after all reads are complete.
         } else if (basicResult.status == CardReadStatus.incomplete) {
           final notificationService = ref.read(notificationServiceProvider);
           notificationService.showInfo(l10n.nfcReadIncomplete);
@@ -288,6 +293,17 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           }
         }
       }
+
+      // 4. If we performed a FeliCa retry, the retry session is still
+      //    active (_isRetrying == true). Now that all reads are done,
+      //    clean it up so that stopSession() in startSession()'s finally
+      //    block doesn't try to finish an already-dead session.
+      if (didRetry) {
+        _isRetrying = false;
+        try {
+          await FlutterNfcKit.finish();
+        } catch (_) {}
+      }
     } finally {
       state = state.copyWith(isProcessing: false);
     }
@@ -336,8 +352,12 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       await FlutterNfcKit.finish();
 
       if (isIOS) {
-        // Cooldown delay for iOS nfcd daemon to release the RF hardware
-        await Future.delayed(const Duration(milliseconds: 350));
+        // Cooldown delay: must exceed the iOS NFC modal checkmark animation
+        // duration (~1s). If we re-poll too early, the old session's
+        // didInvalidateWithError delegate callback fires AFTER the new
+        // session is created, corrupting its self.result and self.session
+        // in flutter_nfc_kit's native code.
+        await Future.delayed(const Duration(milliseconds: 2000));
       }
 
       final tag = await FlutterNfcKit.poll(
@@ -359,12 +379,15 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       log('FeliCa retry failed: $e');
       return null;
     } finally {
-      _isRetrying = false;
       if (!success) {
+        // Retry failed: clean up immediately.
+        _isRetrying = false;
         try {
           await FlutterNfcKit.finish();
         } catch (_) {}
       }
+      // On success, _isRetrying stays true — the caller manages the
+      // retry session lifecycle after extended reads complete.
     }
   }
 
