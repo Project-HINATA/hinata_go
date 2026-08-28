@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../providers/hardware_device_provider.dart';
-import '../../services/communication/usb_hinata_impl.dart';
+import '../../services/reader/usb_hinata_impl.dart';
 import '../components/device/disconnected_state.dart';
 import '../components/device/device_dashboard.dart';
 

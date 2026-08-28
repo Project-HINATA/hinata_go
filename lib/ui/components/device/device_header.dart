@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
 import 'package:hinata_go/providers/hardware_device_provider.dart';
-import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
+import 'package:hinata_go/services/reader/usb_hinata_impl.dart';
 
 class DeviceHeader extends ConsumerWidget {
   final UsbHinataDeviceImpl device;

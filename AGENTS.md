@@ -105,7 +105,7 @@ Organize imports strictly in this order, separated by blank lines:
 ---
 
 ## 6. Domain-Specific Guidelines (NFC)
-- **Encapsulation**: Raw byte manipulation (e.g., `Uint8List`) should occur inside `lib/services/nfc_service.dart` or specific model parsers. The UI should only ever deal with parsed models like `ICCard` or `ScannedCard`.
+- **Encapsulation**: Raw byte manipulation (e.g., `Uint8List`) should occur inside `lib/core/engine/` or specific model parsers. The UI should only ever deal with parsed models like `ICCard` or `ScannedCard`.
 - **Hex Formatting**: When displaying card IDs, use uppercase hex strings. Utilize the `convert` package or custom `toHex` utilities.
 
 ---

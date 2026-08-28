@@ -2,7 +2,7 @@
 """
 generate_tunion_data.py
 
-Parses tripreader-data CSVs and generates hinata_go/lib/utils/tunion_data.dart.
+Parses tripreader-data CSVs and generates hinata_go/lib/core/data/tunion_data.dart.
 """
 
 import os
@@ -17,7 +17,7 @@ else:
     HINATA_GO_DIR = os.path.expanduser("~/Projects/hinata_go")
 
 TRIPREADER_DIR = os.path.expanduser("~/Projects/tripreader-data")
-OUTPUT_FILE = os.path.join(HINATA_GO_DIR, "lib", "utils", "tunion_data.dart")
+OUTPUT_FILE = os.path.join(HINATA_GO_DIR, "lib", "core", "data", "tunion_data.dart")
 
 # Known City Code to Chinese City Name mapping
 CITY_NAMES = {

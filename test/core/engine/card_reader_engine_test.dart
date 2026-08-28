@@ -5,7 +5,7 @@ import 'package:hinata_go/models/card/card_read_result.dart';
 import 'package:hinata_go/models/card/card_tag.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/tunion.dart';
-import 'package:hinata_go/services/nfc/card_reader_engine.dart';
+import 'package:hinata_go/core/engine/card_reader_engine.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 const _selectAid = <int>[

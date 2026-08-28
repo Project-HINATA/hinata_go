@@ -8,7 +8,7 @@ import 'package:hinata_go/models/card/card_read_result.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
-import '../nfc/card_reader_engine.dart';
+import '../../core/engine/card_reader_engine.dart';
 
 // 完整模拟配置用于覆盖不同卡片与耦合距离。
 class TypeARfProfile {

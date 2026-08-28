@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'package:hinata_go/utils/ekicode_data.dart';
+import 'package:hinata_go/core/data/ekicode_data.dart';
 import 'felica.dart';
 import 'transit.dart';
 

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import '../../l10n/l10n.dart';
-import '../../utils/tunion_data.dart';
+import '../../core/data/tunion_data.dart';
 import 'iso14443a.dart';
 import 'transit.dart';
 

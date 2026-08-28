@@ -8,8 +8,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../models/card/card_read_result.dart';
 import '../models/card/transit.dart';
-import '../services/communication/device_interface.dart';
-import '../services/communication/usb_hinata_impl.dart';
+import '../services/reader/device_interface.dart';
+import '../services/reader/usb_hinata_impl.dart';
 import 'current_scan_session_provider.dart';
 import 'firmware_provider.dart';
 import 'nfc_provider.dart';

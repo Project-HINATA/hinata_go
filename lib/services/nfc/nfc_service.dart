@@ -1,10 +1,10 @@
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
-import '../models/card/card_read_result.dart';
-import '../models/card/scanned_card.dart';
-import '../utils/nfc_tag_converter.dart';
-import 'nfc/card_reader_engine.dart';
+import '../../models/card/card_read_result.dart';
+import '../../models/card/scanned_card.dart';
+import '../../core/engine/nfc_tag_converter.dart';
+import '../../core/engine/card_reader_engine.dart';
 
 Future<CardReadResult> handleNfcTag(
   NFCTag tag, {

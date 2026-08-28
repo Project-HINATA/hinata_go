@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hinata_go/utils/tunion_data.dart';
+import 'package:hinata_go/core/data/tunion_data.dart';
 
 void main() {
   group('TUnion Data & Lookup Tests', () {

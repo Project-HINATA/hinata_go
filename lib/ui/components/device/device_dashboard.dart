@@ -5,7 +5,7 @@ import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 
 import 'package:hinata_go/context_extensions.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
-import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
+import 'package:hinata_go/services/reader/usb_hinata_impl.dart';
 import 'package:hinata_go/services/notification_service.dart';
 import 'device_header.dart';
 import 'device_settings_cards.dart';

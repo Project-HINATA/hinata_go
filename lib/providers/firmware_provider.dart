@@ -1,8 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 
-import '../services/communication/device_interface.dart';
-import '../services/communication/usb_hinata_impl.dart';
+import '../services/reader/device_interface.dart';
+import '../services/reader/usb_hinata_impl.dart';
 
 enum FirmUpdateStateEnum {
   deviceSelecting,

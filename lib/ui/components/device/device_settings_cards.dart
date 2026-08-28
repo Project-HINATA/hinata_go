@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:hinata_go/context_extensions.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
-import 'package:hinata_go/services/communication/usb_hinata_impl.dart';
+import 'package:hinata_go/services/reader/usb_hinata_impl.dart';
 
 class GlobalSettingsCard extends StatefulWidget {
   final UsbHinataDeviceImpl device;

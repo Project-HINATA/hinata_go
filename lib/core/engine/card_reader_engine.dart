@@ -15,10 +15,10 @@ import 'package:hinata_go/models/card/suica.dart';
 import 'package:hinata_go/models/card/tunion.dart';
 import 'package:hinata_go/models/card/transit.dart';
 
-import '../../constants/mifare_key.dart';
-import '../../utils/access_code_validator.dart';
-import '../../utils/spad0.dart';
-import '../../utils/tunion_data.dart';
+import '../crypto/mifare_key.dart';
+import '../validators/access_code_validator.dart';
+import '../crypto/spad0.dart';
+import '../data/tunion_data.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 class CardReaderEngine {

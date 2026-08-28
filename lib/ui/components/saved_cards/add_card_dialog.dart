@@ -7,7 +7,7 @@ import '../../../models/card/aime.dart';
 import '../../../models/card/card_tag.dart';
 import '../../../models/card/saved_card.dart';
 import '../../../providers/app_state_provider.dart';
-import '../../../utils/access_code_validator.dart';
+import '../../../core/validators/access_code_validator.dart';
 import '../../../utils/hex_utils.dart';
 import '../../../l10n/l10n.dart';
 import '../../ui_text.dart';
