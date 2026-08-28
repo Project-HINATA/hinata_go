@@ -155,14 +155,6 @@ jobs:
           test -n "$ipa_path"
           IOS_IPA_PATH="$ipa_path" fastlane ios publish
 
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-ipa-${{ steps.channel.outputs.value }}
-          path: build/ios/ipa/*.ipa
-          if-no-files-found: error
-          retention-days: 14
-
       - name: Remove temporary signing keychain
         if: ${{ always() }}
         shell: bash

@@ -21,6 +21,7 @@ import '../models/scan_log.dart';
 import '../navigation/router.dart';
 import '../services/nfc_service.dart';
 import '../services/notification_service.dart';
+import '../utils/nfc_tag_converter.dart';
 import 'card_sender.dart';
 import 'app_state_provider.dart';
 import 'current_scan_session_provider.dart';
@@ -201,6 +202,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   }
 
   Future<void> stopSession() async {
+    if (_isRetrying) return;
     state = state.copyWith(
       isScanning: false,
       status: state.isIOS ? NfcStatus.tapToScan : NfcStatus.idle,
@@ -222,29 +224,28 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       // Dismiss the global processing indicator overlay immediately so UI can update
       state = state.copyWith(isProcessing: false);
 
-      if (basicResult.status == CardReadStatus.incomplete) {
-        final notificationService = ref.read(notificationServiceProvider);
-        notificationService.showInfo(l10n.nfcReadIncomplete);
-        return;
-      }
-
       ScannedCard? finalCard = basicResult.card;
       NFCTag activeTag = tag;
 
-      // 2. FeliCa fallback: if the card is an unidentified ISO14443A tag
-      //    (CPU card that failed T-Union, or unknown type), re-poll with
-      //    FeliCa-only mode. This solves the issue where scanning an iPhone
-      //    picks IsoDep instead of Suica's FeliCa interface.
-      if (finalCard != null &&
-          _isUnidentifiedIso14443(finalCard) &&
-          !kIsWeb &&
-          Platform.isAndroid &&
-          !_isRetrying) {
+      // 2. FeliCa fallback: if the card is an unsupported ISO14443A tag
+      //    (CPU card that failed T-Union, or unknown type) or an incomplete
+      //    read on an ISO-DEP candidate, re-poll with FeliCa-only mode.
+      //    This solves the issue where scanning an iPhone picks IsoDep
+      //    instead of Suica's FeliCa interface (on both Android and iOS).
+      if (shouldAttemptFelicaRetry(tag, basicResult)) {
         final retryResult = await _attemptFelicaRetry();
         if (retryResult?.$1.card != null) {
           finalCard = retryResult!.$1.card;
           activeTag = retryResult.$2;
+        } else if (basicResult.status == CardReadStatus.incomplete) {
+          final notificationService = ref.read(notificationServiceProvider);
+          notificationService.showInfo(l10n.nfcReadIncomplete);
+          return;
         }
+      } else if (basicResult.status == CardReadStatus.incomplete) {
+        final notificationService = ref.read(notificationServiceProvider);
+        notificationService.showInfo(l10n.nfcReadIncomplete);
+        return;
       }
 
       if (finalCard != null) {
@@ -292,24 +293,56 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     }
   }
 
-  /// Whether the scan result is an unidentified ISO14443A card.
-  /// This includes plain [Iso14443] cards that were not recognized as any
-  /// known subtype (T-Union, Aime, Banapass, etc.).
-  bool _isUnidentifiedIso14443(ScannedCard card) {
-    final c = card.card;
-    return c is Iso14443 && c is! TUnion && c is! Aime && c is! Banapass;
+  /// Whether we should attempt a FeliCa re-poll fallback.
+  /// Triggered when:
+  /// 1. A Type A tag is confirmed unsupported (e.g. non-TUnion CPU card / Apple Pay ISO-DEP).
+  /// 2. An incomplete read occurs on a CPU card / ISO-DEP candidate (SAK bit 5 or ISO7816 tag).
+  @visibleForTesting
+  bool shouldAttemptFelicaRetry(NFCTag rawTag, CardReadResult result) {
+    if (_isRetrying) return false;
+    if (kIsWeb) return false;
+
+    if (result.status == CardReadStatus.confirmedUnsupported) {
+      final card = result.card?.card;
+      return card is Iso14443 && card is! TUnion && card is! Aime && card is! Banapass;
+    }
+
+    if (result.status == CardReadStatus.incomplete) {
+      if (rawTag.type == NFCTagType.iso7816) return true;
+      final internalTag = rawTag.toInternalTag();
+      if (internalTag is Iso14443 && (internalTag.sak & 0x20) != 0) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /// Finish the current NFC session and re-poll with FeliCa-only tech flags.
+  /// On iOS, shows a waiting notification and handles the nfcd hardware cooldown delay.
   /// Returns the new [ScannedCard] and the [NFCTag] if FeliCa was found, or null on failure.
   Future<(CardReadResult, NFCTag)?> _attemptFelicaRetry() async {
     _isRetrying = true;
     bool success = false;
     try {
+      final isIOS = !kIsWeb && Platform.isIOS;
+
+      if (isIOS) {
+        // Show visual feedback in Flutter UI while transitioning sessions
+        final notificationService = ref.read(notificationServiceProvider);
+        notificationService.showInfo(l10n.nfcSwitchingToFelica);
+      }
+
       await FlutterNfcKit.finish();
 
+      if (isIOS) {
+        // Cooldown delay for iOS nfcd daemon to release the RF hardware
+        await Future.delayed(const Duration(milliseconds: 350));
+      }
+
       final tag = await FlutterNfcKit.poll(
-        timeout: const Duration(seconds: 3),
+        timeout: Duration(seconds: isIOS ? 4 : 3),
+        iosAlertMessage: l10n.nfcIosFelicaRetryAlert,
         readIso14443A: false,
         readIso14443B: false,
         readIso18092: true,

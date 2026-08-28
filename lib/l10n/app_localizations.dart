@@ -800,6 +800,18 @@ abstract class AppLocalizations {
   /// **'Hold your card near the top of your iPhone'**
   String get nfcIosAlert;
 
+  /// Waiting prompt when switching to FeliCa polling
+  ///
+  /// In en, this message translates to:
+  /// **'Switching to FeliCa mode, please keep devices close...'**
+  String get nfcSwitchingToFelica;
+
+  /// iOS system alert message during FeliCa retry
+  ///
+  /// In en, this message translates to:
+  /// **'Hold top of iPhones together to read Suica'**
+  String get nfcIosFelicaRetryAlert;
+
   /// Error before sending
   ///
   /// In en, this message translates to:
