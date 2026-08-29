@@ -62,6 +62,11 @@ class NfcInfoDisplay extends HookConsumerWidget {
           onTap: displayState.isIOS
               ? () => ref.read(nfcProvider.notifier).startSession()
               : null,
+          onLongPress: displayState.isIOS
+              ? () => ref
+                    .read(nfcProvider.notifier)
+                    .startSession(felicaOnly: true)
+              : null,
           borderRadius: displayState.borderRadius,
           child: _NfcDisplayBody(displayState: displayState),
         ),
@@ -78,6 +83,7 @@ class _NfcDisplayInputs {
     required this.isUsbAvailable,
     required this.isUsbConnected,
     required this.isScanningNfc,
+    required this.isFelicaOnly,
     required this.isProcessing,
     required this.isIOS,
     required this.isPaused,
@@ -106,6 +112,7 @@ class _NfcDisplayInputs {
       isUsbAvailable: hardwareDeviceState.hidAvailable,
       isUsbConnected: hardwareDeviceState.connectedDevice != null,
       isScanningNfc: nfcState.isScanning,
+      isFelicaOnly: nfcState.isFelicaOnly,
       isProcessing: nfcState.isProcessing,
       isIOS: isIOS,
       isPaused: isIOS ? false : isPaused,
@@ -129,6 +136,7 @@ class _NfcDisplayInputs {
   final bool isUsbAvailable;
   final bool isUsbConnected;
   final bool isScanningNfc;
+  final bool isFelicaOnly;
   final bool isProcessing;
   final bool isIOS;
   final bool isPaused;
@@ -144,6 +152,7 @@ class _NfcDisplayState {
     required this.isIOS,
     required this.isPaused,
     required this.isScanningNfc,
+    required this.isFelicaOnly,
     required this.isUsbAvailable,
     required this.isUsbConnected,
     required this.isProcessing,
@@ -171,6 +180,7 @@ class _NfcDisplayState {
       isIOS: inputs.isIOS,
       isPaused: inputs.isPaused,
       isScanningNfc: inputs.isScanningNfc,
+      isFelicaOnly: inputs.isFelicaOnly,
       isUsbAvailable: inputs.isUsbAvailable,
       isUsbConnected: inputs.isUsbConnected,
       isProcessing: inputs.isProcessing,
@@ -192,6 +202,7 @@ class _NfcDisplayState {
   final bool isIOS;
   final bool isPaused;
   final bool isScanningNfc;
+  final bool isFelicaOnly;
   final bool isUsbAvailable;
   final bool isUsbConnected;
   final bool isProcessing;
@@ -299,6 +310,7 @@ class _CenterDisplayContent extends StatelessWidget {
                   child: _ScanningPrompt(
                     isIOS: displayState.isIOS,
                     isNfcActive: displayState.isScanningNfc,
+                    isFelicaOnly: displayState.isFelicaOnly,
                     isUsbActive: displayState.isUsbConnected,
                     isPaused: displayState.isPaused,
                     sideways: displayState.isSidewaysContent,
@@ -469,6 +481,7 @@ class _SuccessMorphContent extends StatelessWidget {
 class _ScanningPrompt extends StatelessWidget {
   final bool isIOS;
   final bool isNfcActive;
+  final bool isFelicaOnly;
   final bool isUsbActive;
   final bool isPaused;
   final bool sideways;
@@ -476,6 +489,7 @@ class _ScanningPrompt extends StatelessWidget {
   const _ScanningPrompt({
     required this.isIOS,
     required this.isNfcActive,
+    required this.isFelicaOnly,
     required this.isUsbActive,
     required this.isPaused,
     required this.sideways,
@@ -490,6 +504,7 @@ class _ScanningPrompt extends StatelessWidget {
           context,
           isIOS: isIOS,
           isNfcActive: isNfcActive,
+          isFelicaOnly: isFelicaOnly,
           isUsbActive: isUsbActive,
         );
         final textBlockMaxWidth = _PromptLayout.maxWidth(
@@ -508,6 +523,9 @@ class _ScanningPrompt extends StatelessWidget {
 
         return _ActivePromptContent(
           promptText: promptText,
+          helperText: isIOS && !isNfcActive
+              ? l10n.nfcFelicaOnlyLongPressHint
+              : null,
           textBlockMaxWidth: textBlockMaxWidth,
           maxLines: lineConfig.bodyMaxLines,
         );
@@ -580,6 +598,7 @@ class _PromptText {
     BuildContext context, {
     required bool isIOS,
     required bool isNfcActive,
+    required bool isFelicaOnly,
     required bool isUsbActive,
   }) {
     final colorScheme = context.colorScheme;
@@ -588,7 +607,9 @@ class _PromptText {
 
     return _PromptText(
       text: isIosScanning
-          ? l10n.nfcIosAlert
+          ? isFelicaOnly
+                ? l10n.nfcIosFelicaOnlyPrompt
+                : l10n.nfcIosAlert
           : isIOS
           ? l10n.tapToScan
           : isActive
@@ -716,11 +737,13 @@ class _PausedPromptContent extends StatelessWidget {
 class _ActivePromptContent extends StatelessWidget {
   const _ActivePromptContent({
     required this.promptText,
+    required this.helperText,
     required this.textBlockMaxWidth,
     required this.maxLines,
   });
 
   final _PromptText promptText;
+  final String? helperText;
   final double textBlockMaxWidth;
   final int maxLines;
 
@@ -741,6 +764,17 @@ class _ActivePromptContent extends StatelessWidget {
             letterSpacing: 0.5,
           ),
         ),
+        if (helperText != null) ...[
+          const SizedBox(height: 6),
+          _PromptTextBlock(
+            text: helperText!,
+            maxWidth: textBlockMaxWidth,
+            maxLines: 3,
+            style: context.textTheme.labelMedium?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ],
     );
   }

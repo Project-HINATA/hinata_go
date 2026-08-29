@@ -32,6 +32,7 @@ enum NfcStatus { idle, tapToScan, unsupported, disabled, listening, error }
 class NfcState {
   final bool isScanning;
   final bool isProcessing;
+  final bool isFelicaOnly;
   final bool isIOS;
   final NfcStatus status;
   final DateTime? lastScanEvent;
@@ -40,6 +41,7 @@ class NfcState {
   NfcState({
     this.isScanning = false,
     this.isProcessing = false,
+    this.isFelicaOnly = false,
     this.isIOS = false,
     this.status = NfcStatus.idle,
     this.lastScanEvent,
@@ -49,6 +51,7 @@ class NfcState {
   NfcState copyWith({
     bool? isScanning,
     bool? isProcessing,
+    bool? isFelicaOnly,
     bool? isIOS,
     NfcStatus? status,
     DateTime? lastScanEvent,
@@ -58,6 +61,7 @@ class NfcState {
     return NfcState(
       isScanning: isScanning ?? this.isScanning,
       isProcessing: isProcessing ?? this.isProcessing,
+      isFelicaOnly: isFelicaOnly ?? this.isFelicaOnly,
       isIOS: isIOS ?? this.isIOS,
       status: status ?? this.status,
       lastScanEvent: lastScanEvent ?? this.lastScanEvent,
@@ -127,9 +131,11 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> startSession() async {
+  Future<void> startSession({bool felicaOnly = false}) async {
     if (state.isScanning || _isStarting) return;
     _isStarting = true;
+
+    final useFelicaOnly = !kIsWeb && Platform.isIOS && felicaOnly;
 
     try {
       NFCAvailability availability = await FlutterNfcKit.nfcAvailability;
@@ -148,6 +154,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       _isStarting = false;
       state = state.copyWith(
         isScanning: true,
+        isFelicaOnly: useFelicaOnly,
         status: NfcStatus.listening,
         clearError: true,
       );
@@ -156,12 +163,15 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       // Android uses continuous background scanning.
       if (!kIsWeb && Platform.isIOS) {
         try {
-          final iosAlert = l10n.nfcIosAlert;
+          final iosAlert = useFelicaOnly
+              ? l10n.nfcIosFelicaOnlyAlert
+              : l10n.nfcIosAlert;
           NFCTag tag = await FlutterNfcKit.poll(
             iosAlertMessage: iosAlert,
+            readIso14443A: !useFelicaOnly,
             readIso18092: true,
             readIso14443B: false,
-            readIso15693: true,
+            readIso15693: !useFelicaOnly,
           );
           await _onTagDiscovered(tag);
         } catch (e) {
@@ -191,6 +201,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       _isStarting = false;
       state = state.copyWith(
         isScanning: false,
+        isFelicaOnly: false,
         status: NfcStatus.error,
         errorMessage: e.toString(),
       );
@@ -205,6 +216,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     if (_isRetrying) return;
     state = state.copyWith(
       isScanning: false,
+      isFelicaOnly: false,
       status: state.isIOS ? NfcStatus.tapToScan : NfcStatus.idle,
       clearError: true,
     );

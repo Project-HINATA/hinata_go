@@ -800,6 +800,24 @@ abstract class AppLocalizations {
   /// **'Hold your card near the top of your iPhone'**
   String get nfcIosAlert;
 
+  /// Hint for starting FeliCa-only scanning on iOS
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press to scan Japanese transit cards or Hong Kong Octopus from another iPhone'**
+  String get nfcFelicaOnlyLongPressHint;
+
+  /// In-app prompt while FeliCa-only scanning is active
+  ///
+  /// In en, this message translates to:
+  /// **'FeliCa-only: Hold the top of this iPhone near the other iPhone'**
+  String get nfcIosFelicaOnlyPrompt;
+
+  /// iOS system alert for FeliCa-only scanning
+  ///
+  /// In en, this message translates to:
+  /// **'FeliCa-only mode: Hold this iPhone near the other iPhone to scan a Japanese transit card or Hong Kong Octopus'**
+  String get nfcIosFelicaOnlyAlert;
+
   /// Error before sending
   ///
   /// In en, this message translates to:
