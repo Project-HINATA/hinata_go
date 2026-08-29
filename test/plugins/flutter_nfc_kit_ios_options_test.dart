@@ -30,6 +30,8 @@ void main() {
       await FlutterNfcKit.poll(
         iosCheckNDEF: false,
         iosPreferFelicaWhenMixed: true,
+        iosFelicaFallbackTimeout: const Duration(seconds: 10),
+        iosFelicaFallbackAlertMessage: 'FeliCa only',
         readIso18092: true,
       );
 
@@ -37,6 +39,8 @@ void main() {
       final arguments = capturedCall?.arguments as Map<Object?, Object?>;
       expect(arguments['iosCheckNDEF'], isFalse);
       expect(arguments['iosPreferFelicaWhenMixed'], isTrue);
+      expect(arguments['iosFelicaFallbackTimeout'], 10000);
+      expect(arguments['iosFelicaFallbackAlertMessage'], 'FeliCa only');
     },
   );
 }

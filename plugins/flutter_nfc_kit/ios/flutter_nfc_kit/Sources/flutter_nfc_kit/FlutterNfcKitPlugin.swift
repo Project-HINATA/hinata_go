@@ -37,6 +37,9 @@ public class FlutterNfcKitPlugin: NSObject, FlutterPlugin, NFCTagReaderSessionDe
     var multipleTagMessage: String?
     var checkNDEF = true
     var preferFelicaWhenMixed = false
+    var felicaFallbackWorkItem: DispatchWorkItem?
+    var felicaFallbackSourceSession: NFCTagReaderSession?
+    var felicaFallbackAlertMessage: String?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "flutter_nfc_kit/method", binaryMessenger: registrar.messenger())
@@ -85,8 +88,35 @@ public class FlutterNfcKitPlugin: NSObject, FlutterPlugin, NFCTagReaderSessionDe
                 }
                 self.checkNDEF = arguments["iosCheckNDEF"] as? Bool ?? true
                 self.preferFelicaWhenMixed = arguments["iosPreferFelicaWhenMixed"] as? Bool ?? false
+                self.felicaFallbackAlertMessage = arguments["iosFelicaFallbackAlertMessage"] as? String
                 self.result = result
                 session?.begin()
+
+                if let timeout = arguments["iosFelicaFallbackTimeout"] as? Int,
+                   timeout > 0,
+                   pollingOption.contains(.iso14443),
+                   pollingOption.contains(.iso18092),
+                   let initialSession = session {
+                    let workItem = DispatchWorkItem { [weak self, weak initialSession] in
+                        guard let self,
+                              let initialSession,
+                              self.result != nil,
+                              self.session === initialSession else {
+                            return
+                        }
+
+                        self.felicaFallbackWorkItem = nil
+                        self.felicaFallbackSourceSession = initialSession
+                        self.session = nil
+                        self.tag = nil
+                        initialSession.invalidate()
+                    }
+                    felicaFallbackWorkItem = workItem
+                    DispatchQueue.main.asyncAfter(
+                        deadline: .now() + .milliseconds(timeout),
+                        execute: workItem
+                    )
+                }
             }
         } else if call.method == "transceive" {
             if tag != nil {
@@ -398,6 +428,8 @@ public class FlutterNfcKitPlugin: NSObject, FlutterPlugin, NFCTagReaderSessionDe
                 result(FlutterError(code: "406", message: "No tag polled", details: nil))
             }
         } else if call.method == "finish" {
+            felicaFallbackWorkItem?.cancel()
+            felicaFallbackWorkItem = nil
             self.result?(FlutterError(code: "406", message: "Session not active", details: nil))
             self.result = nil
 
@@ -467,7 +499,31 @@ public class FlutterNfcKitPlugin: NSObject, FlutterPlugin, NFCTagReaderSessionDe
     public func tagReaderSessionDidBecomeActive(_: NFCTagReaderSession) {}
 
     // from NFCTagReaderSessionDelegate
-    public func tagReaderSession(_: NFCTagReaderSession, didInvalidateWithError error: Error) {
+    public func tagReaderSession(_ invalidatedSession: NFCTagReaderSession, didInvalidateWithError error: Error) {
+        if invalidatedSession === felicaFallbackSourceSession {
+            felicaFallbackSourceSession = nil
+
+            guard result != nil else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(350)) { [weak self] in
+                guard let self, self.result != nil, self.session == nil else { return }
+
+                self.checkNDEF = false
+                self.preferFelicaWhenMixed = false
+                let fallbackSession = NFCTagReaderSession(
+                    pollingOption: .iso18092,
+                    delegate: self
+                )
+                if let alertMessage = self.felicaFallbackAlertMessage {
+                    fallbackSession?.alertMessage = alertMessage
+                }
+                self.session = fallbackSession
+                fallbackSession?.begin()
+            }
+            return
+        }
+
+        felicaFallbackWorkItem?.cancel()
+        felicaFallbackWorkItem = nil
         guard result != nil else { return; }
 
         if let nfcError = error as? NFCReaderError {
@@ -492,6 +548,9 @@ public class FlutterNfcKitPlugin: NSObject, FlutterPlugin, NFCTagReaderSessionDe
 
     // from NFCTagReaderSessionDelegate
     public func tagReaderSession(_ session: NFCTagReaderSession, didDetect tags: [NFCTag]) {
+        felicaFallbackWorkItem?.cancel()
+        felicaFallbackWorkItem = nil
+
         var detectedTags = tags
         if tags.count > 1, preferFelicaWhenMixed {
             let hasIso14443 = tags.contains { tag in

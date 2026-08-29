@@ -161,6 +161,8 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
             iosAlertMessage: iosAlert,
             iosCheckNDEF: false,
             iosPreferFelicaWhenMixed: true,
+            iosFelicaFallbackTimeout: const Duration(seconds: 10),
+            iosFelicaFallbackAlertMessage: l10n.nfcIosFelicaRetryAlert,
             readIso18092: true,
             readIso14443B: false,
             readIso15693: true,

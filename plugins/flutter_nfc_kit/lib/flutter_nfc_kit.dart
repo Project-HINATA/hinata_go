@@ -328,7 +328,9 @@ class FlutterNfcKit {
   /// Set [iosCheckNDEF] to false when emulated ISO 7816 tags may not answer
   /// Core NFC's NDEF capability query. When [iosPreferFelicaWhenMixed] is true,
   /// a mixed ISO 14443/FeliCa result is treated as a composite tag and its
-  /// FeliCa interface is selected.
+  /// FeliCa interface is selected. Set [iosFelicaFallbackTimeout] to replace an
+  /// unanswered mixed ISO 14443/FeliCa session with a FeliCa-only session. The
+  /// original [poll] future remains pending while Core NFC changes sessions.
   ///
   /// On Android, set [androidPlatformSound] to control whether to play sound when a tag is polled,
   /// and set [androidCheckNDEF] to control whether check NDEF records on the tag.
@@ -376,6 +378,8 @@ class FlutterNfcKit {
         "More than one tags are detected, please leave only one tag and try again.",
     bool iosCheckNDEF = true,
     bool iosPreferFelicaWhenMixed = false,
+    Duration? iosFelicaFallbackTimeout,
+    String? iosFelicaFallbackAlertMessage,
     bool readIso14443A = true,
     bool readIso14443B = true,
     bool readIso18092 = false,
@@ -399,6 +403,8 @@ class FlutterNfcKit {
       'iosMultipleTagMessage': iosMultipleTagMessage,
       'iosCheckNDEF': iosCheckNDEF,
       'iosPreferFelicaWhenMixed': iosPreferFelicaWhenMixed,
+      'iosFelicaFallbackTimeout': iosFelicaFallbackTimeout?.inMilliseconds,
+      'iosFelicaFallbackAlertMessage': iosFelicaFallbackAlertMessage,
       'technologies': technologies,
       'probeWebUSBMagic': probeWebUSBMagic,
       'readerModeFlags': androidReaderModeFlags,
