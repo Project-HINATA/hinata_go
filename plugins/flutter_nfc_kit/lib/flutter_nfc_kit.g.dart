@@ -1,0 +1,108 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'flutter_nfc_kit.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+MifareInfo _$MifareInfoFromJson(Map<String, dynamic> json) => MifareInfo(
+      json['type'] as String,
+      json['size'] as int,
+      json['blockSize'] as int,
+      json['blockCount'] as int,
+      json['sectorCount'] as int?,
+    );
+
+Map<String, dynamic> _$MifareInfoToJson(MifareInfo instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'size': instance.size,
+      'blockSize': instance.blockSize,
+      'blockCount': instance.blockCount,
+      'sectorCount': instance.sectorCount,
+    };
+
+NFCTag _$NFCTagFromJson(Map<String, dynamic> json) => NFCTag(
+      $enumDecode(_$NFCTagTypeEnumMap, json['type']),
+      json['id'] as String,
+      json['standard'] as String,
+      json['atqa'] as String?,
+      json['sak'] as String?,
+      json['historicalBytes'] as String?,
+      json['protocolInfo'] as String?,
+      json['applicationData'] as String?,
+      json['hiLayerResponse'] as String?,
+      json['manufacturer'] as String?,
+      json['systemCode'] as String?,
+      json['dsfId'] as String?,
+      json['ndefAvailable'] as bool?,
+      json['ndefType'] as String?,
+      json['ndefCapacity'] as int?,
+      json['ndefWritable'] as bool?,
+      json['ndefCanMakeReadOnly'] as bool?,
+      json['webUSBCustomProbeData'] as String?,
+      json['mifareInfo'] == null
+          ? null
+          : MifareInfo.fromJson(json['mifareInfo'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$NFCTagToJson(NFCTag instance) => <String, dynamic>{
+      'type': _$NFCTagTypeEnumMap[instance.type]!,
+      'standard': instance.standard,
+      'id': instance.id,
+      'atqa': instance.atqa,
+      'sak': instance.sak,
+      'historicalBytes': instance.historicalBytes,
+      'hiLayerResponse': instance.hiLayerResponse,
+      'protocolInfo': instance.protocolInfo,
+      'applicationData': instance.applicationData,
+      'manufacturer': instance.manufacturer,
+      'systemCode': instance.systemCode,
+      'dsfId': instance.dsfId,
+      'ndefAvailable': instance.ndefAvailable,
+      'ndefType': instance.ndefType,
+      'ndefCapacity': instance.ndefCapacity,
+      'ndefWritable': instance.ndefWritable,
+      'ndefCanMakeReadOnly': instance.ndefCanMakeReadOnly,
+      'webUSBCustomProbeData': instance.webUSBCustomProbeData,
+      'mifareInfo': instance.mifareInfo,
+    };
+
+const _$NFCTagTypeEnumMap = {
+  NFCTagType.iso7816: 'iso7816',
+  NFCTagType.iso15693: 'iso15693',
+  NFCTagType.iso18092: 'iso18092',
+  NFCTagType.mifare_classic: 'mifare_classic',
+  NFCTagType.mifare_ultralight: 'mifare_ultralight',
+  NFCTagType.mifare_desfire: 'mifare_desfire',
+  NFCTagType.mifare_plus: 'mifare_plus',
+  NFCTagType.webusb: 'webusb',
+  NFCTagType.unknown: 'unknown',
+};
+
+NDEFRawRecord _$NDEFRawRecordFromJson(Map<String, dynamic> json) =>
+    NDEFRawRecord(
+      json['identifier'] as String,
+      json['payload'] as String,
+      json['type'] as String,
+      $enumDecode(_$TypeNameFormatEnumMap, json['typeNameFormat']),
+    );
+
+Map<String, dynamic> _$NDEFRawRecordToJson(NDEFRawRecord instance) =>
+    <String, dynamic>{
+      'identifier': instance.identifier,
+      'payload': instance.payload,
+      'type': instance.type,
+      'typeNameFormat': _$TypeNameFormatEnumMap[instance.typeNameFormat]!,
+    };
+
+const _$TypeNameFormatEnumMap = {
+  TypeNameFormat.empty: 'empty',
+  TypeNameFormat.nfcWellKnown: 'nfcWellKnown',
+  TypeNameFormat.media: 'media',
+  TypeNameFormat.absoluteURI: 'absoluteURI',
+  TypeNameFormat.nfcExternal: 'nfcExternal',
+  TypeNameFormat.unknown: 'unknown',
+  TypeNameFormat.unchanged: 'unchanged',
+};

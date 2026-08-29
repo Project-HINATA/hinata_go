@@ -159,6 +159,8 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           final iosAlert = l10n.nfcIosAlert;
           NFCTag tag = await FlutterNfcKit.poll(
             iosAlertMessage: iosAlert,
+            iosCheckNDEF: false,
+            iosPreferFelicaWhenMixed: true,
             readIso18092: true,
             readIso14443B: false,
             readIso15693: true,
@@ -304,7 +306,10 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
     if (result.status == CardReadStatus.confirmedUnsupported) {
       final card = result.card?.card;
-      return card is Iso14443 && card is! TUnion && card is! Aime && card is! Banapass;
+      return card is Iso14443 &&
+          card is! TUnion &&
+          card is! Aime &&
+          card is! Banapass;
     }
 
     if (result.status == CardReadStatus.incomplete) {

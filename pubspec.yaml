@@ -37,7 +37,9 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  flutter_nfc_kit: ^3.6.0
+  # Local fork adds iOS composite-tag handling needed for iPhone Suica scans.
+  flutter_nfc_kit:
+    path: plugins/flutter_nfc_kit/
   shared_preferences: ^2.5.4
   mobile_scanner: ^7.2.0
   http: ^1.6.0

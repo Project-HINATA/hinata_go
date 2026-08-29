@@ -1,0 +1,64 @@
+name: Build Example App
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  build:
+    if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [debug, release]
+        target: [apk, ios]
+        include:
+          - target: apk
+            os: ubuntu-latest
+            pre-build-script: ""
+            build-args: ""
+            debug-artifact-path: example/build/app/outputs/flutter-apk/app-debug.apk
+            release-artifact-path: example/build/app/outputs/flutter-apk/app-release.apk
+          - target: ios
+            os: macos-latest
+            pre-build-script: ""
+            build-args: "--no-codesign"
+            artifact-path: |
+              example/build/ios/iphoneos/Runner.app
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.target }}-${{ matrix.variant }}
+
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-java@v5
+      if: ${{ matrix.target == 'apk' }}
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        cache: true
+
+    - name: pre-build-script for ${{ matrix.target }}
+      run: ${{ matrix.pre-build-script }}
+      if: ${{ matrix.pre-build-script != '' }}
+
+    - run: flutter pub get
+      working-directory: example/
+
+    - name: Run flutter ${{ matrix.variant }} build on ${{ matrix.target }}
+      run: flutter build ${{ matrix.target }} --${{ matrix.variant }} ${{ matrix.build-args }} --verbose
+      working-directory: example/
+
+    - uses: actions/upload-artifact@v5
+      with:
+        name: example-${{ matrix.target }}-${{ matrix.variant }}
+        path: |
+          ${{ matrix.debug-artifact-path }}
+          ${{ matrix.release-artifact-path }}
+          ${{ matrix.artifact-path }}

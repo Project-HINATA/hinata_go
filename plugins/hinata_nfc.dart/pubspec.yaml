@@ -10,7 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_nfc_kit: ^3.6.0
+  flutter_nfc_kit:
+    path: ../flutter_nfc_kit/
   convert: ^3.1.2
   web: ^1.1.0
   neo_web_hid:
