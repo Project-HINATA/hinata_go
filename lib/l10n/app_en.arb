@@ -542,14 +542,6 @@
   "@nfcIosAlert": {
     "description": "iOS system-style scanning message"
   },
-  "nfcSwitchingToFelica": "Switching to FeliCa mode, please keep devices close...",
-  "@nfcSwitchingToFelica": {
-    "description": "Waiting prompt when switching to FeliCa polling"
-  },
-  "nfcIosFelicaRetryAlert": "Hold top of iPhones together to read Suica",
-  "@nfcIosFelicaRetryAlert": {
-    "description": "iOS system alert message during FeliCa retry"
-  },
   "noActiveInstanceSelected": "No active instance selected.",
   "@noActiveInstanceSelected": {
     "description": "Error before sending"

@@ -542,14 +542,6 @@
   "@nfcIosAlert": {
     "description": "系统级扫码提示"
   },
-  "nfcSwitchingToFelica": "正在切换至 FeliCa 轮询，请保持设备靠近...",
-  "@nfcSwitchingToFelica": {
-    "description": "切换至 FeliCa 轮询时的等待提示"
-  },
-  "nfcIosFelicaRetryAlert": "请保持两台 iPhone 顶部靠近以读取 Suica",
-  "@nfcIosFelicaRetryAlert": {
-    "description": "iOS FeliCa 重试时的系统级提示"
-  },
   "noActiveInstanceSelected": "未选择活动实例。",
   "@noActiveInstanceSelected": {
     "description": "发送前的预检报错"

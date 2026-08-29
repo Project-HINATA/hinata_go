@@ -391,14 +391,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nfcIosAlert => 'Hold your card near the top of your iPhone';
 
   @override
-  String get nfcSwitchingToFelica =>
-      'Switching to FeliCa mode, please keep devices close...';
-
-  @override
-  String get nfcIosFelicaRetryAlert =>
-      'Hold top of iPhones together to read Suica';
-
-  @override
   String get noActiveInstanceSelected => 'No active instance selected.';
 
   @override

@@ -386,12 +386,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nfcIosAlert => '请将卡片靠近 iPhone 顶部';
 
   @override
-  String get nfcSwitchingToFelica => '正在切换至 FeliCa 轮询，请保持设备靠近...';
-
-  @override
-  String get nfcIosFelicaRetryAlert => '请保持两台 iPhone 顶部靠近以读取 Suica';
-
-  @override
   String get noActiveInstanceSelected => '未选择活动实例。';
 
   @override

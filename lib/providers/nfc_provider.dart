@@ -159,10 +159,6 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           final iosAlert = l10n.nfcIosAlert;
           NFCTag tag = await FlutterNfcKit.poll(
             iosAlertMessage: iosAlert,
-            iosCheckNDEF: false,
-            iosPreferFelicaWhenMixed: true,
-            iosFelicaFallbackTimeout: const Duration(seconds: 10),
-            iosFelicaFallbackAlertMessage: l10n.nfcIosFelicaRetryAlert,
             readIso18092: true,
             readIso14443B: false,
             readIso15693: true,
@@ -231,12 +227,13 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       ScannedCard? finalCard = basicResult.card;
       NFCTag activeTag = tag;
 
-      // 2. FeliCa fallback: if the card is an unsupported ISO14443A tag
+      // 2. Android FeliCa fallback: if the card is an unsupported ISO14443A tag
       //    (CPU card that failed T-Union, or unknown type) or an incomplete
       //    read on an ISO-DEP candidate, re-poll with FeliCa-only mode.
-      //    This solves the issue where scanning an iPhone picks IsoDep
-      //    instead of Suica's FeliCa interface (on both Android and iOS).
-      if (shouldAttemptFelicaRetry(tag, basicResult)) {
+      //    This handles phones that expose ISO-DEP before their FeliCa interface.
+      if (!kIsWeb &&
+          Platform.isAndroid &&
+          shouldAttemptFelicaRetry(tag, basicResult)) {
         final retryResult = await _attemptFelicaRetry();
         if (retryResult?.$1.card != null) {
           finalCard = retryResult!.$1.card;
@@ -326,30 +323,15 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   }
 
   /// Finish the current NFC session and re-poll with FeliCa-only tech flags.
-  /// On iOS, shows a waiting notification and handles the nfcd hardware cooldown delay.
   /// Returns the new [ScannedCard] and the [NFCTag] if FeliCa was found, or null on failure.
   Future<(CardReadResult, NFCTag)?> _attemptFelicaRetry() async {
     _isRetrying = true;
     bool success = false;
     try {
-      final isIOS = !kIsWeb && Platform.isIOS;
-
-      if (isIOS) {
-        // Show visual feedback in Flutter UI while transitioning sessions
-        final notificationService = ref.read(notificationServiceProvider);
-        notificationService.showInfo(l10n.nfcSwitchingToFelica);
-      }
-
       await FlutterNfcKit.finish();
 
-      if (isIOS) {
-        // Cooldown delay for iOS nfcd daemon to release the RF hardware
-        await Future.delayed(const Duration(milliseconds: 350));
-      }
-
       final tag = await FlutterNfcKit.poll(
-        timeout: Duration(seconds: isIOS ? 10 : 3),
-        iosAlertMessage: l10n.nfcIosFelicaRetryAlert,
+        timeout: const Duration(seconds: 3),
         readIso14443A: false,
         readIso14443B: false,
         readIso18092: true,
