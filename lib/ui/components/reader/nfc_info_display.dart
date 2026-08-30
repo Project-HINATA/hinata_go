@@ -368,6 +368,10 @@ class _FelicaOnlyHintAnchorState extends State<_FelicaOnlyHintAnchor> {
         key: _tooltipKey,
         message: l10n.nfcFelicaOnlyLongPressHint,
         triggerMode: TooltipTriggerMode.manual,
+        constraints: const BoxConstraints(maxWidth: 260),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        textAlign: TextAlign.center,
         child: IconButton(
           onPressed: () => _tooltipKey.currentState?.ensureTooltipVisible(),
           visualDensity: VisualDensity.compact,
