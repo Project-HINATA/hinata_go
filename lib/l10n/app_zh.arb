@@ -542,10 +542,6 @@
   "@nfcIosAlert": {
     "description": "系统级扫码提示"
   },
-  "nfcFelicaOnlyLongPressHint": "长按可扫描另一台 iPhone 上的日本交通卡或香港八达通",
-  "@nfcFelicaOnlyLongPressHint": {
-    "description": "iOS FeliCa-only 扫描入口提示"
-  },
   "nfcIosFelicaOnlyPrompt": "仅扫描 FeliCa：请将两台 iPhone 的顶部靠近",
   "@nfcIosFelicaOnlyPrompt": {
     "description": "FeliCa-only 扫描中的应用内提示"

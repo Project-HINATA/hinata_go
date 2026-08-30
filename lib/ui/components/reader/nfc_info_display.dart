@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
@@ -63,9 +64,12 @@ class NfcInfoDisplay extends HookConsumerWidget {
               ? () => ref.read(nfcProvider.notifier).startSession()
               : null,
           onLongPress: displayState.isIOS
-              ? () => ref
-                    .read(nfcProvider.notifier)
-                    .startSession(felicaOnly: true)
+              ? () async {
+                  await HapticFeedback.mediumImpact();
+                  await ref
+                      .read(nfcProvider.notifier)
+                      .startSession(felicaOnly: true);
+                }
               : null,
           borderRadius: displayState.borderRadius,
           child: _NfcDisplayBody(displayState: displayState),
@@ -523,9 +527,6 @@ class _ScanningPrompt extends StatelessWidget {
 
         return _ActivePromptContent(
           promptText: promptText,
-          helperText: isIOS && !isNfcActive
-              ? l10n.nfcFelicaOnlyLongPressHint
-              : null,
           textBlockMaxWidth: textBlockMaxWidth,
           maxLines: lineConfig.bodyMaxLines,
         );
@@ -737,13 +738,11 @@ class _PausedPromptContent extends StatelessWidget {
 class _ActivePromptContent extends StatelessWidget {
   const _ActivePromptContent({
     required this.promptText,
-    required this.helperText,
     required this.textBlockMaxWidth,
     required this.maxLines,
   });
 
   final _PromptText promptText;
-  final String? helperText;
   final double textBlockMaxWidth;
   final int maxLines;
 
@@ -764,17 +763,6 @@ class _ActivePromptContent extends StatelessWidget {
             letterSpacing: 0.5,
           ),
         ),
-        if (helperText != null) ...[
-          const SizedBox(height: 6),
-          _PromptTextBlock(
-            text: helperText!,
-            maxWidth: textBlockMaxWidth,
-            maxLines: 3,
-            style: context.textTheme.labelMedium?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ],
     );
   }

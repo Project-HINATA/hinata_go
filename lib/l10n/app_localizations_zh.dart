@@ -386,9 +386,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nfcIosAlert => '请将卡片靠近 iPhone 顶部';
 
   @override
-  String get nfcFelicaOnlyLongPressHint => '长按可扫描另一台 iPhone 上的日本交通卡或香港八达通';
-
-  @override
   String get nfcIosFelicaOnlyPrompt => '仅扫描 FeliCa：请将两台 iPhone 的顶部靠近';
 
   @override
