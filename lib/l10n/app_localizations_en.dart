@@ -391,6 +391,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nfcIosAlert => 'Hold your card near the top of your iPhone';
 
   @override
+  String get nfcFelicaOnlyLongPressHint =>
+      'Long-press the scan area to read a Japanese transit card or Hong Kong Octopus from another iPhone';
+
+  @override
   String get nfcIosFelicaOnlyPrompt =>
       'FeliCa-only: Hold the top of this iPhone near the other iPhone';
 

@@ -542,6 +542,10 @@
   "@nfcIosAlert": {
     "description": "iOS system-style scanning message"
   },
+  "nfcFelicaOnlyLongPressHint": "Long-press the scan area to read a Japanese transit card or Hong Kong Octopus from another iPhone",
+  "@nfcFelicaOnlyLongPressHint": {
+    "description": "Help tooltip for starting FeliCa-only scanning on iOS"
+  },
   "nfcIosFelicaOnlyPrompt": "FeliCa-only: Hold the top of this iPhone near the other iPhone",
   "@nfcIosFelicaOnlyPrompt": {
     "description": "In-app prompt while FeliCa-only scanning is active"

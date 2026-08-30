@@ -217,6 +217,12 @@ class _NfcDisplayState {
   final bool showReadingExtendedInfo;
 
   bool get shouldShowPausedPrompt => isPaused && !(isIOS && isScanningNfc);
+  bool get shouldShowFelicaOnlyHint =>
+      isIOS &&
+      !isScanningNfc &&
+      !isProcessing &&
+      !isShowingSuccess &&
+      !isCardPresent;
   bool get isHighlighted => isShowingSuccess || isCardPresent;
   bool get isSidewaysContent => normalizedQuarterTurns.isOdd;
 
@@ -254,6 +260,8 @@ class _NfcDisplayBody extends StatelessWidget {
         if (displayState.isWaitingForCard)
           _ScanningBackground(borderRadius: displayState.borderRadius),
         _CenterDisplayContent(displayState: displayState),
+        if (displayState.shouldShowFelicaOnlyHint)
+          const _FelicaOnlyHintAnchor(),
         _StatusMarkersAnchor(sideways: displayState.isSidewaysContent),
         if (displayState.isProcessing) const _NfcProcessingOverlay(),
       ],
@@ -337,6 +345,39 @@ class _StatusMarkersAnchor extends StatelessWidget {
       bottom: 16,
       right: 20,
       child: _StatusMarkers(sideways: sideways),
+    );
+  }
+}
+
+class _FelicaOnlyHintAnchor extends StatefulWidget {
+  const _FelicaOnlyHintAnchor();
+
+  @override
+  State<_FelicaOnlyHintAnchor> createState() => _FelicaOnlyHintAnchorState();
+}
+
+class _FelicaOnlyHintAnchorState extends State<_FelicaOnlyHintAnchor> {
+  final _tooltipKey = GlobalKey<TooltipState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 10,
+      right: 12,
+      child: Tooltip(
+        key: _tooltipKey,
+        message: l10n.nfcFelicaOnlyLongPressHint,
+        triggerMode: TooltipTriggerMode.manual,
+        child: IconButton(
+          onPressed: () => _tooltipKey.currentState?.ensureTooltipVisible(),
+          visualDensity: VisualDensity.compact,
+          icon: Icon(
+            Icons.help_outline_rounded,
+            size: 19,
+            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
+        ),
+      ),
     );
   }
 }
