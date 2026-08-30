@@ -153,7 +153,24 @@ jobs:
           set -euo pipefail
           ipa_path="$(find build/ios/ipa -maxdepth 1 -name '*.ipa' -print -quit)"
           test -n "$ipa_path"
-          IOS_IPA_PATH="$ipa_path" fastlane ios publish
+          publish_log="$(mktemp)"
+          trap 'rm -f "$publish_log"' EXIT
+
+          set +e
+          IOS_IPA_PATH="$ipa_path" fastlane ios publish 2>&1 | tee "$publish_log"
+          publish_status="${PIPESTATUS[0]}"
+          set -e
+
+          if [[ "$publish_status" -eq 0 ]]; then
+            exit 0
+          fi
+
+          if grep -Fq "UPLOAD SUCCEEDED with no errors" "$publish_log"; then
+            echo "::warning::Apple uploader completed successfully but reported a transient network error afterward."
+            exit 0
+          fi
+
+          exit "$publish_status"
 
       - name: Remove temporary signing keychain
         if: ${{ always() }}
