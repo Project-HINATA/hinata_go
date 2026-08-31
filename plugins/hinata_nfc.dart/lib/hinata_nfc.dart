@@ -10,6 +10,7 @@ export 'src/nfc/hinata_nfc_card_channel.dart';
 export 'src/nfc/phone_nfc_reader.dart';
 export 'src/nfc/nfc_exception.dart';
 export 'src/nfc/target.dart';
+export 'src/mifare/mifare_access.dart';
 
 // Protocol Layer
 export 'src/protocol/base.dart';

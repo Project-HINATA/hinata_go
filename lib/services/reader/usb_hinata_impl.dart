@@ -40,6 +40,13 @@ const liteTypeARfProfiles = <TypeARfProfile>[
   pn532DefaultTypeARfProfile, // 档位 3
 ];
 
+class HinataMifareTarget {
+  final Iso14443 tag;
+  final HinataNfcCardChannel channel;
+
+  const HinataMifareTarget({required this.tag, required this.channel});
+}
+
 List<TypeARfProfile> typeARfProfilesForProductId(int productId) =>
     switch (productId) {
       0x0147 => standardTypeARfProfiles,
@@ -219,6 +226,18 @@ class UsbHinataDeviceImpl implements DeviceInterface {
       _activeTag = null;
       return _resolvePollResult(const CardReadResult.incomplete());
     }
+  }
+
+  Future<HinataMifareTarget?> pollMifareTarget() async {
+    final tag = await _pollIsoTag();
+    if (tag == null) return null;
+    return HinataMifareTarget(
+      tag: tag,
+      channel: HinataNfcCardChannel(
+        _hinata.pn532Api,
+        expectedUid: Uint8List.fromList(tag.id),
+      ),
+    );
   }
 
   CardReadResult _resolvePollResult(CardReadResult result) {

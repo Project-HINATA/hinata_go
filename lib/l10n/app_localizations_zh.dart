@@ -750,4 +750,102 @@ class AppLocalizationsZh extends AppLocalizations {
   String transitCardTypeOther(String code) {
     return '其他 ($code)';
   }
+
+  @override
+  String get cardWrite => '写入';
+
+  @override
+  String get cardWriteTitle => '写入 MIFARE 卡片';
+
+  @override
+  String get cardWriteWarningWritable => '并非所有卡片都可以写入，请以实际写入结果为准。';
+
+  @override
+  String get cardWriteWarningUid => '写入不会覆盖卡片原有 UID。';
+
+  @override
+  String get cardWriteWarningCompatibility => '写入后不保证能在所有机器或服务器上使用。';
+
+  @override
+  String get cardWriteMode => '写入后的访问方式';
+
+  @override
+  String get cardWriteRewritable => '可再次写入';
+
+  @override
+  String get cardWriteRewritableDescription => '之后仍可使用支持的密钥更新卡片。';
+
+  @override
+  String get cardWritePermanent => '永久只读';
+
+  @override
+  String get cardWritePermanentDescription => '访问控制将被锁死，无法恢复。';
+
+  @override
+  String get cardWritePermanentConfirmTitle => '永久锁定这张卡片？';
+
+  @override
+  String get cardWritePermanentConfirmBody =>
+      '此操作会不可逆地修改扇区访问控制，之后无法再改写相关数据块或密钥。';
+
+  @override
+  String get cardWriteStart => '开始写入';
+
+  @override
+  String get cardWriteConfirmPermanent => '锁定并写入';
+
+  @override
+  String get cardWriteWaitingForCard => '请将 MIFARE Classic 1K 卡片贴近手机或读卡器';
+
+  @override
+  String get cardWriteCheckingCard => '正在检查卡片类型';
+
+  @override
+  String get cardWriteCheckingPermissions => '正在检查密钥和访问控制';
+
+  @override
+  String get cardWriteWritingData => '正在写入卡片数据';
+
+  @override
+  String get cardWriteLockingCard => '正在写入访问控制';
+
+  @override
+  String get cardWriteVerifying => '正在验证写入结果';
+
+  @override
+  String get cardWriteSuccess => '卡片写入并验证成功';
+
+  @override
+  String get cardWriteFailed => '卡片写入失败';
+
+  @override
+  String get cardWriteUnsupportedSavedCard => '仅支持写入已保存的 Aime 和 Banapass 卡片';
+
+  @override
+  String get cardWriteNoBackend => '卡片写入需要安卓 NFC 或已连接的 HINATA 读卡器';
+
+  @override
+  String get cardWriteUnsupportedTarget =>
+      '请使用 4 字节 UID 的 MIFARE Classic 1K 卡片';
+
+  @override
+  String get cardWriteUnknownKey => '无法使用支持的密钥认证该卡片';
+
+  @override
+  String get cardWriteInvalidAccessBits => '卡片的 MIFARE 访问位无效';
+
+  @override
+  String get cardWritePermissionDenied => '卡片当前访问控制不允许本次写入';
+
+  @override
+  String get cardWriteCardRemoved => '卡片已移开，或等待卡片超时';
+
+  @override
+  String get cardWriteVerificationFailed => '无法验证写入后的数据';
+
+  @override
+  String get cardWriteDone => '完成';
+
+  @override
+  String get cardWriteCancelled => '已在修改数据前取消卡片写入';
 }

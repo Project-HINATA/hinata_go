@@ -1050,5 +1050,37 @@
         "example": "05"
       }
     }
-  }
+  },
+  "cardWrite": "Write",
+  "cardWriteTitle": "Write to MIFARE card",
+  "cardWriteWarningWritable": "Not every card can be written. The actual result depends on the target card.",
+  "cardWriteWarningUid": "Writing does not replace the card's original UID.",
+  "cardWriteWarningCompatibility": "The written card is not guaranteed to work on every machine or server.",
+  "cardWriteMode": "Access after writing",
+  "cardWriteRewritable": "Rewritable",
+  "cardWriteRewritableDescription": "The supported key can update the card again.",
+  "cardWritePermanent": "Read-only",
+  "cardWritePermanentDescription": "Access control is locked and cannot be restored.",
+  "cardWritePermanentConfirmTitle": "Permanently lock this card?",
+  "cardWritePermanentConfirmBody": "This changes the sector access control irreversibly. The affected blocks and keys cannot be rewritten afterward.",
+  "cardWriteStart": "Start writing",
+  "cardWriteConfirmPermanent": "Lock and write",
+  "cardWriteWaitingForCard": "Hold a MIFARE Classic 1K card near the phone or reader",
+  "cardWriteCheckingCard": "Checking card type",
+  "cardWriteCheckingPermissions": "Checking keys and access control",
+  "cardWriteWritingData": "Writing card data",
+  "cardWriteLockingCard": "Writing access control",
+  "cardWriteVerifying": "Verifying written data",
+  "cardWriteSuccess": "Card written and verified",
+  "cardWriteFailed": "Card writing failed",
+  "cardWriteUnsupportedSavedCard": "Only supported saved Aime and Banapass cards can be written",
+  "cardWriteNoBackend": "Card writing requires Android NFC or a connected HINATA reader",
+  "cardWriteUnsupportedTarget": "Use a MIFARE Classic 1K card with a 4-byte UID",
+  "cardWriteUnknownKey": "The card could not be authenticated with a supported key",
+  "cardWriteInvalidAccessBits": "The card has invalid MIFARE access bits",
+  "cardWritePermissionDenied": "The current access control does not allow this write",
+  "cardWriteCardRemoved": "The card was removed or no card was detected in time",
+  "cardWriteVerificationFailed": "Written data could not be verified",
+  "cardWriteDone": "Done",
+  "cardWriteCancelled": "Card writing was cancelled before any data was changed"
 }

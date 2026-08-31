@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../core/engine/mifare_write_payload.dart';
 import '../../l10n/l10n.dart';
 import '../../models/card/card.dart';
 import '../../models/card/transit.dart';
@@ -8,8 +9,10 @@ import '../../models/card/saved_card.dart';
 import '../../models/remote_instance.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/card_sender.dart';
+import '../../providers/card_writer_provider.dart';
 import '../../services/notification_service.dart';
 import '../components/card_detail/bottom_actions.dart';
+import '../components/card_detail/write_card_dialog.dart';
 import '../components/instances/select_instance_dialog.dart';
 import '../components/reader/scanned_card_detail_v2.dart';
 import '../components/reader/transit_history_card.dart';
@@ -83,9 +86,7 @@ class CardDetailPage extends HookConsumerWidget {
       if (!context.mounted) return;
       final updatedCard = activeSavedCard.copyWith(name: newName);
       ref.read(savedCardsProvider.notifier).updateCard(updatedCard);
-      ref
-          .read(notificationServiceProvider)
-          .showSuccess(l10n.renameSuccess);
+      ref.read(notificationServiceProvider).showSuccess(l10n.renameSuccess);
     }
   }
 
@@ -118,9 +119,7 @@ class CardDetailPage extends HookConsumerWidget {
     if (confirm == true) {
       if (!context.mounted) return;
       ref.read(savedCardsProvider.notifier).removeCard(activeSavedCard.id);
-      ref
-          .read(notificationServiceProvider)
-          .showSuccess(l10n.deleteSuccess);
+      ref.read(notificationServiceProvider).showSuccess(l10n.deleteSuccess);
       Navigator.pop(context); // Pop back out of detail page
     }
   }
@@ -132,6 +131,8 @@ class CardDetailPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final senderState = ref.watch(cardSenderProvider);
+    final writerState = ref.watch(cardWriterProvider);
+    final writerAvailable = ref.watch(cardWriterAvailableProvider);
     final savedCards = ref.watch(savedCardsProvider);
 
     SavedCard? activeSavedCard;
@@ -152,7 +153,13 @@ class CardDetailPage extends HookConsumerWidget {
     final activeCard = activeSavedCard?.card ?? card!;
 
     return Scaffold(
-      appBar: _buildAppBar(context, ref, activeSavedCard, activeCard),
+      appBar: _buildAppBar(
+        context,
+        ref,
+        activeSavedCard,
+        activeCard,
+        writerState.isWriting,
+      ),
       body: SafeArea(
         top: false,
         bottom: false,
@@ -160,6 +167,8 @@ class CardDetailPage extends HookConsumerWidget {
           context,
           ref,
           senderState,
+          writerState,
+          writerAvailable,
           activeSavedCard,
           activeCard,
         ),
@@ -172,21 +181,24 @@ class CardDetailPage extends HookConsumerWidget {
     WidgetRef ref,
     SavedCard? activeSavedCard,
     ICCard activeCard,
+    bool isWriting,
   ) {
     return AppBar(
-      title: Text(
-        l10n.cardDetails(activeSavedCard?.name ?? activeCard.name),
-      ),
+      title: Text(l10n.cardDetails(activeSavedCard?.name ?? activeCard.name)),
       actions: [
         if (activeSavedCard != null) ...[
           IconButton(
             icon: const Icon(Icons.edit_note),
-            onPressed: () => _renameCard(context, ref, activeSavedCard),
+            onPressed: isWriting
+                ? null
+                : () => _renameCard(context, ref, activeSavedCard),
             tooltip: l10n.renameCard,
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => _deleteCard(context, ref, activeSavedCard),
+            onPressed: isWriting
+                ? null
+                : () => _deleteCard(context, ref, activeSavedCard),
             tooltip: l10n.deleteCard,
           ),
         ],
@@ -198,6 +210,8 @@ class CardDetailPage extends HookConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     CardSenderState senderState,
+    CardWriterState writerState,
+    bool writerAvailable,
     SavedCard? activeSavedCard,
     ICCard activeCard,
   ) {
@@ -221,8 +235,15 @@ class CardDetailPage extends HookConsumerWidget {
             ? () => _sendCard(context, ref, activeCard)
             : null,
         onSave: () => _saveCard(context, activeCard),
+        onWrite:
+            activeSavedCard != null &&
+                writerAvailable &&
+                MifareCardWritePayload.canBuild(activeCard)
+            ? () => showCardWriteFlow(context, ref, activeSavedCard)
+            : null,
         isSending: senderState.isSending,
         isSaving: false,
+        isWriting: writerState.isWriting,
       ),
     );
   }

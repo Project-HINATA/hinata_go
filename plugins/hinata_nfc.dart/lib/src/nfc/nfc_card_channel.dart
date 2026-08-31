@@ -15,6 +15,9 @@ abstract class NfcCardChannel {
   /// Reads a single block from a Mifare card.
   Future<Uint8List> readMifareBlock(int block);
 
+  /// Writes a single 16-byte block to a Mifare Classic card.
+  Future<void> writeMifareBlock(int block, Uint8List data);
+
   /// Reconnect / reactivate the card (useful for PN532 HALT states)
   Future<void> reconnect();
 

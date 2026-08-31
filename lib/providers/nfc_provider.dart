@@ -79,12 +79,13 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   bool _isRetrying = false;
   String? _lastScanLogId;
   String? _lastSavedCardId;
+  bool _exclusiveOperation = false;
 
   @override
   NfcState build() {
     // Listen to tagStream for tags relayed from Android Intents (App Launch)
     FlutterNfcKit.tagStream.listen((tag) {
-      _onTagDiscovered(tag);
+      if (!_exclusiveOperation) _onTagDiscovered(tag);
     });
 
     // Pulse the native side to relay the initial tag that launched the app
@@ -132,13 +133,17 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   }
 
   Future<void> startSession({bool felicaOnly = false}) async {
-    if (state.isScanning || _isStarting) return;
+    if (_exclusiveOperation || state.isScanning || _isStarting) return;
     _isStarting = true;
 
     final useFelicaOnly = !kIsWeb && Platform.isIOS && felicaOnly;
 
     try {
       NFCAvailability availability = await FlutterNfcKit.nfcAvailability;
+      if (_exclusiveOperation) {
+        _isStarting = false;
+        return;
+      }
       if (availability == NFCAvailability.not_supported) {
         _isStarting = false;
         state = state.copyWith(status: NfcStatus.unsupported, clearError: true);
@@ -181,7 +186,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
         }
       } else {
         // Android continuous loop or non-iOS platforms
-        while (state.isScanning) {
+        while (state.isScanning && !_exclusiveOperation) {
           try {
             NFCTag tag = await FlutterNfcKit.poll(
               readIso18092: true,
@@ -225,8 +230,26 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     } catch (_) {}
   }
 
+  Future<void> suspendForExclusiveOperation() async {
+    _exclusiveOperation = true;
+    while (_isStarting || _isRetrying) {
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
+    await stopSession();
+    while (state.isProcessing) {
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
+  }
+
+  void resumeAfterExclusiveOperation() {
+    _exclusiveOperation = false;
+    if (!kIsWeb && Platform.isAndroid) {
+      unawaited(startSession());
+    }
+  }
+
   Future<void> _onTagDiscovered(NFCTag tag) async {
-    if (state.isProcessing) return;
+    if (_exclusiveOperation || state.isProcessing) return;
     state = state.copyWith(isProcessing: true);
 
     try {

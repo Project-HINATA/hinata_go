@@ -88,6 +88,41 @@ void main() {
     );
   });
 
+  test('MIFARE reconnect rejects a target with a different UID', () async {
+    final responses = <List<int>>[
+      _response(Pn532Command.inListPassiveTarget, [
+        1,
+        1,
+        0x00,
+        0x04,
+        0x08,
+        4,
+        1,
+        2,
+        3,
+        4,
+      ]),
+    ];
+    final api = Pn532Api(
+      (_) async {},
+      ({timeout}) async => responses.removeAt(0),
+    );
+
+    await expectLater(
+      HinataNfcCardChannel(
+        api,
+        expectedUid: Uint8List.fromList([4, 3, 2, 1]),
+      ).reconnect(),
+      throwsA(
+        isA<NfcException>().having(
+          (error) => error.type,
+          'type',
+          NfcErrorType.readError,
+        ),
+      ),
+    );
+  });
+
   test('Type A RF settings include receiver gain and conductance', () async {
     final writes = <List<int>>[];
     final api = Pn532Api(

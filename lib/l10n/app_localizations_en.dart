@@ -763,4 +763,116 @@ class AppLocalizationsEn extends AppLocalizations {
   String transitCardTypeOther(String code) {
     return 'Other ($code)';
   }
+
+  @override
+  String get cardWrite => 'Write';
+
+  @override
+  String get cardWriteTitle => 'Write to MIFARE card';
+
+  @override
+  String get cardWriteWarningWritable =>
+      'Not every card can be written. The actual result depends on the target card.';
+
+  @override
+  String get cardWriteWarningUid =>
+      'Writing does not replace the card\'s original UID.';
+
+  @override
+  String get cardWriteWarningCompatibility =>
+      'The written card is not guaranteed to work on every machine or server.';
+
+  @override
+  String get cardWriteMode => 'Access after writing';
+
+  @override
+  String get cardWriteRewritable => 'Rewritable';
+
+  @override
+  String get cardWriteRewritableDescription =>
+      'The supported key can update the card again.';
+
+  @override
+  String get cardWritePermanent => 'Read-only';
+
+  @override
+  String get cardWritePermanentDescription =>
+      'Access control is locked and cannot be restored.';
+
+  @override
+  String get cardWritePermanentConfirmTitle => 'Permanently lock this card?';
+
+  @override
+  String get cardWritePermanentConfirmBody =>
+      'This changes the sector access control irreversibly. The affected blocks and keys cannot be rewritten afterward.';
+
+  @override
+  String get cardWriteStart => 'Start writing';
+
+  @override
+  String get cardWriteConfirmPermanent => 'Lock and write';
+
+  @override
+  String get cardWriteWaitingForCard =>
+      'Hold a MIFARE Classic 1K card near the phone or reader';
+
+  @override
+  String get cardWriteCheckingCard => 'Checking card type';
+
+  @override
+  String get cardWriteCheckingPermissions => 'Checking keys and access control';
+
+  @override
+  String get cardWriteWritingData => 'Writing card data';
+
+  @override
+  String get cardWriteLockingCard => 'Writing access control';
+
+  @override
+  String get cardWriteVerifying => 'Verifying written data';
+
+  @override
+  String get cardWriteSuccess => 'Card written and verified';
+
+  @override
+  String get cardWriteFailed => 'Card writing failed';
+
+  @override
+  String get cardWriteUnsupportedSavedCard =>
+      'Only supported saved Aime and Banapass cards can be written';
+
+  @override
+  String get cardWriteNoBackend =>
+      'Card writing requires Android NFC or a connected HINATA reader';
+
+  @override
+  String get cardWriteUnsupportedTarget =>
+      'Use a MIFARE Classic 1K card with a 4-byte UID';
+
+  @override
+  String get cardWriteUnknownKey =>
+      'The card could not be authenticated with a supported key';
+
+  @override
+  String get cardWriteInvalidAccessBits =>
+      'The card has invalid MIFARE access bits';
+
+  @override
+  String get cardWritePermissionDenied =>
+      'The current access control does not allow this write';
+
+  @override
+  String get cardWriteCardRemoved =>
+      'The card was removed or no card was detected in time';
+
+  @override
+  String get cardWriteVerificationFailed =>
+      'Written data could not be verified';
+
+  @override
+  String get cardWriteDone => 'Done';
+
+  @override
+  String get cardWriteCancelled =>
+      'Card writing was cancelled before any data was changed';
 }

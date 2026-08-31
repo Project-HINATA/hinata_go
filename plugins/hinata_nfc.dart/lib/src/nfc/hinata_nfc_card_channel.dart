@@ -9,8 +9,12 @@ import 'nfc_exception.dart';
 class HinataNfcCardChannel implements NfcCardChannel {
   final Pn532Api pn532;
   final int tg;
+  final Uint8List? expectedUid;
 
-  HinataNfcCardChannel(this.pn532, {this.tg = 1});
+  HinataNfcCardChannel(this.pn532, {this.tg = 1, Uint8List? expectedUid})
+    : expectedUid = expectedUid == null
+          ? null
+          : Uint8List.fromList(expectedUid);
 
   @override
   Future<Uint8List> transceive(Uint8List data, {Duration? timeout}) async {
@@ -109,6 +113,32 @@ class HinataNfcCardChannel implements NfcCardChannel {
   }
 
   @override
+  Future<void> writeMifareBlock(int block, Uint8List data) async {
+    if (data.length != 16) {
+      throw ArgumentError.value(data.length, 'data.length', 'Must be 16');
+    }
+    try {
+      final result = Pn532Error.fromValue(
+        await pn532.mifareClassicWriteBlock(tg, block, data),
+      );
+      if (result != Pn532Error.none) {
+        throw NfcException(
+          type: NfcErrorType.writeError,
+          message: 'PN532 Mifare write failed: $result',
+        );
+      }
+    } on NfcException {
+      rethrow;
+    } catch (e) {
+      throw NfcException(
+        type: NfcErrorType.writeError,
+        message: 'HINATA Mifare write transport failed',
+        originalError: e,
+      );
+    }
+  }
+
+  @override
   Future<void> reconnect() async {
     // Re-run Type A activation at the current RF power. This both restores a
     // halted MIFARE card and confirms that it is still present before retrying.
@@ -118,6 +148,19 @@ class HinataNfcCardChannel implements NfcCardChannel {
         type: NfcErrorType.readError,
         message: 'MIFARE target disappeared while reconnecting',
       );
+    }
+    if (expectedUid case final uid?) {
+      final actual = targets.first.id;
+      var matches = actual.length == uid.length;
+      for (var i = 0; matches && i < uid.length; i++) {
+        matches = actual[i] == uid[i];
+      }
+      if (!matches) {
+        throw NfcException(
+          type: NfcErrorType.readError,
+          message: 'A different MIFARE target appeared while reconnecting',
+        );
+      }
     }
   }
 

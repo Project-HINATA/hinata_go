@@ -59,6 +59,11 @@ class _ScriptedChannel implements NfcCardChannel {
   }
 
   @override
+  Future<void> writeMifareBlock(int block, Uint8List data) async {
+    throw UnsupportedError('Mifare is not part of this test');
+  }
+
+  @override
   Future<Uint8List> transceive(Uint8List data, {Duration? timeout}) async {
     final key = _key(data);
     callCounts[key] = (callCounts[key] ?? 0) + 1;
@@ -127,6 +132,11 @@ class _MifareFallbackChannel implements NfcCardChannel {
       return Uint8List(8);
     }
     return Uint8List(16);
+  }
+
+  @override
+  Future<void> writeMifareBlock(int block, Uint8List data) async {
+    throw UnsupportedError('Mifare writing is not part of this test');
   }
 
   @override

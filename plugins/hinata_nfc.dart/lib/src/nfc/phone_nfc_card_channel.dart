@@ -77,13 +77,28 @@ class PhoneNfcCardChannel implements NfcCardChannel {
   }
 
   @override
+  Future<void> writeMifareBlock(int block, Uint8List data) async {
+    if (data.length != 16) {
+      throw ArgumentError.value(data.length, 'data.length', 'Must be 16');
+    }
+    try {
+      await FlutterNfcKit.writeBlock(block, data);
+    } catch (e) {
+      throw NfcException(
+        type: NfcErrorType.writeError,
+        message: 'Phone Mifare write failed',
+        originalError: e,
+      );
+    }
+  }
+
+  @override
   Future<void> reconnect() async {
     // Native implementations handle automatic reconnection or do not strict HALT on failed auth.
   }
 
   @override
   Future<void> close() async {
-    // Optional: FlutterNfcKit.finish() can be called here if needed,
-    // but usually handled by the provider/service.
+    await FlutterNfcKit.finish();
   }
 }

@@ -22,6 +22,7 @@ class HardwareDeviceState {
   final String? firmwareVersion;
   final int? productId;
   final bool isUpdating;
+  final bool isNfcPollingSuspended;
 
   HardwareDeviceState({
     this.connectedDevice,
@@ -31,6 +32,7 @@ class HardwareDeviceState {
     this.firmwareVersion,
     this.productId,
     this.isUpdating = false,
+    this.isNfcPollingSuspended = false,
   });
 
   HardwareDeviceState copyWith({
@@ -41,6 +43,7 @@ class HardwareDeviceState {
     String? firmwareVersion,
     int? productId,
     bool? isUpdating,
+    bool? isNfcPollingSuspended,
     bool clearDevice = false,
   }) {
     return HardwareDeviceState(
@@ -55,6 +58,8 @@ class HardwareDeviceState {
           : (firmwareVersion ?? this.firmwareVersion),
       productId: clearDevice ? null : (productId ?? this.productId),
       isUpdating: isUpdating ?? this.isUpdating,
+      isNfcPollingSuspended:
+          isNfcPollingSuspended ?? this.isNfcPollingSuspended,
     );
   }
 }
@@ -66,6 +71,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
 
   int _connectGeneration = 0;
   String? _connectingDeviceKey;
+  Completer<void>? _activePoll;
 
   @override
   HardwareDeviceState build() {
@@ -253,11 +259,17 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
 
   Future<void> _startPollLoop(UsbHinataDeviceImpl usbImpl) async {
     while (state.connectedDevice == usbImpl) {
+      if (state.isNfcPollingSuspended) {
+        await Future.delayed(_pollInterval);
+        continue;
+      }
       if (!hid.hasFocus) {
         await Future.delayed(const Duration(milliseconds: 200));
         continue;
       }
 
+      final activePoll = Completer<void>();
+      _activePoll = activePoll;
       try {
         // 1. Phase 1: Fast poll for basic info
         final pollResult = await usbImpl.pollResult(readExtended: false);
@@ -344,6 +356,9 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
         }
       } catch (e) {
         log("Polling error: $e");
+      } finally {
+        if (!activePoll.isCompleted) activePoll.complete();
+        if (_activePoll == activePoll) _activePoll = null;
       }
 
       await Future.delayed(_pollInterval);
@@ -352,6 +367,18 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
     ref
         .read(currentScanSessionProvider.notifier)
         .markCardRemoved(source: 'HINATA');
+  }
+
+  Future<UsbHinataDeviceImpl?> suspendNfcPolling() async {
+    state = state.copyWith(isNfcPollingSuspended: true);
+    final activePoll = _activePoll;
+    if (activePoll != null) await activePoll.future;
+    final device = state.connectedDevice;
+    return device is UsbHinataDeviceImpl ? device : null;
+  }
+
+  void resumeNfcPolling() {
+    state = state.copyWith(isNfcPollingSuspended: false);
   }
 
   void setIsUpdating(bool updating) {

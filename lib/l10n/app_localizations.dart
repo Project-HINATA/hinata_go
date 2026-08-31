@@ -1477,6 +1477,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other ({code})'**
   String transitCardTypeOther(String code);
+
+  /// No description provided for @cardWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Write'**
+  String get cardWrite;
+
+  /// No description provided for @cardWriteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write to MIFARE card'**
+  String get cardWriteTitle;
+
+  /// No description provided for @cardWriteWarningWritable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not every card can be written. The actual result depends on the target card.'**
+  String get cardWriteWarningWritable;
+
+  /// No description provided for @cardWriteWarningUid.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing does not replace the card\'s original UID.'**
+  String get cardWriteWarningUid;
+
+  /// No description provided for @cardWriteWarningCompatibility.
+  ///
+  /// In en, this message translates to:
+  /// **'The written card is not guaranteed to work on every machine or server.'**
+  String get cardWriteWarningCompatibility;
+
+  /// No description provided for @cardWriteMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Access after writing'**
+  String get cardWriteMode;
+
+  /// No description provided for @cardWriteRewritable.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewritable'**
+  String get cardWriteRewritable;
+
+  /// No description provided for @cardWriteRewritableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The supported key can update the card again.'**
+  String get cardWriteRewritableDescription;
+
+  /// No description provided for @cardWritePermanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get cardWritePermanent;
+
+  /// No description provided for @cardWritePermanentDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Access control is locked and cannot be restored.'**
+  String get cardWritePermanentDescription;
+
+  /// No description provided for @cardWritePermanentConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently lock this card?'**
+  String get cardWritePermanentConfirmTitle;
+
+  /// No description provided for @cardWritePermanentConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This changes the sector access control irreversibly. The affected blocks and keys cannot be rewritten afterward.'**
+  String get cardWritePermanentConfirmBody;
+
+  /// No description provided for @cardWriteStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start writing'**
+  String get cardWriteStart;
+
+  /// No description provided for @cardWriteConfirmPermanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock and write'**
+  String get cardWriteConfirmPermanent;
+
+  /// No description provided for @cardWriteWaitingForCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold a MIFARE Classic 1K card near the phone or reader'**
+  String get cardWriteWaitingForCard;
+
+  /// No description provided for @cardWriteCheckingCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking card type'**
+  String get cardWriteCheckingCard;
+
+  /// No description provided for @cardWriteCheckingPermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking keys and access control'**
+  String get cardWriteCheckingPermissions;
+
+  /// No description provided for @cardWriteWritingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing card data'**
+  String get cardWriteWritingData;
+
+  /// No description provided for @cardWriteLockingCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing access control'**
+  String get cardWriteLockingCard;
+
+  /// No description provided for @cardWriteVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying written data'**
+  String get cardWriteVerifying;
+
+  /// No description provided for @cardWriteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Card written and verified'**
+  String get cardWriteSuccess;
+
+  /// No description provided for @cardWriteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Card writing failed'**
+  String get cardWriteFailed;
+
+  /// No description provided for @cardWriteUnsupportedSavedCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Only supported saved Aime and Banapass cards can be written'**
+  String get cardWriteUnsupportedSavedCard;
+
+  /// No description provided for @cardWriteNoBackend.
+  ///
+  /// In en, this message translates to:
+  /// **'Card writing requires Android NFC or a connected HINATA reader'**
+  String get cardWriteNoBackend;
+
+  /// No description provided for @cardWriteUnsupportedTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a MIFARE Classic 1K card with a 4-byte UID'**
+  String get cardWriteUnsupportedTarget;
+
+  /// No description provided for @cardWriteUnknownKey.
+  ///
+  /// In en, this message translates to:
+  /// **'The card could not be authenticated with a supported key'**
+  String get cardWriteUnknownKey;
+
+  /// No description provided for @cardWriteInvalidAccessBits.
+  ///
+  /// In en, this message translates to:
+  /// **'The card has invalid MIFARE access bits'**
+  String get cardWriteInvalidAccessBits;
+
+  /// No description provided for @cardWritePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'The current access control does not allow this write'**
+  String get cardWritePermissionDenied;
+
+  /// No description provided for @cardWriteCardRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'The card was removed or no card was detected in time'**
+  String get cardWriteCardRemoved;
+
+  /// No description provided for @cardWriteVerificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Written data could not be verified'**
+  String get cardWriteVerificationFailed;
+
+  /// No description provided for @cardWriteDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get cardWriteDone;
+
+  /// No description provided for @cardWriteCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Card writing was cancelled before any data was changed'**
+  String get cardWriteCancelled;
 }
 
 class _AppLocalizationsDelegate
