@@ -31,8 +31,24 @@ void main() {
       final saveX = tester.getCenter(find.byIcon(Icons.folder_special)).dx;
       final writeX = tester.getCenter(find.byIcon(Icons.nfc)).dx;
       final sendX = tester.getCenter(find.byIcon(Icons.send)).dx;
+      final saveY = tester.getCenter(find.byIcon(Icons.folder_special)).dy;
+      final writeY = tester.getCenter(find.byIcon(Icons.nfc)).dy;
+      final sendY = tester.getCenter(find.byIcon(Icons.send)).dy;
+      expect(
+        find.descendant(
+          of: find.byType(CardDetailBottomActions),
+          matching: find.byType(Text),
+        ),
+        findsNWidgets(3),
+      );
       expect(saveX, lessThan(writeX));
-      expect(writeX, lessThan(sendX));
+      if (width < 388) {
+        expect(saveY, writeY);
+        expect(sendY, greaterThan(writeY));
+      } else {
+        expect(writeX, lessThan(sendX));
+        expect(saveY, sendY);
+      }
     });
   }
 }

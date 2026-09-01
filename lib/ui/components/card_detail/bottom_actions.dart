@@ -29,24 +29,35 @@ class CardDetailBottomActions extends StatelessWidget {
       decoration: _buildDecoration(colorScheme),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact =
+          final useTwoRows =
               onWrite != null && onSend != null && constraints.maxWidth < 388;
+          if (useTwoRows) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    _buildSaveButton(context, colorScheme),
+                    const SizedBox(width: 8),
+                    _buildWriteButton(context),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(children: [_buildSendButton(context, colorScheme)]),
+              ],
+            );
+          }
+
           return Row(
             children: [
-              compact
-                  ? _buildCompactSaveButton()
-                  : _buildSaveButton(context, colorScheme),
+              _buildSaveButton(context, colorScheme),
               if (onWrite != null) ...[
                 const SizedBox(width: 8),
-                compact
-                    ? _buildCompactWriteButton()
-                    : _buildWriteButton(context),
+                _buildWriteButton(context),
               ],
               if (onSend != null) ...[
                 const SizedBox(width: 8),
-                compact
-                    ? _buildCompactSendButton()
-                    : _buildSendButton(context, colorScheme),
+                _buildSendButton(context, colorScheme),
               ],
             ],
           );
@@ -126,47 +137,6 @@ class CardDetailBottomActions extends StatelessWidget {
             ? _buildSpinner(color: Colors.white)
             : const Icon(Icons.send),
         label: Text(isSending ? l10n.sendingUpper : l10n.sendUpper),
-      ),
-    );
-  }
-
-  Widget _buildCompactSaveButton() {
-    return Expanded(
-      child: SizedBox(
-        height: 56,
-        child: IconButton.outlined(
-          onPressed: isSaving || isSending || isWriting ? null : onSave,
-          icon: isSaving ? _buildSpinner() : const Icon(Icons.folder_special),
-          tooltip: isSaving ? l10n.savingUpper : l10n.saveUpper,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactWriteButton() {
-    return Expanded(
-      child: SizedBox(
-        height: 56,
-        child: IconButton.filledTonal(
-          onPressed: isSaving || isSending || isWriting ? null : onWrite,
-          icon: isWriting ? _buildSpinner() : const Icon(Icons.nfc),
-          tooltip: l10n.cardWrite,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactSendButton() {
-    return Expanded(
-      child: SizedBox(
-        height: 56,
-        child: IconButton.filled(
-          onPressed: isSending || isSaving || isWriting ? null : onSend,
-          icon: isSending
-              ? _buildSpinner(color: Colors.white)
-              : const Icon(Icons.send),
-          tooltip: isSending ? l10n.sendingUpper : l10n.sendUpper,
-        ),
       ),
     );
   }
