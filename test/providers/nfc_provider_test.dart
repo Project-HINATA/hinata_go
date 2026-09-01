@@ -16,6 +16,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('nfcStatusForAvailability', () {
+    test('maps supported readers to the tap-to-scan state', () {
+      expect(
+        nfcStatusForAvailability(NFCAvailability.available),
+        NfcStatus.tapToScan,
+      );
+    });
+
+    test('maps unsupported readers to the unsupported state', () {
+      expect(
+        nfcStatusForAvailability(NFCAvailability.not_supported),
+        NfcStatus.unsupported,
+      );
+    });
+
+    test('maps disabled readers to the disabled state', () {
+      expect(
+        nfcStatusForAvailability(NFCAvailability.disabled),
+        NfcStatus.disabled,
+      );
+    });
+  });
+
   test(
     'external scan is recorded and saved exactly once while present',
     () async {

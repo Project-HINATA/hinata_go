@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -60,10 +58,10 @@ class NfcInfoDisplay extends HookConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: displayState.isIOS
+          onTap: displayState.canStartIosScan
               ? () => ref.read(nfcProvider.notifier).startSession()
               : null,
-          onLongPress: displayState.isIOS
+          onLongPress: displayState.canStartIosScan
               ? () async {
                   await HapticFeedback.mediumImpact();
                   await ref
@@ -86,6 +84,7 @@ class _NfcDisplayInputs {
     required this.isCardPresent,
     required this.isUsbAvailable,
     required this.isUsbConnected,
+    required this.nfcStatus,
     required this.isScanningNfc,
     required this.isFelicaOnly,
     required this.isProcessing,
@@ -103,7 +102,6 @@ class _NfcDisplayInputs {
   }) {
     final nfcState = ref.watch(nfcProvider);
     final hardwareDeviceState = ref.watch(hardwareDeviceProvider);
-    final isIOS = !kIsWeb && Platform.isIOS;
 
     return _NfcDisplayInputs(
       colorScheme: context.colorScheme,
@@ -115,11 +113,12 @@ class _NfcDisplayInputs {
       ),
       isUsbAvailable: hardwareDeviceState.hidAvailable,
       isUsbConnected: hardwareDeviceState.connectedDevice != null,
+      nfcStatus: nfcState.status,
       isScanningNfc: nfcState.isScanning,
       isFelicaOnly: nfcState.isFelicaOnly,
       isProcessing: nfcState.isProcessing,
-      isIOS: isIOS,
-      isPaused: isIOS ? false : isPaused,
+      isIOS: nfcState.isIOS,
+      isPaused: nfcState.isIOS ? false : isPaused,
       isReadingExtendedInfo: ref.watch(
         currentScanSessionProvider.select((s) => s.isReadingExtendedInfo),
       ),
@@ -139,6 +138,7 @@ class _NfcDisplayInputs {
   final bool isCardPresent;
   final bool isUsbAvailable;
   final bool isUsbConnected;
+  final NfcStatus nfcStatus;
   final bool isScanningNfc;
   final bool isFelicaOnly;
   final bool isProcessing;
@@ -159,6 +159,7 @@ class _NfcDisplayState {
     required this.isFelicaOnly,
     required this.isUsbAvailable,
     required this.isUsbConnected,
+    required this.nfcStatus,
     required this.isProcessing,
     required this.isShowingSuccess,
     required this.isCardPresent,
@@ -187,6 +188,7 @@ class _NfcDisplayState {
       isFelicaOnly: inputs.isFelicaOnly,
       isUsbAvailable: inputs.isUsbAvailable,
       isUsbConnected: inputs.isUsbConnected,
+      nfcStatus: inputs.nfcStatus,
       isProcessing: inputs.isProcessing,
       isShowingSuccess: isShowingSuccess,
       isCardPresent: inputs.isCardPresent,
@@ -209,6 +211,7 @@ class _NfcDisplayState {
   final bool isFelicaOnly;
   final bool isUsbAvailable;
   final bool isUsbConnected;
+  final NfcStatus nfcStatus;
   final bool isProcessing;
   final bool isShowingSuccess;
   final bool isCardPresent;
@@ -216,9 +219,13 @@ class _NfcDisplayState {
   final int normalizedQuarterTurns;
   final bool showReadingExtendedInfo;
 
+  bool get isNfcAvailable =>
+      nfcStatus == NfcStatus.tapToScan || nfcStatus == NfcStatus.listening;
+  bool get canStartIosScan => isIOS && nfcStatus == NfcStatus.tapToScan;
   bool get shouldShowPausedPrompt => isPaused && !(isIOS && isScanningNfc);
   bool get shouldShowFelicaOnlyHint =>
       isIOS &&
+      isNfcAvailable &&
       !isScanningNfc &&
       !isProcessing &&
       !isShowingSuccess &&
@@ -321,6 +328,7 @@ class _CenterDisplayContent extends StatelessWidget {
                   key: const ValueKey('prompt'),
                   child: _ScanningPrompt(
                     isIOS: displayState.isIOS,
+                    nfcStatus: displayState.nfcStatus,
                     isNfcActive: displayState.isScanningNfc,
                     isFelicaOnly: displayState.isFelicaOnly,
                     isUsbActive: displayState.isUsbConnected,
@@ -529,6 +537,7 @@ class _SuccessMorphContent extends StatelessWidget {
 
 class _ScanningPrompt extends StatelessWidget {
   final bool isIOS;
+  final NfcStatus nfcStatus;
   final bool isNfcActive;
   final bool isFelicaOnly;
   final bool isUsbActive;
@@ -537,6 +546,7 @@ class _ScanningPrompt extends StatelessWidget {
 
   const _ScanningPrompt({
     required this.isIOS,
+    required this.nfcStatus,
     required this.isNfcActive,
     required this.isFelicaOnly,
     required this.isUsbActive,
@@ -552,6 +562,7 @@ class _ScanningPrompt extends StatelessWidget {
         final promptText = _PromptText.fromState(
           context,
           isIOS: isIOS,
+          nfcStatus: nfcStatus,
           isNfcActive: isNfcActive,
           isFelicaOnly: isFelicaOnly,
           isUsbActive: isUsbActive,
@@ -591,12 +602,16 @@ class _StatusMarkers extends ConsumerWidget {
     final hardwareDeviceState = ref.watch(hardwareDeviceProvider);
     final isUsbAvailable = hardwareDeviceState.hidAvailable;
     final isUsbConnected = hardwareDeviceState.connectedDevice != null;
+    final hasNfcReader = switch (nfcStatus) {
+      NfcStatus.tapToScan || NfcStatus.listening || NfcStatus.disabled => true,
+      _ => false,
+    };
 
     return Flex(
       direction: sideways ? Axis.vertical : Axis.horizontal,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (nfcStatus != NfcStatus.unsupported)
+        if (hasNfcReader)
           _StatusMarkerIcon(
             icon: Icons.contactless_rounded,
             enabled: nfcStatus != NfcStatus.disabled,
@@ -643,6 +658,7 @@ class _PromptText {
   factory _PromptText.fromState(
     BuildContext context, {
     required bool isIOS,
+    required NfcStatus nfcStatus,
     required bool isNfcActive,
     required bool isFelicaOnly,
     required bool isUsbActive,
@@ -650,19 +666,29 @@ class _PromptText {
     final colorScheme = context.colorScheme;
     final isActive = isNfcActive || isUsbActive;
     final isIosScanning = isIOS && isNfcActive;
+    final isIosAvailable =
+        isIOS &&
+        (nfcStatus == NfcStatus.tapToScan || nfcStatus == NfcStatus.listening);
+    final isIosUnavailable = isIOS && !isIosScanning && !isIosAvailable;
 
     return _PromptText(
       text: isIosScanning
           ? isFelicaOnly
                 ? l10n.nfcIosFelicaOnlyPrompt
                 : l10n.nfcIosAlert
-          : isIOS
+          : isIosAvailable
           ? l10n.tapToScan
+          : isIosUnavailable && nfcStatus == NfcStatus.disabled
+          ? l10n.nfcInactive
+          : isIosUnavailable
+          ? l10n.nfcUnavailable
           : isActive
           ? l10n.holdCardNearReader
           : l10n.nfcInactive,
       icon: isIosScanning
           ? Icons.phone_iphone_rounded
+          : isIosUnavailable
+          ? Icons.block_rounded
           : isActive
           ? Icons.contactless_rounded
           : Icons.touch_app_rounded,

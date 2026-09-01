@@ -27,7 +27,24 @@ import 'app_state_provider.dart';
 import 'current_scan_session_provider.dart';
 import '../models/scanning_mode.dart';
 
-enum NfcStatus { idle, tapToScan, unsupported, disabled, listening, error }
+enum NfcStatus {
+  idle,
+  checking,
+  tapToScan,
+  unsupported,
+  disabled,
+  listening,
+  error,
+}
+
+@visibleForTesting
+NfcStatus nfcStatusForAvailability(NFCAvailability availability) {
+  return switch (availability) {
+    NFCAvailability.available => NfcStatus.tapToScan,
+    NFCAvailability.disabled => NfcStatus.disabled,
+    NFCAvailability.not_supported => NfcStatus.unsupported,
+  };
+}
 
 class NfcState {
   final bool isScanning;
@@ -38,7 +55,7 @@ class NfcState {
   final DateTime? lastScanEvent;
   final String? errorMessage;
 
-  NfcState({
+  const NfcState({
     this.isScanning = false,
     this.isProcessing = false,
     this.isFelicaOnly = false,
@@ -115,7 +132,11 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
     final initialStatus = kIsWeb
         ? NfcStatus.unsupported
-        : (isIOS ? NfcStatus.tapToScan : NfcStatus.idle);
+        : (isIOS ? NfcStatus.checking : NfcStatus.idle);
+
+    if (isIOS) {
+      unawaited(Future.microtask(refreshAvailability));
+    }
 
     return NfcState(isIOS: isIOS, status: initialStatus);
   }
@@ -132,6 +153,32 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> refreshAvailability() async {
+    if (kIsWeb || !Platform.isIOS || _isStarting || state.isScanning) return;
+
+    try {
+      final availability = await FlutterNfcKit.nfcAvailability;
+      if (_exclusiveOperation || _isStarting || state.isScanning) return;
+
+      state = state.copyWith(
+        status: nfcStatusForAvailability(availability),
+        clearError: true,
+      );
+    } catch (error, stackTrace) {
+      log(
+        'Failed to check iOS NFC availability.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!_exclusiveOperation && !_isStarting && !state.isScanning) {
+        state = state.copyWith(
+          status: NfcStatus.error,
+          errorMessage: error.toString(),
+        );
+      }
+    }
+  }
+
   Future<void> startSession({bool felicaOnly = false}) async {
     if (_exclusiveOperation || state.isScanning || _isStarting) return;
     _isStarting = true;
@@ -144,15 +191,10 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
         _isStarting = false;
         return;
       }
-      if (availability == NFCAvailability.not_supported) {
+      final availabilityStatus = nfcStatusForAvailability(availability);
+      if (availabilityStatus != NfcStatus.tapToScan) {
         _isStarting = false;
-        state = state.copyWith(status: NfcStatus.unsupported, clearError: true);
-        return;
-      }
-
-      if (availability == NFCAvailability.disabled) {
-        _isStarting = false;
-        state = state.copyWith(status: NfcStatus.disabled, clearError: true);
+        state = state.copyWith(status: availabilityStatus, clearError: true);
         return;
       }
 
@@ -219,10 +261,17 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
   Future<void> stopSession() async {
     if (_isRetrying) return;
+    final nextStatus = switch (state.status) {
+      NfcStatus.checking => NfcStatus.checking,
+      NfcStatus.unsupported => NfcStatus.unsupported,
+      NfcStatus.disabled => NfcStatus.disabled,
+      NfcStatus.error => NfcStatus.error,
+      _ => state.isIOS ? NfcStatus.tapToScan : NfcStatus.idle,
+    };
     state = state.copyWith(
       isScanning: false,
       isFelicaOnly: false,
-      status: state.isIOS ? NfcStatus.tapToScan : NfcStatus.idle,
+      status: nextStatus,
       clearError: true,
     );
     try {
