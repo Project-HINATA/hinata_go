@@ -120,11 +120,22 @@ jobs:
       - name: Calculate App Store build number
         id: version
         shell: bash
+        env:
+          RELEASE_CHANNEL: ${{ steps.channel.outputs.value }}
         run: |
           set -euo pipefail
           version="$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml | head -1)"
           test -n "$version"
-          echo "marketing=$version" >> "$GITHUB_OUTPUT"
+          marketing="$version"
+          if [[ "$RELEASE_CHANNEL" == "beta" ]]; then
+            if [[ ! "$version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "Unsupported iOS version: $version" >&2
+              exit 1
+            fi
+            marketing="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
+          fi
+          echo "marketing=$marketing" >> "$GITHUB_OUTPUT"
+          echo "Using App Store version $marketing for $RELEASE_CHANNEL"
           fastlane_output="$(mktemp)"
           if ! fastlane ios next_build_number 2>&1 | tee "$fastlane_output"; then
             cat "$fastlane_output" >&2
