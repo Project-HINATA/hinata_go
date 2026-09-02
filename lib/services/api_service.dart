@@ -104,27 +104,23 @@ class ApiService {
       log('Sending encrypted remote card payload to ${instance.url}');
     }
 
-    try {
-      final response = await _httpClient
-          .post(
-            Uri.parse(instance.url),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(requestPayload),
-          )
-          .timeout(const Duration(seconds: 10));
+    final response = await _httpClient
+        .post(
+          Uri.parse(instance.url),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(requestPayload),
+        )
+        .timeout(const Duration(seconds: 10));
 
-      log('Response status: ${response.statusCode}');
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return ApiServiceResult(success: true);
-      }
-
-      return ApiServiceResult(
-        success: false,
-        errorMessage: 'Server returned ${response.statusCode}',
-      );
-    } catch (e) {
-      rethrow; // Re-thrown to be handled by the generic catch in sendCardData
+    log('Response status: ${response.statusCode}');
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return ApiServiceResult(success: true);
     }
+
+    return ApiServiceResult(
+      success: false,
+      errorMessage: 'Server returned ${response.statusCode}',
+    );
   }
 
   Future<ApiServiceResult> _sendSpiceApiCardData({

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -21,14 +20,12 @@ class AppUpdateNotifier extends Notifier<AppUpdateState> {
 
   Future<void> _init() async {
     final packageInfo = await PackageInfo.fromPlatform();
-    final isUpdateSupported = await _resolveUpdateSupport();
     state = state.copyWith(
       currentVersion: packageInfo.version,
       commitHash: AppConstants.gitCommitHash,
-      isUpdateSupported: isUpdateSupported,
+      isUpdateSupported: true,
     );
 
-    if (!isUpdateSupported) return;
     await checkUpdate();
   }
 
@@ -83,19 +80,6 @@ class AppUpdateNotifier extends Notifier<AppUpdateState> {
       }
     } catch (e) {
       state = state.copyWith(isChecking: false);
-    }
-  }
-
-  Future<bool> _resolveUpdateSupport() async {
-    if (kIsWeb) return true;
-
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.iOS:
-        return true;
-      case TargetPlatform.android:
-        return true;
-      default:
-        return true;
     }
   }
 }

@@ -45,8 +45,7 @@ class CardWriterState {
 final cardWriterAvailableProvider = Provider<bool>((ref) {
   if (!kIsWeb && Platform.isIOS) return false;
   final hasAndroidNfc = !kIsWeb && Platform.isAndroid;
-  final hasReader =
-      ref.watch(hardwareDeviceProvider).connectedDevice is UsbHinataDeviceImpl;
+  final hasReader = ref.watch(hardwareDeviceProvider).connectedDevice != null;
   return hasAndroidNfc || hasReader;
 });
 

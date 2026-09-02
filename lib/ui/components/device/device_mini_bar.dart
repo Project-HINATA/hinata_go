@@ -5,7 +5,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
 import 'package:hinata_go/providers/hardware_device_provider.dart';
-import 'package:hinata_go/services/reader/usb_hinata_impl.dart';
 
 import 'device_dashboard.dart';
 import 'disconnected_state.dart';
@@ -110,11 +109,8 @@ class _DeviceMiniBarDisplayData {
   ) {
     final l10n = context.l10n;
     final theme = context.theme;
-    final isConnected = deviceState.connectedDevice != null;
-    final isUsbHinata = deviceState.connectedDevice is UsbHinataDeviceImpl;
-    final hinataDevice = isUsbHinata
-        ? deviceState.connectedDevice as UsbHinataDeviceImpl
-        : null;
+    final hinataDevice = deviceState.connectedDevice;
+    final isConnected = hinataDevice != null;
     final deviceSvg = switch (deviceState.productId) {
       0x0147 => 'assets/std.svg',
       0x0148 => 'assets/lite.svg',
@@ -127,8 +123,8 @@ class _DeviceMiniBarDisplayData {
         context,
         hidAvailable: deviceState.hidAvailable,
       ),
-      title: isConnected
-          ? (hinataDevice?.productName ?? l10n.deviceHub)
+      title: hinataDevice != null
+          ? hinataDevice.productName
           : l10n.noDeviceConnected,
       subtitle: isConnected
           ? l10n.firmwareVersion(deviceState.firmwareVersion ?? '...')
@@ -318,10 +314,7 @@ class _DeviceSheetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUsbHinata = state.connectedDevice is UsbHinataDeviceImpl;
-    final hinataDevice = isUsbHinata
-        ? state.connectedDevice as UsbHinataDeviceImpl
-        : null;
+    final hinataDevice = state.connectedDevice;
 
     return Container(
       decoration: BoxDecoration(
@@ -332,7 +325,7 @@ class _DeviceSheetContent extends StatelessWidget {
         children: [
           const _DeviceSheetHandle(),
           Expanded(
-            child: state.connectedDevice != null && hinataDevice != null
+            child: hinataDevice != null
                 ? DeviceDashboard(
                     device: hinataDevice,
                     scrollController: scrollController,

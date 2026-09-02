@@ -6,23 +6,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/validators/access_code_validator.dart';
 import '../../models/card/aime.dart';
+import '../../models/card/card.dart';
 import '../../models/card/scanned_card.dart';
 import '../../providers/nfc_provider.dart';
-import '../../utils/qr_handler.dart';
 
 class CameraPage extends HookConsumerWidget {
   const CameraPage({super.key});
-
-  static Uint8List _hexToBytes(String hex) {
-    final cleanHex = hex.replaceAll(' ', '');
-    final length = cleanHex.length ~/ 2;
-    final bytes = Uint8List(length);
-    for (int i = 0; i < length; i++) {
-      bytes[i] = int.parse(cleanHex.substring(i * 2, i * 2 + 2), radix: 16);
-    }
-    return bytes;
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,14 +39,11 @@ class CameraPage extends HookConsumerWidget {
 
       for (final barcode in capture.barcodes) {
         final rawValue = barcode.rawValue;
-        if (rawValue != null && QrHandler.isValidQrData(rawValue)) {
+        if (rawValue != null &&
+            AccessCodeValidator.isValidAimeAccessCode(rawValue)) {
           isNavigatingRef.value = true; // Set flag immediately
 
-          final accessCodeBytes = Uint8List.fromList(
-            rawValue.codeUnits.length >= 20
-                ? _hexToBytes(rawValue)
-                : rawValue.codeUnits,
-          );
+          final accessCodeBytes = ICCard.hexToBytes(rawValue);
           final aime = Aime(Uint8List(4), 0x08, 0x0004, accessCodeBytes);
 
           ref

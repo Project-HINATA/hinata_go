@@ -8,14 +8,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../models/card/card_read_result.dart';
 import '../models/card/transit.dart';
-import '../services/reader/device_interface.dart';
 import '../services/reader/usb_hinata_impl.dart';
 import 'current_scan_session_provider.dart';
 import 'firmware_provider.dart';
 import 'nfc_provider.dart';
 
 class HardwareDeviceState {
-  final DeviceInterface? connectedDevice;
+  final UsbHinataDeviceImpl? connectedDevice;
   final bool hidAvailable;
   final bool isConnecting;
   final String? error;
@@ -36,7 +35,7 @@ class HardwareDeviceState {
   });
 
   HardwareDeviceState copyWith({
-    DeviceInterface? connectedDevice,
+    UsbHinataDeviceImpl? connectedDevice,
     bool? hidAvailable,
     bool? isConnecting,
     String? error,
@@ -102,15 +101,14 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
         return;
       }
 
-      if (state.connectedDevice is UsbHinataDeviceImpl) {
-        final usbDev = state.connectedDevice as UsbHinataDeviceImpl;
-        if (usbDev.deviceId == event.device.productId.toString()) {
-          unawaited(usbDev.disconnect());
-          ref
-              .read(currentScanSessionProvider.notifier)
-              .markCardRemoved(source: 'HINATA');
-          state = state.copyWith(clearDevice: true);
-        }
+      final usbDev = state.connectedDevice;
+      if (usbDev != null &&
+          usbDev.deviceId == event.device.productId.toString()) {
+        unawaited(usbDev.disconnect());
+        ref
+            .read(currentScanSessionProvider.notifier)
+            .markCardRemoved(source: 'HINATA');
+        state = state.copyWith(clearDevice: true);
       }
     });
 
@@ -373,8 +371,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
     state = state.copyWith(isNfcPollingSuspended: true);
     final activePoll = _activePoll;
     if (activePoll != null) await activePoll.future;
-    final device = state.connectedDevice;
-    return device is UsbHinataDeviceImpl ? device : null;
+    return state.connectedDevice;
   }
 
   void resumeNfcPolling() {
@@ -410,11 +407,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
 
   bool _isConnectedToHidDevice(HIDDevice device) {
     final connectedDevice = state.connectedDevice;
-    if (connectedDevice is! UsbHinataDeviceImpl) {
-      return false;
-    }
-
-    return connectedDevice.deviceId == device.productId.toString();
+    return connectedDevice?.deviceId == device.productId.toString();
   }
 }
 

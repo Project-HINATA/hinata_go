@@ -4,11 +4,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:uuid/uuid.dart';
 import '../../../models/card/aime.dart';
-import '../../../models/card/card_tag.dart';
+import '../../../models/card/card.dart';
 import '../../../models/card/saved_card.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../core/validators/access_code_validator.dart';
-import '../../../utils/hex_utils.dart';
 import '../../../l10n/l10n.dart';
 import '../../ui_text.dart';
 
@@ -43,7 +42,7 @@ class AddCardDialog extends HookConsumerWidget {
     Future<void> onSave() async {
       if (!isFormValid) return;
 
-      final accessCodeBytes = HexUtils.hexToBytes(value);
+      final accessCodeBytes = ICCard.hexToBytes(value);
       final aime = Aime(
         Uint8List(4),
         0x08,

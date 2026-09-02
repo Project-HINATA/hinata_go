@@ -3,12 +3,13 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
-import 'device_interface.dart';
 import 'package:hinata_go/models/card/card_read_result.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import '../../core/engine/card_reader_engine.dart';
+
+enum DeviceConnectionState { disconnected, connecting, connected, error }
 
 // 完整模拟配置用于覆盖不同卡片与耦合距离。
 class TypeARfProfile {
@@ -54,7 +55,7 @@ List<TypeARfProfile> typeARfProfilesForProductId(int productId) =>
       _ => const [pn532DefaultTypeARfProfile],
     };
 
-class UsbHinataDeviceImpl implements DeviceInterface {
+class UsbHinataDeviceImpl {
   final HinataReader _hinata;
   final ValueNotifier<DeviceConnectionState> _connectionState = ValueNotifier(
     DeviceConnectionState.disconnected,
@@ -79,10 +80,8 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     // So we'll trigger state change on connect.
   }
 
-  @override
   String get deviceId => _hinata.pid.toString();
 
-  @override
   String get productName => _hinata.productName;
 
   String get firmVersion => _hinata.firmVersion;
@@ -97,13 +96,10 @@ class UsbHinataDeviceImpl implements DeviceInterface {
   int get segaBrightness => _hinata.segaBrightness;
   set segaBrightness(int brightness) => _hinata.segaBrightness = brightness;
 
-  @override
   ValueNotifier<DeviceConnectionState> get connectionState => _connectionState;
 
-  @override
   Stream<List<int>> get cardioInputStream => _cardioStreamController.stream;
 
-  @override
   Future<void> connect() async {
     _connectionState.value = DeviceConnectionState.connecting;
     try {
@@ -115,38 +111,31 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     }
   }
 
-  @override
   Future<void> disconnect() async {
     await _hinata.close();
     _connectionState.value = DeviceConnectionState.disconnected;
   }
 
-  @override
   Future<void> enterBootloader() async {
     _hinata.enterBootloader();
   }
 
-  @override
   Future<void> setLed(Color color) async {
     await _hinata.setLed(color);
   }
 
-  @override
   Future<int> getFirmTimeStamp() async {
     return await _hinata.getFirmTimeStamp();
   }
 
-  @override
   Future<List<int>> getChipId() async {
     return await _hinata.getChipId();
   }
 
-  @override
   Future<void> setConfig(int index, int value) async {
     await _hinata.setConfig(ConfigIndex.values[index], value);
   }
 
-  @override
   Future<int> getConfig(int index) async {
     return await _hinata.getConfig(ConfigIndex.values[index]);
   }
@@ -167,7 +156,6 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     await _hinata.resetLed();
   }
 
-  @override
   Future<ScannedCard?> poll({bool readExtended = true}) async {
     return (await pollResult(readExtended: readExtended)).card;
   }
@@ -271,7 +259,6 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     return const CardReadResult.incomplete();
   }
 
-  @override
   Future<ScannedCard?> readExtended(ScannedCard basicCard) async {
     final tag = _activeTag;
     if (tag == null) {
@@ -337,7 +324,6 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     return null;
   }
 
-  @override
   Future<List<int>> sendCommand(
     int command,
     List<int> payload, {
@@ -346,7 +332,6 @@ class UsbHinataDeviceImpl implements DeviceInterface {
     return await _hinata.sendReq(command, payload, timeout: timeoutMs);
   }
 
-  @override
   void dispose() {
     _cardioStreamController.close();
     _hinata.destroy();

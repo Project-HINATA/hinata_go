@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../providers/hardware_device_provider.dart';
-import '../../services/reader/usb_hinata_impl.dart';
 import '../components/device/disconnected_state.dart';
 import '../components/device/device_dashboard.dart';
 
@@ -13,11 +12,8 @@ class DeviceControlPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deviceState = ref.watch(hardwareDeviceProvider);
-    final isConnected = deviceState.connectedDevice != null;
-    final isUsbHinata = deviceState.connectedDevice is UsbHinataDeviceImpl;
-    final hinataDevice = isUsbHinata
-        ? deviceState.connectedDevice as UsbHinataDeviceImpl
-        : null;
+    final hinataDevice = deviceState.connectedDevice;
+    final isConnected = hinataDevice != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -38,7 +34,7 @@ class DeviceControlPage extends ConsumerWidget {
         bottom: false,
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          child: isConnected && hinataDevice != null
+          child: hinataDevice != null
               ? DeviceDashboard(
                   device: hinataDevice,
                   key: ValueKey(hinataDevice.deviceId),

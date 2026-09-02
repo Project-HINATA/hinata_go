@@ -34,7 +34,7 @@ packages:
     source: hosted
     version: "2.7.0"
   async:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: async
       sha256: e2eb0491ba5ddb6177742d2da23904574082139b07c1e33b8503b9f46f3e1a37
@@ -144,14 +144,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.9.0"
-  cupertino_icons:
-    dependency: "direct main"
-    description:
-      name: cupertino_icons
-      sha256: "41e005c33bd814be4d3096aff55b1908d419fde52ca656c8c47719ec745873cd"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.9"
   dynamic_color:
     dependency: "direct main"
     description:
@@ -491,15 +483,6 @@ packages:
       url: "https://github.com/nerimoe/neo_web_hid.dart"
     source: git
     version: "0.0.2"
-  neo_web_usb:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "705e360b933828fb86795870a3ba2bebc1f53c70"
-      url: "https://github.com/nerimoe/neo_web_usb.dart"
-    source: git
-    version: "1.0.0+1"
   node_preamble:
     dependency: transitive
     description:
