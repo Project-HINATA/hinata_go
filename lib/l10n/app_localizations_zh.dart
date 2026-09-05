@@ -82,7 +82,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readyToScan => '准备扫描';
 
   @override
-  String get nfcInactive => 'NFC 未激活';
+  String get nfcInactive => '没有可用扫描设备';
 
   @override
   String get holdCardNearTop => '请将卡片靠近 iPhone 顶部。';

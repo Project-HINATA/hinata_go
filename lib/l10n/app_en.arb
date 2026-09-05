@@ -105,9 +105,9 @@
   "@readyToScan": {
     "description": "Status indicating the scanner is ready"
   },
-  "nfcInactive": "NFC Inactive",
+  "nfcInactive": "No Scanning Device Available",
   "@nfcInactive": {
-    "description": "Status when NFC hardware is disabled"
+    "description": "Status when no scanning device is available"
   },
   "holdCardNearTop": "Hold your card near the top of your iPhone.",
   "@holdCardNearTop": {

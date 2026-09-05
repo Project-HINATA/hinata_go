@@ -236,10 +236,10 @@ abstract class AppLocalizations {
   /// **'Ready to Scan'**
   String get readyToScan;
 
-  /// Status when NFC hardware is disabled
+  /// Status when no scanning device is available
   ///
   /// In en, this message translates to:
-  /// **'NFC Inactive'**
+  /// **'No Scanning Device Available'**
   String get nfcInactive;
 
   /// iOS-specific instruction for NFC scanning

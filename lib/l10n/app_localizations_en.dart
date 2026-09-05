@@ -84,7 +84,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readyToScan => 'Ready to Scan';
 
   @override
-  String get nfcInactive => 'NFC Inactive';
+  String get nfcInactive => 'No Scanning Device Available';
 
   @override
   String get holdCardNearTop => 'Hold your card near the top of your iPhone.';
