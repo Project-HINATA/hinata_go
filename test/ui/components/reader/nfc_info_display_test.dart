@@ -36,6 +36,18 @@ void main() {
     expect(inkWell.onTap, isNotNull);
     expect(inkWell.onLongPress, isNotNull);
   });
+
+  testWidgets('shows prohibited icon and inactive text when NFC is inactive', (
+    tester,
+  ) async {
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpWidget(
+      _buildTestApp(const NfcState(isIOS: false, status: NfcStatus.disabled)),
+    );
+
+    expect(find.text(l10n.nfcInactive), findsOneWidget);
+    expect(find.byIcon(Icons.block_rounded), findsOneWidget);
+  });
 }
 
 InkWell _scanInkWell(WidgetTester tester, String prompt) {

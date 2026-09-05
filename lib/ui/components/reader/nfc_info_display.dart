@@ -687,11 +687,11 @@ class _PromptText {
           : l10n.nfcInactive,
       icon: isIosScanning
           ? Icons.phone_iphone_rounded
-          : isIosUnavailable
-          ? Icons.block_rounded
+          : isIosAvailable
+          ? Icons.touch_app_rounded
           : isActive
           ? Icons.contactless_rounded
-          : Icons.touch_app_rounded,
+          : Icons.block_rounded,
       color: isActive
           ? colorScheme.primary
           : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
