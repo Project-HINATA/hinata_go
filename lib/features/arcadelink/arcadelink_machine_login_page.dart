@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/arcadelink_api.dart';
@@ -158,7 +159,7 @@ class _ArcadeLinkMachineLoginPageState
         await _loadCards();
       } catch (error) {
         if (!mounted) return;
-        setState(() => _error = error);
+        if (!_isCancellation(error)) setState(() => _error = error);
       } finally {
         if (mounted) setState(() => _authenticating = false);
       }
@@ -206,7 +207,7 @@ class _ArcadeLinkMachineLoginPageState
       await _loadCards();
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = error);
+      if (!_isCancellation(error)) setState(() => _error = error);
     } finally {
       if (mounted) setState(() => _passkeyAuthenticating = false);
     }
@@ -248,8 +249,11 @@ class _ArcadeLinkMachineLoginPageState
       if (!mounted) return;
       setState(() {
         _loggingIn = false;
-        _error = error;
+        _error = null;
       });
+      if (!_isCancellation(error)) {
+        await _showErrorDialog(arcadeLinkErrorMessage(error));
+      }
     }
   }
 
@@ -257,61 +261,91 @@ class _ArcadeLinkMachineLoginPageState
   Widget build(BuildContext context) {
     final session = _session;
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: _expired
-                  ? const ArcadeLinkStatusPanel(
-                      title: '本次会话已失效',
-                      message: '请重新碰一下 NFC 或重新扫描二维码。',
-                    )
-                  : _loading
-                  ? const ArcadeLinkStatusPanel(title: '加载中...', busy: true)
-                  : session == null
-                  ? ArcadeLinkStatusPanel(
-                      title: '无法进入机台会话',
-                      message: _error == null
-                          ? '无法读取机台信息'
-                          : arcadeLinkErrorMessage(_error!),
-                      onRetry: _loadMachine,
-                    )
-                  : ArcadeLinkMachineContent(
-                      session: session,
-                      cards: _cards,
-                      authRequired: _authRequired,
-                      authenticating: _authenticating,
-                      passkeyAuthenticating: _passkeyAuthenticating,
-                      loggingIn: _loggingIn,
-                      success: _success,
-                      completed: _completed,
-                      sending: _sending,
-                      webAuthStarted: _webAuthStarted,
-                      error: _error,
-                      loadingCards: _loadingCards,
-                      activeCardId: _activeCardId,
-                      browserOnly:
-                          !kIsWeb && !ArcadeLinkNativeService.isAvailable,
-                      passkeyAvailable:
-                          kIsWeb ||
-                          ArcadeLinkNativeService.supportsNativePasskey,
-                      passkeyActionLabel: kIsWeb
-                          ? '在网页中使用 Passkey'
-                          : '使用 Passkey 登录',
-                      nativeMunetAvailable:
-                          ArcadeLinkNativeService.supportsNativeMunet,
-                      onAuthenticate: _authenticate,
-                      onAuthenticatePasskey: _authenticateWithPasskey,
-                      onReloadCards: _loadCards,
-                      onLogin: _login,
-                      onContinue: _openWebFallback,
-                    ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: _expired
+                      ? const ArcadeLinkStatusPanel(
+                          title: '本次会话已失效',
+                          message: '请重新碰一下 NFC 或重新扫描二维码。',
+                        )
+                      : _loading
+                      ? const ArcadeLinkStatusPanel(title: '加载中...', busy: true)
+                      : session == null
+                      ? ArcadeLinkStatusPanel(
+                          title: '无法进入机台会话',
+                          message: _error == null
+                              ? '无法读取机台信息'
+                              : arcadeLinkErrorMessage(_error!),
+                          onRetry: _loadMachine,
+                        )
+                      : ArcadeLinkMachineContent(
+                          session: session,
+                          cards: _cards,
+                          authRequired: _authRequired,
+                          authenticating: _authenticating,
+                          passkeyAuthenticating: _passkeyAuthenticating,
+                          loggingIn: _loggingIn,
+                          success: _success,
+                          completed: _completed,
+                          sending: _sending,
+                          webAuthStarted: _webAuthStarted,
+                          error: _error,
+                          loadingCards: _loadingCards,
+                          activeCardId: _activeCardId,
+                          browserOnly:
+                              !kIsWeb && !ArcadeLinkNativeService.isAvailable,
+                          passkeyAvailable:
+                              kIsWeb ||
+                              ArcadeLinkNativeService.supportsNativePasskey,
+                          passkeyActionLabel: kIsWeb
+                              ? '在网页中使用 Passkey'
+                              : '使用 Passkey 登录',
+                          nativeMunetAvailable:
+                              ArcadeLinkNativeService.supportsNativeMunet,
+                          onAuthenticate: _authenticate,
+                          onAuthenticatePasskey: _authenticateWithPasskey,
+                          onReloadCards: _loadCards,
+                          onLogin: _login,
+                          onContinue: _openWebFallback,
+                        ),
+                ),
+              ),
             ),
           ),
-        ),
+          Positioned(
+            top: 8,
+            left: 8,
+            child: IconButton(
+              tooltip: '返回主页',
+              onPressed: () => context.go('/'),
+              icon: const Icon(Icons.arrow_back),
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  bool _isCancellation(Object error) =>
+      error.toString().toLowerCase().contains('cancel') ||
+      error.toString().contains('取消');
+
+  Future<void> _showErrorDialog(String message) => showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('知道了'),
+        ),
+      ],
+    ),
+  );
 }
