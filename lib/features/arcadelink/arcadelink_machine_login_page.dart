@@ -159,7 +159,9 @@ class _ArcadeLinkMachineLoginPageState
         await _loadCards();
       } catch (error) {
         if (!mounted) return;
-        if (!_isCancellation(error)) setState(() => _error = error);
+        if (!_isCancellation(error)) {
+          await _showErrorDialog(arcadeLinkErrorMessage(error));
+        }
       } finally {
         if (mounted) setState(() => _authenticating = false);
       }
@@ -207,7 +209,9 @@ class _ArcadeLinkMachineLoginPageState
       await _loadCards();
     } catch (error) {
       if (!mounted) return;
-      if (!_isCancellation(error)) setState(() => _error = error);
+      if (!_isCancellation(error)) {
+        await _showErrorDialog(arcadeLinkErrorMessage(error));
+      }
     } finally {
       if (mounted) setState(() => _passkeyAuthenticating = false);
     }

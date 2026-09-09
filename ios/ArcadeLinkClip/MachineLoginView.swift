@@ -3,11 +3,21 @@ import SwiftUI
 struct MachineLoginView: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   @State private var showingLogoutConfirmation = false
+  @State private var showingError = false
 
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
-        if let machine = model.machine {
+        if model.state == .expired {
+          VStack(spacing: 12) {
+            Image(systemName: "clock.badge.exclamationmark").font(.system(size: 42)).foregroundStyle(.secondary)
+            Text("本次会话已失效").font(.title2.weight(.bold))
+            Text("请重新碰一下 NFC 或重新扫描二维码。").foregroundStyle(.secondary)
+          }
+          .multilineTextAlignment(.center)
+          .frame(maxWidth: .infinity)
+          .padding(.top, 120)
+        } else if let machine = model.machine {
           VStack(alignment: .leading, spacing: 0) {
             if let path = machine.shop.heroUrl,
                let url = URL(string: path, relativeTo: URL(string: "https://link.neri.moe")) {
@@ -46,19 +56,22 @@ struct MachineLoginView: View {
               Spacer()
               Button { showingLogoutConfirmation = true } label: {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
-                  .font(.title3.weight(.semibold))
-                  .frame(width: 44, height: 44)
+                  .font(.title3)
               }
-              .buttonStyle(.bordered)
-              .clipShape(Circle())
+              .buttonStyle(.plain)
+              .padding(12)
+              .background {
+                if #available(iOS 26.0, *) {
+                  Color.clear.glassEffect(.regular.interactive(), in: .circle)
+                } else {
+                  Circle().fill(.thinMaterial)
+                }
+              }
               .accessibilityLabel("退出账号")
             }
           } else if model.state == .completed || model.state == .expired {
             Text(title).font(.largeTitle.weight(.bold)).accessibilityAddTraits(.isHeader)
             Text(model.state == .expired ? "请重新碰一下 NFC 或重新扫描二维码。" : "可以关闭此页面").foregroundStyle(.secondary)
-          }
-          if let error = model.errorMessage {
-            Text(error).font(.body).foregroundStyle(.red).padding(.top, 6)
           }
         }
         .multilineTextAlignment(.center)
@@ -114,6 +127,14 @@ struct MachineLoginView: View {
     .confirmationDialog("退出账号？", isPresented: $showingLogoutConfirmation, titleVisibility: .visible) {
       Button("退出", role: .destructive) { Task { await model.logout() } }
       Button("取消", role: .cancel) {}
+    }
+    .alert("ArcadeLink", isPresented: $showingError) {
+      Button("知道了") { model.clearError() }
+    } message: {
+      Text(model.errorMessage ?? "")
+    }
+    .onChange(of: model.errorMessage) { value in
+      showingError = value != nil
     }
   }
 

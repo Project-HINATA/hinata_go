@@ -86,7 +86,9 @@ final class MachineLoginViewModel: ObservableObject {
       try await api.loginWithPasskey(assertion)
       try await loadCards()
     } catch {
-      errorMessage = friendlyMessage(error)
+      if !error.localizedDescription.lowercased().contains("cancel") {
+        errorMessage = friendlyMessage(error)
+      }
       if state != .loadingCards { state = .unauthenticated }
     }
   }
@@ -101,7 +103,9 @@ final class MachineLoginViewModel: ObservableObject {
       try await api.exchangeAppClipAuth(code: code)
       try await loadCards()
     } catch {
-      errorMessage = friendlyMessage(error)
+      if !error.localizedDescription.lowercased().contains("cancel") {
+        errorMessage = friendlyMessage(error)
+      }
       if state != .loadingCards { state = .unauthenticated }
     }
   }
@@ -122,6 +126,8 @@ final class MachineLoginViewModel: ObservableObject {
     do { try await loadCards() }
     catch { errorMessage = friendlyMessage(error) }
   }
+
+  func clearError() { errorMessage = nil }
 
   func login(card: ArcadeCard) async {
     guard state == .ready else { return }
@@ -150,9 +156,10 @@ final class MachineLoginViewModel: ObservableObject {
       try? await Task.sleep(nanoseconds: 2_500_000_000)
       if state == .success { state = .completed }
     } catch {
-      if errorMessage == "本次会话已失效" { state = .expired } else { state = .ready }
+      let message = friendlyMessage(error)
+      if message == "本次会话已失效" { state = .expired } else { state = .ready }
       activeCardId = nil
-      errorMessage = friendlyMessage(error)
+      errorMessage = state == .expired ? nil : message
     }
   }
 

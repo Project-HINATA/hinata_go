@@ -123,20 +123,6 @@ class ArcadeLinkMachineContent extends StatelessWidget {
               ),
             ],
           ),
-        if (error != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: Semantics(
-              liveRegion: true,
-              child: Text(
-                arcadeLinkErrorMessage(error!),
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-            ),
-          ),
         const SizedBox(height: 30),
         if (completed)
           const SizedBox.shrink()
