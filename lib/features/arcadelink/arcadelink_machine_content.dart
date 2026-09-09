@@ -27,6 +27,7 @@ class ArcadeLinkMachineContent extends StatelessWidget {
     this.passkeyAvailable = false,
     this.passkeyActionLabel = '使用 Passkey 登录',
     this.nativeMunetAvailable = false,
+    this.onLogout,
     this.activeCardId,
     super.key,
   });
@@ -49,6 +50,7 @@ class ArcadeLinkMachineContent extends StatelessWidget {
       onReloadCards,
       onContinue;
   final ValueChanged<ArcadeLinkCard> onLogin;
+  final VoidCallback? onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -59,13 +61,6 @@ class ArcadeLinkMachineContent extends StatelessWidget {
         loggingIn ||
         loadingCards ||
         success;
-    final heading = completed
-        ? '本次登录已完成'
-        : browserOnly
-        ? '在浏览器继续'
-        : authRequired
-        ? '登录 ArcadeLink'
-        : '选择卡片';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -111,27 +106,23 @@ class ArcadeLinkMachineContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 48),
-        Text(
-          heading,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+        if (!authRequired && !browserOnly && !completed)
+          Row(
+            children: [
+              Text(
+                '选择卡片',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: onLogout,
+                icon: const Icon(Icons.logout),
+                tooltip: '退出账号',
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          completed
-              ? '可以关闭此页面'
-              : browserOnly
-              ? '当前平台通过 ArcadeLink 网页完成账号登录、选卡和位置确认。'
-              : authRequired
-              ? '登录后选择用于这台机台的卡片'
-              : '选择用于这次机台登录的卡片',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
         if (error != null)
           Padding(
             padding: const EdgeInsets.only(top: 16),

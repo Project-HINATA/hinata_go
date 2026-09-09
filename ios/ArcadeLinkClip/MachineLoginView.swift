@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MachineLoginView: View {
   @EnvironmentObject private var model: MachineLoginViewModel
+  @State private var showingLogoutConfirmation = false
 
   var body: some View {
     ScrollView {
@@ -39,18 +40,22 @@ struct MachineLoginView: View {
         }
 
         VStack(spacing: 10) {
-          Text(title).font(.largeTitle.weight(.bold))
-            .accessibilityAddTraits(.isHeader)
-          if model.state == .unauthenticated {
-            Text("登录后选择用于这台机台的卡片").foregroundStyle(.secondary)
-          } else if [.ready, .loadingCards, .locating, .sending, .success].contains(model.state) {
-            Text("选择用于这次机台登录的卡片").foregroundStyle(.secondary)
+          if [.ready, .loadingCards, .locating, .sending, .success].contains(model.state) {
+            HStack {
+              Text("选择卡片").font(.largeTitle.weight(.bold))
+              Spacer()
+              Button { showingLogoutConfirmation = true } label: {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                  .font(.title3.weight(.semibold))
+                  .frame(width: 44, height: 44)
+              }
+              .buttonStyle(.bordered)
+              .clipShape(Circle())
+              .accessibilityLabel("退出账号")
+            }
           } else if model.state == .completed || model.state == .expired {
+            Text(title).font(.largeTitle.weight(.bold)).accessibilityAddTraits(.isHeader)
             Text(model.state == .expired ? "请重新碰一下 NFC 或重新扫描二维码。" : "可以关闭此页面").foregroundStyle(.secondary)
-          }
-          if model.state == .ready {
-            Button("退出账号，切换用户") { Task { await model.logout() } }
-              .font(.subheadline.weight(.semibold)).foregroundStyle(.tint).padding(.top, 16)
           }
           if let error = model.errorMessage {
             Text(error).font(.body).foregroundStyle(.red).padding(.top, 6)
@@ -106,6 +111,10 @@ struct MachineLoginView: View {
       .frame(maxWidth: .infinity)
     }
     .background(Color(.systemGroupedBackground).ignoresSafeArea())
+    .confirmationDialog("退出账号？", isPresented: $showingLogoutConfirmation, titleVisibility: .visible) {
+      Button("退出", role: .destructive) { Task { await model.logout() } }
+      Button("取消", role: .cancel) {}
+    }
   }
 
   private var title: String {

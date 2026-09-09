@@ -257,6 +257,31 @@ class _ArcadeLinkMachineLoginPageState
     }
   }
 
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('退出账号？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('退出'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      setState(() {
+        _authRequired = true;
+        _cards = [];
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = _session;
@@ -313,6 +338,7 @@ class _ArcadeLinkMachineLoginPageState
                           onReloadCards: _loadCards,
                           onLogin: _login,
                           onContinue: _openWebFallback,
+                          onLogout: _logout,
                         ),
                 ),
               ),
