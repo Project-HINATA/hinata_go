@@ -85,13 +85,13 @@ class ArcadeLinkAPI {
   final http.Client _client;
 
   Future<ArcadeLinkMachineSession> startMachineSession({
-    required String shopId,
+    required String shopCode,
     required String publicId,
   }) async {
     final response = await _client.post(
       _baseURL.resolve('/api/machines/session/start'),
       headers: const {'content-type': 'application/json'},
-      body: jsonEncode({'shopId': shopId, 'publicId': publicId}),
+      body: jsonEncode({'shopCode': shopCode, 'publicId': publicId}),
     );
     final payload = _decode(response);
     return ArcadeLinkMachineSession.fromJson(payload);
@@ -130,10 +130,10 @@ class ArcadeLinkAPI {
     _decode(response);
   }
 
-  Uri munetLoginURL(String shopId, String publicId) {
+  Uri munetLoginURL(String shopCode, String publicId) {
     return _baseURL.replace(
       path: '/api/auth/munet',
-      queryParameters: {'next': '/arcadelink/$shopId/$publicId'},
+      queryParameters: {'next': '/arcadelink/$shopCode/$publicId'},
     );
   }
 

@@ -9,14 +9,14 @@ void main() {
   test('parses the shop and machine ids from an invocation URL', () {
     service.handleURL('https://link.neri.moe/t/shop_abc/machine_123');
 
-    expect(service.pendingShopId, 'shop_abc');
+    expect(service.pendingShopCode, 'shop_abc');
     expect(service.pendingPublicId, 'machine_123');
   });
 
   test('rejects the old machine-only URL shape', () {
     service.handleURL('https://link.neri.moe/t/machine_123');
 
-    expect(service.pendingShopId, isNull);
+    expect(service.pendingShopCode, isNull);
     expect(service.pendingPublicId, isNull);
   });
 }

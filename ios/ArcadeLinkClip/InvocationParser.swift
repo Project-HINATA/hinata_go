@@ -1,7 +1,7 @@
 import Foundation
 
 struct ArcadeLinkInvocation {
-  let shopId: String
+  let shopCode: String
   let machinePublicId: String
 }
 
@@ -28,6 +28,6 @@ enum InvocationParser {
     }) else {
       return nil
     }
-    return ArcadeLinkInvocation(shopId: values[0], machinePublicId: values[1])
+    return ArcadeLinkInvocation(shopCode: values[0], machinePublicId: values[1])
   }
 }

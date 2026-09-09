@@ -149,8 +149,8 @@ struct MachineLoginView: View {
         .foregroundStyle(.orange)
       Text(model.errorMessage ?? "请重新碰一下 NFC 或重新扫描二维码。")
         .foregroundStyle(.secondary)
-      if let shopId = model.shopId, let publicId = model.publicId {
-        Button("重试") { Task { await model.start(shopId: shopId, publicId: publicId) } }
+      if let shopCode = model.shopCode, let publicId = model.publicId {
+        Button("重试") { Task { await model.start(shopCode: shopCode, publicId: publicId) } }
           .buttonStyle(ClipActionStyle())
       }
       if let url = model.webFallbackURL {

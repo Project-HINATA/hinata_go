@@ -10,11 +10,11 @@ class ArcadeLinkInvocationService extends ChangeNotifier {
 
   static const _channel = MethodChannel('moe.neri.hinatago/arcadelink');
 
-  String? _pendingShopId;
+  String? _pendingShopCode;
   String? _pendingPublicId;
   bool _initialized = false;
 
-  String? get pendingShopId => _pendingShopId;
+  String? get pendingShopCode => _pendingShopCode;
   String? get pendingPublicId => _pendingPublicId;
 
   void initialize() {
@@ -35,22 +35,22 @@ class ArcadeLinkInvocationService extends ChangeNotifier {
       return;
     }
 
-    final shopId = uri.pathSegments[1];
+    final shopCode = uri.pathSegments[1];
     final publicId = uri.pathSegments[2];
-    if (shopId.isEmpty ||
-        shopId.length > 80 ||
+    if (shopCode.isEmpty ||
+        shopCode.length > 32 ||
         publicId.isEmpty ||
         publicId.length > 80) {
       return;
     }
-    _pendingShopId = shopId;
+    _pendingShopCode = shopCode;
     _pendingPublicId = publicId;
     notifyListeners();
   }
 
   void clear() {
-    if (_pendingShopId == null && _pendingPublicId == null) return;
-    _pendingShopId = null;
+    if (_pendingShopCode == null && _pendingPublicId == null) return;
+    _pendingShopCode = null;
     _pendingPublicId = null;
     notifyListeners();
   }
