@@ -123,6 +123,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
+        path: '/t/:shopCode/:publicId',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => ArcadeLinkMachineLoginPage(
+          key: ValueKey(
+            '${state.pathParameters['shopCode']}/${state.pathParameters['publicId']}',
+          ),
+          shopCode: state.pathParameters['shopCode']!,
+          publicId: state.pathParameters['publicId']!,
+        ),
+      ),
+      GoRoute(
         path: '/arcadelink/:shopCode/:publicId',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => ArcadeLinkMachineLoginPage(

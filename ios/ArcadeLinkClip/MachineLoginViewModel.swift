@@ -10,7 +10,6 @@ final class MachineLoginViewModel: ObservableObject {
     case loadingCards
     case completed
     case expired
-    case expired
     case ready
     case locating
     case sending
@@ -105,6 +104,17 @@ final class MachineLoginViewModel: ObservableObject {
       errorMessage = friendlyMessage(error)
       if state != .loadingCards { state = .unauthenticated }
     }
+  }
+
+  func logout() async {
+    do {
+      var request = URLRequest(url: URL(string: "https://link.neri.moe/api/auth/logout")!)
+      request.httpMethod = "POST"
+      _ = try await URLSession.shared.data(for: request)
+      state = .unauthenticated
+      cards = []
+      errorMessage = nil
+    } catch { errorMessage = "退出账号失败，请重试" }
   }
 
   func reloadCards() async {

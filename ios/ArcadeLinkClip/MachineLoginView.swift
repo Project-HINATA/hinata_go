@@ -48,6 +48,10 @@ struct MachineLoginView: View {
           } else if model.state == .completed || model.state == .expired {
             Text(model.state == .expired ? "请重新碰一下 NFC 或重新扫描二维码。" : "可以关闭此页面").foregroundStyle(.secondary)
           }
+          if model.state == .ready {
+            Button("退出账号，切换用户") { Task { await model.logout() } }
+              .font(.subheadline.weight(.semibold)).foregroundStyle(.tint).padding(.top, 16)
+          }
           if let error = model.errorMessage {
             Text(error).font(.body).foregroundStyle(.red).padding(.top, 6)
           }

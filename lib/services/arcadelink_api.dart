@@ -140,7 +140,7 @@ class ArcadeLinkAPI {
   Uri munetLoginURL(String shopCode, String publicId) {
     return _baseURL.replace(
       path: '/api/auth/munet',
-      queryParameters: {'next': '/arcadelink/$shopCode/$publicId'},
+      queryParameters: {'next': '/t/$shopCode/$publicId'},
     );
   }
 
