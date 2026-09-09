@@ -11,11 +11,13 @@ class ArcadeLinkMachine {
     required this.publicId,
     required this.name,
     required this.shopName,
+    this.heroUrl,
   });
 
   final String publicId;
   final String name;
   final String shopName;
+  final String? heroUrl;
 
   factory ArcadeLinkMachine.fromJson(Map<String, dynamic> json) {
     final shop = json['shop'] as Map<String, dynamic>;
@@ -23,6 +25,9 @@ class ArcadeLinkMachine {
       publicId: json['publicId'] as String,
       name: json['name'] as String,
       shopName: shop['name'] as String,
+      heroUrl: shop['heroUrl'] is String
+          ? ArcadeLinkAPI._baseURL.resolve(shop['heroUrl'] as String).toString()
+          : null,
     );
   }
 }
@@ -114,8 +119,10 @@ class ArcadeLinkAPI {
   Future<void> loginMachine({
     required String cardId,
     required String ticket,
+    void Function()? onSending,
   }) async {
     final location = await currentArcadeLinkLocation();
+    onSending?.call();
     final response = await _client.post(
       _baseURL.resolve('/api/machines/login'),
       headers: const {'content-type': 'application/json'},

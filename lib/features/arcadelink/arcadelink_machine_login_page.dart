@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,6 +40,9 @@ class _ArcadeLinkMachineLoginPageState
   bool _loggingIn = false;
   bool _webAuthStarted = false;
   bool _success = false;
+  bool _completed = false;
+  bool _sending = false;
+  Timer? _completionTimer;
   bool _loadingCards = false;
   String? _activeCardId;
 
@@ -52,6 +57,7 @@ class _ArcadeLinkMachineLoginPageState
 
   @override
   void dispose() {
+    _completionTimer?.cancel();
     _api.dispose();
     super.dispose();
   }
@@ -59,7 +65,9 @@ class _ArcadeLinkMachineLoginPageState
   Future<void> _loadMachine() async {
     final shopCode = widget.shopCode;
     final publicId = widget.publicId;
+    _completionTimer?.cancel();
     setState(() {
+      _completed = false;
       _loading = true;
       _session = null;
       _cards = const [];
@@ -134,7 +142,7 @@ class _ArcadeLinkMachineLoginPageState
   }
 
   Future<void> _authenticate() async {
-    if (_authenticating || _loggingIn) return;
+    if (_authenticating || _passkeyAuthenticating || _loggingIn) return;
     if (ArcadeLinkNativeService.supportsNativeMunet) {
       setState(() {
         _authenticating = true;
@@ -204,13 +212,22 @@ class _ArcadeLinkMachineLoginPageState
     final session = _session;
     if (session == null) return;
     setState(() {
+      _sending = false;
       _loggingIn = true;
       _activeCardId = card.id;
       _error = null;
     });
+    void onSending() {
+      if (mounted) setState(() => _sending = true);
+    }
+
     try {
       if (ArcadeLinkNativeService.isAvailable) {
-        await _native.loginMachine(cardId: card.id, ticket: session.ticket);
+        await _native.loginMachine(
+          cardId: card.id,
+          ticket: session.ticket,
+          onSending: onSending,
+        );
       } else {
         await _api.loginMachine(cardId: card.id, ticket: session.ticket);
       }
@@ -218,6 +235,9 @@ class _ArcadeLinkMachineLoginPageState
       setState(() {
         _loggingIn = false;
         _success = true;
+      });
+      _completionTimer = Timer(const Duration(milliseconds: 2500), () {
+        if (mounted) setState(() => _completed = true);
       });
     } catch (error) {
       if (!mounted) return;
@@ -232,19 +252,20 @@ class _ArcadeLinkMachineLoginPageState
   Widget build(BuildContext context) {
     final session = _session;
     return Scaffold(
-      appBar: AppBar(title: const Text('ArcadeLink')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: _loading
                   ? const ArcadeLinkStatusPanel(title: '加载中...', busy: true)
                   : session == null
                   ? ArcadeLinkStatusPanel(
                       title: '无法进入机台会话',
-                      message: _error?.toString() ?? '无法读取机台信息',
+                      message: _error == null
+                          ? '无法读取机台信息'
+                          : arcadeLinkErrorMessage(_error!),
                       onRetry: _loadMachine,
                     )
                   : ArcadeLinkMachineContent(
@@ -255,6 +276,8 @@ class _ArcadeLinkMachineLoginPageState
                       passkeyAuthenticating: _passkeyAuthenticating,
                       loggingIn: _loggingIn,
                       success: _success,
+                      completed: _completed,
+                      sending: _sending,
                       webAuthStarted: _webAuthStarted,
                       error: _error,
                       loadingCards: _loadingCards,

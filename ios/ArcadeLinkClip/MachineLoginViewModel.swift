@@ -7,6 +7,8 @@ final class MachineLoginViewModel: ObservableObject {
     case idle
     case loadingMachine
     case unauthenticated
+    case loadingCards
+    case completed
     case ready
     case locating
     case sending
@@ -21,6 +23,9 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var ticket: String?
   @Published private(set) var shopCode: String?
   @Published private(set) var publicId: String?
+
+  @Published private(set) var activeCardId: String?
+  @Published private(set) var authenticating: String?
 
   let api: ArcadeLinkAPI
   private let passkey = PasskeyAuthenticationService()
@@ -49,6 +54,10 @@ final class MachineLoginViewModel: ObservableObject {
     self.shopCode = shopCode
     self.publicId = publicId
     state = .loadingMachine
+    machine = nil
+    cards = []
+    activeCardId = nil
+    ticket = nil
     errorMessage = nil
     do {
       let session = try await api.startMachineSession(shopCode: shopCode, publicId: publicId)
@@ -66,39 +75,54 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func authenticateWithPasskey() async {
-    state = .loadingMachine
+    guard state == .unauthenticated, authenticating == nil else { return }
+    authenticating = "passkey"
     errorMessage = nil
+    defer { authenticating = nil }
     do {
       let options = try await api.passkeyOptions()
       let assertion = try await passkey.authenticate(options: options)
       try await api.loginWithPasskey(assertion)
       try await loadCards()
     } catch {
-      fail(error)
+      errorMessage = friendlyMessage(error)
+      if state != .loadingCards { state = .unauthenticated }
     }
   }
 
   func authenticateWithMunet() async {
-    state = .loadingMachine
+    guard state == .unauthenticated, authenticating == nil else { return }
+    authenticating = "munet"
     errorMessage = nil
+    defer { authenticating = nil }
     do {
       let code = try await munet.authenticate()
       try await api.exchangeAppClipAuth(code: code)
       try await loadCards()
     } catch {
-      fail(error)
+      errorMessage = friendlyMessage(error)
+      if state != .loadingCards { state = .unauthenticated }
     }
   }
 
+  func reloadCards() async {
+    errorMessage = nil
+    do { try await loadCards() }
+    catch { errorMessage = friendlyMessage(error) }
+  }
+
   func login(card: ArcadeCard) async {
+    guard state == .ready else { return }
     guard let ticket else {
       fail(ArcadeLinkAPIError.server("本次会话已失效"))
       return
     }
+    activeCardId = card.id
     state = .locating
     errorMessage = nil
     do {
       let position = try await location.currentLocation()
+      guard self.ticket == ticket else { return }
       state = .sending
       try await api.loginMachine(MachineLoginRequest(
         cardId: card.id,
@@ -107,13 +131,20 @@ final class MachineLoginViewModel: ObservableObject {
         accuracy: position.accuracy,
         ticket: ticket,
       ))
+      guard self.ticket == ticket else { return }
       state = .success
+      self.ticket = nil
+      try? await Task.sleep(nanoseconds: 2_500_000_000)
+      if state == .success { state = .completed }
     } catch {
-      fail(error)
+      state = .ready
+      activeCardId = nil
+      errorMessage = friendlyMessage(error)
     }
   }
 
   private func loadCards() async throws {
+    state = .loadingCards
     let response = try await api.cards()
     cards = response.cards.filter { $0.disabledAt == nil }
     state = .ready
@@ -121,6 +152,15 @@ final class MachineLoginViewModel: ObservableObject {
 
   private func fail(_ error: Error) {
     state = .failed
-    errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+    errorMessage = friendlyMessage(error)
+  }
+  private func friendlyMessage(_ error: Error) -> String {
+    let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+    if message.contains("定位权限") { return "需要定位权限才能确认你在店内" }
+    if message.contains("机台") || message.contains("502") || message.contains("404") {
+      return "这台机台暂时不可用，请稍后重试"
+    }
+    if message.contains("请求失败") { return "连接失败，请稍后重试" }
+    return message
   }
 }

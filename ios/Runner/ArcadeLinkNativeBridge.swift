@@ -59,6 +59,7 @@ final class ArcadeLinkNativeBridge {
           return
         }
         let position = try await location.currentLocation()
+        channel?.invokeMethod("machineLoginSending", arguments: nil)
         try await ArcadeLinkAPI.shared.loginMachine(MachineLoginRequest(
           cardId: cardId,
           lat: position.latitude,

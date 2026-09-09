@@ -83,7 +83,7 @@ enum LocationError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .denied:
-      return "需要定位权限"
+      return "需要定位权限才能确认你在店内"
     case .unavailable:
       return "定位获取失败"
     }

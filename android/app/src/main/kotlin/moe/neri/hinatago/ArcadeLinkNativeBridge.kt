@@ -48,12 +48,14 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
         activity.getSystemService(LocationManager::class.java)
 
     private var disposed = false
+    private var channel: MethodChannel? = null
     private var pendingPermissionLogin: LoginRequest? = null
     private var locationListener: LocationListener? = null
     private var locationTimeout: Runnable? = null
 
     fun attach(messenger: BinaryMessenger) {
-        MethodChannel(messenger, CHANNEL).setMethodCallHandler { call, result ->
+        channel = MethodChannel(messenger, CHANNEL)
+        channel?.setMethodCallHandler { call, result ->
             handle(call, result)
         }
     }
@@ -292,6 +294,7 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
     }
 
     private fun performMachineLogin(request: LoginRequest, location: Location) {
+        mainHandler.post { channel?.invokeMethod("machineLoginSending", null) }
         ioExecutor.execute {
             try {
                 val body = JSONObject()

@@ -8,6 +8,7 @@ struct PublicMachine: Decodable {
 
 struct Shop: Decodable {
   let name: String
+  let heroUrl: String?
   let latitude: Double
   let longitude: Double
   let radiusMeters: Double

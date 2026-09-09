@@ -38,10 +38,18 @@ class ArcadeLinkNativeService {
   Future<void> loginMachine({
     required String cardId,
     required String ticket,
+    VoidCallback? onSending,
   }) async {
-    await _channel.invokeMethod<void>('loginMachine', {
-      'cardId': cardId,
-      'ticket': ticket,
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'machineLoginSending') onSending?.call();
     });
+    try {
+      await _channel.invokeMethod<void>('loginMachine', {
+        'cardId': cardId,
+        'ticket': ticket,
+      });
+    } finally {
+      _channel.setMethodCallHandler(null);
+    }
   }
 }

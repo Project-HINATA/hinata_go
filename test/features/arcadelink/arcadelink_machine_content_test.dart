@@ -31,7 +31,7 @@ Widget content({
   authenticating: false,
   passkeyAuthenticating: false,
   loggingIn: busy,
-  activeCardId: busy ? '1' : null,
+  activeCardId: busy || success ? '1' : null,
   success: success,
   webAuthStarted: false,
   error: null,
@@ -80,12 +80,14 @@ Future<void> show(
 }
 
 void main() {
-  testWidgets('native platforms expose Passkey before web fallback', (
-    tester,
-  ) async {
+  testWidgets('MuNET is primary and Passkey remains available', (tester) async {
     await show(tester, content(auth: true, passkey: true));
     expect(find.text('使用 Passkey 登录'), findsOneWidget);
-    expect(find.text('打开网页登录'), findsOneWidget);
+    expect(find.text('使用 MuNET 登录'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('使用 MuNET 登录')).dy,
+      lessThan(tester.getTopLeft(find.text('使用 Passkey 登录')).dy),
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -96,10 +98,10 @@ void main() {
     expect(find.text('请先登录'), findsNothing);
     expect(find.text('使用 MuNET 登录'), findsOneWidget);
     expect(
-      tester.getSize(find.byType(FilledButton)).height,
+      tester.getSize(find.byType(FilledButton).first).height,
       greaterThanOrEqualTo(56),
     );
-    expect(find.text('打开网页版'), findsOneWidget);
+    expect(find.text('打开网页版'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -112,7 +114,7 @@ void main() {
         content(cards: [card], onLogin: (_) => tapped++),
         scale: 2,
       );
-      await tester.ensureVisible(find.text('登录'));
+      await tester.ensureVisible(find.text(card.label));
       await tester.tap(find.text(card.label));
       expect(tapped, 1);
       expect(find.text('尾号 7890'), findsOneWidget);
@@ -127,7 +129,7 @@ void main() {
       tester,
       content(cards: [card], busy: true, onLogin: (_) => tapped++),
     );
-    await tester.ensureVisible(find.text('正在登录...'));
+    await tester.ensureVisible(find.text('确认位置…'));
     await tester.tap(find.text(card.label));
     expect(tapped, 0);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);

@@ -2,183 +2,189 @@ import SwiftUI
 
 struct MachineLoginView: View {
   @EnvironmentObject private var model: MachineLoginViewModel
-  @Environment(\.openURL) private var openURL
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 28) {
-        header
+      VStack(spacing: 0) {
+        if let machine = model.machine {
+          VStack(alignment: .leading, spacing: 0) {
+            if let path = machine.shop.heroUrl,
+               let url = URL(string: path, relativeTo: URL(string: "https://link.neri.moe")) {
+              AsyncImage(url: url.absoluteURL) { phase in
+                if case .success(let image) = phase {
+                  Color.clear.aspectRatio(1.5, contentMode: .fit)
+                    .overlay { image.resizable().scaledToFill() }
+                    .clipped()
+                    .overlay(alignment: .bottom) { Divider() }
+                    .accessibilityHidden(true)
+                }
+              }
+            }
+            VStack(alignment: .leading, spacing: 8) {
+              Text(machine.shop.name)
+                .font(.title.weight(.bold))
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+              Text(machine.name).font(.title3.weight(.medium)).foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+          }
+          .background(Color(.secondarySystemGroupedBackground))
+          .clipShape(RoundedRectangle(cornerRadius: 32))
+        } else if model.state != .failed {
+          RoundedRectangle(cornerRadius: 32)
+            .fill(Color.primary.opacity(0.04)).frame(height: 180)
+            .accessibilityLabel("正在加载机台信息")
+        }
+
+        VStack(spacing: 10) {
+          Text(title).font(.largeTitle.weight(.bold))
+            .accessibilityAddTraits(.isHeader)
+          if model.state == .unauthenticated {
+            Text("登录后选择用于这台机台的卡片").foregroundStyle(.secondary)
+          } else if [.ready, .loadingCards, .locating, .sending, .success].contains(model.state) {
+            Text("选择用于这次机台登录的卡片").foregroundStyle(.secondary)
+          } else if model.state == .completed {
+            Text("可以关闭此页面").foregroundStyle(.secondary)
+          }
+          if let error = model.errorMessage {
+            Text(error).font(.body).foregroundStyle(.red).padding(.top, 6)
+          }
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 52).padding(.bottom, 30)
 
         switch model.state {
-        case .idle, .loadingMachine:
-          ProgressView("加载中...")
-            .frame(maxWidth: .infinity, alignment: .center)
         case .unauthenticated:
-          authenticationView
-        case .ready:
+          VStack(spacing: 14) {
+            Button { Task { await model.authenticateWithMunet() } } label: {
+              actionLabel(model.authenticating == "munet" ? "正在连接 MuNET…" : "使用 MuNET 登录",
+                          busy: model.authenticating == "munet")
+            }
+            .buttonStyle(ClipActionStyle(primary: true))
+            Button { Task { await model.authenticateWithPasskey() } } label: {
+              actionLabel(model.authenticating == "passkey" ? "正在验证 Passkey…" : "使用 Passkey 登录",
+                          busy: model.authenticating == "passkey")
+            }
+            .buttonStyle(ClipActionStyle())
+          }
+          .disabled(model.authenticating != nil)
+        case .ready, .locating, .sending, .success:
           cardsView
-        case .locating, .sending:
-          ProgressView(model.state == .locating ? "确认位置..." : "正在登录...")
-            .frame(maxWidth: .infinity, alignment: .center)
-        case .success:
-          successView
+        case .loadingCards:
+          if model.errorMessage != nil {
+            Button("重新加载卡片") { Task { await model.reloadCards() } }
+              .buttonStyle(ClipActionStyle())
+          } else {
+            VStack(spacing: 1) {
+              ForEach(0..<3) { _ in Color.primary.opacity(0.04).frame(height: 84) }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .accessibilityLabel("正在加载卡片")
+          }
         case .failed:
-          failedView
+          if let shop = model.shopCode, let machine = model.publicId {
+            Button("重试") { Task { await model.start(shopCode: shop, publicId: machine) } }
+              .buttonStyle(ClipActionStyle())
+          }
+        case .idle, .loadingMachine:
+          ProgressView().accessibilityLabel("正在加载")
+        case .completed:
+          EmptyView()
         }
       }
-      .frame(maxWidth: 560, alignment: .leading)
-      .padding(24)
-      // App Clip attribution is a system overlay, not part of our safe area.
-      // Keep a stable clearance rather than moving content when it disappears.
+      .frame(maxWidth: 480)
+      .padding(.horizontal, 20).padding(.bottom, 28)
+      // The provider notification overlays the safe area; reserve stable clearance.
       .padding(.top, 88)
       .frame(maxWidth: .infinity)
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background {
-      Color(.systemGroupedBackground).ignoresSafeArea()
+    .background(Color(.systemGroupedBackground).ignoresSafeArea())
+  }
+
+  private var title: String {
+    switch model.state {
+    case .idle, .loadingMachine: return "正在加载…"
+    case .unauthenticated: return "登录 ArcadeLink"
+    case .completed: return "本次登录已完成"
+    case .failed: return "无法进入机台会话"
+    default: return "选择卡片"
     }
   }
 
-  private var header: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("ArcadeLink")
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
-      if let machine = model.machine {
-        Text(machine.shop.name)
-          .font(.largeTitle.weight(.bold))
-          .fixedSize(horizontal: false, vertical: true)
-        Label(machine.name, systemImage: "gamecontroller")
-          .font(.title3)
-          .foregroundStyle(.secondary)
-      } else {
-        Text("ArcadeLink")
-          .font(.title2.weight(.semibold))
-      }
-    }
-  }
-
-  private var authenticationView: some View {
-    VStack(alignment: .leading, spacing: 14) {
-      Text("登录账号后即可登录：")
-        .foregroundStyle(.secondary)
-      Button {
-        Task { await model.authenticateWithPasskey() }
-      } label: {
-        Label("使用 Passkey 登录", systemImage: "person.badge.key.fill")
-          .frame(maxWidth: .infinity)
-      }
-      .buttonStyle(ClipActionStyle())
-
-      Button {
-        Task { await model.authenticateWithMunet() }
-      } label: {
-        Label("使用 MuNET 登录", systemImage: "person.crop.circle.badge.checkmark")
-          .frame(maxWidth: .infinity)
-      }
-      .buttonStyle(ClipActionStyle())
-
-      if let url = model.webFallbackURL {
-        Button {
-          openURL(url)
-        } label: {
-          Label("使用网页版登录", systemImage: "safari")
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.bordered)
-      }
-    }
+  private func actionLabel(_ title: String, busy: Bool) -> some View {
+    HStack(spacing: 10) {
+      if busy { ProgressView().tint(.primary) }
+      Text(title)
+    }.frame(maxWidth: .infinity)
   }
 
   private var cardsView: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(spacing: 0) {
       if model.cards.isEmpty {
-        Text("还没有添加卡片")
-          .foregroundStyle(.secondary)
-        Link("先添加一张卡片", destination: URL(string: "https://link.neri.moe/cards")!)
+        Text("还没有可用卡片，请先在 ArcadeLink 添加卡片")
+          .foregroundStyle(.secondary).multilineTextAlignment(.center)
+        Button("重新加载卡片") { Task { await model.reloadCards() } }
+          .buttonStyle(ClipActionStyle()).padding(.top, 20)
       } else {
-        Text("选择卡片")
-          .font(.subheadline.weight(.medium))
-          .foregroundStyle(.secondary)
-        ForEach(model.cards) { card in
-          Button {
-            Task { await model.login(card: card) }
-          } label: {
-            HStack(spacing: 14) {
-              Image(systemName: "creditcard")
-                .font(.title2)
-                .foregroundStyle(.secondary)
-              VStack(alignment: .leading, spacing: 4) {
-                Text(card.label)
-                  .font(.headline)
-                Text("尾号 \(card.accessCode.suffix(4))")
-                  .font(.caption.monospaced())
-                  .foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+          ForEach(Array(model.cards.enumerated()), id: \.element.id) { index, card in
+            if index > 0 { Divider().padding(.leading, 24) }
+            let active = model.activeCardId == card.id
+            Button { Task { await model.login(card: card) } } label: {
+              HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                  Text(card.label).font(.title3.weight(.semibold)).foregroundStyle(.primary)
+                  Text(active ? rowDetail(card) : "尾号 \(card.accessCode.suffix(4))")
+                    .font(.body).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                if active && model.state == .success {
+                  Image(systemName: "checkmark").foregroundStyle(.blue)
+                } else if active && [.locating, .sending].contains(model.state) {
+                  ProgressView()
+                } else {
+                  Image(systemName: "chevron.right").font(.subheadline).foregroundStyle(.tertiary)
+                }
               }
-              Spacer()
-              Text("登录")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tint)
+              .padding(.horizontal, 24).padding(.vertical, 16)
+              .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
+              .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(.plain)
+            .disabled(model.state != .ready)
+            .opacity(model.state != .ready && !active ? 0.45 : 1)
           }
-          .buttonStyle(ClipActionStyle())
         }
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 28))
       }
     }
   }
 
-  private var successView: some View {
-    VStack(spacing: 12) {
-      Image(systemName: "checkmark.circle.fill")
-        .font(.system(size: 52))
-        .foregroundStyle(.green)
-      Text("已登录")
-        .font(.title2.weight(.semibold))
-      Text("本次会话已结束")
-        .foregroundStyle(.secondary)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 36)
-  }
-
-  private var failedView: some View {
-    VStack(alignment: .leading, spacing: 14) {
-      Label("无法进入机台会话", systemImage: "exclamationmark.triangle.fill")
-        .font(.headline)
-        .foregroundStyle(.orange)
-      Text(model.errorMessage ?? "请重新碰一下 NFC 或重新扫描二维码。")
-        .foregroundStyle(.secondary)
-      if let shopCode = model.shopCode, let publicId = model.publicId {
-        Button("重试") { Task { await model.start(shopCode: shopCode, publicId: publicId) } }
-          .buttonStyle(ClipActionStyle())
-      }
-      if let url = model.webFallbackURL {
-        Button("使用网页版继续") { openURL(url) }
-          .buttonStyle(.borderedProminent)
-      }
+  private func rowDetail(_ card: ArcadeCard) -> String {
+    switch model.state {
+    case .locating: return "确认位置…"
+    case .sending: return "正在登录…"
+    case .success: return "已登录"
+    default: return "尾号 \(card.accessCode.suffix(4))"
     }
   }
 }
 
 private struct ClipActionStyle: ButtonStyle {
-  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+  var primary = false
+  @Environment(\.isEnabled) private var enabled
 
   func makeBody(configuration: Configuration) -> some View {
-    surface(configuration.label
-      .foregroundStyle(.primary)
-      .padding(18)
-      .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading))
-      .opacity(configuration.isPressed ? 0.7 : 1)
-  }
-
-  @ViewBuilder
-  private func surface<Content: View>(_ content: Content) -> some View {
-    if #available(iOS 26.0, *), !reduceTransparency {
-      content.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 20))
-    } else {
-      content.background(Color(.secondarySystemGroupedBackground),
-                         in: RoundedRectangle(cornerRadius: 20))
-    }
+    configuration.label
+      .font(.headline)
+      .foregroundStyle(primary ? Color.white : Color.primary)
+      .padding(.horizontal, 24).padding(.vertical, 16)
+      .frame(maxWidth: .infinity, minHeight: 58)
+      .background(primary ? Color.blue : Color.primary.opacity(0.065), in: Capsule())
+      .opacity(!enabled ? 0.5 : configuration.isPressed ? 0.7 : 1)
   }
 }

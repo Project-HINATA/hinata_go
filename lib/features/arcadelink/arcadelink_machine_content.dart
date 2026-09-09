@@ -21,6 +21,8 @@ class ArcadeLinkMachineContent extends StatelessWidget {
     required this.onLogin,
     required this.onContinue,
     this.loadingCards = false,
+    this.completed = false,
+    this.sending = false,
     this.browserOnly = false,
     this.passkeyAvailable = false,
     this.passkeyActionLabel = '使用 Passkey 登录',
@@ -38,6 +40,7 @@ class ArcadeLinkMachineContent extends StatelessWidget {
       success,
       webAuthStarted;
   final bool loadingCards, browserOnly, passkeyAvailable, nativeMunetAvailable;
+  final bool completed, sending;
   final String passkeyActionLabel;
   final String? activeCardId;
   final Object? error;
@@ -51,194 +54,204 @@ class ArcadeLinkMachineContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final busy =
-        authenticating || passkeyAuthenticating || loggingIn || loadingCards;
+        authenticating ||
+        passkeyAuthenticating ||
+        loggingIn ||
+        loadingCards ||
+        success;
+    final heading = completed
+        ? '本次登录已完成'
+        : browserOnly
+        ? '在浏览器继续'
+        : authRequired
+        ? '登录 ArcadeLink'
+        : '选择卡片';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Card.filled(
           margin: EdgeInsets.zero,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (session.machine.heroUrl case final String url)
+                Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  excludeFromSemantics: true,
+                  frameBuilder: (context, child, frame, synchronous) =>
+                      frame == null
+                      ? const SizedBox.shrink()
+                      : AspectRatio(aspectRatio: 1.5, child: child),
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      session.machine.shopName,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      session.machine.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 48),
+        Text(
+          heading,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          completed
+              ? '可以关闭此页面'
+              : browserOnly
+              ? '当前平台通过 ArcadeLink 网页完成账号登录、选卡和位置确认。'
+              : authRequired
+              ? '登录后选择用于这台机台的卡片'
+              : '选择用于这次机台登录的卡片',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                arcadeLinkErrorMessage(error!),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 30),
+        if (completed)
+          const SizedBox.shrink()
+        else if (browserOnly)
+          _TouchAction(label: '继续登录', onPressed: onContinue)
+        else if (authRequired) ...[
+          _TouchAction(
+            label: authenticating ? '正在连接 MuNET…' : '使用 MuNET 登录',
+            busy: authenticating,
+            onPressed: busy ? null : onAuthenticate,
+          ),
+          const SizedBox(height: 12),
+          _TouchAction(
+            label: passkeyAuthenticating ? '正在验证 Passkey…' : passkeyActionLabel,
+            secondary: true,
+            busy: passkeyAuthenticating,
+            onPressed: busy || !passkeyAvailable ? null : onAuthenticatePasskey,
+          ),
+          if (webAuthStarted) ...[
+            const SizedBox(height: 20),
+            Text(
+              '完成授权后，返回这里刷新卡片。',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            _TouchAction(
+              label: '重新加载卡片',
+              secondary: true,
+              onPressed: busy ? null : onReloadCards,
+            ),
+          ],
+        ] else if (loadingCards)
+          Card.filled(
+            margin: EdgeInsets.zero,
+            child: Semantics(
+              label: '正在加载卡片',
+              child: const SizedBox(
+                height: 168,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ),
+          )
+        else if (cards.isEmpty) ...[
+          Text(
+            '还没有可用卡片，请先在 ArcadeLink 添加卡片',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 20),
+          _TouchAction(
+            label: '重新加载卡片',
+            secondary: true,
+            onPressed: onReloadCards,
+          ),
+        ] else
+          Card.filled(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.sports_esports_outlined,
-                  size: 32,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  session.machine.shopName,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                for (var i = 0; i < cards.length; i++) ...[
+                  if (i > 0) const Divider(height: 1, indent: 24),
+                  _CardLoginTile(
+                    card: cards[i],
+                    busy: loggingIn && cards[i].id == activeCardId,
+                    sending: sending,
+                    success: success && cards[i].id == activeCardId,
+                    dimmed: busy && cards[i].id != activeCardId,
+                    onPressed: busy ? null : () => onLogin(cards[i]),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  session.machine.name,
-                  style: theme.textTheme.headlineMedium,
-                ),
+                ],
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 28),
-        if (success)
-          const ArcadeLinkStatusPanel(
-            title: '已登录',
-            message: '本次会话已结束',
-            icon: Icons.check_circle_outline,
-          )
-        else ...[
-          if (browserOnly) ...[
-            Text('在浏览器继续', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              '当前平台通过 ArcadeLink 网页完成账号登录、选卡和位置确认。',
-              style: theme.textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 20),
-            _TouchAction(
-              label: '继续登录',
-              icon: Icons.open_in_browser,
-              onPressed: onContinue,
-            ),
-          ] else if (authRequired) ...[
-            Text('登录账号', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              '登录后选择卡片，即可登录这台机台。',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 20),
-            if (passkeyAvailable) ...[
-              _TouchAction(
-                label: passkeyAuthenticating ? '正在验证...' : passkeyActionLabel,
-                icon: Icons.fingerprint,
-                busy: passkeyAuthenticating,
-                onPressed: busy ? null : onAuthenticatePasskey,
-              ),
-              const SizedBox(height: 12),
-            ],
-            _TouchAction(
-              label: authenticating
-                  ? '正在打开...'
-                  : nativeMunetAvailable
-                  ? '使用 MuNET 登录'
-                  : passkeyAvailable
-                  ? '打开网页登录'
-                  : '使用 MuNET 登录',
-              icon: browserOnly ? Icons.open_in_browser : Icons.person_outline,
-              secondary: passkeyAvailable,
-              busy: authenticating,
-              onPressed: busy ? null : onAuthenticate,
-            ),
-            if (webAuthStarted) ...[
-              const SizedBox(height: 16),
-              Text('完成授权后，返回这里刷新卡片。', style: theme.textTheme.bodyMedium),
-              const SizedBox(height: 12),
-              _TouchAction(
-                label: '刷新卡片',
-                icon: Icons.refresh,
-                secondary: true,
-                busy: loadingCards,
-                onPressed: busy ? null : onReloadCards,
-              ),
-            ],
-          ] else if (loadingCards)
-            const ArcadeLinkStatusPanel(title: '正在读取卡片...', busy: true)
-          else if (cards.isEmpty && error != null)
-            ArcadeLinkStatusPanel(title: '无法读取卡片', onRetry: onReloadCards)
-          else if (cards.isEmpty)
-            const ArcadeLinkStatusPanel(
-              title: '还没有添加卡片',
-              message: '请在 ArcadeLink 网页中添加或同步卡片，再返回这里刷新。',
-              icon: Icons.credit_card_off_outlined,
-            )
-          else ...[
-            Text('选择卡片', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              '登录时需要确认你位于店内。',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            for (final card in cards) ...[
-              _CardLoginTile(
-                card: card,
-                busy: loggingIn && card.id == activeCardId,
-                onPressed: busy ? null : () => onLogin(card),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ],
-          if (error != null) ...[
-            const SizedBox(height: 16),
-            Semantics(
-              liveRegion: true,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    error is PlatformException
-                        ? (error as PlatformException).message ?? '操作失败，请重试'
-                        : error.toString(),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onErrorContainer,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          if (!browserOnly) ...[
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 12),
-            _TouchAction(
-              label: '打开网页版',
-              icon: Icons.open_in_browser,
-              secondary: true,
-              onPressed: busy ? null : onContinue,
-            ),
-            if (!authRequired &&
-                cards.isEmpty &&
-                error == null &&
-                !loadingCards) ...[
-              const SizedBox(height: 12),
-              _TouchAction(
-                label: '刷新卡片',
-                icon: Icons.refresh,
-                secondary: true,
-                onPressed: onReloadCards,
-              ),
-            ],
-          ],
-        ],
       ],
     );
   }
 }
 
+String arcadeLinkErrorMessage(Object error) {
+  final message = error is PlatformException
+      ? error.message ?? '操作失败，请重试'
+      : error.toString();
+  if (message.contains('定位权限') || message.contains('denied')) {
+    return '需要定位权限才能确认你在店内';
+  }
+  if (message.contains('机台') ||
+      message.contains('502') ||
+      message.contains('404')) {
+    return '这台机台暂时不可用，请稍后重试';
+  }
+  if (message.contains('Exception') || message.contains('请求失败')) {
+    return '操作失败，请稍后重试';
+  }
+  return message;
+}
+
 class _TouchAction extends StatelessWidget {
   const _TouchAction({
     required this.label,
-    required this.icon,
     required this.onPressed,
     this.secondary = false,
     this.busy = false,
   });
   final String label;
-  final IconData icon;
   final VoidCallback? onPressed;
   final bool secondary, busy;
 
@@ -246,30 +259,29 @@ class _TouchAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = FilledButton.styleFrom(
       minimumSize: const Size.fromHeight(56),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       textStyle: Theme.of(context).textTheme.titleMedium,
       visualDensity: VisualDensity.standard,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );
-    final symbol = busy
-        ? const SizedBox.square(
+    final child = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (busy) ...[
+          SizedBox.square(
             dimension: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        : Icon(icon);
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        Flexible(child: Text(label, textAlign: TextAlign.center)),
+      ],
+    );
     return secondary
-        ? OutlinedButton.icon(
-            style: style,
-            onPressed: onPressed,
-            icon: symbol,
-            label: Text(label, textAlign: TextAlign.center),
-          )
-        : FilledButton.icon(
-            style: style,
-            onPressed: onPressed,
-            icon: symbol,
-            label: Text(label, textAlign: TextAlign.center),
-          );
+        ? FilledButton.tonal(style: style, onPressed: onPressed, child: child)
+        : FilledButton(style: style, onPressed: onPressed, child: child);
   }
 }
 
@@ -277,10 +289,13 @@ class _CardLoginTile extends StatelessWidget {
   const _CardLoginTile({
     required this.card,
     required this.busy,
+    required this.sending,
+    required this.success,
+    required this.dimmed,
     required this.onPressed,
   });
   final ArcadeLinkCard card;
-  final bool busy;
+  final bool busy, sending, success, dimmed;
   final VoidCallback? onPressed;
 
   @override
@@ -289,50 +304,61 @@ class _CardLoginTile extends StatelessWidget {
     final tail = card.accessCode.length > 4
         ? card.accessCode.substring(card.accessCode.length - 4)
         : card.accessCode;
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(88),
-        padding: const EdgeInsets.all(20),
-        visualDensity: VisualDensity.standard,
-        alignment: Alignment.centerLeft,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      onPressed: onPressed,
-      child: Row(
-        children: [
-          const Icon(Icons.credit_card_outlined, size: 28),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(card.label, style: theme.textTheme.titleMedium),
-                const SizedBox(height: 4),
-                Text(
-                  '尾号 $tail',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+    return Opacity(
+      opacity: dimmed ? 0.45 : 1,
+      child: Semantics(
+        button: true,
+        enabled: onPressed != null,
+        child: InkWell(
+          onTap: onPressed,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 84),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(card.label, style: theme.textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        Semantics(
+                          liveRegion: busy || success,
+                          child: Text(
+                            success
+                                ? '已登录'
+                                : busy
+                                ? sending
+                                      ? '正在登录…'
+                                      : '确认位置…'
+                                : '尾号 $tail',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  busy ? '正在登录...' : '登录',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  if (busy)
+                    const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Icon(
+                      success ? Icons.check : Icons.chevron_right,
+                      color: success
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outline,
+                    ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 12),
-          if (busy)
-            const SizedBox.square(
-              dimension: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else
-            const Icon(Icons.chevron_right),
-        ],
+        ),
       ),
     );
   }
@@ -383,7 +409,7 @@ class ArcadeLinkStatusPanel extends StatelessWidget {
           ],
           if (onRetry != null) ...[
             const SizedBox(height: 20),
-            _TouchAction(label: '重试', icon: Icons.refresh, onPressed: onRetry),
+            _TouchAction(label: '重试', onPressed: onRetry),
           ],
         ],
       ),
