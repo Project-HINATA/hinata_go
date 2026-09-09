@@ -9,6 +9,8 @@ final class MachineLoginViewModel: ObservableObject {
     case unauthenticated
     case loadingCards
     case completed
+    case expired
+    case expired
     case ready
     case locating
     case sending
@@ -114,7 +116,8 @@ final class MachineLoginViewModel: ObservableObject {
   func login(card: ArcadeCard) async {
     guard state == .ready else { return }
     guard let ticket else {
-      fail(ArcadeLinkAPIError.server("本次会话已失效"))
+      state = .expired
+      errorMessage = nil
       return
     }
     activeCardId = card.id
@@ -137,7 +140,7 @@ final class MachineLoginViewModel: ObservableObject {
       try? await Task.sleep(nanoseconds: 2_500_000_000)
       if state == .success { state = .completed }
     } catch {
-      state = .ready
+      if errorMessage == "本次会话已失效" { state = .expired } else { state = .ready }
       activeCardId = nil
       errorMessage = friendlyMessage(error)
     }

@@ -45,8 +45,8 @@ struct MachineLoginView: View {
             Text("登录后选择用于这台机台的卡片").foregroundStyle(.secondary)
           } else if [.ready, .loadingCards, .locating, .sending, .success].contains(model.state) {
             Text("选择用于这次机台登录的卡片").foregroundStyle(.secondary)
-          } else if model.state == .completed {
-            Text("可以关闭此页面").foregroundStyle(.secondary)
+          } else if model.state == .completed || model.state == .expired {
+            Text(model.state == .expired ? "请重新碰一下 NFC 或重新扫描二维码。" : "可以关闭此页面").foregroundStyle(.secondary)
           }
           if let error = model.errorMessage {
             Text(error).font(.body).foregroundStyle(.red).padding(.top, 6)
@@ -91,7 +91,7 @@ struct MachineLoginView: View {
           }
         case .idle, .loadingMachine:
           ProgressView().accessibilityLabel("正在加载")
-        case .completed:
+        case .completed, .expired:
           EmptyView()
         }
       }

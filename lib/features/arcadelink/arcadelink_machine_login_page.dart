@@ -41,6 +41,7 @@ class _ArcadeLinkMachineLoginPageState
   bool _webAuthStarted = false;
   bool _success = false;
   bool _completed = false;
+  bool _expired = false;
   bool _sending = false;
   Timer? _completionTimer;
   bool _loadingCards = false;
@@ -68,6 +69,7 @@ class _ArcadeLinkMachineLoginPageState
     _completionTimer?.cancel();
     setState(() {
       _completed = false;
+      _expired = false;
       _loading = true;
       _session = null;
       _cards = const [];
@@ -96,7 +98,10 @@ class _ArcadeLinkMachineLoginPageState
     } catch (error) {
       if (!mounted || publicId != widget.publicId) return;
       setState(() {
-        _error = error;
+        _expired =
+            error.toString().contains('会话已失效') ||
+            error.toString().contains('缺少会话凭证');
+        _error = _expired ? null : error;
         _loading = false;
       });
     }
@@ -258,7 +263,12 @@ class _ArcadeLinkMachineLoginPageState
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
-              child: _loading
+              child: _expired
+                  ? const ArcadeLinkStatusPanel(
+                      title: '本次会话已失效',
+                      message: '请重新碰一下 NFC 或重新扫描二维码。',
+                    )
+                  : _loading
                   ? const ArcadeLinkStatusPanel(title: '加载中...', busy: true)
                   : session == null
                   ? ArcadeLinkStatusPanel(
