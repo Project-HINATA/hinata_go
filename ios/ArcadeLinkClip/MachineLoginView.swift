@@ -143,7 +143,7 @@ struct MachineLoginView: View {
     Button { showingLogoutConfirmation = true } label: {
       Image(systemName: "rectangle.portrait.and.arrow.right")
         .font(.title3)
-        .frame(width: 44, height: 44)
+        .frame(minWidth: 30, minHeight: 30)
     }
     .accessibilityLabel("退出账号")
   }
