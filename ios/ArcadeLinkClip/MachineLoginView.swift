@@ -2,72 +2,130 @@ import SwiftUI
 
 struct MachineLoginView: View {
   @EnvironmentObject private var model: MachineLoginViewModel
-  @State private var showingLogoutConfirmation = false
   @State private var showingError = false
 
   var body: some View {
-    ScrollView {
-      VStack(spacing: 0) {
-        if model.state == .expired {
-          VStack(spacing: 12) {
-            Image(systemName: "clock.badge.exclamationmark").font(.system(size: 42)).foregroundStyle(.secondary)
-            Text("本次会话已失效").font(.title2.weight(.bold))
-            Text("请重新碰一下 NFC 或重新扫描二维码。").foregroundStyle(.secondary)
-          }
-          .multilineTextAlignment(.center)
-          .frame(maxWidth: .infinity)
-          .padding(.top, 120)
-        } else if let machine = model.machine {
-          VStack(alignment: .leading, spacing: 0) {
-            if let path = machine.shop.heroUrl,
-               let url = URL(string: path, relativeTo: URL(string: "https://link.neri.moe")) {
-              AsyncImage(url: url.absoluteURL) { phase in
-                if case .success(let image) = phase {
-                  Color.clear.aspectRatio(1.5, contentMode: .fit)
-                    .overlay { image.resizable().scaledToFill() }
-                    .clipped()
-                    .overlay(alignment: .bottom) { Divider() }
-                    .accessibilityHidden(true)
-                }
-              }
-            }
-            VStack(alignment: .leading, spacing: 8) {
-              Text(machine.shop.name)
-                .font(.title.weight(.bold))
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-              Text(machine.name).font(.title3.weight(.medium)).foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 24).padding(.vertical, 22)
-            .frame(maxWidth: .infinity, alignment: .leading)
-          }
-          .background(Color(.secondarySystemGroupedBackground))
-          .clipShape(RoundedRectangle(cornerRadius: 32))
-        } else if model.state != .failed {
-          RoundedRectangle(cornerRadius: 32)
-            .fill(Color.primary.opacity(0.04)).frame(height: 180)
-            .accessibilityLabel("正在加载机台信息")
-        }
-
-        VStack(spacing: 10) {
-          if [.ready, .loadingCards, .locating, .sending, .success].contains(model.state) {
-            HStack {
-              Text("选择卡片").font(.largeTitle.weight(.bold))
-              Spacer()
-              if #available(iOS 26.0, *) {
-                logoutButton.buttonStyle(.glass).buttonBorderShape(.circle)
-              } else {
-                logoutButton.buttonStyle(.bordered).clipShape(Circle())
-              }
-            }
-          } else if model.state == .completed {
-            Text(title).font(.largeTitle.weight(.bold)).accessibilityAddTraits(.isHeader)
-            Text("可以关闭此页面").foregroundStyle(.secondary)
+    GeometryReader { geometry in
+      ScrollView {
+        Group {
+          switch model.state {
+          case .idle, .loadingMachine:
+            ClipLoadingPage()
+          case .failed(let message):
+            ClipFailurePage(message: message, retry: retrySession)
+          case .expired:
+            ClipExpiredPage()
+          case .completed:
+            ClipCompletedPage()
+          case .unauthenticated, .loadingCards, .cardsFailed, .ready, .locating, .sending, .success:
+            ClipSessionPage()
           }
         }
-        .multilineTextAlignment(.center)
+        .frame(maxWidth: 480)
+        .frame(minHeight: max(0, geometry.size.height - 116), alignment: .top)
+        .padding(.horizontal, 20).padding(.bottom, 28)
+        // The provider notification overlays the safe area; reserve stable clearance.
+        .padding(.top, 88)
         .frame(maxWidth: .infinity)
-        .padding(.top, 52).padding(.bottom, 30)
+      }
+    }
+    .background(Color(.systemGroupedBackground).ignoresSafeArea())
+    .alert("ArcadeLink", isPresented: $showingError) {
+      Button("知道了") { model.clearError() }
+    } message: {
+      Text(model.errorMessage ?? "")
+    }
+    .onChange(of: model.errorMessage) { value in
+      showingError = value != nil
+    }
+  }
+
+  private var retrySession: (() -> Void)? {
+    guard let shop = model.shopCode, let machine = model.publicId else { return nil }
+    return { Task { await model.start(shopCode: shop, publicId: machine) } }
+  }
+}
+
+private struct ClipLoadingPage: View {
+  var body: some View {
+    ProgressView().accessibilityLabel("正在加载")
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+}
+
+private struct ClipFailurePage: View {
+  let message: String
+  let retry: (() -> Void)?
+
+  var body: some View {
+    VStack(spacing: 20) {
+      ClipStatusMessage(title: "无法进入机台会话", message: message, symbol: "exclamationmark.triangle")
+      if let retry { Button("重试", action: retry).buttonStyle(.borderedProminent) }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+}
+
+private struct ClipExpiredPage: View {
+  var body: some View {
+    ClipStatusMessage(title: "本次会话已失效", message: "请重新碰一下 NFC 或重新扫描二维码。", symbol: "clock.badge.exclamationmark")
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+}
+
+private struct ClipCompletedPage: View {
+  var body: some View {
+    ClipStatusMessage(title: "本次登录已完成", message: "可以关闭此页面", symbol: "checkmark.circle")
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+}
+
+private struct ClipSessionPage: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  @State private var showingLogoutConfirmation = false
+
+  var body: some View {
+    VStack(spacing: 30) {
+      if let machine = model.machine {
+        VStack(alignment: .leading, spacing: 0) {
+          if let path = machine.shop.heroUrl,
+             let url = URL(string: path, relativeTo: URL(string: "https://link.neri.moe")) {
+            AsyncImage(url: url.absoluteURL) { phase in
+              if case .success(let image) = phase {
+                Color.clear.aspectRatio(1.5, contentMode: .fit)
+                  .overlay { image.resizable().scaledToFill() }
+                  .clipped()
+                  .overlay(alignment: .bottom) { Divider() }
+                  .accessibilityHidden(true)
+              }
+            }
+          }
+          VStack(alignment: .leading, spacing: 8) {
+            Text(machine.shop.name)
+              .font(.title.weight(.bold))
+              .fixedSize(horizontal: false, vertical: true)
+              .accessibilityAddTraits(.isHeader)
+            Text(machine.name).font(.title3.weight(.medium)).foregroundStyle(.secondary)
+          }
+          .padding(.horizontal, 24).padding(.vertical, 22)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 32))
+      }
+
+      VStack(spacing: 30) {
+        if [.ready, .locating, .sending, .success].contains(model.state) {
+          HStack {
+            Text("选择卡片").font(.largeTitle.weight(.bold))
+            Spacer()
+            if #available(iOS 26.0, *) {
+              logoutButton.buttonStyle(.glass).buttonBorderShape(.circle)
+            } else {
+              logoutButton.buttonStyle(.bordered).clipShape(Circle())
+            }
+          }
+        }
 
         switch model.state {
         case .unauthenticated:
@@ -87,51 +145,18 @@ struct MachineLoginView: View {
         case .ready, .locating, .sending, .success:
           cardsView
         case .loadingCards:
-          if model.errorMessage != nil {
+          ProgressView().accessibilityLabel("正在加载卡片")
+        case .cardsFailed(let message):
+          VStack(spacing: 20) {
+            ClipStatusMessage(title: "无法加载卡片", message: message, symbol: "exclamationmark.triangle")
             Button("重新加载卡片") { Task { await model.reloadCards() } }
-              .buttonStyle(ClipActionStyle())
-          } else {
-            VStack(spacing: 1) {
-              ForEach(0..<3) { _ in Color.primary.opacity(0.04).frame(height: 84) }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 28))
-            .accessibilityLabel("正在加载卡片")
+              .buttonStyle(.borderedProminent)
           }
-        case .failed:
-          if let shop = model.shopCode, let machine = model.publicId {
-            Button("重试") { Task { await model.start(shopCode: shop, publicId: machine) } }
-              .buttonStyle(ClipActionStyle())
-          }
-        case .idle, .loadingMachine:
-          ProgressView().accessibilityLabel("正在加载")
-        case .completed, .expired:
+        case .idle, .loadingMachine, .failed, .completed, .expired:
           EmptyView()
         }
       }
-      .frame(maxWidth: 480)
-      .padding(.horizontal, 20).padding(.bottom, 28)
-      // The provider notification overlays the safe area; reserve stable clearance.
-      .padding(.top, 88)
-      .frame(maxWidth: .infinity)
-    }
-    .background(Color(.systemGroupedBackground).ignoresSafeArea())
-    .alert("ArcadeLink", isPresented: $showingError) {
-      Button("知道了") { model.clearError() }
-    } message: {
-      Text(model.errorMessage ?? "")
-    }
-    .onChange(of: model.errorMessage) { value in
-      showingError = value != nil
-    }
-  }
-
-  private var title: String {
-    switch model.state {
-    case .idle, .loadingMachine: return "正在加载…"
-    case .unauthenticated: return "登录 ArcadeLink"
-    case .completed: return "本次登录已完成"
-    case .failed: return "无法进入机台会话"
-    default: return "选择卡片"
+      .padding(.top, 22)
     }
   }
 
@@ -142,6 +167,7 @@ struct MachineLoginView: View {
         .frame(minWidth: 30, minHeight: 30)
     }
     .accessibilityLabel("退出账号")
+    .disabled(model.state != .ready)
     .confirmationDialog("退出账号？", isPresented: $showingLogoutConfirmation, titleVisibility: .visible) {
       Button("退出", role: .destructive) { Task { await model.logout() } }
       Button("取消", role: .cancel) {}
@@ -205,6 +231,27 @@ struct MachineLoginView: View {
     case .sending: return "正在登录…"
     case .success: return "已登录"
     default: return "尾号 \(card.accessCode.suffix(4))"
+    }
+  }
+}
+
+private struct ClipStatusMessage: View {
+  let title: String
+  let message: String
+  let symbol: String
+
+  var body: some View {
+    if #available(iOS 17.0, *) {
+      ContentUnavailableView(title, systemImage: symbol, description: Text(message))
+        .fixedSize(horizontal: false, vertical: true)
+    } else {
+      VStack(spacing: 12) {
+        Image(systemName: symbol).font(.largeTitle).foregroundStyle(.secondary)
+        Text(title).font(.title2.weight(.bold))
+        Text(message).foregroundStyle(.secondary)
+      }
+      .multilineTextAlignment(.center)
+      .frame(maxWidth: .infinity)
     }
   }
 }

@@ -25,8 +25,7 @@ final class ArcadeLinkAPI {
   private let decoder = JSONDecoder()
   private let encoder = JSONEncoder()
 
-  private init() {
-    let configuration = URLSessionConfiguration.default
+  init(configuration: URLSessionConfiguration = .default) {
     configuration.httpCookieAcceptPolicy = .always
     configuration.httpShouldSetCookies = true
     session = URLSession(configuration: configuration)

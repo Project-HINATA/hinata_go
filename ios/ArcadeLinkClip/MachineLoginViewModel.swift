@@ -8,13 +8,14 @@ final class MachineLoginViewModel: ObservableObject {
     case loadingMachine
     case unauthenticated
     case loadingCards
+    case cardsFailed(String)
     case completed
     case expired
     case ready
     case locating
     case sending
     case success
-    case failed
+    case failed(String)
   }
 
   @Published private(set) var state: State = .idle
@@ -32,6 +33,7 @@ final class MachineLoginViewModel: ObservableObject {
   private let passkey = PasskeyAuthenticationService()
   private let munet = MunetAuthenticationService()
   private let location = LocationService()
+  private var invocationVersion = 0
 
   init(api: ArcadeLinkAPI = .shared) {
     self.api = api
@@ -44,33 +46,43 @@ final class MachineLoginViewModel: ObservableObject {
 
   func handleInvocation(_ url: URL) async {
     guard let invocation = InvocationParser.invocation(from: url) else {
-      state = .failed
-      errorMessage = "无效的机台地址"
+      invocationVersion += 1
+      shopCode = nil
+      publicId = nil
+      ticket = nil
+      state = .failed("无效的机台地址")
+      errorMessage = nil
       return
     }
     await start(shopCode: invocation.shopCode, publicId: invocation.machinePublicId)
   }
 
   func start(shopCode: String, publicId: String) async {
+    invocationVersion += 1
+    let version = invocationVersion
     self.shopCode = shopCode
     self.publicId = publicId
     state = .loadingMachine
     machine = nil
     cards = []
     activeCardId = nil
+    authenticating = nil
     ticket = nil
     errorMessage = nil
     do {
       let session = try await api.startMachineSession(shopCode: shopCode, publicId: publicId)
+      guard version == invocationVersion else { return }
       ticket = session.ticket
       machine = session.machine
       let me = try await api.me()
+      guard version == invocationVersion else { return }
       guard me.user != nil else {
         state = .unauthenticated
         return
       }
-      try await loadCards()
+      await reloadCards()
     } catch {
+      guard version == invocationVersion else { return }
       fail(error)
     }
   }
@@ -78,35 +90,39 @@ final class MachineLoginViewModel: ObservableObject {
   func authenticateWithPasskey() async {
     guard state == .unauthenticated, authenticating == nil else { return }
     authenticating = "passkey"
+    let version = invocationVersion
     errorMessage = nil
-    defer { authenticating = nil }
+    defer { if version == invocationVersion { authenticating = nil } }
     do {
       let options = try await api.passkeyOptions()
       let assertion = try await passkey.authenticate(options: options)
       try await api.loginWithPasskey(assertion)
-      try await loadCards()
+      guard version == invocationVersion else { return }
+      await reloadCards()
     } catch {
+      guard version == invocationVersion else { return }
       if !isAuthenticationCancellation(error) {
         errorMessage = friendlyMessage(error)
       }
-      if state != .loadingCards { state = .unauthenticated }
     }
   }
 
   func authenticateWithMunet() async {
     guard state == .unauthenticated, authenticating == nil else { return }
     authenticating = "munet"
+    let version = invocationVersion
     errorMessage = nil
-    defer { authenticating = nil }
+    defer { if version == invocationVersion { authenticating = nil } }
     do {
       let code = try await munet.authenticate()
       try await api.exchangeAppClipAuth(code: code)
-      try await loadCards()
+      guard version == invocationVersion else { return }
+      await reloadCards()
     } catch {
+      guard version == invocationVersion else { return }
       if !isAuthenticationCancellation(error) {
         errorMessage = friendlyMessage(error)
       }
-      if state != .loadingCards { state = .unauthenticated }
     }
   }
 
@@ -122,9 +138,19 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func reloadCards() async {
+    let version = invocationVersion
+    state = .loadingCards
     errorMessage = nil
-    do { try await loadCards() }
-    catch { errorMessage = friendlyMessage(error) }
+    do {
+      let response = try await api.cards()
+      guard version == invocationVersion else { return }
+      cards = response.cards.filter { $0.disabledAt == nil }
+      state = .ready
+    } catch {
+      guard version == invocationVersion else { return }
+      let message = friendlyMessage(error)
+      state = message == "本次会话已失效" ? .expired : .cardsFailed(message)
+    }
   }
 
   func clearError() { errorMessage = nil }
@@ -156,6 +182,7 @@ final class MachineLoginViewModel: ObservableObject {
       try? await Task.sleep(nanoseconds: 2_500_000_000)
       if state == .success { state = .completed }
     } catch {
+      guard self.ticket == ticket else { return }
       let message = friendlyMessage(error)
       if message == "本次会话已失效" { state = .expired } else { state = .ready }
       activeCardId = nil
@@ -163,19 +190,15 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  private func loadCards() async throws {
-    state = .loadingCards
-    let response = try await api.cards()
-    cards = response.cards.filter { $0.disabledAt == nil }
-    state = .ready
-  }
-
   private func fail(_ error: Error) {
-    state = .failed
-    errorMessage = friendlyMessage(error)
+    let message = friendlyMessage(error)
+    state = message == "本次会话已失效" ? .expired : .failed(message)
+    errorMessage = nil
   }
   private func friendlyMessage(_ error: Error) -> String {
+    if error is URLError { return "网络连接失败，请检查网络后重试" }
     let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+    if message.contains("会话已失效") || message.contains("缺少会话凭证") { return "本次会话已失效" }
     if message.contains("定位权限") { return "需要定位权限才能确认你在店内" }
     if message.contains("机台") || message.contains("502") || message.contains("404") {
       return "这台机台暂时不可用，请稍后重试"

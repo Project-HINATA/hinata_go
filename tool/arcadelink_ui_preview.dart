@@ -45,54 +45,61 @@ void main() {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: StatefulBuilder(
-                  builder: (context, setState) => ArcadeLinkMachineContent(
-                    session: const ArcadeLinkMachineSession(
-                      ticket: 'local-preview',
-                      expiresIn: 300,
-                      machine: ArcadeLinkMachine(
-                        publicId: 'preview',
-                        name: '舞萌',
-                        shopName: '月宫',
-                      ),
-                    ),
-                    cards: cards,
-                    authRequired: !signedIn,
-                    authenticating: false,
-                    passkeyAuthenticating: false,
-                    loggingIn: busy,
-                    sending: sending,
-                    success: success,
-                    completed: completed,
-                    activeCardId: active,
-                    webAuthStarted: false,
-                    error: null,
-                    passkeyAvailable: true,
-                    nativeMunetAvailable: true,
-                    onAuthenticate: () => setState(() => signedIn = true),
-                    onAuthenticatePasskey: () =>
-                        setState(() => signedIn = true),
-                    onReloadCards: () {},
-                    onContinue: () {},
-                    onLogin: (card) async {
-                      setState(() {
-                        busy = true;
-                        active = card.id;
-                      });
-                      await Future<void>.delayed(const Duration(seconds: 1));
-                      if (!context.mounted) return;
-                      setState(() => sending = true);
-                      await Future<void>.delayed(const Duration(seconds: 1));
-                      if (!context.mounted) return;
-                      setState(() {
-                        busy = false;
-                        success = true;
-                      });
-                      await Future<void>.delayed(
-                        const Duration(milliseconds: 2500),
-                      );
-                      if (context.mounted) setState(() => completed = true);
-                    },
-                  ),
+                  builder: (context, setState) => completed
+                      ? const ArcadeLinkCompletedPage()
+                      : ArcadeLinkMachineContent(
+                          session: const ArcadeLinkMachineSession(
+                            ticket: 'local-preview',
+                            expiresIn: 300,
+                            machine: ArcadeLinkMachine(
+                              publicId: 'preview',
+                              name: '舞萌',
+                              shopName: '月宫',
+                            ),
+                          ),
+                          cards: cards,
+                          authRequired: !signedIn,
+                          authenticating: false,
+                          passkeyAuthenticating: false,
+                          loggingIn: busy,
+                          sending: sending,
+                          success: success,
+                          activeCardId: active,
+                          webAuthStarted: false,
+                          error: null,
+                          passkeyAvailable: true,
+                          nativeMunetAvailable: true,
+                          onAuthenticate: () => setState(() => signedIn = true),
+                          onAuthenticatePasskey: () =>
+                              setState(() => signedIn = true),
+                          onReloadCards: () {},
+                          onContinue: () {},
+                          onLogin: (card) async {
+                            setState(() {
+                              busy = true;
+                              active = card.id;
+                            });
+                            await Future<void>.delayed(
+                              const Duration(seconds: 1),
+                            );
+                            if (!context.mounted) return;
+                            setState(() => sending = true);
+                            await Future<void>.delayed(
+                              const Duration(seconds: 1),
+                            );
+                            if (!context.mounted) return;
+                            setState(() {
+                              busy = false;
+                              success = true;
+                            });
+                            await Future<void>.delayed(
+                              const Duration(milliseconds: 2500),
+                            );
+                            if (context.mounted) {
+                              setState(() => completed = true);
+                            }
+                          },
+                        ),
                 ),
               ),
             ),

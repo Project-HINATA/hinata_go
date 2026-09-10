@@ -21,7 +21,6 @@ class ArcadeLinkMachineContent extends StatelessWidget {
     required this.onLogin,
     required this.onContinue,
     this.loadingCards = false,
-    this.completed = false,
     this.sending = false,
     this.browserOnly = false,
     this.passkeyAvailable = false,
@@ -41,7 +40,7 @@ class ArcadeLinkMachineContent extends StatelessWidget {
       success,
       webAuthStarted;
   final bool loadingCards, browserOnly, passkeyAvailable, nativeMunetAvailable;
-  final bool completed, sending;
+  final bool sending;
   final String passkeyActionLabel;
   final String? activeCardId;
   final Object? error;
@@ -106,7 +105,7 @@ class ArcadeLinkMachineContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 48),
-        if (!authRequired && !browserOnly && !completed)
+        if (!authRequired && !browserOnly && !loadingCards && error == null)
           Row(
             children: [
               Text(
@@ -117,16 +116,14 @@ class ArcadeLinkMachineContent extends StatelessWidget {
               ),
               const Spacer(),
               IconButton(
-                onPressed: onLogout,
+                onPressed: busy ? null : onLogout,
                 icon: const Icon(Icons.logout),
                 tooltip: '退出账号',
               ),
             ],
           ),
         const SizedBox(height: 30),
-        if (completed)
-          const SizedBox.shrink()
-        else if (browserOnly)
+        if (browserOnly)
           _TouchAction(label: '继续登录', onPressed: onContinue)
         else if (authRequired) ...[
           _TouchAction(
@@ -156,15 +153,15 @@ class ArcadeLinkMachineContent extends StatelessWidget {
             ),
           ],
         ] else if (loadingCards)
-          Card.filled(
-            margin: EdgeInsets.zero,
-            child: Semantics(
-              label: '正在加载卡片',
-              child: const SizedBox(
-                height: 168,
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ),
+          Semantics(
+            label: '正在加载卡片',
+            child: const Center(child: CircularProgressIndicator()),
+          )
+        else if (error != null)
+          ArcadeLinkStatusPanel(
+            title: '无法加载卡片',
+            message: arcadeLinkErrorMessage(error!),
+            onRetry: onReloadCards,
           )
         else if (cards.isEmpty) ...[
           Text(
@@ -219,6 +216,53 @@ String arcadeLinkErrorMessage(Object error) {
     return '操作失败，请稍后重试';
   }
   return message;
+}
+
+class ArcadeLinkLoadingPage extends StatelessWidget {
+  const ArcadeLinkLoadingPage({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      const Center(child: CircularProgressIndicator(semanticsLabel: '正在加载'));
+}
+
+class ArcadeLinkFailurePage extends StatelessWidget {
+  const ArcadeLinkFailurePage({
+    required this.message,
+    required this.onRetry,
+    super.key,
+  });
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => ArcadeLinkStatusPanel(
+    title: '无法进入机台会话',
+    message: message,
+    onRetry: onRetry,
+  );
+}
+
+class ArcadeLinkExpiredPage extends StatelessWidget {
+  const ArcadeLinkExpiredPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => const ArcadeLinkStatusPanel(
+    title: '本次会话已失效',
+    message: '请重新碰一下 NFC 或重新扫描二维码。',
+    icon: Icons.history,
+  );
+}
+
+class ArcadeLinkCompletedPage extends StatelessWidget {
+  const ArcadeLinkCompletedPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => const ArcadeLinkStatusPanel(
+    title: '本次登录已完成',
+    message: '可以关闭此页面',
+    icon: Icons.check_circle_outline,
+  );
 }
 
 class _TouchAction extends StatelessWidget {

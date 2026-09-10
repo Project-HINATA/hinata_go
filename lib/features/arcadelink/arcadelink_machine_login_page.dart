@@ -12,6 +12,8 @@ import '../../services/arcadelink_invocation_service.dart';
 import '../../services/arcadelink_native_service.dart';
 import 'arcadelink_machine_content.dart';
 
+enum _SessionPage { loading, failed, session, expired, completed }
+
 class ArcadeLinkMachineLoginPage extends ConsumerStatefulWidget {
   const ArcadeLinkMachineLoginPage({
     required this.shopCode,
@@ -34,19 +36,19 @@ class _ArcadeLinkMachineLoginPageState
   ArcadeLinkMachineSession? _session;
   List<ArcadeLinkCard> _cards = const [];
   Object? _error;
-  bool _loading = true;
+  _SessionPage _page = _SessionPage.loading;
+  Object? _cardsError;
   bool _authRequired = false;
   bool _authenticating = false;
   bool _passkeyAuthenticating = false;
   bool _loggingIn = false;
   bool _webAuthStarted = false;
   bool _success = false;
-  bool _completed = false;
-  bool _expired = false;
   bool _sending = false;
   Timer? _completionTimer;
   bool _loadingCards = false;
   String? _activeCardId;
+  int _loadVersion = 0;
 
   @override
   void initState() {
@@ -58,6 +60,15 @@ class _ArcadeLinkMachineLoginPageState
   }
 
   @override
+  void didUpdateWidget(covariant ArcadeLinkMachineLoginPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.shopCode != widget.shopCode ||
+        oldWidget.publicId != widget.publicId) {
+      _loadMachine();
+    }
+  }
+
+  @override
   void dispose() {
     _completionTimer?.cancel();
     _api.dispose();
@@ -65,45 +76,45 @@ class _ArcadeLinkMachineLoginPageState
   }
 
   Future<void> _loadMachine() async {
+    final version = ++_loadVersion;
     final shopCode = widget.shopCode;
     final publicId = widget.publicId;
     _completionTimer?.cancel();
     setState(() {
-      _completed = false;
-      _expired = false;
-      _loading = true;
+      _page = _SessionPage.loading;
       _session = null;
       _cards = const [];
       _error = null;
+      _cardsError = null;
       _success = false;
       _authRequired = false;
       _webAuthStarted = false;
+      _loadingCards = false;
+      _loggingIn = false;
+      _authenticating = false;
+      _passkeyAuthenticating = false;
+      _activeCardId = null;
     });
     try {
       final session = await _api.startMachineSession(
         shopCode: shopCode,
         publicId: publicId,
       );
-      if (!mounted ||
-          shopCode != widget.shopCode ||
-          publicId != widget.publicId) {
+      if (!mounted || version != _loadVersion) {
         return;
       }
       setState(() {
         _session = session;
-        _loading = false;
+        _page = _SessionPage.session;
       });
       if (kIsWeb || ArcadeLinkNativeService.isAvailable) {
         await _loadCards();
       }
     } catch (error) {
-      if (!mounted || publicId != widget.publicId) return;
+      if (!mounted || version != _loadVersion) return;
       setState(() {
-        _expired =
-            error.toString().contains('会话已失效') ||
-            error.toString().contains('缺少会话凭证');
-        _error = _expired ? null : error;
-        _loading = false;
+        _page = _isExpired(error) ? _SessionPage.expired : _SessionPage.failed;
+        _error = error;
       });
     }
   }
@@ -124,31 +135,39 @@ class _ArcadeLinkMachineLoginPageState
 
   Future<void> _loadCards() async {
     if (_loadingCards) return;
-    setState(() => _loadingCards = true);
+    final version = _loadVersion;
+    setState(() {
+      _loadingCards = true;
+      _cardsError = null;
+    });
     try {
       final cards = kIsWeb ? await _api.cards() : await _native.loadCards();
-      if (!mounted) return;
+      if (!mounted || version != _loadVersion) return;
       setState(() {
         _cards = cards.where((card) => card.disabledAt == null).toList();
         _authRequired = false;
-        _error = null;
+        _cardsError = null;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || version != _loadVersion) return;
       setState(() {
         final needsAuth =
             error is ArcadeLinkException && error.statusCode == 401 ||
             error is PlatformException && error.message == '请先登录';
         _authRequired = needsAuth;
-        _error = needsAuth ? null : error;
+        if (_isExpired(error)) _page = _SessionPage.expired;
+        _cardsError = needsAuth ? null : error;
       });
     } finally {
-      if (mounted) setState(() => _loadingCards = false);
+      if (mounted && version == _loadVersion) {
+        setState(() => _loadingCards = false);
+      }
     }
   }
 
   Future<void> _authenticate() async {
     if (_authenticating || _passkeyAuthenticating || _loggingIn) return;
+    final version = _loadVersion;
     if (ArcadeLinkNativeService.supportsNativeMunet) {
       setState(() {
         _authenticating = true;
@@ -156,14 +175,17 @@ class _ArcadeLinkMachineLoginPageState
       });
       try {
         await _native.authenticateWithMunet();
+        if (!mounted || version != _loadVersion) return;
         await _loadCards();
       } catch (error) {
-        if (!mounted) return;
+        if (!mounted || version != _loadVersion) return;
         if (!_isCancellation(error)) {
           await _showErrorDialog(arcadeLinkErrorMessage(error));
         }
       } finally {
-        if (mounted) setState(() => _authenticating = false);
+        if (mounted && version == _loadVersion) {
+          setState(() => _authenticating = false);
+        }
       }
       return;
     }
@@ -196,6 +218,7 @@ class _ArcadeLinkMachineLoginPageState
 
   Future<void> _authenticateWithPasskey() async {
     if (_passkeyAuthenticating || _authenticating || _loggingIn) return;
+    final version = _loadVersion;
     setState(() {
       _passkeyAuthenticating = true;
       _error = null;
@@ -206,14 +229,17 @@ class _ArcadeLinkMachineLoginPageState
         return;
       }
       await _native.authenticateWithPasskey();
+      if (!mounted || version != _loadVersion) return;
       await _loadCards();
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || version != _loadVersion) return;
       if (!_isCancellation(error)) {
         await _showErrorDialog(arcadeLinkErrorMessage(error));
       }
     } finally {
-      if (mounted) setState(() => _passkeyAuthenticating = false);
+      if (mounted && version == _loadVersion) {
+        setState(() => _passkeyAuthenticating = false);
+      }
     }
   }
 
@@ -228,7 +254,7 @@ class _ArcadeLinkMachineLoginPageState
       _error = null;
     });
     void onSending() {
-      if (mounted) setState(() => _sending = true);
+      if (mounted && session == _session) setState(() => _sending = true);
     }
 
     try {
@@ -241,21 +267,22 @@ class _ArcadeLinkMachineLoginPageState
       } else {
         await _api.loginMachine(cardId: card.id, ticket: session.ticket);
       }
-      if (!mounted) return;
+      if (!mounted || session != _session) return;
       setState(() {
         _loggingIn = false;
         _success = true;
       });
       _completionTimer = Timer(const Duration(milliseconds: 2500), () {
-        if (mounted) setState(() => _completed = true);
+        if (mounted) setState(() => _page = _SessionPage.completed);
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || session != _session) return;
       setState(() {
         _loggingIn = false;
         _error = null;
+        if (_isExpired(error)) _page = _SessionPage.expired;
       });
-      if (!_isCancellation(error)) {
+      if (_page != _SessionPage.expired && !_isCancellation(error)) {
         await _showErrorDialog(arcadeLinkErrorMessage(error));
       }
     }
@@ -288,43 +315,48 @@ class _ArcadeLinkMachineLoginPageState
 
   @override
   Widget build(BuildContext context) {
-    final session = _session;
     return Scaffold(
       body: Stack(
         children: [
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 480),
-                  child: _expired
-                      ? const ArcadeLinkStatusPanel(
-                          title: '本次会话已失效',
-                          message: '请重新碰一下 NFC 或重新扫描二维码。',
-                        )
-                      : _loading
-                      ? const ArcadeLinkStatusPanel(title: '加载中...', busy: true)
-                      : session == null
-                      ? ArcadeLinkStatusPanel(
-                          title: '无法进入机台会话',
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 64, 20, 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 480,
+                      minHeight: (constraints.maxHeight - 88).clamp(
+                        0,
+                        double.infinity,
+                      ),
+                    ),
+                    child: Align(
+                      alignment: _page == _SessionPage.session
+                          ? Alignment.topCenter
+                          : Alignment.center,
+                      child: switch (_page) {
+                        _SessionPage.loading => const ArcadeLinkLoadingPage(),
+                        _SessionPage.expired => const ArcadeLinkExpiredPage(),
+                        _SessionPage.completed =>
+                          const ArcadeLinkCompletedPage(),
+                        _SessionPage.failed => ArcadeLinkFailurePage(
                           message: _error == null
                               ? '无法读取机台信息'
                               : arcadeLinkErrorMessage(_error!),
                           onRetry: _loadMachine,
-                        )
-                      : ArcadeLinkMachineContent(
-                          session: session,
+                        ),
+                        _SessionPage.session => ArcadeLinkMachineContent(
+                          session: _session!,
                           cards: _cards,
                           authRequired: _authRequired,
                           authenticating: _authenticating,
                           passkeyAuthenticating: _passkeyAuthenticating,
                           loggingIn: _loggingIn,
                           success: _success,
-                          completed: _completed,
                           sending: _sending,
                           webAuthStarted: _webAuthStarted,
-                          error: _error,
+                          error: _cardsError,
                           loadingCards: _loadingCards,
                           activeCardId: _activeCardId,
                           browserOnly:
@@ -344,6 +376,9 @@ class _ArcadeLinkMachineLoginPageState
                           onContinue: _openWebFallback,
                           onLogout: _logout,
                         ),
+                      },
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -351,10 +386,12 @@ class _ArcadeLinkMachineLoginPageState
           Positioned(
             top: 8,
             left: 8,
-            child: IconButton(
-              tooltip: '返回主页',
-              onPressed: () => context.go('/'),
-              icon: const Icon(Icons.arrow_back),
+            child: SafeArea(
+              child: IconButton(
+                tooltip: '返回主页',
+                onPressed: () => context.go('/'),
+                icon: const Icon(Icons.arrow_back),
+              ),
             ),
           ),
         ],
@@ -364,6 +401,9 @@ class _ArcadeLinkMachineLoginPageState
 
   bool _isCancellation(Object error) =>
       error is PlatformException && error.code == 'authentication_cancelled';
+
+  bool _isExpired(Object error) =>
+      error.toString().contains('会话已失效') || error.toString().contains('缺少会话凭证');
 
   Future<void> _showErrorDialog(String message) => showDialog<void>(
     context: context,
