@@ -144,6 +144,13 @@ class ArcadeLinkMachineContent extends StatelessWidget {
             label: authenticating
                 ? context.l10n.arcadeLinkConnectingMunet
                 : context.l10n.arcadeLinkSignInMunet,
+            icon: Image.asset(
+              'assets/munet-logo.png',
+              width: 24,
+              height: 24,
+              fit: BoxFit.contain,
+              excludeFromSemantics: true,
+            ),
             busy: authenticating,
             onPressed: busy ? null : onAuthenticate,
           ),
@@ -152,6 +159,7 @@ class ArcadeLinkMachineContent extends StatelessWidget {
             label: passkeyAuthenticating
                 ? context.l10n.arcadeLinkVerifyingPasskey
                 : passkeyActionLabel ?? context.l10n.arcadeLinkSignInPasskey,
+            icon: const Icon(Icons.fingerprint, size: 24),
             secondary: true,
             busy: passkeyAuthenticating,
             onPressed: busy || !passkeyAvailable ? null : onAuthenticatePasskey,
@@ -273,11 +281,13 @@ class _TouchAction extends StatelessWidget {
   const _TouchAction({
     required this.label,
     required this.onPressed,
+    this.icon,
     this.secondary = false,
     this.busy = false,
   });
   final String label;
   final VoidCallback? onPressed;
+  final Widget? icon;
   final bool secondary, busy;
 
   @override
@@ -288,25 +298,32 @@ class _TouchAction extends StatelessWidget {
       textStyle: Theme.of(context).textTheme.titleMedium,
       visualDensity: VisualDensity.standard,
     );
-    final child = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (busy) ...[
-          SizedBox.square(
-            dimension: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Theme.of(context).colorScheme.primary,
+    final leading = busy
+        ? SizedBox.square(
+            dimension: 24,
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-        ],
-        Flexible(child: Text(label, textAlign: TextAlign.center)),
-      ],
-    );
+          )
+        : icon;
+    final text = Text(label, textAlign: TextAlign.center);
     return secondary
-        ? FilledButton.tonal(style: style, onPressed: onPressed, child: child)
-        : FilledButton(style: style, onPressed: onPressed, child: child);
+        ? FilledButton.tonalIcon(
+            style: style,
+            onPressed: onPressed,
+            icon: leading,
+            label: text,
+          )
+        : FilledButton.icon(
+            style: style,
+            onPressed: onPressed,
+            icon: leading,
+            label: text,
+          );
   }
 }
 

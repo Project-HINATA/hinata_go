@@ -123,11 +123,13 @@ private struct ClipSessionPage: View {
           VStack(spacing: 14) {
             Button { Task { await model.authenticateWithMunet() } } label: {
               actionLabel(model.authenticating == "munet" ? "正在连接 MuNET…" : "使用 MuNET 登录",
+                          icon: Image("MuNETLogo").renderingMode(.original),
                           busy: model.authenticating == "munet")
             }
             .buttonStyle(ClipActionStyle(primary: true))
             Button { Task { await model.authenticateWithPasskey() } } label: {
               actionLabel(model.authenticating == "passkey" ? "正在验证 Passkey…" : "使用 Passkey 登录",
+                          icon: Image(systemName: "touchid"),
                           busy: model.authenticating == "passkey")
             }
             .buttonStyle(ClipActionStyle())
@@ -166,10 +168,15 @@ private struct ClipSessionPage: View {
     .disabled(model.state != .ready)
   }
 
-  private func actionLabel(_ title: LocalizedStringKey, busy: Bool) -> some View {
+  private func actionLabel(_ title: LocalizedStringKey, icon: Image, busy: Bool) -> some View {
     HStack(spacing: 10) {
-      if busy { ProgressView().tint(.primary) }
-      Text(title)
+      Group {
+        if busy { ProgressView().tint(.primary) }
+        else { icon.resizable().scaledToFit() }
+      }
+      .frame(width: 24, height: 24)
+      .accessibilityHidden(true)
+      Text(title).multilineTextAlignment(.center)
     }.frame(maxWidth: .infinity)
   }
 
