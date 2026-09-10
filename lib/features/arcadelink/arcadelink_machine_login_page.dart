@@ -389,7 +389,7 @@ class _ArcadeLinkMachineLoginPageState
             child: SafeArea(
               child: IconButton(
                 tooltip: '返回主页',
-                onPressed: () => context.go('/'),
+                onPressed: () => context.go('/scan'),
                 icon: const Icon(Icons.arrow_back),
               ),
             ),
