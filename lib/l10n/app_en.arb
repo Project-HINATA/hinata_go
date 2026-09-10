@@ -39,6 +39,14 @@
   "@about": {
     "description": "Entry for the about page"
   },
+  "github": "GitHub",
+  "@github": {
+    "description": "Settings entry for the project GitHub repository"
+  },
+  "arcadeLink": "Arcade Link",
+  "@arcadeLink": {
+    "description": "Settings entry for the Arcade Link website"
+  },
   "updateToVersion": "UPDATE TO {version}",
   "@updateToVersion": {
     "description": "Button text to initiate a firmware/software update",

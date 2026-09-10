@@ -39,6 +39,14 @@
   "@about": {
     "description": "关于页面入口"
   },
+  "github": "GitHub",
+  "@github": {
+    "description": "项目 GitHub 仓库入口"
+  },
+  "arcadeLink": "Arcade Link",
+  "@arcadeLink": {
+    "description": "Arcade Link 网站入口"
+  },
   "updateToVersion": "更新到 {version}",
   "@updateToVersion": {
     "description": "更新按钮文本",

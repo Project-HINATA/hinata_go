@@ -37,6 +37,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get about => 'About';
 
   @override
+  String get github => 'GitHub';
+
+  @override
+  String get arcadeLink => 'Arcade Link';
+
+  @override
   String updateToVersion(String version) {
     return 'UPDATE TO $version';
   }

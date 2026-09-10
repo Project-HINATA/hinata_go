@@ -146,6 +146,18 @@ abstract class AppLocalizations {
   /// **'About'**
   String get about;
 
+  /// Settings entry for the project GitHub repository
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub'**
+  String get github;
+
+  /// Settings entry for the Arcade Link website
+  ///
+  /// In en, this message translates to:
+  /// **'Arcade Link'**
+  String get arcadeLink;
+
   /// Button text to initiate a firmware/software update
   ///
   /// In en, this message translates to:

@@ -35,6 +35,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get about => '关于';
 
   @override
+  String get github => 'GitHub';
+
+  @override
+  String get arcadeLink => 'Arcade Link';
+
+  @override
   String updateToVersion(String version) {
     return '更新到 $version';
   }

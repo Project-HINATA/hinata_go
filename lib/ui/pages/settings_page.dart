@@ -37,6 +37,16 @@ class SettingsPage extends HookConsumerWidget {
               languageSelector: _buildLanguageSelector(context, ref, settings),
               dataManagementItem: _buildDataManagementItem(context),
               aboutItem: _buildAboutItem(context, ref, updateState),
+              githubItem: _buildExternalLinkItem(
+                title: l10n.github,
+                icon: Icons.code_rounded,
+                url: AppConstants.githubUrl,
+              ),
+              arcadeLinkItem: _buildExternalLinkItem(
+                title: l10n.arcadeLink,
+                icon: Icons.link,
+                url: AppConstants.arcadeLinkUrl,
+              ),
               updateActionButton:
                   updateState.isUpdateSupported && updateState.hasUpdate
                   ? _buildUpdateActionButton(context, updateState)
@@ -158,6 +168,24 @@ class SettingsPage extends HookConsumerWidget {
     );
   }
 
+  Widget _buildExternalLinkItem({
+    required String title,
+    required IconData icon,
+    required String url,
+  }) {
+    return ListTile(
+      title: Text(title),
+      leading: Icon(icon),
+      trailing: const Icon(Icons.open_in_new),
+      onTap: () async {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+    );
+  }
+
   Widget _buildUpdateActionButton(
     BuildContext context,
     AppUpdateState updateState,
@@ -262,6 +290,8 @@ class _SettingsList extends StatelessWidget {
     required this.languageSelector,
     required this.dataManagementItem,
     required this.aboutItem,
+    required this.githubItem,
+    required this.arcadeLinkItem,
     required this.updateActionButton,
   });
 
@@ -269,6 +299,8 @@ class _SettingsList extends StatelessWidget {
   final Widget languageSelector;
   final Widget dataManagementItem;
   final Widget aboutItem;
+  final Widget githubItem;
+  final Widget arcadeLinkItem;
   final Widget? updateActionButton;
 
   @override
@@ -281,6 +313,8 @@ class _SettingsList extends StatelessWidget {
         dataManagementItem,
         const Divider(),
         aboutItem,
+        githubItem,
+        arcadeLinkItem,
         ...(updateActionButton == null ? const [] : [updateActionButton!]),
       ],
     );
