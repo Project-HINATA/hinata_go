@@ -187,7 +187,8 @@ struct MachineLoginView: View {
               .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
               .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
+            .tint(.primary)
             .disabled(model.state != .ready)
             .opacity(model.state != .ready && !active ? 0.45 : 1)
           }
