@@ -1,6 +1,0 @@
-#!/bin/bash
-set -euo pipefail
-
-# Flutter's native asset hooks strip DEVELOPER_DIR but retain PATH.
-export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-exec /usr/bin/xcrun "$@"
