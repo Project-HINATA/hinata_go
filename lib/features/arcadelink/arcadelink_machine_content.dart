@@ -57,6 +57,9 @@ class ArcadeLinkMachineContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    const cardShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(24)),
+    );
     final busy =
         authenticating ||
         passkeyAuthenticating ||
@@ -68,6 +71,7 @@ class ArcadeLinkMachineContent extends StatelessWidget {
       children: [
         Card.filled(
           margin: EdgeInsets.zero,
+          shape: cardShape,
           clipBehavior: Clip.antiAlias,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -183,6 +187,7 @@ class ArcadeLinkMachineContent extends StatelessWidget {
         ] else
           Card.filled(
             margin: EdgeInsets.zero,
+            shape: cardShape,
             clipBehavior: Clip.antiAlias,
             child: Column(
               children: [

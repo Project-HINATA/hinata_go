@@ -12,6 +12,98 @@ import 'package:hinata_go/features/arcadelink/arcadelink_machine_content.dart';
 import 'package:hinata_go/features/arcadelink/arcadelink_machine_login_page.dart';
 
 void main() {
+  testWidgets(
+    'scrolling reaches screen edges while controls keep safe insets',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      const channel = MethodChannel('moe.neri.hinatago/arcadelink_native');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (call) async => [
+          for (var i = 0; i < 10; i++)
+            {'id': '$i', 'label': '卡片 $i', 'accessCode': '6958'},
+        ],
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await http.runWithClient(
+        () async {
+          for (final (size, insets) in [
+            (const Size(390, 844), const EdgeInsets.only(top: 59, bottom: 34)),
+            (const Size(844, 390), const EdgeInsets.fromLTRB(59, 0, 59, 21)),
+          ]) {
+            tester.view.physicalSize = size;
+            await tester.pumpWidget(
+              ProviderScope(
+                child: MaterialApp(
+                  home: MediaQuery(
+                    data: MediaQueryData(size: size, padding: insets),
+                    child: const ArcadeLinkMachineLoginPage(
+                      shopCode: 'shop',
+                      publicId: 'machine',
+                    ),
+                  ),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+            final scroll = find.byType(SingleChildScrollView);
+            final back = find.byTooltip('返回主页');
+            final backRect = tester.getRect(back);
+            expect(tester.getRect(scroll), Offset.zero & size);
+            expect(backRect.top, greaterThanOrEqualTo(insets.top));
+            expect(backRect.left, greaterThanOrEqualTo(insets.left));
+            expect(
+              tester.getTopLeft(find.byType(Card).first).dy,
+              insets.top + 64,
+            );
+
+            await tester.drag(scroll, const Offset(0, -250));
+            await tester.pumpAndSettle();
+            expect(tester.getTopLeft(find.byType(Card).first).dy, lessThan(0));
+            expect(tester.getRect(back), backRect);
+
+            final position = tester
+                .state<ScrollableState>(find.byType(Scrollable))
+                .position;
+            position.jumpTo(position.maxScrollExtent);
+            await tester.pump();
+            expect(
+              tester.getBottomRight(find.byType(Card).last).dy,
+              closeTo(size.height - insets.bottom - 24, 0.01),
+            );
+            expect(tester.takeException(), isNull);
+            await tester.pumpWidget(const SizedBox.shrink());
+          }
+        },
+        () => MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'ticket': 'test',
+              'expiresIn': 300,
+              'machine': {
+                'publicId': 'machine',
+                'name': '舞萌',
+                'shop': {'name': '测试店铺'},
+              },
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          ),
+        ),
+      );
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
+
   testWidgets('a late response cannot replace a newly invoked machine', (
     tester,
   ) async {

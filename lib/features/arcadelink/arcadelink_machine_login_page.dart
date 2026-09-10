@@ -315,69 +315,67 @@ class _ArcadeLinkMachineLoginPageState
 
   @override
   Widget build(BuildContext context) {
+    final safePadding = MediaQuery.paddingOf(context);
+    final contentPadding =
+        safePadding + const EdgeInsets.fromLTRB(20, 64, 20, 24);
     return Scaffold(
       body: Stack(
         children: [
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) => SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 64, 20, 24),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: 480,
-                      minHeight: (constraints.maxHeight - 88).clamp(
-                        0,
-                        double.infinity,
+          LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              padding: contentPadding,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 480,
+                    minHeight: (constraints.maxHeight - contentPadding.vertical)
+                        .clamp(0, double.infinity),
+                  ),
+                  child: Align(
+                    alignment: _page == _SessionPage.session
+                        ? Alignment.topCenter
+                        : Alignment.center,
+                    child: switch (_page) {
+                      _SessionPage.loading => const ArcadeLinkLoadingPage(),
+                      _SessionPage.expired => const ArcadeLinkExpiredPage(),
+                      _SessionPage.completed => const ArcadeLinkCompletedPage(),
+                      _SessionPage.failed => ArcadeLinkFailurePage(
+                        message: _error == null
+                            ? '无法读取机台信息'
+                            : arcadeLinkErrorMessage(_error!),
+                        onRetry: _loadMachine,
                       ),
-                    ),
-                    child: Align(
-                      alignment: _page == _SessionPage.session
-                          ? Alignment.topCenter
-                          : Alignment.center,
-                      child: switch (_page) {
-                        _SessionPage.loading => const ArcadeLinkLoadingPage(),
-                        _SessionPage.expired => const ArcadeLinkExpiredPage(),
-                        _SessionPage.completed =>
-                          const ArcadeLinkCompletedPage(),
-                        _SessionPage.failed => ArcadeLinkFailurePage(
-                          message: _error == null
-                              ? '无法读取机台信息'
-                              : arcadeLinkErrorMessage(_error!),
-                          onRetry: _loadMachine,
-                        ),
-                        _SessionPage.session => ArcadeLinkMachineContent(
-                          session: _session!,
-                          cards: _cards,
-                          authRequired: _authRequired,
-                          authenticating: _authenticating,
-                          passkeyAuthenticating: _passkeyAuthenticating,
-                          loggingIn: _loggingIn,
-                          success: _success,
-                          sending: _sending,
-                          webAuthStarted: _webAuthStarted,
-                          error: _cardsError,
-                          loadingCards: _loadingCards,
-                          activeCardId: _activeCardId,
-                          browserOnly:
-                              !kIsWeb && !ArcadeLinkNativeService.isAvailable,
-                          passkeyAvailable:
-                              kIsWeb ||
-                              ArcadeLinkNativeService.supportsNativePasskey,
-                          passkeyActionLabel: kIsWeb
-                              ? '在网页中使用 Passkey'
-                              : '使用 Passkey 登录',
-                          nativeMunetAvailable:
-                              ArcadeLinkNativeService.supportsNativeMunet,
-                          onAuthenticate: _authenticate,
-                          onAuthenticatePasskey: _authenticateWithPasskey,
-                          onReloadCards: _loadCards,
-                          onLogin: _login,
-                          onContinue: _openWebFallback,
-                          onLogout: _logout,
-                        ),
-                      },
-                    ),
+                      _SessionPage.session => ArcadeLinkMachineContent(
+                        session: _session!,
+                        cards: _cards,
+                        authRequired: _authRequired,
+                        authenticating: _authenticating,
+                        passkeyAuthenticating: _passkeyAuthenticating,
+                        loggingIn: _loggingIn,
+                        success: _success,
+                        sending: _sending,
+                        webAuthStarted: _webAuthStarted,
+                        error: _cardsError,
+                        loadingCards: _loadingCards,
+                        activeCardId: _activeCardId,
+                        browserOnly:
+                            !kIsWeb && !ArcadeLinkNativeService.isAvailable,
+                        passkeyAvailable:
+                            kIsWeb ||
+                            ArcadeLinkNativeService.supportsNativePasskey,
+                        passkeyActionLabel: kIsWeb
+                            ? '在网页中使用 Passkey'
+                            : '使用 Passkey 登录',
+                        nativeMunetAvailable:
+                            ArcadeLinkNativeService.supportsNativeMunet,
+                        onAuthenticate: _authenticate,
+                        onAuthenticatePasskey: _authenticateWithPasskey,
+                        onReloadCards: _loadCards,
+                        onLogin: _login,
+                        onContinue: _openWebFallback,
+                        onLogout: _logout,
+                      ),
+                    },
                   ),
                 ),
               ),
