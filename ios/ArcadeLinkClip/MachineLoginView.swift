@@ -69,9 +69,9 @@ struct MachineLoginView: View {
               }
               .accessibilityLabel("退出账号")
             }
-          } else if model.state == .completed || model.state == .expired {
+          } else if model.state == .completed {
             Text(title).font(.largeTitle.weight(.bold)).accessibilityAddTraits(.isHeader)
-            Text(model.state == .expired ? "请重新碰一下 NFC 或重新扫描二维码。" : "可以关闭此页面").foregroundStyle(.secondary)
+            Text("可以关闭此页面").foregroundStyle(.secondary)
           }
         }
         .multilineTextAlignment(.center)
