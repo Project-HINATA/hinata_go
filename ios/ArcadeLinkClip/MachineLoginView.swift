@@ -54,20 +54,11 @@ struct MachineLoginView: View {
             HStack {
               Text("选择卡片").font(.largeTitle.weight(.bold))
               Spacer()
-              Button { showingLogoutConfirmation = true } label: {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                  .font(.title3)
-                  .padding(12)
-                  .contentShape(Circle())
+              if #available(iOS 26.0, *) {
+                logoutButton.buttonStyle(.glass).buttonBorderShape(.circle)
+              } else {
+                logoutButton.buttonStyle(.bordered).clipShape(Circle())
               }
-              .background {
-                if #available(iOS 26.0, *) {
-                  Color.clear.glassEffect(.regular.interactive(), in: .circle)
-                } else {
-                  Circle().fill(.thinMaterial)
-                }
-              }
-              .accessibilityLabel("退出账号")
             }
           } else if model.state == .completed {
             Text(title).font(.largeTitle.weight(.bold)).accessibilityAddTraits(.isHeader)
@@ -146,6 +137,15 @@ struct MachineLoginView: View {
     case .failed: return "无法进入机台会话"
     default: return "选择卡片"
     }
+  }
+
+  private var logoutButton: some View {
+    Button { showingLogoutConfirmation = true } label: {
+      Image(systemName: "rectangle.portrait.and.arrow.right")
+        .font(.title3)
+        .frame(width: 44, height: 44)
+    }
+    .accessibilityLabel("退出账号")
   }
 
   private func actionLabel(_ title: String, busy: Bool) -> some View {
