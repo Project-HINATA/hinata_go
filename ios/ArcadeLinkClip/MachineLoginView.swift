@@ -82,7 +82,6 @@ private struct ClipCompletedPage: View {
 
 private struct ClipSessionPage: View {
   @EnvironmentObject private var model: MachineLoginViewModel
-  @State private var showingLogoutConfirmation = false
 
   var body: some View {
     VStack(spacing: 30) {
@@ -90,15 +89,7 @@ private struct ClipSessionPage: View {
         VStack(alignment: .leading, spacing: 0) {
           if let path = machine.shop.heroUrl,
              let url = URL(string: path, relativeTo: URL(string: "https://link.neri.moe")) {
-            AsyncImage(url: url.absoluteURL) { phase in
-              if case .success(let image) = phase {
-                Color.clear.aspectRatio(1.5, contentMode: .fit)
-                  .overlay { image.resizable().scaledToFill() }
-                  .clipped()
-                  .overlay(alignment: .bottom) { Divider() }
-                  .accessibilityHidden(true)
-              }
-            }
+            ClipHeroImage(url: url.absoluteURL).id(url.absoluteURL)
           }
           VStack(alignment: .leading, spacing: 8) {
             Text(machine.shop.name)
@@ -161,17 +152,18 @@ private struct ClipSessionPage: View {
   }
 
   private var logoutButton: some View {
-    Button { showingLogoutConfirmation = true } label: {
+    Menu {
+      Section("退出账号？") {
+        Button("退出", role: .destructive) { Task { await model.logout() } }
+      }
+    } label: {
       Image(systemName: "rectangle.portrait.and.arrow.right")
         .font(.title3.weight(.semibold))
         .frame(minWidth: 30, minHeight: 30)
     }
+    .menuIndicator(.hidden)
     .accessibilityLabel("退出账号")
     .disabled(model.state != .ready)
-    .confirmationDialog("退出账号？", isPresented: $showingLogoutConfirmation, titleVisibility: .visible) {
-      Button("退出", role: .destructive) { Task { await model.logout() } }
-      Button("取消", role: .cancel) {}
-    }
   }
 
   private func actionLabel(_ title: String, busy: Bool) -> some View {
@@ -231,6 +223,49 @@ private struct ClipSessionPage: View {
     case .sending: return "正在登录…"
     case .success: return "已登录"
     default: return "尾号 \(card.accessCode.suffix(4))"
+    }
+  }
+}
+
+struct ClipHeroImage: View {
+  let url: URL
+  @State private var image: UIImage?
+
+  // A separate public-image cache; authentication and machine sessions stay untouched.
+  static let session: URLSession = {
+    let configuration = URLSessionConfiguration.default
+    configuration.urlCache = URLCache(memoryCapacity: 4 * 1024 * 1024,
+                                      diskCapacity: 64 * 1024 * 1024,
+                                      diskPath: "arcadelink-heroes")
+    configuration.httpCookieStorage = nil
+    configuration.httpShouldSetCookies = false
+    return URLSession(configuration: configuration)
+  }()
+
+  var body: some View {
+    Group {
+      if let image {
+        Color.clear.aspectRatio(1.5, contentMode: .fit)
+          .overlay { Image(uiImage: image).resizable().scaledToFill() }
+          .clipped()
+          .overlay(alignment: .bottom) { Divider() }
+          .accessibilityHidden(true)
+      }
+    }
+    .task(id: url) {
+      image = nil
+      do {
+        let (data, response) = try await Self.session.data(from: url)
+        try Task.checkCancellation()
+        guard (response as? HTTPURLResponse)?.statusCode == 200,
+              let decoded = UIImage(data: data) else {
+          Self.session.configuration.urlCache?.removeCachedResponse(for: URLRequest(url: url))
+          return
+        }
+        image = decoded
+      } catch {
+        // A missing cover does not prevent machine login; keep it hidden.
+      }
     }
   }
 }

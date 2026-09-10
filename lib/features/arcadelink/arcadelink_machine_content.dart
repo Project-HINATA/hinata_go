@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../services/arcadelink_api.dart';
 
@@ -70,8 +73,10 @@ class ArcadeLinkMachineContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (session.machine.heroUrl case final String url)
-                Image.network(
-                  url,
+                Image(
+                  image: kIsWeb
+                      ? NetworkImage(url)
+                      : CachedNetworkImageProvider(url),
                   fit: BoxFit.cover,
                   excludeFromSemantics: true,
                   frameBuilder: (context, child, frame, synchronous) =>

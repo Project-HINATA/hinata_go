@@ -1,7 +1,8 @@
 // Offline simulator harness using the production View and ViewModel.
 // Compile with the ios/ArcadeLinkClip/*.swift sources except ArcadeLinkClipApp.swift.
 // Launch argument: loading, failure, cards-failure, expired, auth, or state-checks.
-// No requests leave the process. state-checks asserts recovery and stale-response handling.
+// hero-cache <local image URL> exercises the real disk cache across process launches.
+// Other scenes mock all ArcadeLink requests. state-checks verifies recovery/stale responses.
 import SwiftUI
 import Foundation
 
@@ -11,7 +12,7 @@ private final class PreviewProtocol: URLProtocol {
   static var cardLoads = 0
   private var response: DispatchWorkItem?
 
-  override class func canInit(with request: URLRequest) -> Bool { true }
+  override class func canInit(with request: URLRequest) -> Bool { request.url?.host == "link.neri.moe" }
   override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
   override func startLoading() {
     let path = request.url!.path
@@ -53,6 +54,7 @@ struct ClipPreviewApp: App {
   @State private var checked = false
 
   init() {
+    URLProtocol.registerClass(PreviewProtocol.self)
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [PreviewProtocol.self]
     _model = StateObject(wrappedValue: MachineLoginViewModel(api: ArcadeLinkAPI(configuration: configuration)))
@@ -61,10 +63,23 @@ struct ClipPreviewApp: App {
   var body: some Scene {
     WindowGroup {
       Group {
-        if checked { Text("State checks passed") } else { MachineLoginView().environmentObject(model) }
+        if PreviewProtocol.scene == "hero-cache" {
+          if checked {
+            VStack {
+              Text("Hero cache loaded")
+              ClipHeroImage(url: URL(string: ProcessInfo.processInfo.arguments[2])!)
+            }
+          } else { ProgressView() }
+        } else if checked { Text("State checks passed") } else { MachineLoginView().environmentObject(model) }
       }
       .task {
-        if PreviewProtocol.scene == "state-checks" {
+        if PreviewProtocol.scene == "hero-cache" {
+          let url = URL(string: ProcessInfo.processInfo.arguments[2])!
+          let (data, response) = try! await ClipHeroImage.session.data(from: url)
+          assert((response as? HTTPURLResponse)?.statusCode == 200 && UIImage(data: data) != nil)
+          try? await Task.sleep(nanoseconds: 2_000_000_000)
+          checked = true
+        } else if PreviewProtocol.scene == "state-checks" {
           await checkStates()
           checked = true
         } else {
