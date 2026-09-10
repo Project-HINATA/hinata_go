@@ -243,7 +243,8 @@ struct ClipHeroImage: View {
   }()
 
   var body: some View {
-    Group {
+    // Keep the task's host alive before an image exists.
+    VStack(spacing: 0) {
       if let image {
         Color.clear.aspectRatio(1.5, contentMode: .fit)
           .overlay { Image(uiImage: image).resizable().scaledToFill() }
