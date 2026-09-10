@@ -115,10 +115,6 @@ struct MachineLoginView: View {
       .frame(maxWidth: .infinity)
     }
     .background(Color(.systemGroupedBackground).ignoresSafeArea())
-    .confirmationDialog("退出账号？", isPresented: $showingLogoutConfirmation, titleVisibility: .visible) {
-      Button("退出", role: .destructive) { Task { await model.logout() } }
-      Button("取消", role: .cancel) {}
-    }
     .alert("ArcadeLink", isPresented: $showingError) {
       Button("知道了") { model.clearError() }
     } message: {
@@ -142,8 +138,14 @@ struct MachineLoginView: View {
   private var logoutButton: some View {
     Button { showingLogoutConfirmation = true } label: {
       Image(systemName: "rectangle.portrait.and.arrow.right")
+        .font(.title2)
+        .frame(minWidth: 30, minHeight: 30)
     }
     .accessibilityLabel("退出账号")
+    .confirmationDialog("退出账号？", isPresented: $showingLogoutConfirmation, titleVisibility: .visible) {
+      Button("退出", role: .destructive) { Task { await model.logout() } }
+      Button("取消", role: .cancel) {}
+    }
   }
 
   private func actionLabel(_ title: String, busy: Bool) -> some View {
