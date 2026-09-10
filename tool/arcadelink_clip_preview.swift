@@ -94,17 +94,17 @@ struct ClipPreviewApp: App {
   @MainActor private func checkStates() async {
     PreviewProtocol.scene = "failure"
     await model.start(shopCode: "preview", publicId: "preview")
-    assert(model.state == .failed("网络连接失败，请检查网络后重试"))
+    assert(model.state == .failed(String(localized: "网络连接失败，请检查网络后重试")))
     assert(model.errorMessage == nil)
     model.clearError()
-    assert(model.state == .failed("网络连接失败，请检查网络后重试"))
+    assert(model.state == .failed(String(localized: "网络连接失败，请检查网络后重试")))
     await model.start(shopCode: "preview", publicId: "preview")
     assert(model.state == .ready && model.cards.count == 1)
 
     PreviewProtocol.scene = "cards-failure"
     PreviewProtocol.cardLoads = 0
     await model.reloadCards()
-    assert(model.state == .cardsFailed("网络连接失败，请检查网络后重试"))
+    assert(model.state == .cardsFailed(String(localized: "网络连接失败，请检查网络后重试")))
     model.clearError()
     assert(model.state != .loadingCards)
     await model.reloadCards()
@@ -119,7 +119,7 @@ struct ClipPreviewApp: App {
     await Task.yield()
     await model.handleInvocation(URL(string: "https://example.com/invalid")!)
     await pending.value
-    assert(model.state == .failed("无效的机台地址"))
+    assert(model.state == .failed(String(localized: "无效的机台地址")))
     assert(model.shopCode == nil && model.ticket == nil)
   }
 }

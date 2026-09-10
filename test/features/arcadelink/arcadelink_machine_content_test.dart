@@ -1,3 +1,4 @@
+import 'package:hinata_go/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hinata_go/features/arcadelink/arcadelink_machine_content.dart';
@@ -20,7 +21,7 @@ Widget content({
   bool busy = false,
   bool browserOnly = false,
   bool passkey = false,
-  String passkeyLabel = '使用 Passkey 登录',
+  String? passkeyLabel,
   bool success = false,
   List<ArcadeLinkCard> cards = const [],
   ValueChanged<ArcadeLinkCard>? onLogin,
@@ -49,6 +50,7 @@ Future<void> show(
   WidgetTester tester,
   Widget child, {
   double scale = 1,
+  Locale locale = const Locale('zh'),
   Brightness brightness = Brightness.light,
 }) async {
   tester.view.physicalSize = const Size(320, 640);
@@ -57,6 +59,9 @@ Future<void> show(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: locale,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue,
@@ -80,6 +85,31 @@ Future<void> show(
 }
 
 void main() {
+  testWidgets(
+    'English actions and large text fit without translating card data',
+    (tester) async {
+      await show(
+        tester,
+        content(auth: true, passkey: true),
+        locale: const Locale('en'),
+      );
+      expect(find.text('Sign in with MuNET'), findsOneWidget);
+      expect(find.text('Sign in with a passkey'), findsOneWidget);
+      expect(find.text('使用 MuNET 登录'), findsNothing);
+      await show(
+        tester,
+        content(cards: [card]),
+        locale: const Locale('en'),
+        scale: 2,
+      );
+      expect(find.text('Select a card'), findsOneWidget);
+      expect(find.text('Ending in 7890'), findsOneWidget);
+      expect(find.text(card.label), findsOneWidget);
+      expect(find.byTooltip('Sign out'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('MuNET is primary and Passkey remains available', (tester) async {
     await show(tester, content(auth: true, passkey: true));
     expect(find.text('使用 Passkey 登录'), findsOneWidget);

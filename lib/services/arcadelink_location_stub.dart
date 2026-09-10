@@ -20,5 +20,5 @@ class ArcadeLinkLocationException implements Exception {
 }
 
 Future<ArcadeLinkLocationSample> currentArcadeLinkLocation() {
-  throw const ArcadeLinkLocationException('当前平台请使用网页版继续登录');
+  throw const ArcadeLinkLocationException('location_unavailable');
 }

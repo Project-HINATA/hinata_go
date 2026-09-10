@@ -37,10 +37,10 @@ Future<ArcadeLinkLocationSample> currentArcadeLinkLocation() {
 String _messageFor(GeolocationPositionError error) {
   switch (error.code) {
     case GeolocationPositionError.PERMISSION_DENIED:
-      return '需要允许浏览器定位权限';
+      return 'location_denied';
     case GeolocationPositionError.TIMEOUT:
-      return '获取位置超时，请稍后重试';
+      return 'location_timeout';
     default:
-      return '当前无法获取位置';
+      return 'location_unavailable';
   }
 }

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA1100000000000000000004 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000011 /* Localizable.xcstrings */; };
+		AA1100000000000000000003 /* Runner InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000013 /* Runner InfoPlist.xcstrings */; };
+		AA1100000000000000000002 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000012 /* InfoPlist.xcstrings */; };
+		AA1100000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000011 /* Localizable.xcstrings */; };
 		10688FCDEB235C5D7D61F84D /* ArcadeLinkClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = FA100BF03C7C425DBFABB85A /* ArcadeLinkClip.app */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
@@ -78,6 +82,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AA1100000000000000000013 /* Runner InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		AA1100000000000000000012 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		AA1100000000000000000011 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		1CE5A12DC74545CC94497385 /* InvocationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationParser.swift; sourceTree = "<group>"; };
@@ -154,6 +161,8 @@
 			isa = PBXGroup;
 			children = (
 				95064489658D45939E5DA68D /* ArcadeLinkClipApp.swift */,
+				AA1100000000000000000011 /* Localizable.xcstrings */,
+				AA1100000000000000000012 /* InfoPlist.xcstrings */,
 				9717F4222543435DA2825968 /* ArcadeLinkAPI.swift */,
 				1CE5A12DC74545CC94497385 /* InvocationParser.swift */,
 				5FF425FBD0BA44528796FEA8 /* LocationService.swift */,
@@ -223,6 +232,7 @@
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				29AF5A4F2ED44122568D6750 /* ArcadeLinkURLBridge.swift */,
 				2A1C00000000000000000001 /* ArcadeLinkNativeBridge.swift */,
+				AA1100000000000000000013 /* Runner InfoPlist.xcstrings */,
 				D1C000000000000000000001 /* ../ArcadeLinkClip/ArcadeLinkAPI.swift */,
 				D1C000000000000000000002 /* ../ArcadeLinkClip/LocationService.swift */,
 				D1C000000000000000000003 /* ../ArcadeLinkClip/Models.swift */,
@@ -324,6 +334,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				"zh-Hans",
 				Base,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
@@ -354,6 +365,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
+				AA1100000000000000000001 /* Localizable.xcstrings in Resources */,
+				AA1100000000000000000002 /* InfoPlist.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -365,6 +378,8 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				CDC41510304F0F2B000BCB4B /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				AA1100000000000000000003 /* Runner InfoPlist.xcstrings in Resources */,
+				AA1100000000000000000004 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

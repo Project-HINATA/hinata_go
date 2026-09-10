@@ -1,3 +1,4 @@
+import 'package:hinata_go/l10n/app_localizations.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -44,6 +45,10 @@ void main() {
             await tester.pumpWidget(
               ProviderScope(
                 child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  locale: const Locale('zh'),
                   home: MediaQuery(
                     data: MediaQueryData(size: size, padding: insets),
                     child: const ArcadeLinkMachineLoginPage(
@@ -112,6 +117,9 @@ void main() {
     final oldRequest = Completer<http.Response>();
     Widget app(String id) => ProviderScope(
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('zh'),
         home: ArcadeLinkMachineLoginPage(shopCode: 'shop', publicId: id),
       ),
     );
@@ -150,149 +158,162 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  testWidgets(
-    'session pages replace each other through failure, retry and terminal states',
-    (tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-      addTearDown(() => debugDefaultTargetPlatformOverride = null);
-      const channel = MethodChannel('moe.neri.hinatago/arcadelink_native');
-      final firstRequest = Completer<http.Response>();
-      final retryRequest = Completer<http.Response>();
-      final firstCards = Completer<List<Object>>();
-      var requests = 0;
-      var cardRequests = 0;
-      String? loginError = '请到店再进行登录';
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
-        call,
-      ) async {
-        if (call.method == 'cards') {
-          if (cardRequests++ == 0) return firstCards.future;
-          return [
-            {'id': 'card', 'label': '红黑卡', 'accessCode': '6958'},
-          ];
-        }
-        if (loginError != null) {
-          throw PlatformException(
-            code: 'arcadelink_error',
-            message: loginError,
-          );
-        }
-        return null;
-      });
-      addTearDown(
-        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+  for (final locale in [const Locale('zh'), const Locale('en')]) {
+    final strings = lookupAppLocalizations(locale);
+    testWidgets(
+      '$locale session pages replace each other through failure, retry and terminal states',
+      (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        const channel = MethodChannel('moe.neri.hinatago/arcadelink_native');
+        final firstRequest = Completer<http.Response>();
+        final retryRequest = Completer<http.Response>();
+        final firstCards = Completer<List<Object>>();
+        var requests = 0;
+        var cardRequests = 0;
+        String? loginError = '请到店再进行登录';
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
           channel,
-          null,
-        ),
-      );
-
-      http.Response session() => http.Response(
-        jsonEncode({
-          'ticket': 'test',
-          'expiresIn': 300,
-          'machine': {
-            'publicId': 'machine',
-            'name': '舞萌',
-            'shop': {'name': '测试店铺'},
+          (call) async {
+            if (call.method == 'cards') {
+              if (cardRequests++ == 0) return firstCards.future;
+              return [
+                {'id': 'card', 'label': '红黑卡', 'accessCode': '6958'},
+              ];
+            }
+            if (loginError != null) {
+              throw PlatformException(
+                code: 'arcadelink_error',
+                message: loginError,
+              );
+            }
+            return null;
           },
-        }),
-        200,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      );
-
-      const app = ProviderScope(
-        child: MaterialApp(
-          home: ArcadeLinkMachineLoginPage(
-            shopCode: 'shop',
-            publicId: 'machine',
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            channel,
+            null,
           ),
-        ),
-      );
-      void noSessionContent() {
-        expect(find.byType(ArcadeLinkMachineContent), findsNothing);
-        expect(find.text('选择卡片'), findsNothing);
-        expect(find.text('测试店铺'), findsNothing);
-        expect(find.byTooltip('退出账号'), findsNothing);
-      }
+        );
 
-      await http.runWithClient(
-        () async {
-          await tester.pumpWidget(app);
-          await tester.pump();
-          expect(find.byType(ArcadeLinkLoadingPage), findsOneWidget);
-          expect(find.byType(Card), findsNothing);
-          noSessionContent();
+        http.Response session() => http.Response(
+          jsonEncode({
+            'ticket': 'test',
+            'expiresIn': 300,
+            'machine': {
+              'publicId': 'machine',
+              'name': '舞萌',
+              'shop': {'name': '测试店铺'},
+            },
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
 
-          firstRequest.complete(
-            http.Response(
-              '{"error":"连接失败，请稍后重试"}',
-              503,
-              headers: {'content-type': 'application/json; charset=utf-8'},
+        final app = ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: locale,
+            home: ArcadeLinkMachineLoginPage(
+              shopCode: 'shop',
+              publicId: 'machine',
             ),
-          );
-          await tester.pumpAndSettle();
-          expect(find.byType(ArcadeLinkFailurePage), findsOneWidget);
-          expect(find.text('无法进入机台会话'), findsOneWidget);
-          expect(find.text('重试'), findsOneWidget);
-          noSessionContent();
+          ),
+        );
+        void noSessionContent() {
+          expect(find.byType(ArcadeLinkMachineContent), findsNothing);
+          expect(find.text(strings.arcadeLinkSelectCard), findsNothing);
+          expect(find.text('测试店铺'), findsNothing);
+          expect(find.byTooltip(strings.arcadeLinkSignOut), findsNothing);
+        }
 
-          await tester.tap(find.text('重试'));
-          await tester.pump();
-          expect(find.byType(ArcadeLinkLoadingPage), findsOneWidget);
-          expect(find.text('重试'), findsNothing);
-          retryRequest.complete(session());
-          await tester.pump();
-          await tester.pump();
-          expect(find.text('测试店铺'), findsOneWidget);
-          expect(find.text('选择卡片'), findsNothing);
-          firstCards.completeError(
-            PlatformException(code: 'arcadelink_error', message: '连接失败，请稍后重试'),
-          );
-          await tester.pumpAndSettle();
-          expect(find.text('无法加载卡片'), findsOneWidget);
-          expect(find.textContaining('还没有可用卡片'), findsNothing);
-          await tester.tap(find.text('重试'));
-          await tester.pumpAndSettle();
-          expect(find.text('红黑卡'), findsOneWidget);
-          expect(find.text('无法加载卡片'), findsNothing);
+        await http.runWithClient(
+          () async {
+            await tester.pumpWidget(app);
+            await tester.pump();
+            expect(find.byType(ArcadeLinkLoadingPage), findsOneWidget);
+            expect(find.byType(Card), findsNothing);
+            noSessionContent();
 
-          await tester.tap(find.text('红黑卡'));
-          await tester.pumpAndSettle();
-          expect(find.byType(AlertDialog), findsOneWidget);
-          await tester.tap(find.text('知道了'));
-          await tester.pumpAndSettle();
-          expect(find.text('选择卡片'), findsOneWidget);
+            firstRequest.complete(
+              http.Response(
+                '{"error":"连接失败，请稍后重试"}',
+                503,
+                headers: {'content-type': 'application/json; charset=utf-8'},
+              ),
+            );
+            await tester.pumpAndSettle();
+            expect(find.byType(ArcadeLinkFailurePage), findsOneWidget);
+            expect(find.text(strings.arcadeLinkSessionFailed), findsOneWidget);
+            expect(find.text(strings.arcadeLinkRetry), findsOneWidget);
+            noSessionContent();
 
-          loginError = '本次会话已失效';
-          await tester.tap(find.text('红黑卡'));
-          await tester.pumpAndSettle();
-          expect(find.byType(ArcadeLinkExpiredPage), findsOneWidget);
-          expect(find.byType(AlertDialog), findsNothing);
-          noSessionContent();
+            await tester.tap(find.text(strings.arcadeLinkRetry));
+            await tester.pump();
+            expect(find.byType(ArcadeLinkLoadingPage), findsOneWidget);
+            expect(find.text(strings.arcadeLinkRetry), findsNothing);
+            retryRequest.complete(session());
+            await tester.pump();
+            await tester.pump();
+            expect(find.text('测试店铺'), findsOneWidget);
+            expect(find.text(strings.arcadeLinkSelectCard), findsNothing);
+            firstCards.completeError(
+              PlatformException(
+                code: 'arcadelink_error',
+                message: '连接失败，请稍后重试',
+              ),
+            );
+            await tester.pumpAndSettle();
+            expect(find.text(strings.arcadeLinkCardsFailed), findsOneWidget);
+            expect(find.text(strings.arcadeLinkNoCards), findsNothing);
+            await tester.tap(find.text(strings.arcadeLinkRetry));
+            await tester.pumpAndSettle();
+            expect(find.text('红黑卡'), findsOneWidget);
+            expect(find.text(strings.arcadeLinkCardsFailed), findsNothing);
 
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pumpWidget(app);
-          await tester.pumpAndSettle();
-          loginError = null;
-          await tester.tap(find.text('红黑卡'));
-          await tester.pumpAndSettle();
-          expect(find.text('已登录'), findsOneWidget);
-          await tester.pump(const Duration(seconds: 3));
-          expect(find.byType(ArcadeLinkCompletedPage), findsOneWidget);
-          noSessionContent();
-          expect(tester.takeException(), isNull);
-        },
-        () => MockClient((request) {
-          expect(request.url.path, '/api/machines/session/start');
-          requests++;
-          return requests == 1
-              ? firstRequest.future
-              : requests == 2
-              ? retryRequest.future
-              : Future.value(session());
-        }),
-      );
-      debugDefaultTargetPlatformOverride = null;
-    },
-  );
+            await tester.tap(find.text('红黑卡'));
+            await tester.pumpAndSettle();
+            expect(find.byType(AlertDialog), findsOneWidget);
+            expect(find.text(strings.arcadeLinkAtArcade), findsOneWidget);
+            await tester.tap(find.text(strings.arcadeLinkOk));
+            await tester.pumpAndSettle();
+            expect(find.text(strings.arcadeLinkSelectCard), findsOneWidget);
+
+            loginError = '本次会话已失效';
+            await tester.tap(find.text('红黑卡'));
+            await tester.pumpAndSettle();
+            expect(find.byType(ArcadeLinkExpiredPage), findsOneWidget);
+            expect(find.text(strings.arcadeLinkExpired), findsOneWidget);
+            expect(find.text(strings.arcadeLinkScanAgain), findsOneWidget);
+            expect(find.byType(AlertDialog), findsNothing);
+            noSessionContent();
+
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pumpWidget(app);
+            await tester.pumpAndSettle();
+            loginError = null;
+            await tester.tap(find.text('红黑卡'));
+            await tester.pumpAndSettle();
+            expect(find.text(strings.arcadeLinkSignedIn), findsOneWidget);
+            await tester.pump(const Duration(seconds: 3));
+            expect(find.byType(ArcadeLinkCompletedPage), findsOneWidget);
+            noSessionContent();
+            expect(tester.takeException(), isNull);
+          },
+          () => MockClient((request) {
+            expect(request.url.path, '/api/machines/session/start');
+            requests++;
+            return requests == 1
+                ? firstRequest.future
+                : requests == 2
+                ? retryRequest.future
+                : Future.value(session());
+          }),
+        );
+        debugDefaultTargetPlatformOverride = null;
+      },
+    );
+  }
 }

@@ -72,9 +72,24 @@ final class ArcadeLinkNativeBridge {
         result(FlutterMethodNotImplemented)
       }
     } catch {
+      var code = isAuthenticationCancellation(error) ? "authentication_cancelled" : "arcadelink_error"
+      var message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+      if let apiError = error as? ArcadeLinkAPIError, case .server(let rawMessage) = apiError {
+        // Flutter applies its own app language, which may differ from iOS.
+        message = rawMessage
+        if apiError.isSessionExpired { code = "session_expired" }
+        if rawMessage == "请先登录" { code = "authentication_required" }
+      }
+      if let locationError = error as? LocationError {
+        switch locationError {
+        case .denied: code = "location_denied"
+        case .unavailable: code = "location_unavailable"
+        }
+      }
+      if error is URLError { code = "network_error" }
       result(FlutterError(
-        code: isAuthenticationCancellation(error) ? "authentication_cancelled" : "arcadelink_error",
-        message: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription,
+        code: code,
+        message: message,
         details: nil,
       ))
     }

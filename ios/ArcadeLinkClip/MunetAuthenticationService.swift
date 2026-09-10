@@ -54,7 +54,7 @@ final class MunetAuthenticationService: NSObject, ASWebAuthenticationPresentatio
     }
     let query = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)?.queryItems ?? []
     if let message = query.first(where: { $0.name == "error" })?.value {
-      finish(with: .failure(ArcadeLinkAPIError.server(message)))
+      finish(with: .failure(message == "MuNET 授权已取消" ? CancellationError() : ArcadeLinkAPIError.server(message)))
       return
     }
     guard let code = query.first(where: { $0.name == "code" })?.value, !code.isEmpty else {

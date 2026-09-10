@@ -1004,7 +1004,7 @@ abstract class AppLocalizations {
   /// **'This will overwrite your local data irrecoverably. Are you sure?'**
   String get confirmOverwriteMessage;
 
-  /// Validation rule for Aime and Banapass codes
+  /// Validation rule for Aime codes
   ///
   /// In en, this message translates to:
   /// **'Enter a valid 20-digit Aime or Banapass access code'**
@@ -1681,6 +1681,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Card writing was cancelled before any data was changed'**
   String get cardWriteCancelled;
+
+  /// No description provided for @arcadeLinkSelectCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a card'**
+  String get arcadeLinkSelectCard;
+
+  /// No description provided for @arcadeLinkSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get arcadeLinkSignOut;
+
+  /// No description provided for @arcadeLinkSignOutConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get arcadeLinkSignOutConfirm;
+
+  /// No description provided for @arcadeLinkSignOutAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get arcadeLinkSignOutAction;
+
+  /// No description provided for @arcadeLinkOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get arcadeLinkOk;
+
+  /// No description provided for @arcadeLinkRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get arcadeLinkRetry;
+
+  /// No description provided for @arcadeLinkContinueLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue sign-in'**
+  String get arcadeLinkContinueLogin;
+
+  /// No description provided for @arcadeLinkConnectingMunet.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to MuNET…'**
+  String get arcadeLinkConnectingMunet;
+
+  /// No description provided for @arcadeLinkSignInMunet.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with MuNET'**
+  String get arcadeLinkSignInMunet;
+
+  /// No description provided for @arcadeLinkVerifyingPasskey.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying passkey…'**
+  String get arcadeLinkVerifyingPasskey;
+
+  /// No description provided for @arcadeLinkSignInPasskey.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with a passkey'**
+  String get arcadeLinkSignInPasskey;
+
+  /// No description provided for @arcadeLinkPasskeyOnWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a passkey on the web'**
+  String get arcadeLinkPasskeyOnWeb;
+
+  /// No description provided for @arcadeLinkReturnAfterAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'After signing in, return here to reload your cards.'**
+  String get arcadeLinkReturnAfterAuth;
+
+  /// No description provided for @arcadeLinkReloadCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload cards'**
+  String get arcadeLinkReloadCards;
+
+  /// No description provided for @arcadeLinkLoadingCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading cards'**
+  String get arcadeLinkLoadingCards;
+
+  /// No description provided for @arcadeLinkCardsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load cards'**
+  String get arcadeLinkCardsFailed;
+
+  /// No description provided for @arcadeLinkNoCards.
+  ///
+  /// In en, this message translates to:
+  /// **'No cards available. Add a card in ArcadeLink first.'**
+  String get arcadeLinkNoCards;
+
+  /// No description provided for @arcadeLinkLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get arcadeLinkLoading;
+
+  /// No description provided for @arcadeLinkSessionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start machine session'**
+  String get arcadeLinkSessionFailed;
+
+  /// No description provided for @arcadeLinkExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This session has expired'**
+  String get arcadeLinkExpired;
+
+  /// No description provided for @arcadeLinkScanAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the NFC tag or scan the QR code again.'**
+  String get arcadeLinkScanAgain;
+
+  /// No description provided for @arcadeLinkCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in complete'**
+  String get arcadeLinkCompleted;
+
+  /// No description provided for @arcadeLinkClosePage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can close this page'**
+  String get arcadeLinkClosePage;
+
+  /// No description provided for @arcadeLinkSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get arcadeLinkSignedIn;
+
+  /// No description provided for @arcadeLinkSigningIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in…'**
+  String get arcadeLinkSigningIn;
+
+  /// No description provided for @arcadeLinkLocating.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking location…'**
+  String get arcadeLinkLocating;
+
+  /// No description provided for @arcadeLinkCardEnding.
+  ///
+  /// In en, this message translates to:
+  /// **'Ending in {digits}'**
+  String arcadeLinkCardEnding(String digits);
+
+  /// No description provided for @arcadeLinkBackHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to home'**
+  String get arcadeLinkBackHome;
+
+  /// No description provided for @arcadeLinkMachineInfoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load machine information'**
+  String get arcadeLinkMachineInfoFailed;
+
+  /// No description provided for @arcadeLinkOpenWebFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the web page. Please try again.'**
+  String get arcadeLinkOpenWebFailed;
+
+  /// No description provided for @arcadeLinkOpenMunetFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open MuNET sign-in'**
+  String get arcadeLinkOpenMunetFailed;
+
+  /// No description provided for @arcadeLinkLocationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow location access to confirm you are at the arcade.'**
+  String get arcadeLinkLocationDenied;
+
+  /// No description provided for @arcadeLinkLocationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not determine your location'**
+  String get arcadeLinkLocationFailed;
+
+  /// No description provided for @arcadeLinkLocationTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Location timed out. Please try again.'**
+  String get arcadeLinkLocationTimeout;
+
+  /// No description provided for @arcadeLinkLocationBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting your location. Please try again shortly.'**
+  String get arcadeLinkLocationBusy;
+
+  /// No description provided for @arcadeLinkAtArcade.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in when you are at the arcade.'**
+  String get arcadeLinkAtArcade;
+
+  /// No description provided for @arcadeLinkMachineUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This machine is unavailable. Please try again later.'**
+  String get arcadeLinkMachineUnavailable;
+
+  /// No description provided for @arcadeLinkNetworkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed. Check your network and try again.'**
+  String get arcadeLinkNetworkFailed;
+
+  /// No description provided for @arcadeLinkOperationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again later.'**
+  String get arcadeLinkOperationFailed;
+
+  /// No description provided for @arcadeLinkRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests. Please try again later.'**
+  String get arcadeLinkRateLimited;
+
+  /// No description provided for @arcadeLinkRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'This action is currently unavailable'**
+  String get arcadeLinkRestricted;
+
+  /// No description provided for @arcadeLinkAccountUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is currently unavailable'**
+  String get arcadeLinkAccountUnavailable;
+
+  /// No description provided for @arcadeLinkCardUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This card is unavailable or has expired'**
+  String get arcadeLinkCardUnavailable;
+
+  /// No description provided for @arcadeLinkSignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in first'**
+  String get arcadeLinkSignInRequired;
+
+  /// No description provided for @arcadeLinkAuthExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization code expired. Please sign in again.'**
+  String get arcadeLinkAuthExpired;
+
+  /// No description provided for @arcadeLinkMunetFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'MuNET sign-in failed'**
+  String get arcadeLinkMunetFailed;
+
+  /// No description provided for @arcadeLinkPasskeyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Passkey verification failed'**
+  String get arcadeLinkPasskeyFailed;
+
+  /// No description provided for @arcadeLinkPasskeyExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The passkey request has expired'**
+  String get arcadeLinkPasskeyExpired;
+
+  /// No description provided for @arcadeLinkPasskeyUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Passkey not recognized'**
+  String get arcadeLinkPasskeyUnknown;
+
+  /// No description provided for @arcadeLinkInvalidURL.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid ArcadeLink URL'**
+  String get arcadeLinkInvalidURL;
+
+  /// No description provided for @arcadeLinkInvalidResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid response from ArcadeLink'**
+  String get arcadeLinkInvalidResponse;
 }
 
 class _AppLocalizationsDelegate

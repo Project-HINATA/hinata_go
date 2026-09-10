@@ -854,4 +854,159 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cardWriteCancelled => '已在修改数据前取消卡片写入';
+
+  @override
+  String get arcadeLinkSelectCard => '选择卡片';
+
+  @override
+  String get arcadeLinkSignOut => '退出账号';
+
+  @override
+  String get arcadeLinkSignOutConfirm => '退出账号？';
+
+  @override
+  String get arcadeLinkSignOutAction => '退出';
+
+  @override
+  String get arcadeLinkOk => '知道了';
+
+  @override
+  String get arcadeLinkRetry => '重试';
+
+  @override
+  String get arcadeLinkContinueLogin => '继续登录';
+
+  @override
+  String get arcadeLinkConnectingMunet => '正在连接 MuNET…';
+
+  @override
+  String get arcadeLinkSignInMunet => '使用 MuNET 登录';
+
+  @override
+  String get arcadeLinkVerifyingPasskey => '正在验证 Passkey…';
+
+  @override
+  String get arcadeLinkSignInPasskey => '使用 Passkey 登录';
+
+  @override
+  String get arcadeLinkPasskeyOnWeb => '在网页中使用 Passkey';
+
+  @override
+  String get arcadeLinkReturnAfterAuth => '完成授权后，返回这里刷新卡片。';
+
+  @override
+  String get arcadeLinkReloadCards => '重新加载卡片';
+
+  @override
+  String get arcadeLinkLoadingCards => '正在加载卡片';
+
+  @override
+  String get arcadeLinkCardsFailed => '无法加载卡片';
+
+  @override
+  String get arcadeLinkNoCards => '还没有可用卡片，请先在 ArcadeLink 添加卡片';
+
+  @override
+  String get arcadeLinkLoading => '正在加载';
+
+  @override
+  String get arcadeLinkSessionFailed => '无法进入机台会话';
+
+  @override
+  String get arcadeLinkExpired => '本次会话已失效';
+
+  @override
+  String get arcadeLinkScanAgain => '请重新碰一下 NFC 或重新扫描二维码。';
+
+  @override
+  String get arcadeLinkCompleted => '本次登录已完成';
+
+  @override
+  String get arcadeLinkClosePage => '可以关闭此页面';
+
+  @override
+  String get arcadeLinkSignedIn => '已登录';
+
+  @override
+  String get arcadeLinkSigningIn => '正在登录…';
+
+  @override
+  String get arcadeLinkLocating => '确认位置…';
+
+  @override
+  String arcadeLinkCardEnding(String digits) {
+    return '尾号 $digits';
+  }
+
+  @override
+  String get arcadeLinkBackHome => '返回主页';
+
+  @override
+  String get arcadeLinkMachineInfoFailed => '无法读取机台信息';
+
+  @override
+  String get arcadeLinkOpenWebFailed => '无法打开网页版，请重试';
+
+  @override
+  String get arcadeLinkOpenMunetFailed => '无法打开 MuNET 登录页面';
+
+  @override
+  String get arcadeLinkLocationDenied => '需要定位权限才能确认你在店内';
+
+  @override
+  String get arcadeLinkLocationFailed => '定位获取失败';
+
+  @override
+  String get arcadeLinkLocationTimeout => '获取位置超时，请稍后重试';
+
+  @override
+  String get arcadeLinkLocationBusy => '正在获取当前位置，请稍后再试';
+
+  @override
+  String get arcadeLinkAtArcade => '请到店再进行登录';
+
+  @override
+  String get arcadeLinkMachineUnavailable => '这台机台暂时不可用，请稍后重试';
+
+  @override
+  String get arcadeLinkNetworkFailed => '网络连接失败，请检查网络后重试';
+
+  @override
+  String get arcadeLinkOperationFailed => '操作失败，请稍后重试';
+
+  @override
+  String get arcadeLinkRateLimited => '操作过于频繁，请稍后重试';
+
+  @override
+  String get arcadeLinkRestricted => '当前无法进行此操作';
+
+  @override
+  String get arcadeLinkAccountUnavailable => '这个账号暂时无法使用';
+
+  @override
+  String get arcadeLinkCardUnavailable => '卡片不可用或已失效';
+
+  @override
+  String get arcadeLinkSignInRequired => '请先登录';
+
+  @override
+  String get arcadeLinkAuthExpired => '授权码已失效，请重新登录';
+
+  @override
+  String get arcadeLinkMunetFailed => 'MuNET 登录失败';
+
+  @override
+  String get arcadeLinkPasskeyFailed => 'Passkey 验证失败';
+
+  @override
+  String get arcadeLinkPasskeyExpired => 'Passkey 请求已过期';
+
+  @override
+  String get arcadeLinkPasskeyUnknown => '无法识别这个 Passkey';
+
+  @override
+  String get arcadeLinkInvalidURL => 'ArcadeLink 地址无效';
+
+  @override
+  String get arcadeLinkInvalidResponse => 'ArcadeLink 返回的数据无效';
 }

@@ -1,3 +1,4 @@
+import 'package:hinata_go/l10n/app_localizations.dart';
 // Local UI preview only: flutter run -d web-server -t tool/arcadelink_ui_preview.dart
 import 'package:flutter/material.dart';
 import 'package:hinata_go/features/arcadelink/arcadelink_machine_content.dart';
@@ -32,6 +33,9 @@ void main() {
   ];
   runApp(
     MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: Locale(Uri.base.queryParameters['lang'] == 'en' ? 'en' : 'zh'),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

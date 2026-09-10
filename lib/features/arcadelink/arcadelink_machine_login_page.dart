@@ -7,9 +7,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../l10n/l10n.dart';
 import '../../services/arcadelink_api.dart';
 import '../../services/arcadelink_invocation_service.dart';
 import '../../services/arcadelink_native_service.dart';
+import 'arcadelink_errors.dart';
 import 'arcadelink_machine_content.dart';
 
 enum _SessionPage { loading, failed, session, expired, completed }
@@ -113,7 +115,9 @@ class _ArcadeLinkMachineLoginPageState
     } catch (error) {
       if (!mounted || version != _loadVersion) return;
       setState(() {
-        _page = _isExpired(error) ? _SessionPage.expired : _SessionPage.failed;
+        _page = arcadeLinkSessionExpired(error)
+            ? _SessionPage.expired
+            : _SessionPage.failed;
         _error = error;
       });
     }
@@ -127,9 +131,13 @@ class _ArcadeLinkMachineLoginPageState
         _api.webFallbackURL(session.ticket),
         mode: LaunchMode.externalApplication,
       );
-      if (!launched && mounted) setState(() => _error = '无法打开网页版，请重试');
+      if (!launched && mounted) {
+        setState(() => _error = context.l10n.arcadeLinkOpenWebFailed);
+      }
     } catch (_) {
-      if (mounted) setState(() => _error = '无法打开网页版，请重试');
+      if (mounted) {
+        setState(() => _error = context.l10n.arcadeLinkOpenWebFailed);
+      }
     }
   }
 
@@ -151,11 +159,9 @@ class _ArcadeLinkMachineLoginPageState
     } catch (error) {
       if (!mounted || version != _loadVersion) return;
       setState(() {
-        final needsAuth =
-            error is ArcadeLinkException && error.statusCode == 401 ||
-            error is PlatformException && error.message == '请先登录';
+        final needsAuth = arcadeLinkAuthRequired(error);
         _authRequired = needsAuth;
-        if (_isExpired(error)) _page = _SessionPage.expired;
+        if (arcadeLinkSessionExpired(error)) _page = _SessionPage.expired;
         _cardsError = needsAuth ? null : error;
       });
     } finally {
@@ -180,7 +186,7 @@ class _ArcadeLinkMachineLoginPageState
       } catch (error) {
         if (!mounted || version != _loadVersion) return;
         if (!_isCancellation(error)) {
-          await _showErrorDialog(arcadeLinkErrorMessage(error));
+          await _showErrorDialog(arcadeLinkErrorMessage(error, context.l10n));
         }
       } finally {
         if (mounted && version == _loadVersion) {
@@ -203,10 +209,12 @@ class _ArcadeLinkMachineLoginPageState
         if (!mounted) return;
         setState(() {
           _webAuthStarted = launched;
-          if (!launched) _error = '无法打开 MuNET 登录页面';
+          if (!launched) _error = context.l10n.arcadeLinkOpenMunetFailed;
         });
       } catch (_) {
-        if (mounted) setState(() => _error = '无法打开 MuNET 登录页面');
+        if (mounted) {
+          setState(() => _error = context.l10n.arcadeLinkOpenMunetFailed);
+        }
       } finally {
         if (mounted) setState(() => _authenticating = false);
       }
@@ -234,7 +242,7 @@ class _ArcadeLinkMachineLoginPageState
     } catch (error) {
       if (!mounted || version != _loadVersion) return;
       if (!_isCancellation(error)) {
-        await _showErrorDialog(arcadeLinkErrorMessage(error));
+        await _showErrorDialog(arcadeLinkErrorMessage(error, context.l10n));
       }
     } finally {
       if (mounted && version == _loadVersion) {
@@ -280,10 +288,10 @@ class _ArcadeLinkMachineLoginPageState
       setState(() {
         _loggingIn = false;
         _error = null;
-        if (_isExpired(error)) _page = _SessionPage.expired;
+        if (arcadeLinkSessionExpired(error)) _page = _SessionPage.expired;
       });
       if (_page != _SessionPage.expired && !_isCancellation(error)) {
-        await _showErrorDialog(arcadeLinkErrorMessage(error));
+        await _showErrorDialog(arcadeLinkErrorMessage(error, context.l10n));
       }
     }
   }
@@ -292,15 +300,15 @@ class _ArcadeLinkMachineLoginPageState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('退出账号？'),
+        title: Text(context.l10n.arcadeLinkSignOutConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('退出'),
+            child: Text(context.l10n.arcadeLinkSignOutAction),
           ),
         ],
       ),
@@ -341,8 +349,8 @@ class _ArcadeLinkMachineLoginPageState
                       _SessionPage.completed => const ArcadeLinkCompletedPage(),
                       _SessionPage.failed => ArcadeLinkFailurePage(
                         message: _error == null
-                            ? '无法读取机台信息'
-                            : arcadeLinkErrorMessage(_error!),
+                            ? context.l10n.arcadeLinkMachineInfoFailed
+                            : arcadeLinkErrorMessage(_error!, context.l10n),
                         onRetry: _loadMachine,
                       ),
                       _SessionPage.session => ArcadeLinkMachineContent(
@@ -364,8 +372,8 @@ class _ArcadeLinkMachineLoginPageState
                             kIsWeb ||
                             ArcadeLinkNativeService.supportsNativePasskey,
                         passkeyActionLabel: kIsWeb
-                            ? '在网页中使用 Passkey'
-                            : '使用 Passkey 登录',
+                            ? context.l10n.arcadeLinkPasskeyOnWeb
+                            : context.l10n.arcadeLinkSignInPasskey,
                         nativeMunetAvailable:
                             ArcadeLinkNativeService.supportsNativeMunet,
                         onAuthenticate: _authenticate,
@@ -386,7 +394,7 @@ class _ArcadeLinkMachineLoginPageState
             left: 8,
             child: SafeArea(
               child: IconButton(
-                tooltip: '返回主页',
+                tooltip: context.l10n.arcadeLinkBackHome,
                 onPressed: () => context.go('/scan'),
                 icon: const Icon(Icons.arrow_back),
               ),
@@ -400,9 +408,6 @@ class _ArcadeLinkMachineLoginPageState
   bool _isCancellation(Object error) =>
       error is PlatformException && error.code == 'authentication_cancelled';
 
-  bool _isExpired(Object error) =>
-      error.toString().contains('会话已失效') || error.toString().contains('缺少会话凭证');
-
   Future<void> _showErrorDialog(String message) => showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
@@ -410,7 +415,7 @@ class _ArcadeLinkMachineLoginPageState
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('知道了'),
+          child: Text(context.l10n.arcadeLinkOk),
         ),
       ],
     ),

@@ -1,3 +1,4 @@
+import 'package:hinata_go/l10n/app_localizations.dart';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -47,6 +48,10 @@ void main() {
             await tester.pumpWidget(
               const ProviderScope(
                 child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  locale: Locale('zh'),
                   home: ArcadeLinkMachineLoginPage(
                     shopCode: 'shop',
                     publicId: 'machine',

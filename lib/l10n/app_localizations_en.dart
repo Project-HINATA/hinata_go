@@ -881,4 +881,174 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cardWriteCancelled =>
       'Card writing was cancelled before any data was changed';
+
+  @override
+  String get arcadeLinkSelectCard => 'Select a card';
+
+  @override
+  String get arcadeLinkSignOut => 'Sign out';
+
+  @override
+  String get arcadeLinkSignOutConfirm => 'Sign out?';
+
+  @override
+  String get arcadeLinkSignOutAction => 'Sign out';
+
+  @override
+  String get arcadeLinkOk => 'OK';
+
+  @override
+  String get arcadeLinkRetry => 'Retry';
+
+  @override
+  String get arcadeLinkContinueLogin => 'Continue sign-in';
+
+  @override
+  String get arcadeLinkConnectingMunet => 'Connecting to MuNET…';
+
+  @override
+  String get arcadeLinkSignInMunet => 'Sign in with MuNET';
+
+  @override
+  String get arcadeLinkVerifyingPasskey => 'Verifying passkey…';
+
+  @override
+  String get arcadeLinkSignInPasskey => 'Sign in with a passkey';
+
+  @override
+  String get arcadeLinkPasskeyOnWeb => 'Use a passkey on the web';
+
+  @override
+  String get arcadeLinkReturnAfterAuth =>
+      'After signing in, return here to reload your cards.';
+
+  @override
+  String get arcadeLinkReloadCards => 'Reload cards';
+
+  @override
+  String get arcadeLinkLoadingCards => 'Loading cards';
+
+  @override
+  String get arcadeLinkCardsFailed => 'Could not load cards';
+
+  @override
+  String get arcadeLinkNoCards =>
+      'No cards available. Add a card in ArcadeLink first.';
+
+  @override
+  String get arcadeLinkLoading => 'Loading';
+
+  @override
+  String get arcadeLinkSessionFailed => 'Could not start machine session';
+
+  @override
+  String get arcadeLinkExpired => 'This session has expired';
+
+  @override
+  String get arcadeLinkScanAgain =>
+      'Tap the NFC tag or scan the QR code again.';
+
+  @override
+  String get arcadeLinkCompleted => 'Sign-in complete';
+
+  @override
+  String get arcadeLinkClosePage => 'You can close this page';
+
+  @override
+  String get arcadeLinkSignedIn => 'Signed in';
+
+  @override
+  String get arcadeLinkSigningIn => 'Signing in…';
+
+  @override
+  String get arcadeLinkLocating => 'Checking location…';
+
+  @override
+  String arcadeLinkCardEnding(String digits) {
+    return 'Ending in $digits';
+  }
+
+  @override
+  String get arcadeLinkBackHome => 'Back to home';
+
+  @override
+  String get arcadeLinkMachineInfoFailed =>
+      'Could not load machine information';
+
+  @override
+  String get arcadeLinkOpenWebFailed =>
+      'Could not open the web page. Please try again.';
+
+  @override
+  String get arcadeLinkOpenMunetFailed => 'Could not open MuNET sign-in';
+
+  @override
+  String get arcadeLinkLocationDenied =>
+      'Allow location access to confirm you are at the arcade.';
+
+  @override
+  String get arcadeLinkLocationFailed => 'Could not determine your location';
+
+  @override
+  String get arcadeLinkLocationTimeout =>
+      'Location timed out. Please try again.';
+
+  @override
+  String get arcadeLinkLocationBusy =>
+      'Getting your location. Please try again shortly.';
+
+  @override
+  String get arcadeLinkAtArcade => 'Please sign in when you are at the arcade.';
+
+  @override
+  String get arcadeLinkMachineUnavailable =>
+      'This machine is unavailable. Please try again later.';
+
+  @override
+  String get arcadeLinkNetworkFailed =>
+      'Connection failed. Check your network and try again.';
+
+  @override
+  String get arcadeLinkOperationFailed =>
+      'Something went wrong. Please try again later.';
+
+  @override
+  String get arcadeLinkRateLimited =>
+      'Too many requests. Please try again later.';
+
+  @override
+  String get arcadeLinkRestricted => 'This action is currently unavailable';
+
+  @override
+  String get arcadeLinkAccountUnavailable =>
+      'This account is currently unavailable';
+
+  @override
+  String get arcadeLinkCardUnavailable =>
+      'This card is unavailable or has expired';
+
+  @override
+  String get arcadeLinkSignInRequired => 'Please sign in first';
+
+  @override
+  String get arcadeLinkAuthExpired =>
+      'Authorization code expired. Please sign in again.';
+
+  @override
+  String get arcadeLinkMunetFailed => 'MuNET sign-in failed';
+
+  @override
+  String get arcadeLinkPasskeyFailed => 'Passkey verification failed';
+
+  @override
+  String get arcadeLinkPasskeyExpired => 'The passkey request has expired';
+
+  @override
+  String get arcadeLinkPasskeyUnknown => 'Passkey not recognized';
+
+  @override
+  String get arcadeLinkInvalidURL => 'Invalid ArcadeLink URL';
+
+  @override
+  String get arcadeLinkInvalidResponse => 'Invalid response from ArcadeLink';
 }

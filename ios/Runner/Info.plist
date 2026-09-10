@@ -35,7 +35,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need photo library access to import and export data</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need location access when capturing or selecting media with location information.</string>
+	<string>Location access confirms you are at the arcade before signing in to a machine.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

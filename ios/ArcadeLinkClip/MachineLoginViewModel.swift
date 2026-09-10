@@ -50,7 +50,7 @@ final class MachineLoginViewModel: ObservableObject {
       shopCode = nil
       publicId = nil
       ticket = nil
-      state = .failed("无效的机台地址")
+      state = .failed(String(localized: "无效的机台地址"))
       errorMessage = nil
       return
     }
@@ -134,7 +134,7 @@ final class MachineLoginViewModel: ObservableObject {
       state = .unauthenticated
       cards = []
       errorMessage = nil
-    } catch { errorMessage = "退出账号失败，请重试" }
+    } catch { errorMessage = String(localized: "退出账号失败，请重试") }
   }
 
   func reloadCards() async {
@@ -149,7 +149,7 @@ final class MachineLoginViewModel: ObservableObject {
     } catch {
       guard version == invocationVersion else { return }
       let message = friendlyMessage(error)
-      state = message == "本次会话已失效" ? .expired : .cardsFailed(message)
+      state = (error as? ArcadeLinkAPIError)?.isSessionExpired == true ? .expired : .cardsFailed(message)
     }
   }
 
@@ -184,7 +184,7 @@ final class MachineLoginViewModel: ObservableObject {
     } catch {
       guard self.ticket == ticket else { return }
       let message = friendlyMessage(error)
-      if message == "本次会话已失效" { state = .expired } else { state = .ready }
+      if (error as? ArcadeLinkAPIError)?.isSessionExpired == true { state = .expired } else { state = .ready }
       activeCardId = nil
       errorMessage = state == .expired ? nil : message
     }
@@ -192,18 +192,17 @@ final class MachineLoginViewModel: ObservableObject {
 
   private func fail(_ error: Error) {
     let message = friendlyMessage(error)
-    state = message == "本次会话已失效" ? .expired : .failed(message)
+    state = (error as? ArcadeLinkAPIError)?.isSessionExpired == true ? .expired : .failed(message)
     errorMessage = nil
   }
   private func friendlyMessage(_ error: Error) -> String {
-    if error is URLError { return "网络连接失败，请检查网络后重试" }
-    let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-    if message.contains("会话已失效") || message.contains("缺少会话凭证") { return "本次会话已失效" }
-    if message.contains("定位权限") { return "需要定位权限才能确认你在店内" }
-    if message.contains("机台") || message.contains("502") || message.contains("404") {
-      return "这台机台暂时不可用，请稍后重试"
+    if error is URLError { return String(localized: "网络连接失败，请检查网络后重试") }
+    if let apiError = error as? ArcadeLinkAPIError {
+      return apiError.errorDescription ?? String(localized: "操作失败，请稍后重试")
     }
-    if message.contains("请求失败") { return "连接失败，请稍后重试" }
-    return message
+    if let locationError = error as? LocationError {
+      return locationError.errorDescription ?? String(localized: "定位获取失败")
+    }
+    return String(localized: "操作失败，请稍后重试")
   }
 }

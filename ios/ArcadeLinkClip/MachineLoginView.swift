@@ -68,14 +68,14 @@ private struct ClipFailurePage: View {
 
 private struct ClipExpiredPage: View {
   var body: some View {
-    ClipStatusMessage(title: "本次会话已失效", message: "请重新碰一下 NFC 或重新扫描二维码。", symbol: "clock.badge.exclamationmark")
+    ClipStatusMessage(title: "本次会话已失效", message: String(localized: "请重新碰一下 NFC 或重新扫描二维码。"), symbol: "clock.badge.exclamationmark")
       .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }
 
 private struct ClipCompletedPage: View {
   var body: some View {
-    ClipStatusMessage(title: "本次登录已完成", message: "可以关闭此页面", symbol: "checkmark.circle")
+    ClipStatusMessage(title: "本次登录已完成", message: String(localized: "可以关闭此页面"), symbol: "checkmark.circle")
       .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }
@@ -166,7 +166,7 @@ private struct ClipSessionPage: View {
     .disabled(model.state != .ready)
   }
 
-  private func actionLabel(_ title: String, busy: Bool) -> some View {
+  private func actionLabel(_ title: LocalizedStringKey, busy: Bool) -> some View {
     HStack(spacing: 10) {
       if busy { ProgressView().tint(.primary) }
       Text(title)
@@ -189,7 +189,7 @@ private struct ClipSessionPage: View {
               HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                   Text(card.label).font(.title3.weight(.semibold)).foregroundStyle(.primary)
-                  Text(active ? rowDetail(card) : "尾号 \(card.accessCode.suffix(4))")
+                  Text(active ? rowDetail(card) : cardEnding(card))
                     .font(.body).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
@@ -219,11 +219,15 @@ private struct ClipSessionPage: View {
 
   private func rowDetail(_ card: ArcadeCard) -> String {
     switch model.state {
-    case .locating: return "确认位置…"
-    case .sending: return "正在登录…"
-    case .success: return "已登录"
-    default: return "尾号 \(card.accessCode.suffix(4))"
+    case .locating: return String(localized: "确认位置…")
+    case .sending: return String(localized: "正在登录…")
+    case .success: return String(localized: "已登录")
+    default: return cardEnding(card)
     }
+  }
+
+  private func cardEnding(_ card: ArcadeCard) -> String {
+    String.localizedStringWithFormat(NSLocalizedString("尾号 %@", comment: "Last four card digits"), String(card.accessCode.suffix(4)))
   }
 }
 
@@ -272,7 +276,7 @@ struct ClipHeroImage: View {
 }
 
 private struct ClipStatusMessage: View {
-  let title: String
+  let title: LocalizedStringKey
   let message: String
   let symbol: String
 

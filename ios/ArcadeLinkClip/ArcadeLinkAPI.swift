@@ -5,14 +5,19 @@ enum ArcadeLinkAPIError: LocalizedError {
   case invalidResponse
   case server(String)
 
+  var isSessionExpired: Bool {
+    guard case .server(let message) = self else { return false }
+    return message == "本次会话已失效" || message == "缺少会话凭证"
+  }
+
   var errorDescription: String? {
     switch self {
     case .invalidURL:
-      return "ArcadeLink 地址无效"
+      return String(localized: "ArcadeLink 地址无效")
     case .invalidResponse:
-      return "ArcadeLink 返回的数据无效"
+      return String(localized: "ArcadeLink 返回的数据无效")
     case .server(let message):
-      return message
+      return NSLocalizedString(message, value: String(localized: "操作失败，请稍后重试"), comment: "Server error")
     }
   }
 }

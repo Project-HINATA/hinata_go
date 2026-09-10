@@ -45,6 +45,7 @@ void main() {
             UncontrolledProviderScope(
               container: container,
               child: MaterialApp.router(
+                locale: const Locale('zh'),
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
                 routerConfig: router,
