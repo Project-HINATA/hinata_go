@@ -1,12 +1,15 @@
-import Flutter
-import UIKit
+import AuthenticationServices
 import XCTest
+@testable import Runner
 
 class RunnerTests: XCTestCase {
-
-  func testExample() {
-    // If you add code to the Runner application, consider adding tests here.
-    // See https://developer.apple.com/documentation/xctest for more information about using XCTest.
+  func testAuthenticationCancellationUsesSystemCodes() {
+    XCTAssertTrue(isAuthenticationCancellation(NSError(domain: ASAuthorizationError.errorDomain, code: 1001)))
+    XCTAssertTrue(isAuthenticationCancellation(NSError(domain: ASWebAuthenticationSessionError.errorDomain, code: 1)))
+    XCTAssertTrue(isAuthenticationCancellation(CancellationError()))
+    XCTAssertFalse(isAuthenticationCancellation(NSError(domain: ASAuthorizationError.errorDomain, code: 1004)))
+    XCTAssertFalse(isAuthenticationCancellation(NSError(domain: ASWebAuthenticationSessionError.errorDomain, code: 2)))
+    XCTAssertFalse(isAuthenticationCancellation(NSError(domain: "server", code: 1001,
+      userInfo: [NSLocalizedDescriptionKey: "Unable to cancel the request"])))
   }
-
 }

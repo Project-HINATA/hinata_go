@@ -2,6 +2,12 @@ import AuthenticationServices
 import Foundation
 import UIKit
 
+func isAuthenticationCancellation(_ error: Error) -> Bool {
+  (error as? ASAuthorizationError)?.code == .canceled ||
+    (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin ||
+    error is CancellationError
+}
+
 @MainActor
 final class PasskeyAuthenticationService: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
   private var continuation: CheckedContinuation<PasskeyAssertion, Error>?

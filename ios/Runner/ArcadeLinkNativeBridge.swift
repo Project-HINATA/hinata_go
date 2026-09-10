@@ -73,7 +73,7 @@ final class ArcadeLinkNativeBridge {
       }
     } catch {
       result(FlutterError(
-        code: "arcadelink_error",
+        code: isAuthenticationCancellation(error) ? "authentication_cancelled" : "arcadelink_error",
         message: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription,
         details: nil,
       ))

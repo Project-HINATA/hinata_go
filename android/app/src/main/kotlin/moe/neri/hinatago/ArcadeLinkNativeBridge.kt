@@ -15,6 +15,7 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.PublicKeyCredential
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
@@ -126,6 +127,10 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
                             }
 
                             override fun onError(error: GetCredentialException) {
+                                if (error is GetCredentialCancellationException) {
+                                    fail(result, "authentication_cancelled", "")
+                                    return
+                                }
                                 fail(
                                     result,
                                     "passkey_error",

@@ -86,7 +86,7 @@ final class MachineLoginViewModel: ObservableObject {
       try await api.loginWithPasskey(assertion)
       try await loadCards()
     } catch {
-      if !error.localizedDescription.lowercased().contains("cancel") {
+      if !isAuthenticationCancellation(error) {
         errorMessage = friendlyMessage(error)
       }
       if state != .loadingCards { state = .unauthenticated }
@@ -103,7 +103,7 @@ final class MachineLoginViewModel: ObservableObject {
       try await api.exchangeAppClipAuth(code: code)
       try await loadCards()
     } catch {
-      if !error.localizedDescription.lowercased().contains("cancel") {
+      if !isAuthenticationCancellation(error) {
         errorMessage = friendlyMessage(error)
       }
       if state != .loadingCards { state = .unauthenticated }

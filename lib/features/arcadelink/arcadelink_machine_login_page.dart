@@ -363,8 +363,7 @@ class _ArcadeLinkMachineLoginPageState
   }
 
   bool _isCancellation(Object error) =>
-      error.toString().toLowerCase().contains('cancel') ||
-      error.toString().contains('取消');
+      error is PlatformException && error.code == 'authentication_cancelled';
 
   Future<void> _showErrorDialog(String message) => showDialog<void>(
     context: context,
