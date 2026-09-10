@@ -80,6 +80,10 @@ jobs:
         run: |
           set -euo pipefail
           test -d "$DEVELOPER_DIR"
+          # Native asset hooks must use this Xcode even after filtering their environment.
+          export PATH="$GITHUB_WORKSPACE/.github/scripts/apple-tools:$PATH"
+          echo "$GITHUB_WORKSPACE/.github/scripts/apple-tools" >> "$GITHUB_PATH"
+          env -u DEVELOPER_DIR -u SDKROOT xcrun --show-sdk-path --sdk iphoneos
           xcodebuild -version
           flutter --version
           security find-identity -v -p codesigning
