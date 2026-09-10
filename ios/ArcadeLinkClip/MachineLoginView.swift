@@ -57,9 +57,9 @@ struct MachineLoginView: View {
               Button { showingLogoutConfirmation = true } label: {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
                   .font(.title3)
+                  .padding(12)
+                  .contentShape(Circle())
               }
-              .buttonStyle(.plain)
-              .padding(12)
               .background {
                 if #available(iOS 26.0, *) {
                   Color.clear.glassEffect(.regular.interactive(), in: .circle)
