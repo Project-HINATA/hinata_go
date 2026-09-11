@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter, TileMode;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -74,45 +76,7 @@ class ArcadeLinkMachineContent extends StatelessWidget {
           margin: EdgeInsets.zero,
           shape: cardShape,
           clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (session.machine.heroUrl case final String url)
-                Image(
-                  image: kIsWeb
-                      ? NetworkImage(url)
-                      : CachedNetworkImageProvider(url),
-                  fit: BoxFit.cover,
-                  excludeFromSemantics: true,
-                  frameBuilder: (context, child, frame, synchronous) =>
-                      frame == null
-                      ? const SizedBox.shrink()
-                      : AspectRatio(aspectRatio: 1.5, child: child),
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      session.machine.shopName,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      session.machine.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          child: _MachineHero(machine: session.machine),
         ),
         const SizedBox(height: 48),
         if (!authRequired && !browserOnly && !loadingCards && error == null)
@@ -223,6 +187,73 @@ class ArcadeLinkMachineContent extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _MachineHero extends StatelessWidget {
+  const _MachineHero({required this.machine});
+  final ArcadeLinkMachine machine;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final info = Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            machine.shopName,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            machine.name,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+    final url = machine.heroUrl;
+    if (url == null) return info;
+    // Both parts paint the same decoded frame; the existing provider owns caching.
+    return Image(
+      image: kIsWeb ? NetworkImage(url) : CachedNetworkImageProvider(url),
+      fit: BoxFit.cover,
+      excludeFromSemantics: true,
+      errorBuilder: (_, _, _) => info,
+      frameBuilder: (context, child, frame, synchronous) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (frame != null) AspectRatio(aspectRatio: 1.5, child: child),
+          ClipRect(
+            child: Stack(
+              children: [
+                if (frame != null)
+                  Positioned.fill(
+                    child: Opacity(
+                      opacity: 0.22,
+                      child: ImageFiltered(
+                        imageFilter: ImageFilter.blur(
+                          sigmaX: 64,
+                          sigmaY: 64,
+                          tileMode: TileMode.clamp,
+                        ),
+                        child: child,
+                      ),
+                    ),
+                  ),
+                info,
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

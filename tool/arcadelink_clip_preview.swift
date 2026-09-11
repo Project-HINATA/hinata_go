@@ -68,8 +68,9 @@ struct ClipPreviewApp: App {
       Group {
         if PreviewProtocol.scene == "hero-cache" {
           VStack {
-            Text(heroHeight > 0 ? "Hero cache loaded" : "Waiting for hero")
-            ClipHeroImage(url: URL(string: ProcessInfo.processInfo.arguments[2])!)
+            Text(heroHeight > 240 ? "Hero cache loaded" : "Waiting for hero")
+            ClipShopHero(shop: Shop(name: "测试店铺", heroUrl: ProcessInfo.processInfo.arguments[2], latitude: 35, longitude: 139, radiusMeters: 80), machineName: "舞萌")
+              .frame(width: 320)
               .background {
                 GeometryReader { geometry in
                   Color.clear

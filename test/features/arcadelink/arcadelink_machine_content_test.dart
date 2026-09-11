@@ -1,6 +1,8 @@
 import 'package:hinata_go/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hinata_go/features/arcadelink/arcadelink_machine_content.dart';
 import 'package:hinata_go/services/arcadelink_api.dart';
 
@@ -17,6 +19,7 @@ const card = ArcadeLinkCard(
 );
 
 Widget content({
+  String? heroUrl,
   bool auth = false,
   bool busy = false,
   bool browserOnly = false,
@@ -26,7 +29,16 @@ Widget content({
   List<ArcadeLinkCard> cards = const [],
   ValueChanged<ArcadeLinkCard>? onLogin,
 }) => ArcadeLinkMachineContent(
-  session: session,
+  session: ArcadeLinkMachineSession(
+    ticket: session.ticket,
+    expiresIn: session.expiresIn,
+    machine: ArcadeLinkMachine(
+      publicId: 'test',
+      name: '舞萌 DX',
+      shopName: '月宫',
+      heroUrl: heroUrl,
+    ),
+  ),
   cards: cards,
   authRequired: auth,
   authenticating: false,
@@ -85,6 +97,37 @@ Future<void> show(
 }
 
 void main() {
+  testWidgets(
+    'cover and tint share a loaded image; missing cover keeps one title',
+    (tester) async {
+      const url = 'https://example.com/hero.jpg';
+      const provider = CachedNetworkImageProvider(url);
+      final image = await tester.runAsync(() async {
+        final data = await rootBundle.load('assets/munet-logo.png');
+        return decodeImageFromList(data.buffer.asUint8List());
+      });
+      PaintingBinding.instance.imageCache.putIfAbsent(
+        provider,
+        () => OneFrameImageStreamCompleter(
+          Future.value(ImageInfo(image: image!)),
+        ),
+      );
+      addTearDown(provider.evict);
+      for (final brightness in Brightness.values) {
+        await show(tester, content(heroUrl: url), brightness: brightness);
+        await tester.pumpAndSettle();
+        expect(find.byType(ImageFiltered), findsOneWidget);
+        expect(find.byType(RawImage), findsNWidgets(2));
+        expect(find.text('月宫'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+      await show(tester, content());
+      await tester.pumpAndSettle();
+      expect(find.byType(ImageFiltered), findsNothing);
+      expect(find.text('月宫'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'English actions and large text fit without translating card data',
     (tester) async {

@@ -5,6 +5,7 @@ import 'package:hinata_go/features/arcadelink/arcadelink_machine_content.dart';
 import 'package:hinata_go/services/arcadelink_api.dart';
 
 void main() {
+  final params = Uri.base.queryParameters;
   var signedIn = false;
   String? active;
   var busy = false;
@@ -35,11 +36,16 @@ void main() {
     MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      locale: Locale(Uri.base.queryParameters['lang'] == 'en' ? 'en' : 'zh'),
+      locale: Locale(params['lang'] == 'en' ? 'en' : 'zh'),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: params.containsKey('dark')
+              ? Brightness.dark
+              : Brightness.light,
+        ),
       ),
       home: Scaffold(
         body: SafeArea(
@@ -52,13 +58,14 @@ void main() {
                   builder: (context, setState) => completed
                       ? const ArcadeLinkCompletedPage()
                       : ArcadeLinkMachineContent(
-                          session: const ArcadeLinkMachineSession(
+                          session: ArcadeLinkMachineSession(
                             ticket: 'local-preview',
                             expiresIn: 300,
                             machine: ArcadeLinkMachine(
                               publicId: 'preview',
                               name: '舞萌',
                               shopName: '月宫',
+                              heroUrl: params['hero'],
                             ),
                           ),
                           cards: cards,

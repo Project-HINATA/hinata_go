@@ -86,23 +86,7 @@ private struct ClipSessionPage: View {
   var body: some View {
     VStack(spacing: 30) {
       if let machine = model.machine {
-        VStack(alignment: .leading, spacing: 0) {
-          if let path = machine.shop.heroUrl,
-             let url = URL(string: path, relativeTo: URL(string: "https://link.neri.moe")) {
-            ClipHeroImage(url: url.absoluteURL).id(url.absoluteURL)
-          }
-          VStack(alignment: .leading, spacing: 8) {
-            Text(machine.shop.name)
-              .font(.title.weight(.bold))
-              .fixedSize(horizontal: false, vertical: true)
-              .accessibilityAddTraits(.isHeader)
-            Text(machine.name).font(.title3.weight(.medium)).foregroundStyle(.secondary)
-          }
-          .padding(.horizontal, 24).padding(.vertical, 22)
-          .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 32))
+        ClipShopHero(shop: machine.shop, machineName: machine.name).id(machine.shop.heroUrl)
       }
 
       VStack(spacing: 30) {
@@ -238,9 +222,14 @@ private struct ClipSessionPage: View {
   }
 }
 
-struct ClipHeroImage: View {
-  let url: URL
+struct ClipShopHero: View {
+  let shop: Shop
+  let machineName: String
   @State private var image: UIImage?
+
+  private var url: URL? {
+    shop.heroUrl.flatMap { URL(string: $0, relativeTo: URL(string: "https://link.neri.moe"))?.absoluteURL }
+  }
 
   // A separate public-image cache; authentication and machine sessions stay untouched.
   static let session: URLSession = {
@@ -254,18 +243,43 @@ struct ClipHeroImage: View {
   }()
 
   var body: some View {
-    // Keep the task's host alive before an image exists.
-    VStack(spacing: 0) {
+    // One decoded image supplies both the cover and the soft color underneath.
+    VStack(alignment: .leading, spacing: 0) {
       if let image {
         Color.clear.aspectRatio(1.5, contentMode: .fit)
           .overlay { Image(uiImage: image).resizable().scaledToFill() }
           .clipped()
-          .overlay(alignment: .bottom) { Divider() }
           .accessibilityHidden(true)
       }
+      VStack(alignment: .leading, spacing: 8) {
+        Text(shop.name)
+          .font(.title.weight(.bold))
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityAddTraits(.isHeader)
+        Text(machineName).font(.title3.weight(.medium)).foregroundStyle(.secondary)
+      }
+      .padding(.horizontal, 24).padding(.vertical, 22)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background {
+        if let image {
+          GeometryReader { geometry in
+            Image(uiImage: image).resizable().scaledToFill()
+              .frame(width: geometry.size.width + 128, height: geometry.size.height + 128)
+              .clipped()
+              .blur(radius: 64)
+              .offset(x: -64, y: -64)
+              .opacity(0.22)
+          }
+          .accessibilityHidden(true)
+        }
+      }
+      .clipped()
     }
+    .background(Color(.secondarySystemGroupedBackground))
+    .clipShape(RoundedRectangle(cornerRadius: 32))
     .task(id: url) {
       image = nil
+      guard let url else { return }
       do {
         let (data, response) = try await Self.session.data(from: url)
         try Task.checkCancellation()
