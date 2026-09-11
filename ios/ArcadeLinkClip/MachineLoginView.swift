@@ -277,6 +277,10 @@ struct ClipShopHero: View {
     }
     .background(Color(.secondarySystemGroupedBackground))
     .clipShape(RoundedRectangle(cornerRadius: 32))
+    .overlay {
+      RoundedRectangle(cornerRadius: 32).strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
+    }
+    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
     .task(id: url) {
       image = nil
       guard let url else { return }

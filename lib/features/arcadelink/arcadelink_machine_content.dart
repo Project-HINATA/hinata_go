@@ -74,7 +74,13 @@ class ArcadeLinkMachineContent extends StatelessWidget {
       children: [
         Card.filled(
           margin: EdgeInsets.zero,
-          shape: cardShape,
+          elevation: 2,
+          shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.24),
+          shape: cardShape.copyWith(
+            side: BorderSide(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
+            ),
+          ),
           clipBehavior: Clip.antiAlias,
           child: _MachineHero(machine: session.machine),
         ),
