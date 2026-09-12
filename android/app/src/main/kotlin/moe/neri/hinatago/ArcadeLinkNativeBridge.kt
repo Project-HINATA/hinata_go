@@ -1,5 +1,7 @@
 package moe.neri.hinatago
 
+import android.content.Intent
+import android.net.Uri
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
@@ -89,6 +91,8 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
             return
         }
         when (call.method) {
+            "authenticateMunet" -> authenticateMunet(result)
+            "request" -> apiRequest(call, result)
             "authenticatePasskey" -> authenticatePasskey(result)
             "cards" -> loadCards(result)
             "loginMachine" -> loginMachine(call, result)
@@ -96,10 +100,48 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
         }
     }
 
+    private fun apiRequest(call: MethodCall, result: MethodChannel.Result) {
+        val path = call.argument<String>("path") ?: return fail(result, "invalid_arguments", "缺少请求地址")
+        val body = call.argument<String>("body")
+        val request = LoginRequest("", "", result, path, body)
+        if (call.argument<Boolean>("requireLocation") != true) { performMachineLogin(request, null); return }
+        if (!hasLocationPermission()) {
+            if (pendingPermissionLogin != null) { fail(result, "location_busy", "正在等待定位权限"); return }
+            pendingPermissionLogin = request
+            activity.requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), LOCATION_PERMISSION_REQUEST)
+        } else requestLocation(request)
+    }
+
+    private var pendingMunet: MethodChannel.Result? = null
+    private fun authenticateMunet(result: MethodChannel.Result) {
+        if (pendingMunet != null) { fail(result, "authentication_busy", "登录正在进行"); return }
+        pendingMunet = result
+        try {
+            activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$BASE_URL/api/v1/appclip/auth/start")))
+            mainHandler.postDelayed({
+                if (pendingMunet === result) { pendingMunet = null; fail(result, "authentication_cancelled", "") }
+            }, 120_000)
+        } catch (error: Exception) { pendingMunet = null; fail(result, "authentication_failed", errorMessage(error)) }
+    }
+
+    fun handleAuthCallback(intent: Intent): Boolean {
+        val uri = intent.data ?: return false
+        if (uri.scheme != "hinata-arcadelink-auth") return false
+        val result = pendingMunet ?: return true
+        pendingMunet = null
+        val code = uri.getQueryParameter("code")
+        if (code.isNullOrBlank()) { fail(result, "authentication_cancelled", ""); return true }
+        ioExecutor.execute {
+            try { request("POST", "/api/v1/appclip/auth/exchange", JSONObject().put("code", code).toString()); succeed(result, null) }
+            catch (error: Exception) { fail(result, "authentication_failed", errorMessage(error)) }
+        }
+        return true
+    }
+
     private fun authenticatePasskey(result: MethodChannel.Result) {
         ioExecutor.execute {
             try {
-                val optionsJson = request("GET", "/api/auth/passkey/options")
+                val optionsJson = request("GET", "/api/v1/auth/passkey/options")
                 val request = GetCredentialRequest(
                     listOf(GetPublicKeyCredentialOption(optionsJson)),
                 )
@@ -143,7 +185,7 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
                     )
                 }
             } catch (error: Exception) {
-                fail(result, "arcadelink_error", errorMessage(error))
+                fail(result, (error as? ApiException)?.code ?: "arcadelink_error", errorMessage(error))
             }
         }
     }
@@ -153,7 +195,7 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
             try {
                 request(
                     "POST",
-                    "/api/auth/passkey",
+                    "/api/v1/auth/passkey",
                     assertionJson,
                 )
                 succeed(result, null)
@@ -166,7 +208,7 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
     private fun loadCards(result: MethodChannel.Result) {
         ioExecutor.execute {
             try {
-                val body = JSONObject(request("GET", "/api/cards"))
+                val body = JSONObject(request("GET", "/api/v1/cards"))
                 val cards = body.optJSONArray("cards") ?: JSONArray()
                 val output = ArrayList<HashMap<String, Any?>>(cards.length())
                 for (index in 0 until cards.length()) {
@@ -183,7 +225,7 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
                 }
                 succeed(result, output)
             } catch (error: Exception) {
-                fail(result, "arcadelink_error", errorMessage(error))
+                fail(result, (error as? ApiException)?.code ?: "arcadelink_error", errorMessage(error))
             }
         }
     }
@@ -198,6 +240,10 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
         }
 
         val request = LoginRequest(cardId, ticket, result)
+        if (arguments?.get("requireLocation") == false) {
+            performMachineLogin(request, null)
+            return
+        }
         if (!hasLocationPermission()) {
             if (pendingPermissionLogin != null) {
                 fail(result, "location_busy", "正在等待定位权限")
@@ -250,7 +296,7 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
                 null
             }
         }.maxByOrNull { it.time }
-        if (lastKnown != null && System.currentTimeMillis() - lastKnown.time < 5 * 60 * 1000) {
+        if (lastKnown != null && System.currentTimeMillis() - lastKnown.time < 15_000) {
             performMachineLogin(request, lastKnown)
             return
         }
@@ -298,20 +344,25 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
         performMachineLogin(request, location)
     }
 
-    private fun performMachineLogin(request: LoginRequest, location: Location) {
-        mainHandler.post { channel?.invokeMethod("machineLoginSending", null) }
+    private fun performMachineLogin(request: LoginRequest, location: Location?) {
+        if (request.path == null) mainHandler.post { channel?.invokeMethod("machineLoginSending", null) }
         ioExecutor.execute {
             try {
                 val body = JSONObject()
                     .put("cardId", request.cardId)
-                    .put("lat", location.latitude)
-                    .put("lng", location.longitude)
-                    .put("accuracy", location.accuracy.toDouble())
+                    .put("lat", location?.latitude)
+                    .put("lng", location?.longitude)
+                    .put("accuracy", location?.accuracy?.toDouble())
                     .put("ticket", request.ticket)
-                request("POST", "/api/machines/login", body.toString())
-                succeed(request.result, null)
+                if (request.path != null) {
+                    val payload = request.body?.let { JSONObject(it) }
+                    if (location != null) payload?.put("location", JSONObject().put("lat", location.latitude).put("lng", location.longitude).put("accuracy", location.accuracy.toDouble()))
+                    succeed(request.result, request(if (payload == null) "GET" else "POST", request.path, payload?.toString()))
+                } else {
+                    succeed(request.result, request("POST", "/api/v1/machines/login", body.toString()))
+                }
             } catch (error: Exception) {
-                fail(request.result, "arcadelink_error", errorMessage(error))
+                mainHandler.post { request.result.error((error as? ApiException)?.code ?: "network_error", errorMessage(error), (error as? ApiException)?.let { mapOf("statusCode" to it.statusCode) }) }
             }
         }
     }
@@ -338,11 +389,12 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
     }
 
     private fun request(method: String, path: String, body: String? = null): String {
+        require(path.startsWith("/api/v1/") && !path.contains("..")) { "Invalid API path" }
         val url = URL(BASE_URL + path)
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = method
         connection.connectTimeout = 15_000
-        connection.readTimeout = 20_000
+        connection.readTimeout = 35_000
         connection.useCaches = false
         connection.setRequestProperty("Accept", "application/json")
         val uri = URI(url.toString())
@@ -370,13 +422,13 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
         val responseBody = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
         connection.disconnect()
         if (status !in 200..299) {
-            val message = runCatching { JSONObject(responseBody).optString("error") }
+            val message = runCatching { JSONObject(responseBody).optJSONObject("error")?.optString("message") }
                 .getOrNull()
                 ?.takeIf { it.isNotBlank() }
                 ?: "请求失败（$status）"
-            throw ApiException(message, status)
+            throw ApiException(message, status, runCatching { JSONObject(responseBody).getJSONObject("error").getString("code") }.getOrNull())
         }
-        return responseBody
+        return JSONObject(responseBody).getJSONObject("data").toString()
     }
 
     private fun succeed(result: MethodChannel.Result, value: Any?) {
@@ -398,7 +450,9 @@ class ArcadeLinkNativeBridge(private val activity: Activity) {
         val cardId: String,
         val ticket: String,
         val result: MethodChannel.Result,
+        val path: String? = null,
+        val body: String? = null,
     )
 
-    private class ApiException(message: String, val statusCode: Int) : Exception(message)
+    private class ApiException(message: String, val statusCode: Int, val code: String? = null) : Exception(message)
 }

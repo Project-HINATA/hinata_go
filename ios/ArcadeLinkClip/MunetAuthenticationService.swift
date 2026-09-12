@@ -10,7 +10,7 @@ final class MunetAuthenticationService: NSObject, ASWebAuthenticationPresentatio
   private var continuation: CheckedContinuation<String, Error>?
 
   func authenticate() async throws -> String {
-    guard let url = URL(string: "https://link.neri.moe/api/appclip/auth/start") else {
+    guard let url = URL(string: "https://link.neri.moe/api/v1/appclip/auth/start") else {
       throw ArcadeLinkAPIError.invalidURL
     }
 

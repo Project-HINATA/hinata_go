@@ -12,12 +12,27 @@ class ArcadeLinkMachine {
     required this.name,
     required this.shopName,
     this.heroUrl,
+    this.machineGeo = true,
+    this.billingEnabled = false,
+    this.webOnly = false,
+    this.capabilities,
+    this.coinAfterSwipe = false,
   });
 
   final String publicId;
   final String name;
   final String shopName;
   final String? heroUrl;
+  final bool machineGeo;
+  final bool billingEnabled;
+  final bool webOnly;
+  final Map<String, bool>? capabilities;
+  final bool coinAfterSwipe;
+  bool get unified => capabilities != null;
+  bool has(String capability) => capabilities == null
+      ? capability == 'card'
+      : capabilities![capability] == true;
+  bool get empty => capabilities != null && !capabilities!.values.any((v) => v);
 
   factory ArcadeLinkMachine.fromJson(Map<String, dynamic> json) {
     final shop = json['shop'] as Map<String, dynamic>;
@@ -25,6 +40,16 @@ class ArcadeLinkMachine {
       publicId: json['publicId'] as String,
       name: json['name'] as String,
       shopName: shop['name'] as String,
+      machineGeo:
+          shop['locationEnabled'] as bool? ??
+          shop['machineGeo'] as bool? ??
+          true,
+      billingEnabled: shop['billingEnabled'] as bool? ?? false,
+      webOnly: json['webOnly'] as bool? ?? false,
+      capabilities: (json['capabilities'] as Map<String, dynamic>?)?.map(
+        (key, value) => MapEntry(key, value == true),
+      ),
+      coinAfterSwipe: json['coinAfterSwipe'] == true,
       heroUrl: shop['heroUrl'] is String
           ? ArcadeLinkAPI._baseURL.resolve(shop['heroUrl'] as String).toString()
           : null,
@@ -94,7 +119,7 @@ class ArcadeLinkAPI {
     required String publicId,
   }) async {
     final response = await _client.post(
-      _baseURL.resolve('/api/machines/session/start'),
+      _baseURL.resolve('/api/v1/machines/session/start'),
       headers: const {'content-type': 'application/json'},
       body: jsonEncode({'shopCode': shopCode, 'publicId': publicId}),
     );
@@ -103,7 +128,7 @@ class ArcadeLinkAPI {
   }
 
   Future<List<ArcadeLinkCard>> cards() async {
-    final response = await _client.get(_baseURL.resolve('/api/cards'));
+    final response = await _client.get(_baseURL.resolve('/api/v1/cards'));
     final payload = _decode(response);
     final cards = payload['cards'] as List<dynamic>? ?? const [];
     return cards
@@ -116,31 +141,61 @@ class ArcadeLinkAPI {
         .toList(growable: false);
   }
 
-  Future<void> loginMachine({
+  Future<Map<String, dynamic>> loginMachine({
     required String cardId,
     required String ticket,
+    bool requireLocation = true,
     void Function()? onSending,
   }) async {
-    final location = await currentArcadeLinkLocation();
+    final location = requireLocation ? await currentArcadeLinkLocation() : null;
     onSending?.call();
     final response = await _client.post(
-      _baseURL.resolve('/api/machines/login'),
+      _baseURL.resolve('/api/v1/machines/login'),
       headers: const {'content-type': 'application/json'},
       body: jsonEncode({
         'cardId': cardId,
-        'lat': location.latitude,
-        'lng': location.longitude,
-        'accuracy': location.accuracy,
+        if (location != null) ...{
+          'lat': location.latitude,
+          'lng': location.longitude,
+          'accuracy': location.accuracy,
+        },
         'ticket': ticket,
       }),
     );
-    _decode(response);
+    return _decode(response);
   }
 
-  Uri munetLoginURL(String shopCode, String publicId) {
+  Future<Map<String, dynamic>> request(
+    String path, {
+    Map<String, dynamic>? body,
+    bool requireLocation = false,
+  }) async {
+    if (!path.startsWith('/api/v1/') || path.contains('..')) {
+      throw ArgumentError('Invalid API path');
+    }
+    final payload = body == null ? null : Map<String, dynamic>.from(body);
+    if (requireLocation) {
+      final location = await currentArcadeLinkLocation();
+      payload!['location'] = {
+        'lat': location.latitude,
+        'lng': location.longitude,
+        'accuracy': location.accuracy,
+      };
+    }
+    final response = payload == null
+        ? await _client.get(_baseURL.resolve(path))
+        : await _client.post(
+            _baseURL.resolve(path),
+            headers: const {'content-type': 'application/json'},
+            body: jsonEncode(payload),
+          );
+    return _decode(response);
+  }
+
+  Uri munetLoginURL(String ticket) {
     return _baseURL.replace(
-      path: '/api/auth/munet',
-      queryParameters: {'next': '/t/$shopCode/$publicId'},
+      path: '/api/v1/auth/munet',
+      queryParameters: {'next': '/m?ticket=${Uri.encodeComponent(ticket)}'},
     );
   }
 
@@ -159,19 +214,22 @@ class ArcadeLinkAPI {
         : <String, dynamic>{};
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ArcadeLinkException(
-        payload['error'] as String? ?? 'ArcadeLink 请求失败',
+        (payload['error'] as Map<String, dynamic>?)?['message'] as String? ??
+            'PRiSM 请求失败',
+        code: (payload['error'] as Map<String, dynamic>?)?['code'] as String?,
         statusCode: response.statusCode,
       );
     }
-    return payload;
+    return payload['data'] as Map<String, dynamic>;
   }
 }
 
 class ArcadeLinkException implements Exception {
-  const ArcadeLinkException(this.message, {this.statusCode});
+  const ArcadeLinkException(this.message, {this.statusCode, this.code});
 
   final String message;
   final int? statusCode;
+  final String? code;
 
   @override
   String toString() => message;

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -13,8 +15,7 @@ class ArcadeLinkNativeService {
 
   static bool get supportsNativePasskey => isAvailable;
 
-  static bool get supportsNativeMunet =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+  static bool get supportsNativeMunet => isAvailable;
 
   Future<void> authenticateWithPasskey() async {
     await _channel.invokeMethod<void>('authenticatePasskey');
@@ -35,19 +36,37 @@ class ArcadeLinkNativeService {
         .toList(growable: false);
   }
 
-  Future<void> loginMachine({
+  Future<Map<String, dynamic>> request(
+    String path, {
+    Map<String, dynamic>? body,
+    bool requireLocation = false,
+  }) async {
+    final raw = await _channel.invokeMethod<String>('request', {
+      'path': path,
+      if (body != null) 'body': jsonEncode(body),
+      'requireLocation': requireLocation,
+    });
+    return jsonDecode(raw!) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> loginMachine({
     required String cardId,
     required String ticket,
+    bool requireLocation = true,
     VoidCallback? onSending,
   }) async {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'machineLoginSending') onSending?.call();
     });
     try {
-      await _channel.invokeMethod<void>('loginMachine', {
+      final raw = await _channel.invokeMethod<String>('loginMachine', {
         'cardId': cardId,
         'ticket': ticket,
+        'requireLocation': requireLocation,
       });
+      return raw == null
+          ? <String, dynamic>{}
+          : jsonDecode(raw) as Map<String, dynamic>;
     } finally {
       _channel.setMethodCallHandler(null);
     }

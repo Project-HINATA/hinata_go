@@ -51,6 +51,17 @@ final class ArcadeLinkNativeBridge {
           }
           return value
         })
+      case "request":
+        guard let arguments = call.arguments as? [String: Any], let path = arguments["path"] as? String else { throw ArcadeLinkAPIError.invalidURL }
+        var body: [String: Any]? = nil
+        if let raw = arguments["body"] as? String { body = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any] }
+        if arguments["requireLocation"] as? Bool == true {
+          guard body != nil else { throw ArcadeLinkAPIError.invalidResponse }
+          let position = try await location.currentLocation()
+          body?["location"] = ["lat": position.latitude, "lng": position.longitude, "accuracy": position.accuracy]
+        }
+        let data = try await ArcadeLinkAPI.shared.requestJSON(path: path, body: body)
+        result(String(data: data, encoding: .utf8))
       case "loginMachine":
         guard let arguments = call.arguments as? [String: Any],
               let cardId = arguments["cardId"] as? String,
@@ -58,20 +69,21 @@ final class ArcadeLinkNativeBridge {
           result(FlutterError(code: "invalid_arguments", message: "缺少机台登录参数", details: nil))
           return
         }
-        let position = try await location.currentLocation()
+        let position: LocationSample? = arguments["requireLocation"] as? Bool == false ? nil : try await location.currentLocation()
         channel?.invokeMethod("machineLoginSending", arguments: nil)
-        try await ArcadeLinkAPI.shared.loginMachine(MachineLoginRequest(
+        let response = try await ArcadeLinkAPI.shared.loginMachine(MachineLoginRequest(
           cardId: cardId,
-          lat: position.latitude,
-          lng: position.longitude,
-          accuracy: position.accuracy,
+          lat: position?.latitude,
+          lng: position?.longitude,
+          accuracy: position?.accuracy,
           ticket: ticket,
         ))
-        result(nil)
+        result(String(data: try JSONEncoder().encode(response), encoding: .utf8))
       default:
         result(FlutterMethodNotImplemented)
       }
     } catch {
+      var details: [String: Any]? = nil
       var code = isAuthenticationCancellation(error) ? "authentication_cancelled" : "arcadelink_error"
       var message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
       if let apiError = error as? ArcadeLinkAPIError, case .server(let rawMessage) = apiError {
@@ -79,6 +91,15 @@ final class ArcadeLinkNativeBridge {
         message = rawMessage
         if apiError.isSessionExpired { code = "session_expired" }
         if rawMessage == "请先登录" { code = "authentication_required" }
+      }
+      if let apiError = error as? ArcadeLinkAPIError, case .api(let apiCode, let rawMessage) = apiError {
+        code = apiCode
+        message = rawMessage
+        if apiError.isSessionExpired { code = "session_expired" }
+        if apiCode == "AUTHENTICATION_REQUIRED" { code = "authentication_required" }
+      }
+      if let apiError = error as? ArcadeLinkAPIError, case .http(let status, let apiCode, let rawMessage) = apiError {
+        code = apiCode; message = rawMessage; details = ["statusCode": status]
       }
       if let locationError = error as? LocationError {
         switch locationError {
@@ -90,7 +111,7 @@ final class ArcadeLinkNativeBridge {
       result(FlutterError(
         code: code,
         message: message,
-        details: nil,
+        details: details,
       ))
     }
   }

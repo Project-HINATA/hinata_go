@@ -61,6 +61,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (arcadeLinkBridge?.handleAuthCallback(intent) == true) return
         handleNfcIntent(intent)
     }
 

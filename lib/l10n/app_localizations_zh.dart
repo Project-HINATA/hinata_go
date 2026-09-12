@@ -904,7 +904,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get arcadeLinkCardsFailed => '无法加载卡片';
 
   @override
-  String get arcadeLinkNoCards => '还没有可用卡片，请先在 ArcadeLink 添加卡片';
+  String get arcadeLinkNoCards => '还没有可用卡片，请先在 PRiSM 添加卡片';
 
   @override
   String get arcadeLinkLoading => '正在加载';
@@ -1005,8 +1005,237 @@ class AppLocalizationsZh extends AppLocalizations {
   String get arcadeLinkPasskeyUnknown => '无法识别这个 Passkey';
 
   @override
-  String get arcadeLinkInvalidURL => 'ArcadeLink 地址无效';
+  String get arcadeLinkInvalidURL => 'PRiSM 地址无效';
 
   @override
   String get arcadeLinkInvalidResponse => 'ArcadeLink 返回的数据无效';
+
+  @override
+  String get prismRefresh => '刷新状态';
+
+  @override
+  String get prismBindQQ => '绑定 QQ';
+
+  @override
+  String get prismNewMember => '验证后将为你建立店铺玩家档案。';
+
+  @override
+  String get prismExistingMember => '店铺仅允许已有玩家使用，请使用在店铺登记的 QQ。';
+
+  @override
+  String get prismSendBot => '在 QQ 群中发送';
+
+  @override
+  String get prismExpires => '有效期至';
+
+  @override
+  String get prismCopy => '复制';
+
+  @override
+  String get prismGenerateCode => '生成验证码';
+
+  @override
+  String get prismVerifyBinding => '我已发送，检查绑定';
+
+  @override
+  String get prismEnter => '确认入场';
+
+  @override
+  String get prismConsent => '确认开始计费，离店前请结账。关闭页面不会停止计费。';
+
+  @override
+  String get prismDoorPassword => '开门密码';
+
+  @override
+  String get prismEnterPassword => '在门锁上输入密码后按 #';
+
+  @override
+  String get prismEnterAndOpen => '入场并获取开门密码';
+
+  @override
+  String get prismGetPassword => '获取开门密码';
+
+  @override
+  String get prismPoweredOff => '设备尚未开机';
+
+  @override
+  String get prismPowerOn => '开机';
+
+  @override
+  String get prismCoin => '投币';
+
+  @override
+  String get prismMyVisit => '我的消费 · 离店结账';
+
+  @override
+  String get prismInStore => '在店';
+
+  @override
+  String get prismNotInStore => '未入场';
+
+  @override
+  String get prismStarted => '开始时间';
+
+  @override
+  String get prismPreviewCheckout => '查看结账预览';
+
+  @override
+  String get prismCheckout => '结账预览';
+
+  @override
+  String get prismTotal => '合计';
+
+  @override
+  String get prismFinalAmount => '最终金额按确认结账时计算；余额不足或定位未通过时继续计时。';
+
+  @override
+  String get prismConfirmCheckout => '结账';
+
+  @override
+  String get prismAssets => '店铺资产';
+
+  @override
+  String get prismRedeemCode => '兑换码';
+
+  @override
+  String get prismRedeem => '兑换';
+
+  @override
+  String get prismHistory => '记录';
+
+  @override
+  String get prismAllDay => '全天';
+
+  @override
+  String get prismMinutes => '分钟';
+
+  @override
+  String get prismGrace => '宽限';
+
+  @override
+  String get prismCap => '封顶';
+
+  @override
+  String get prismWeekdays => '星期（0 为周日）';
+
+  @override
+  String get prismCoinSent => '已投币';
+
+  @override
+  String get prismPowerSent => '已发送开机请求';
+
+  @override
+  String get prismCheckedOut => '已结账';
+
+  @override
+  String get prismRedeemed => '兑换成功';
+
+  @override
+  String get prismContinueDevice => '继续操作设备';
+
+  @override
+  String get prismSwipeAndCoin => '已刷卡并投一币';
+
+  @override
+  String get prismCoinCooldown => '刷卡已完成，投币冷却中，本次未投币。';
+
+  @override
+  String get prismCoinFailed => '刷卡已完成，投币请求失败，请联系店员。';
+
+  @override
+  String get prismCoinUnknown => '刷卡已完成，投币结果待确认，请检查机台，不要重复刷卡。';
+
+  @override
+  String get prismClose => '关闭';
+
+  @override
+  String get prismRegenerateCode => '重新生成验证码';
+
+  @override
+  String get prismWaitingPower => '等待电源启动';
+
+  @override
+  String get prismMySpending => '我的消费';
+
+  @override
+  String get prismStillBilling => '消费仍在计时，结账成功后才会停止。';
+
+  @override
+  String get prismBilling => '正在计费';
+
+  @override
+  String get prismBackToDevice => '返回机台登录';
+
+  @override
+  String get prismStoreDevices => '店内设备';
+
+  @override
+  String get prismRefreshPassword => '重新获取密码';
+
+  @override
+  String get prismBill => '账单';
+
+  @override
+  String get prismWallet => '钱包';
+
+  @override
+  String get prismNoBill => '暂无待结账单';
+
+  @override
+  String get prismNoAssets => '暂无资产';
+
+  @override
+  String get prismNoRecords => '暂无记录';
+
+  @override
+  String get prismNow => '现在';
+
+  @override
+  String get prismTimeSlots => '计费时段';
+
+  @override
+  String get prismPerEntry => '每次入场';
+
+  @override
+  String get prismClosed => '不开放入场';
+
+  @override
+  String get prismCombinedCap => '合计封顶';
+
+  @override
+  String get prismSlotCap => '时段封顶';
+
+  @override
+  String get prismUnitGrace => '每计费单位宽限';
+
+  @override
+  String get prismPricingExplanation =>
+      '按时段分别计费，不足一个单位向上取整，宽限内不计下一单位。封顶按规则时段累计，跨午夜的同一时段连续累计。';
+
+  @override
+  String get prismNextDay => '次日';
+
+  @override
+  String get prismRuleOrder => '时段重叠时，按下方从上到下的顺序采用规则。';
+
+  @override
+  String get prismContinuousPeriod => '连续时段';
+
+  @override
+  String get prismMahjongTable => '麻将桌';
+
+  @override
+  String get prismMahjongPlaying => '麻将计费中';
+
+  @override
+  String get prismMahjongWaiting => '等待开桌';
+
+  @override
+  String get prismMahjongYou => '你';
+
+  @override
+  String get prismMahjongJoin => '上桌';
+
+  @override
+  String get prismMahjongLeave => '下桌';
 }

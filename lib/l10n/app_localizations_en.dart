@@ -933,7 +933,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get arcadeLinkNoCards =>
-      'No cards available. Add a card in ArcadeLink first.';
+      'No cards available. Add a card in PRiSM first.';
 
   @override
   String get arcadeLinkLoading => 'Loading';
@@ -1047,8 +1047,245 @@ class AppLocalizationsEn extends AppLocalizations {
   String get arcadeLinkPasskeyUnknown => 'Passkey not recognized';
 
   @override
-  String get arcadeLinkInvalidURL => 'Invalid ArcadeLink URL';
+  String get arcadeLinkInvalidURL => 'Invalid PRiSM URL';
 
   @override
   String get arcadeLinkInvalidResponse => 'Invalid response from ArcadeLink';
+
+  @override
+  String get prismRefresh => 'Refresh';
+
+  @override
+  String get prismBindQQ => 'Bind QQ';
+
+  @override
+  String get prismNewMember =>
+      'A player profile will be created after verification.';
+
+  @override
+  String get prismExistingMember =>
+      'This store accepts existing players only. Use your registered QQ account.';
+
+  @override
+  String get prismSendBot => 'Send in the QQ group';
+
+  @override
+  String get prismExpires => 'Expires at';
+
+  @override
+  String get prismCopy => 'Copy';
+
+  @override
+  String get prismGenerateCode => 'Generate code';
+
+  @override
+  String get prismVerifyBinding => 'Check verification';
+
+  @override
+  String get prismEnter => 'Check in';
+
+  @override
+  String get prismConsent =>
+      'Start billing and check out before leaving. Closing this page does not stop billing.';
+
+  @override
+  String get prismDoorPassword => 'Door code';
+
+  @override
+  String get prismEnterPassword => 'Enter the code on the lock, then press #';
+
+  @override
+  String get prismEnterAndOpen => 'Check in and get door code';
+
+  @override
+  String get prismGetPassword => 'Get door code';
+
+  @override
+  String get prismPoweredOff => 'Device is powered off';
+
+  @override
+  String get prismPowerOn => 'Power on';
+
+  @override
+  String get prismCoin => 'Insert coin';
+
+  @override
+  String get prismMyVisit => 'My visit · Check out';
+
+  @override
+  String get prismInStore => 'Checked in';
+
+  @override
+  String get prismNotInStore => 'Not checked in';
+
+  @override
+  String get prismStarted => 'Started';
+
+  @override
+  String get prismPreviewCheckout => 'Preview checkout';
+
+  @override
+  String get prismCheckout => 'Checkout preview';
+
+  @override
+  String get prismTotal => 'Total';
+
+  @override
+  String get prismFinalAmount =>
+      'The final amount is calculated at confirmation. Billing continues if funds or location checks fail.';
+
+  @override
+  String get prismConfirmCheckout => 'Check out';
+
+  @override
+  String get prismAssets => 'Store assets';
+
+  @override
+  String get prismRedeemCode => 'Redemption code';
+
+  @override
+  String get prismRedeem => 'Redeem';
+
+  @override
+  String get prismHistory => 'History';
+
+  @override
+  String get prismAllDay => 'All day';
+
+  @override
+  String get prismMinutes => 'minutes';
+
+  @override
+  String get prismGrace => 'Grace';
+
+  @override
+  String get prismCap => 'Cap';
+
+  @override
+  String get prismWeekdays => 'Weekdays (0 = Sunday)';
+
+  @override
+  String get prismCoinSent => 'Coin sent';
+
+  @override
+  String get prismPowerSent => 'Power-on requested';
+
+  @override
+  String get prismCheckedOut => 'Checked out';
+
+  @override
+  String get prismRedeemed => 'Redeemed';
+
+  @override
+  String get prismContinueDevice => 'Continue with device';
+
+  @override
+  String get prismSwipeAndCoin => 'Card sent and one coin inserted';
+
+  @override
+  String get prismCoinCooldown =>
+      'Card sent. No coin was inserted because the cooldown is active.';
+
+  @override
+  String get prismCoinFailed =>
+      'Card sent. The coin request failed. Please contact staff.';
+
+  @override
+  String get prismCoinUnknown =>
+      'Card sent. The coin result is unknown. Check the machine before swiping again.';
+
+  @override
+  String get prismClose => 'Close';
+
+  @override
+  String get prismRegenerateCode => 'Generate a new code';
+
+  @override
+  String get prismWaitingPower => 'Waiting for power';
+
+  @override
+  String get prismMySpending => 'My spending';
+
+  @override
+  String get prismStillBilling => 'Billing continues until checkout succeeds.';
+
+  @override
+  String get prismBilling => 'Billing in progress';
+
+  @override
+  String get prismBackToDevice => 'Back to device';
+
+  @override
+  String get prismStoreDevices => 'Store devices';
+
+  @override
+  String get prismRefreshPassword => 'Get a new password';
+
+  @override
+  String get prismBill => 'Bill';
+
+  @override
+  String get prismWallet => 'Wallet';
+
+  @override
+  String get prismNoBill => 'No outstanding bill';
+
+  @override
+  String get prismNoAssets => 'No assets';
+
+  @override
+  String get prismNoRecords => 'No records';
+
+  @override
+  String get prismNow => 'Now';
+
+  @override
+  String get prismTimeSlots => 'Rates by time';
+
+  @override
+  String get prismPerEntry => 'Per entry';
+
+  @override
+  String get prismClosed => 'Entry unavailable';
+
+  @override
+  String get prismCombinedCap => 'Combined cap';
+
+  @override
+  String get prismSlotCap => 'Period cap';
+
+  @override
+  String get prismUnitGrace => 'Grace per unit';
+
+  @override
+  String get prismPricingExplanation =>
+      'Charges are calculated per period, rounding up after the grace allowance. Caps accumulate within each rule period, including when that period crosses midnight.';
+
+  @override
+  String get prismNextDay => 'next day ';
+
+  @override
+  String get prismRuleOrder =>
+      'When periods overlap, the first matching rule below applies.';
+
+  @override
+  String get prismContinuousPeriod => 'Continuous period';
+
+  @override
+  String get prismMahjongTable => 'Mahjong table';
+
+  @override
+  String get prismMahjongPlaying => 'Mahjong billing active';
+
+  @override
+  String get prismMahjongWaiting => 'Waiting to start';
+
+  @override
+  String get prismMahjongYou => 'You';
+
+  @override
+  String get prismMahjongJoin => 'Join table';
+
+  @override
+  String get prismMahjongLeave => 'Leave table';
 }

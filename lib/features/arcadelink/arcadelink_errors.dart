@@ -10,17 +10,25 @@ String _message(Object error) =>
     error is PlatformException ? error.message ?? '' : error.toString();
 
 bool arcadeLinkSessionExpired(Object error) =>
-    error is PlatformException && error.code == 'session_expired' ||
+    error is ArcadeLinkException && error.code == 'TICKET_EXPIRED' ||
+    error is PlatformException &&
+        ['session_expired', 'TICKET_EXPIRED'].contains(error.code) ||
     const ['本次会话已失效', '缺少会话凭证'].contains(_message(error));
 
 bool arcadeLinkAuthRequired(Object error) =>
     error is ArcadeLinkException && error.statusCode == 401 ||
-    error is PlatformException && error.code == 'authentication_required' ||
+    error is PlatformException &&
+        [
+          'authentication_required',
+          'AUTHENTICATION_REQUIRED',
+        ].contains(error.code) ||
     _message(error) == '请先登录';
 
 String arcadeLinkErrorMessage(Object error, AppLocalizations l10n) {
   if (error is http.ClientException) return l10n.arcadeLinkNetworkFailed;
   final code = error is PlatformException
+      ? error.code
+      : error is ArcadeLinkException
       ? error.code
       : error is ArcadeLinkLocationException
       ? error.message
@@ -62,6 +70,10 @@ String arcadeLinkErrorMessage(Object error, AppLocalizations l10n) {
     'MuNET 授权无效，请重新登录' ||
     'MuNET 授权无效，请重试' ||
     'MuNET 登录尚未配置' => l10n.arcadeLinkMunetFailed,
-    _ => l10n.arcadeLinkOperationFailed,
+    _ =>
+      (error is ArcadeLinkException || error is PlatformException) &&
+              _message(error).isNotEmpty
+          ? _message(error)
+          : l10n.arcadeLinkOperationFailed,
   };
 }

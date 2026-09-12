@@ -84,15 +84,17 @@ void main() {
             await tester.pumpAndSettle();
           },
           () => MockClient((request) async {
-            expect(request.url.path, '/api/machines/session/start');
+            expect(request.url.path, '/api/v1/machines/session/start');
             return http.Response(
               jsonEncode({
-                'ticket': 'test',
-                'expiresIn': 300,
-                'machine': {
-                  'publicId': 'machine',
-                  'name': '舞萌',
-                  'shop': {'name': '测试店铺'},
+                'data': {
+                  'ticket': 'test',
+                  'expiresIn': 300,
+                  'machine': {
+                    'publicId': 'machine',
+                    'name': '舞萌',
+                    'shop': {'name': '测试店铺'},
+                  },
                 },
               }),
               200,

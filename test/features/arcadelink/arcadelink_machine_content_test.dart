@@ -98,7 +98,7 @@ Future<void> show(
 
 void main() {
   testWidgets(
-    'cover and tint share a loaded image; missing cover keeps one title',
+    'loaded cover stays above its Material surface; missing cover keeps one title',
     (tester) async {
       const url = 'https://example.com/hero.jpg';
       const provider = CachedNetworkImageProvider(url);
@@ -116,8 +116,8 @@ void main() {
       for (final brightness in Brightness.values) {
         await show(tester, content(heroUrl: url), brightness: brightness);
         await tester.pumpAndSettle();
-        expect(find.byType(ImageFiltered), findsOneWidget);
-        expect(find.byType(RawImage), findsNWidgets(2));
+        expect(find.byType(ImageFiltered), findsNothing);
+        expect(find.byType(RawImage), findsOneWidget);
         expect(find.text('月宫'), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
@@ -148,7 +148,7 @@ void main() {
       expect(find.text('Select a card'), findsOneWidget);
       expect(find.text('Ending in 7890'), findsOneWidget);
       expect(find.text(card.label), findsOneWidget);
-      expect(find.byTooltip('Sign out'), findsOneWidget);
+      expect(find.byTooltip('Sign out'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -164,19 +164,20 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('signed-out state has one large primary action and no error', (
-    tester,
-  ) async {
-    await show(tester, content(auth: true));
-    expect(find.text('请先登录'), findsNothing);
-    expect(find.text('使用 MuNET 登录'), findsOneWidget);
-    expect(
-      tester.getSize(find.byType(FilledButton).first).height,
-      greaterThanOrEqualTo(56),
-    );
-    expect(find.text('打开网页版'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'signed-out state has an accessible primary action and no error',
+    (tester) async {
+      await show(tester, content(auth: true));
+      expect(find.text('请先登录'), findsNothing);
+      expect(find.text('使用 MuNET 登录'), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(FilledButton).first).height,
+        greaterThanOrEqualTo(48),
+      );
+      expect(find.text('打开网页版'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'large text and long card name fit narrow screen; full row is tappable',

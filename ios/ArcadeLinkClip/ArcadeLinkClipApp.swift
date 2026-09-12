@@ -8,6 +8,11 @@ struct ArcadeLinkClipApp: App {
     WindowGroup {
       MachineLoginView()
         .environmentObject(model)
+        .task {
+          #if DEBUG
+          if let url = ProcessInfo.processInfo.environment["PRISM_PREVIEW_DEVICE_URL"].flatMap(URL.init(string:)) { await model.handleInvocation(url) }
+          #endif
+        }
         .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
           guard let url = activity.webpageURL else { return }
           Task { await model.handleInvocation(url) }

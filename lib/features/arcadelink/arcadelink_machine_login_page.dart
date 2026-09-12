@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,13 +6,15 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/l10n.dart';
+import '../../providers/prism_visit_provider.dart';
+import 'prism_visit_content.dart';
 import '../../services/arcadelink_api.dart';
 import '../../services/arcadelink_invocation_service.dart';
 import '../../services/arcadelink_native_service.dart';
 import 'arcadelink_errors.dart';
 import 'arcadelink_machine_content.dart';
 
-enum _SessionPage { loading, failed, session, expired, completed }
+enum _SessionPage { loading, failed, session, expired }
 
 class ArcadeLinkMachineLoginPage extends ConsumerStatefulWidget {
   const ArcadeLinkMachineLoginPage({
@@ -47,7 +47,6 @@ class _ArcadeLinkMachineLoginPageState
   bool _webAuthStarted = false;
   bool _success = false;
   bool _sending = false;
-  Timer? _completionTimer;
   bool _loadingCards = false;
   String? _activeCardId;
   int _loadVersion = 0;
@@ -72,7 +71,6 @@ class _ArcadeLinkMachineLoginPageState
 
   @override
   void dispose() {
-    _completionTimer?.cancel();
     _api.dispose();
     super.dispose();
   }
@@ -81,7 +79,6 @@ class _ArcadeLinkMachineLoginPageState
     final version = ++_loadVersion;
     final shopCode = widget.shopCode;
     final publicId = widget.publicId;
-    _completionTimer?.cancel();
     setState(() {
       _page = _SessionPage.loading;
       _session = null;
@@ -123,12 +120,12 @@ class _ArcadeLinkMachineLoginPageState
     }
   }
 
-  Future<void> _openWebFallback() async {
+  Future<void> _openWebFallback([Uri? destination]) async {
     final session = _session;
     if (session == null) return;
     try {
       final launched = await launchUrl(
-        _api.webFallbackURL(session.ticket),
+        destination ?? _api.webFallbackURL(session.ticket),
         mode: LaunchMode.externalApplication,
       );
       if (!launched && mounted) {
@@ -156,6 +153,11 @@ class _ArcadeLinkMachineLoginPageState
         _authRequired = false;
         _cardsError = null;
       });
+      if (_session!.machine.unified) {
+        await ref
+            .read(prismVisitProvider.notifier)
+            .load(widget.shopCode, _session!);
+      }
     } catch (error) {
       if (!mounted || version != _loadVersion) return;
       setState(() {
@@ -203,7 +205,7 @@ class _ArcadeLinkMachineLoginPageState
       });
       try {
         final launched = await launchUrl(
-          _api.munetLoginURL(widget.shopCode, widget.publicId),
+          _api.munetLoginURL(_session!.ticket),
           mode: LaunchMode.externalApplication,
         );
         if (!mounted) return;
@@ -252,9 +254,17 @@ class _ArcadeLinkMachineLoginPageState
   }
 
   Future<void> _login(ArcadeLinkCard card) async {
-    if (_loggingIn || _success) return;
+    if (_loggingIn ||
+        _success ||
+        (_session?.machine.unified == true &&
+            ref.read(prismVisitProvider).busy)) {
+      return;
+    }
     final session = _session;
     if (session == null) return;
+    final ticket = session.machine.unified
+        ? ref.read(prismVisitProvider.notifier).session.ticket
+        : session.ticket;
     setState(() {
       _sending = false;
       _loggingIn = true;
@@ -269,19 +279,28 @@ class _ArcadeLinkMachineLoginPageState
       if (ArcadeLinkNativeService.isAvailable) {
         await _native.loginMachine(
           cardId: card.id,
-          ticket: session.ticket,
+          ticket: ticket,
+          requireLocation: session.machine.machineGeo,
           onSending: onSending,
         );
       } else {
-        await _api.loginMachine(cardId: card.id, ticket: session.ticket);
+        await _api.loginMachine(
+          cardId: card.id,
+          ticket: ticket,
+          requireLocation: session.machine.machineGeo,
+        );
       }
       if (!mounted || session != _session) return;
+      if (session.machine.unified) {
+        ref.read(prismVisitProvider.notifier).expire();
+      }
       setState(() {
         _loggingIn = false;
-        _success = true;
-      });
-      _completionTimer = Timer(const Duration(milliseconds: 2500), () {
-        if (mounted) setState(() => _page = _SessionPage.completed);
+        Future<void>.delayed(const Duration(seconds: 3), () {
+          if (mounted && session == _session) {
+            setState(() => _page = _SessionPage.expired);
+          }
+        });
       });
     } catch (error) {
       if (!mounted || session != _session) return;
@@ -290,6 +309,28 @@ class _ArcadeLinkMachineLoginPageState
         _error = null;
         if (arcadeLinkSessionExpired(error)) _page = _SessionPage.expired;
       });
+      final code = error is ArcadeLinkException
+          ? error.code
+          : error is PlatformException
+          ? error.code
+          : null;
+      if (code == 'QQ_BINDING_REQUIRED' || code == 'CHECKIN_REQUIRED') {
+        await ref
+            .read(prismVisitProvider.notifier)
+            .load(widget.shopCode, session);
+        return;
+      }
+      if ([
+        'DEVICE_RESULT_UNKNOWN',
+        'DEVICE_UNAVAILABLE',
+        'OPERATION_PENDING',
+      ].contains(code)) {
+        if (session.machine.unified) {
+          ref.read(prismVisitProvider.notifier).expire();
+        }
+        setState(() => _page = _SessionPage.expired);
+        return;
+      }
       if (_page != _SessionPage.expired && !_isCancellation(error)) {
         await _showErrorDialog(arcadeLinkErrorMessage(error, context.l10n));
       }
@@ -297,23 +338,19 @@ class _ArcadeLinkMachineLoginPageState
   }
 
   Future<void> _logout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.arcadeLinkSignOutConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(context.l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(context.l10n.arcadeLinkSignOutAction),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && mounted) {
+    if (mounted) {
+      if (_session?.machine.unified == true) {
+        try {
+          await ref
+              .read(prismVisitProvider.notifier)
+              .request('/api/v1/auth/logout', body: {});
+        } catch (error) {
+          if (mounted) await _showErrorDialog(prismError(error));
+          return;
+        }
+      }
+      if (!mounted) return;
+      ref.read(prismVisitProvider.notifier).clear();
       setState(() {
         _authRequired = true;
         _cards = [];
@@ -323,9 +360,31 @@ class _ArcadeLinkMachineLoginPageState
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(prismVisitProvider, (previous, next) {
+      if (next.gate == 'expired' && _page != _SessionPage.expired && mounted) {
+        setState(() => _page = _SessionPage.expired);
+      }
+      if (next.error != null &&
+          next.error != previous?.error &&
+          !arcadeLinkAuthRequired(next.error!) &&
+          ModalRoute.of(context)?.isCurrent == true) {
+        _showErrorDialog(prismError(next.error!));
+      }
+      if (next.error != null &&
+          arcadeLinkAuthRequired(next.error!) &&
+          mounted &&
+          !_authRequired) {
+        setState(() {
+          _authRequired = true;
+          _cards = [];
+        });
+      }
+    });
+    final visit = ref.watch(prismVisitProvider);
+    final nativeVisit = _session?.machine.unified == true;
     final safePadding = MediaQuery.paddingOf(context);
     final contentPadding =
-        safePadding + const EdgeInsets.fromLTRB(20, 64, 20, 24);
+        safePadding + const EdgeInsets.fromLTRB(24, 140, 24, 28);
     return Scaffold(
       body: Stack(
         children: [
@@ -346,7 +405,6 @@ class _ArcadeLinkMachineLoginPageState
                     child: switch (_page) {
                       _SessionPage.loading => const ArcadeLinkLoadingPage(),
                       _SessionPage.expired => const ArcadeLinkExpiredPage(),
-                      _SessionPage.completed => const ArcadeLinkCompletedPage(),
                       _SessionPage.failed => ArcadeLinkFailurePage(
                         message: _error == null
                             ? context.l10n.arcadeLinkMachineInfoFailed
@@ -356,10 +414,42 @@ class _ArcadeLinkMachineLoginPageState
                       _SessionPage.session => ArcadeLinkMachineContent(
                         session: _session!,
                         cards: _cards,
+                        showCards:
+                            !_session!.machine.empty &&
+                            (!nativeVisit ||
+                                _authRequired ||
+                                _loadingCards ||
+                                (visit.gate == 'ready' &&
+                                    visit.power != 'off' &&
+                                    _session!.machine.has('card'))),
+                        beforeCards:
+                            nativeVisit &&
+                                !_session!.machine.empty &&
+                                !_authRequired &&
+                                !_loadingCards &&
+                                (visit.gate != 'ready' ||
+                                    visit.power == 'off' ||
+                                    _session!.machine.has('door') ||
+                                    _session!.machine.has('mahjong') ||
+                                    visit.error != null)
+                            ? PrismDeviceControls(
+                                machine: _session!.machine,
+                                cardBusy: _loggingIn || _success,
+                              )
+                            : null,
+                        afterCards:
+                            nativeVisit &&
+                                !_session!.machine.empty &&
+                                !_authRequired
+                            ? PrismDeviceFooter(
+                                machine: _session!.machine,
+                                cardBusy: _loggingIn || _success,
+                              )
+                            : null,
                         authRequired: _authRequired,
                         authenticating: _authenticating,
                         passkeyAuthenticating: _passkeyAuthenticating,
-                        loggingIn: _loggingIn,
+                        loggingIn: _loggingIn || (nativeVisit && visit.busy),
                         success: _success,
                         sending: _sending,
                         webAuthStarted: _webAuthStarted,
@@ -367,7 +457,7 @@ class _ArcadeLinkMachineLoginPageState
                         loadingCards: _loadingCards,
                         activeCardId: _activeCardId,
                         browserOnly:
-                            !kIsWeb && !ArcadeLinkNativeService.isAvailable,
+                            (!kIsWeb && !ArcadeLinkNativeService.isAvailable),
                         passkeyAvailable:
                             kIsWeb ||
                             ArcadeLinkNativeService.supportsNativePasskey,
@@ -381,11 +471,23 @@ class _ArcadeLinkMachineLoginPageState
                         onReloadCards: _loadCards,
                         onLogin: _login,
                         onContinue: _openWebFallback,
-                        onLogout: _logout,
+                        onManageCards: () => _openWebFallback(
+                          Uri.parse('https://link.neri.moe/cards'),
+                        ),
                       ),
                     },
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 12,
+            child: SafeArea(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 240),
+                child: PrismAccountMenu(onLogout: _logout, busy: _loggingIn),
               ),
             ),
           ),

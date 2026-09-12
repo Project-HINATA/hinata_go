@@ -68,7 +68,7 @@ void main() {
             expect(backRect.left, greaterThanOrEqualTo(insets.left));
             expect(
               tester.getTopLeft(find.byType(Card).first).dy,
-              insets.top + 64,
+              insets.top + 140,
             );
 
             await tester.drag(scroll, const Offset(0, -250));
@@ -83,7 +83,7 @@ void main() {
             await tester.pump();
             expect(
               tester.getBottomRight(find.byType(Card).last).dy,
-              closeTo(size.height - insets.bottom - 24, 0.01),
+              closeTo(size.height - insets.bottom - 28, 0.01),
             );
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox.shrink());
@@ -92,12 +92,14 @@ void main() {
         () => MockClient(
           (_) async => http.Response(
             jsonEncode({
-              'ticket': 'test',
-              'expiresIn': 300,
-              'machine': {
-                'publicId': 'machine',
-                'name': '舞萌',
-                'shop': {'name': '测试店铺'},
+              'data': {
+                'ticket': 'test',
+                'expiresIn': 300,
+                'machine': {
+                  'publicId': 'machine',
+                  'name': '舞萌',
+                  'shop': {'name': '测试店铺'},
+                },
               },
             }),
             200,
@@ -142,12 +144,14 @@ void main() {
         }
         return http.Response(
           jsonEncode({
-            'ticket': 'new',
-            'expiresIn': 300,
-            'machine': {
-              'publicId': 'new',
-              'name': '舞萌',
-              'shop': {'name': '新店铺'},
+            'data': {
+              'ticket': 'new',
+              'expiresIn': 300,
+              'machine': {
+                'publicId': 'new',
+                'name': '舞萌',
+                'shop': {'name': '新店铺'},
+              },
             },
           }),
           200,
@@ -199,12 +203,14 @@ void main() {
 
         http.Response session() => http.Response(
           jsonEncode({
-            'ticket': 'test',
-            'expiresIn': 300,
-            'machine': {
-              'publicId': 'machine',
-              'name': '舞萌',
-              'shop': {'name': '测试店铺'},
+            'data': {
+              'ticket': 'test',
+              'expiresIn': 300,
+              'machine': {
+                'publicId': 'machine',
+                'name': '舞萌',
+                'shop': {'name': '测试店铺'},
+              },
             },
           }),
           200,
@@ -296,14 +302,14 @@ void main() {
             loginError = null;
             await tester.tap(find.text('红黑卡'));
             await tester.pumpAndSettle();
-            expect(find.text(strings.arcadeLinkSignedIn), findsOneWidget);
+            expect(find.text(strings.arcadeLinkSignedIn), findsNothing);
             await tester.pump(const Duration(seconds: 3));
-            expect(find.byType(ArcadeLinkCompletedPage), findsOneWidget);
+            expect(find.byType(ArcadeLinkExpiredPage), findsOneWidget);
             noSessionContent();
             expect(tester.takeException(), isNull);
           },
           () => MockClient((request) {
-            expect(request.url.path, '/api/machines/session/start');
+            expect(request.url.path, '/api/v1/machines/session/start');
             requests++;
             return requests == 1
                 ? firstRequest.future

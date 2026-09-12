@@ -10,6 +10,7 @@ struct LocationSample {
 @MainActor
 final class LocationService: NSObject, @preconcurrency CLLocationManagerDelegate {
   private let manager = CLLocationManager()
+  private var timeout: Task<Void, Never>?
   private var continuation: CheckedContinuation<LocationSample, Error>?
 
   override init() {
@@ -19,7 +20,7 @@ final class LocationService: NSObject, @preconcurrency CLLocationManagerDelegate
   }
 
   func currentLocation() async throws -> LocationSample {
-    guard CLLocationManager.locationServicesEnabled() else {
+    guard continuation == nil, CLLocationManager.locationServicesEnabled() else {
       throw LocationError.unavailable
     }
 
@@ -43,7 +44,7 @@ final class LocationService: NSObject, @preconcurrency CLLocationManagerDelegate
     switch manager.authorizationStatus {
     case .authorizedAlways, .authorizedWhenInUse:
       self.continuation = continuation
-      manager.requestLocation()
+      beginLocationRequest()
     case .denied, .restricted:
       self.continuation = nil
       continuation.resume(throwing: LocationError.denied)
@@ -53,8 +54,9 @@ final class LocationService: NSObject, @preconcurrency CLLocationManagerDelegate
   }
 
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-    guard let location = locations.last, let continuation else { return }
+    guard let location = locations.last, location.horizontalAccuracy >= 0, abs(location.timestamp.timeIntervalSinceNow) <= 15, let continuation else { return }
     self.continuation = nil
+    timeout?.cancel()
     continuation.resume(returning: LocationSample(
       latitude: location.coordinate.latitude,
       longitude: location.coordinate.longitude,
@@ -65,13 +67,25 @@ final class LocationService: NSObject, @preconcurrency CLLocationManagerDelegate
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
     guard let continuation else { return }
     self.continuation = nil
+    timeout?.cancel()
     continuation.resume(throwing: error)
+  }
+
+  private func beginLocationRequest() {
+    timeout?.cancel()
+    timeout = Task { [weak self] in
+      do { try await Task.sleep(nanoseconds: 15_000_000_000) } catch { return }
+      guard let self, let pending = self.continuation else { return }
+      self.continuation = nil
+      pending.resume(throwing: LocationError.unavailable)
+    }
+    manager.requestLocation()
   }
 
   private func requestLocation() async throws -> LocationSample {
     try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
-      manager.requestLocation()
+      beginLocationRequest()
     }
   }
 }

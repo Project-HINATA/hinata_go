@@ -1781,7 +1781,7 @@ abstract class AppLocalizations {
   /// No description provided for @arcadeLinkNoCards.
   ///
   /// In en, this message translates to:
-  /// **'No cards available. Add a card in ArcadeLink first.'**
+  /// **'No cards available. Add a card in PRiSM first.'**
   String get arcadeLinkNoCards;
 
   /// No description provided for @arcadeLinkLoading.
@@ -1979,7 +1979,7 @@ abstract class AppLocalizations {
   /// No description provided for @arcadeLinkInvalidURL.
   ///
   /// In en, this message translates to:
-  /// **'Invalid ArcadeLink URL'**
+  /// **'Invalid PRiSM URL'**
   String get arcadeLinkInvalidURL;
 
   /// No description provided for @arcadeLinkInvalidResponse.
@@ -1987,6 +1987,462 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid response from ArcadeLink'**
   String get arcadeLinkInvalidResponse;
+
+  /// No description provided for @prismRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get prismRefresh;
+
+  /// No description provided for @prismBindQQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Bind QQ'**
+  String get prismBindQQ;
+
+  /// No description provided for @prismNewMember.
+  ///
+  /// In en, this message translates to:
+  /// **'A player profile will be created after verification.'**
+  String get prismNewMember;
+
+  /// No description provided for @prismExistingMember.
+  ///
+  /// In en, this message translates to:
+  /// **'This store accepts existing players only. Use your registered QQ account.'**
+  String get prismExistingMember;
+
+  /// No description provided for @prismSendBot.
+  ///
+  /// In en, this message translates to:
+  /// **'Send in the QQ group'**
+  String get prismSendBot;
+
+  /// No description provided for @prismExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires at'**
+  String get prismExpires;
+
+  /// No description provided for @prismCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get prismCopy;
+
+  /// No description provided for @prismGenerateCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate code'**
+  String get prismGenerateCode;
+
+  /// No description provided for @prismVerifyBinding.
+  ///
+  /// In en, this message translates to:
+  /// **'Check verification'**
+  String get prismVerifyBinding;
+
+  /// No description provided for @prismEnter.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get prismEnter;
+
+  /// No description provided for @prismConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Start billing and check out before leaving. Closing this page does not stop billing.'**
+  String get prismConsent;
+
+  /// No description provided for @prismDoorPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Door code'**
+  String get prismDoorPassword;
+
+  /// No description provided for @prismEnterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code on the lock, then press #'**
+  String get prismEnterPassword;
+
+  /// No description provided for @prismEnterAndOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in and get door code'**
+  String get prismEnterAndOpen;
+
+  /// No description provided for @prismGetPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Get door code'**
+  String get prismGetPassword;
+
+  /// No description provided for @prismPoweredOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Device is powered off'**
+  String get prismPoweredOff;
+
+  /// No description provided for @prismPowerOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Power on'**
+  String get prismPowerOn;
+
+  /// No description provided for @prismCoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert coin'**
+  String get prismCoin;
+
+  /// No description provided for @prismMyVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'My visit · Check out'**
+  String get prismMyVisit;
+
+  /// No description provided for @prismInStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked in'**
+  String get prismInStore;
+
+  /// No description provided for @prismNotInStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked in'**
+  String get prismNotInStore;
+
+  /// No description provided for @prismStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get prismStarted;
+
+  /// No description provided for @prismPreviewCheckout.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview checkout'**
+  String get prismPreviewCheckout;
+
+  /// No description provided for @prismCheckout.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkout preview'**
+  String get prismCheckout;
+
+  /// No description provided for @prismTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get prismTotal;
+
+  /// No description provided for @prismFinalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'The final amount is calculated at confirmation. Billing continues if funds or location checks fail.'**
+  String get prismFinalAmount;
+
+  /// No description provided for @prismConfirmCheckout.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out'**
+  String get prismConfirmCheckout;
+
+  /// No description provided for @prismAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'Store assets'**
+  String get prismAssets;
+
+  /// No description provided for @prismRedeemCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Redemption code'**
+  String get prismRedeemCode;
+
+  /// No description provided for @prismRedeem.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem'**
+  String get prismRedeem;
+
+  /// No description provided for @prismHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get prismHistory;
+
+  /// No description provided for @prismAllDay.
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get prismAllDay;
+
+  /// No description provided for @prismMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'minutes'**
+  String get prismMinutes;
+
+  /// No description provided for @prismGrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Grace'**
+  String get prismGrace;
+
+  /// No description provided for @prismCap.
+  ///
+  /// In en, this message translates to:
+  /// **'Cap'**
+  String get prismCap;
+
+  /// No description provided for @prismWeekdays.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekdays (0 = Sunday)'**
+  String get prismWeekdays;
+
+  /// No description provided for @prismCoinSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Coin sent'**
+  String get prismCoinSent;
+
+  /// No description provided for @prismPowerSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Power-on requested'**
+  String get prismPowerSent;
+
+  /// No description provided for @prismCheckedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked out'**
+  String get prismCheckedOut;
+
+  /// No description provided for @prismRedeemed.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeemed'**
+  String get prismRedeemed;
+
+  /// No description provided for @prismContinueDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with device'**
+  String get prismContinueDevice;
+
+  /// No description provided for @prismSwipeAndCoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Card sent and one coin inserted'**
+  String get prismSwipeAndCoin;
+
+  /// No description provided for @prismCoinCooldown.
+  ///
+  /// In en, this message translates to:
+  /// **'Card sent. No coin was inserted because the cooldown is active.'**
+  String get prismCoinCooldown;
+
+  /// No description provided for @prismCoinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Card sent. The coin request failed. Please contact staff.'**
+  String get prismCoinFailed;
+
+  /// No description provided for @prismCoinUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Card sent. The coin result is unknown. Check the machine before swiping again.'**
+  String get prismCoinUnknown;
+
+  /// No description provided for @prismClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get prismClose;
+
+  /// No description provided for @prismRegenerateCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a new code'**
+  String get prismRegenerateCode;
+
+  /// No description provided for @prismWaitingPower.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for power'**
+  String get prismWaitingPower;
+
+  /// No description provided for @prismMySpending.
+  ///
+  /// In en, this message translates to:
+  /// **'My spending'**
+  String get prismMySpending;
+
+  /// No description provided for @prismStillBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing continues until checkout succeeds.'**
+  String get prismStillBilling;
+
+  /// No description provided for @prismBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing in progress'**
+  String get prismBilling;
+
+  /// No description provided for @prismBackToDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to device'**
+  String get prismBackToDevice;
+
+  /// No description provided for @prismStoreDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Store devices'**
+  String get prismStoreDevices;
+
+  /// No description provided for @prismRefreshPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a new password'**
+  String get prismRefreshPassword;
+
+  /// No description provided for @prismBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill'**
+  String get prismBill;
+
+  /// No description provided for @prismWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get prismWallet;
+
+  /// No description provided for @prismNoBill.
+  ///
+  /// In en, this message translates to:
+  /// **'No outstanding bill'**
+  String get prismNoBill;
+
+  /// No description provided for @prismNoAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'No assets'**
+  String get prismNoAssets;
+
+  /// No description provided for @prismNoRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'No records'**
+  String get prismNoRecords;
+
+  /// No description provided for @prismNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get prismNow;
+
+  /// No description provided for @prismTimeSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'Rates by time'**
+  String get prismTimeSlots;
+
+  /// No description provided for @prismPerEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Per entry'**
+  String get prismPerEntry;
+
+  /// No description provided for @prismClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry unavailable'**
+  String get prismClosed;
+
+  /// No description provided for @prismCombinedCap.
+  ///
+  /// In en, this message translates to:
+  /// **'Combined cap'**
+  String get prismCombinedCap;
+
+  /// No description provided for @prismSlotCap.
+  ///
+  /// In en, this message translates to:
+  /// **'Period cap'**
+  String get prismSlotCap;
+
+  /// No description provided for @prismUnitGrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Grace per unit'**
+  String get prismUnitGrace;
+
+  /// No description provided for @prismPricingExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Charges are calculated per period, rounding up after the grace allowance. Caps accumulate within each rule period, including when that period crosses midnight.'**
+  String get prismPricingExplanation;
+
+  /// No description provided for @prismNextDay.
+  ///
+  /// In en, this message translates to:
+  /// **'next day '**
+  String get prismNextDay;
+
+  /// No description provided for @prismRuleOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'When periods overlap, the first matching rule below applies.'**
+  String get prismRuleOrder;
+
+  /// No description provided for @prismContinuousPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Continuous period'**
+  String get prismContinuousPeriod;
+
+  /// No description provided for @prismMahjongTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Mahjong table'**
+  String get prismMahjongTable;
+
+  /// No description provided for @prismMahjongPlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Mahjong billing active'**
+  String get prismMahjongPlaying;
+
+  /// No description provided for @prismMahjongWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to start'**
+  String get prismMahjongWaiting;
+
+  /// No description provided for @prismMahjongYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get prismMahjongYou;
+
+  /// No description provided for @prismMahjongJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join table'**
+  String get prismMahjongJoin;
+
+  /// No description provided for @prismMahjongLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave table'**
+  String get prismMahjongLeave;
 }
 
 class _AppLocalizationsDelegate
