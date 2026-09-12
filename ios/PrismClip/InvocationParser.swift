@@ -1,16 +1,21 @@
 import Foundation
 
 struct PrismInvocation {
+  let origin: URL
   let shopCode: String
   let machinePublicId: String
 }
 
 enum InvocationParser {
-  static let host = "link.neri.moe"
+  static func origin(from url: URL) -> URL? {
+    guard url.scheme?.lowercased() == "https", let host = url.host, !host.isEmpty,
+          url.user == nil, url.password == nil else { return nil }
+    var parts = URLComponents(); parts.scheme = "https"; parts.host = host.lowercased(); parts.port = url.port
+    return parts.url
+  }
 
   static func invocation(from url: URL) -> PrismInvocation? {
-    guard url.scheme?.lowercased() == "https",
-          url.host?.lowercased() == host else {
+    guard let origin = origin(from: url) else {
       return nil
     }
 
@@ -28,6 +33,6 @@ enum InvocationParser {
     }) else {
       return nil
     }
-    return PrismInvocation(shopCode: values[0], machinePublicId: values[1])
+    return PrismInvocation(origin: origin, shopCode: values[0], machinePublicId: values[1])
   }
 }

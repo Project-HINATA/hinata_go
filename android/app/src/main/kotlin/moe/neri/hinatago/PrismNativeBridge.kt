@@ -35,13 +35,13 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 /** Native Prism session, Passkey, card and location bridge for Android. */
-class PrismNativeBridge(private val activity: Activity) {
+class PrismNativeBridge(private val activity: Activity, private val baseUrl: String? = null) {
     companion object {
         const val CHANNEL = "moe.neri.hinatago/prism_native"
         const val LOCATION_PERMISSION_REQUEST = 49172
-        private const val BASE_URL = "https://link.neri.moe"
     }
 
+    private val clients = mutableMapOf<String, PrismNativeBridge>()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val mainExecutor = Executor { command -> mainHandler.post(command) }
     private val ioExecutor: ExecutorService = Executors.newCachedThreadPool()
@@ -68,6 +68,7 @@ class PrismNativeBridge(private val activity: Activity) {
         grantResults: IntArray,
     ): Boolean {
         if (requestCode != LOCATION_PERMISSION_REQUEST) return false
+        if (baseUrl == null) return clients.values.firstOrNull { it.pendingPermissionLogin != null }?.handlePermissionResult(requestCode, grantResults) ?: true
         val request = pendingPermissionLogin ?: return true
         pendingPermissionLogin = null
         val granted = grantResults.any { it == PackageManager.PERMISSION_GRANTED }
@@ -80,6 +81,7 @@ class PrismNativeBridge(private val activity: Activity) {
     }
 
     fun dispose() {
+        clients.values.forEach { it.dispose() }
         disposed = true
         cancelLocationRequest()
         ioExecutor.shutdownNow()
@@ -88,6 +90,19 @@ class PrismNativeBridge(private val activity: Activity) {
     private fun handle(call: MethodCall, result: MethodChannel.Result) {
         if (disposed) {
             fail(result, "bridge_unavailable", "PRiSM 服务不可用")
+            return
+        }
+        if (baseUrl == null) {
+            val origin = try {
+                val uri = URI(call.argument<String>("origin") ?: "")
+                require(uri.scheme == "https" && !uri.host.isNullOrEmpty() && uri.rawUserInfo == null)
+                URI("https", null, uri.host.lowercase(), uri.port, null, null, null).toString()
+            } catch (_: Exception) { return fail(result, "invalid_arguments", "无效的服务地址") }
+            if (call.method == "authenticateMunet" && clients.values.any { it.pendingMunet != null }) {
+                return fail(result, "authentication_busy", "登录正在进行")
+            }
+            val client = clients.getOrPut(origin) { PrismNativeBridge(activity, origin).also { it.channel = channel } }
+            client.handle(call, result)
             return
         }
         when (call.method) {
@@ -117,7 +132,7 @@ class PrismNativeBridge(private val activity: Activity) {
         if (pendingMunet != null) { fail(result, "authentication_busy", "登录正在进行"); return }
         pendingMunet = result
         try {
-            activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$BASE_URL/api/v1/appclip/auth/start")))
+            activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$baseUrl/api/v1/appclip/auth/start")))
             mainHandler.postDelayed({
                 if (pendingMunet === result) { pendingMunet = null; fail(result, "authentication_cancelled", "") }
             }, 120_000)
@@ -127,6 +142,7 @@ class PrismNativeBridge(private val activity: Activity) {
     fun handleAuthCallback(intent: Intent): Boolean {
         val uri = intent.data ?: return false
         if (uri.scheme != "hinata-prism-auth") return false
+        if (baseUrl == null) return clients.values.firstOrNull { it.pendingMunet != null }?.handleAuthCallback(intent) ?: true
         val result = pendingMunet ?: return true
         pendingMunet = null
         val code = uri.getQueryParameter("code")
@@ -390,8 +406,9 @@ class PrismNativeBridge(private val activity: Activity) {
 
     private fun request(method: String, path: String, body: String? = null): String {
         require(path.startsWith("/api/v1/") && !path.contains("..")) { "Invalid API path" }
-        val url = URL(BASE_URL + path)
+        val url = URL(baseUrl + path)
         val connection = url.openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = false
         connection.requestMethod = method
         connection.connectTimeout = 15_000
         connection.readTimeout = 35_000

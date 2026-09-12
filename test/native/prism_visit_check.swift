@@ -6,7 +6,7 @@ import Foundation
   func authenticate(options: PasskeyRequestOptions) async throws -> PasskeyAssertion { throw CancellationError() }
 }
 @MainActor final class MunetAuthenticationService {
-  func authenticate() async throws -> String { throw CancellationError() }
+  func authenticate(origin: URL) async throws -> String { throw CancellationError() }
 }
 struct LocationSample { let latitude: Double; let longitude: Double; let accuracy: Double }
 @MainActor final class LocationService {
@@ -33,6 +33,10 @@ final class FixtureProtocol: URLProtocol {
 
 @main struct PrismVisitCheck {
   @MainActor static func main() async throws {
+    let origin = URL(string: "https://link-beta.neri.moe")!
+    precondition(InvocationParser.invocation(from: URL(string: "https://example.com:8443/t/store/device")!)?.origin.absoluteString == "https://example.com:8443")
+    precondition(InvocationParser.invocation(from: URL(string: "http://example.com/t/store/device")!) == nil)
+    precondition(InvocationParser.invocation(from: URL(string: "https://user@example.com/t/store/device")!) == nil)
     var mahjongSeats: [[String:Any]] = []
     var member = false, active = false
     var billing = true
@@ -41,6 +45,7 @@ final class FixtureProtocol: URLProtocol {
     var checkoutIds: [String] = []
     let testUser = UUID().uuidString
     FixtureProtocol.handler = { request in
+      precondition(request.url!.host == origin.host)
       let path = request.url!.path
       let data: Data
       if let body = request.httpBody { data = body }
@@ -88,7 +93,7 @@ final class FixtureProtocol: URLProtocol {
     }
     let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [FixtureProtocol.self]
     let model = MachineLoginViewModel(api: PrismAPI(configuration: config))
-    await model.start(shopCode:"store",publicId:"device")
+    await model.handleInvocation(origin.appendingPathComponent("t/store/device"))
     precondition(model.state == .ready && model.deviceState?.gate == "qq")
     precondition(model.binding?.code == "ABC123")
     member = true; await model.refreshVisit(); precondition(model.deviceState?.gate == "entry")
@@ -119,7 +124,7 @@ final class FixtureProtocol: URLProtocol {
     capabilities = [:]
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.state == .ready && model.machine?.empty == true && !model.canUseCards)
-    for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("prism.operation.\(testUser).") { UserDefaults.standard.removeObject(forKey:key) }
+    for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("prism.operation.\(origin.absoluteString).\(testUser).") { UserDefaults.standard.removeObject(forKey:key) }
     print("App Clip native visit checks passed")
   }
 }

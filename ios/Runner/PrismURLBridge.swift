@@ -11,9 +11,10 @@ final class PrismURLBridge {
 
   func attach(to messenger: FlutterBinaryMessenger) {
     channel = FlutterMethodChannel(name: "moe.neri.hinatago/prism", binaryMessenger: messenger)
-    if let pendingURL {
-      emit(pendingURL)
-      self.pendingURL = nil
+    channel?.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "getInitialURL" else { result(FlutterMethodNotImplemented); return }
+      result(self?.pendingURL?.absoluteString)
+      self?.pendingURL = nil
     }
   }
 
@@ -23,14 +24,11 @@ final class PrismURLBridge {
   }
 
   func handle(_ url: URL) {
-    guard url.scheme?.lowercased() == "https",
-          url.host?.lowercased() == "link.neri.moe" else {
+    guard InvocationParser.invocation(from: url) != nil else {
       return
     }
-    guard channel != nil else {
-      pendingURL = url
-      return
-    }
+    pendingURL = url
+    guard channel != nil else { return }
     emit(url)
   }
 

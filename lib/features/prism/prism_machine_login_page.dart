@@ -16,24 +16,40 @@ import 'package:hinata_go/features/prism/prism_machine_content.dart';
 
 enum _SessionPage { loading, failed, session, expired }
 
-class PrismMachineLoginPage extends ConsumerStatefulWidget {
+class PrismMachineLoginPage extends StatelessWidget {
   const PrismMachineLoginPage({
     required this.shopCode,
     required this.publicId,
+    this.origin,
     super.key,
   });
+  final String shopCode, publicId;
+  final Uri? origin;
+  @override
+  Widget build(BuildContext context) => ProviderScope(
+    key: ValueKey((origin ?? PrismAPI.defaultOrigin).origin),
+    overrides: [
+      prismOriginProvider.overrideWithValue(origin ?? PrismAPI.defaultOrigin),
+    ],
+    child: _PrismSessionPage(shopCode: shopCode, publicId: publicId),
+  );
+}
+
+class _PrismSessionPage extends ConsumerStatefulWidget {
+  const _PrismSessionPage({required this.shopCode, required this.publicId});
 
   final String shopCode;
   final String publicId;
 
   @override
-  ConsumerState<PrismMachineLoginPage> createState() =>
-      _PrismMachineLoginPageState();
+  ConsumerState<_PrismSessionPage> createState() => _PrismSessionPageState();
 }
 
-class _PrismMachineLoginPageState extends ConsumerState<PrismMachineLoginPage> {
-  final _api = PrismAPI();
-  final _native = PrismNativeService();
+class _PrismSessionPageState extends ConsumerState<_PrismSessionPage> {
+  late final _api = PrismAPI(origin: ref.read(prismOriginProvider));
+  late final _native = PrismNativeService(
+    origin: ref.read(prismOriginProvider),
+  );
   PrismMachineSession? _session;
   List<PrismCard> _cards = const [];
   Object? _error;
@@ -60,7 +76,7 @@ class _PrismMachineLoginPageState extends ConsumerState<PrismMachineLoginPage> {
   }
 
   @override
-  void didUpdateWidget(covariant PrismMachineLoginPage oldWidget) {
+  void didUpdateWidget(covariant _PrismSessionPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.shopCode != widget.shopCode ||
         oldWidget.publicId != widget.publicId) {
@@ -469,9 +485,8 @@ class _PrismMachineLoginPageState extends ConsumerState<PrismMachineLoginPage> {
                         onReloadCards: _loadCards,
                         onLogin: _login,
                         onContinue: _openWebFallback,
-                        onManageCards: () => _openWebFallback(
-                          Uri.parse('https://link.neri.moe/cards'),
-                        ),
+                        onManageCards: () =>
+                            _openWebFallback(_api.origin.resolve('/cards')),
                       ),
                     },
                   ),

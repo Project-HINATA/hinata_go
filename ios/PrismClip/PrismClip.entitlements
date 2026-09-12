@@ -5,7 +5,9 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>appclips:link.neri.moe</string>
+		<string>appclips:link-beta.neri.moe</string>
 		<string>webcredentials:link.neri.moe</string>
+		<string>webcredentials:link-beta.neri.moe</string>
 	</array>
 	<key>com.apple.developer.parent-application-identifiers</key>
 	<array>

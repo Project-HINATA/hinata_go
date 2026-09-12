@@ -6,6 +6,14 @@ import 'package:hinata_go/features/prism/services/prism_http_client.dart'
     if (dart.library.html) 'package:hinata_go/features/prism/services/prism_http_client_web.dart';
 import 'package:hinata_go/features/prism/services/prism_location.dart';
 
+Uri prismOrigin(String value) {
+  final uri = Uri.parse(value);
+  if (uri.scheme != 'https' || uri.host.isEmpty || uri.userInfo.isNotEmpty) {
+    throw ArgumentError('Invalid PRiSM origin');
+  }
+  return Uri.parse(uri.origin);
+}
+
 class PrismMachine {
   const PrismMachine({
     required this.publicId,
@@ -34,7 +42,7 @@ class PrismMachine {
       : capabilities![capability] == true;
   bool get empty => capabilities != null && !capabilities!.values.any((v) => v);
 
-  factory PrismMachine.fromJson(Map<String, dynamic> json) {
+  factory PrismMachine.fromJson(Map<String, dynamic> json, {Uri? origin}) {
     final shop = json['shop'] as Map<String, dynamic>;
     return PrismMachine(
       publicId: json['publicId'] as String,
@@ -51,7 +59,9 @@ class PrismMachine {
       ),
       coinAfterSwipe: json['coinAfterSwipe'] == true,
       heroUrl: shop['heroUrl'] is String
-          ? PrismAPI._baseURL.resolve(shop['heroUrl'] as String).toString()
+          ? (origin ?? PrismAPI.defaultOrigin)
+                .resolve(shop['heroUrl'] as String)
+                .toString()
           : null,
     );
   }
@@ -68,11 +78,17 @@ class PrismMachineSession {
   final int expiresIn;
   final PrismMachine machine;
 
-  factory PrismMachineSession.fromJson(Map<String, dynamic> json) {
+  factory PrismMachineSession.fromJson(
+    Map<String, dynamic> json, {
+    Uri? origin,
+  }) {
     return PrismMachineSession(
       ticket: json['ticket'] as String,
       expiresIn: json['expiresIn'] as int,
-      machine: PrismMachine.fromJson(json['machine'] as Map<String, dynamic>),
+      machine: PrismMachine.fromJson(
+        json['machine'] as Map<String, dynamic>,
+        origin: origin,
+      ),
     );
   }
 }
@@ -101,9 +117,16 @@ class PrismCard {
 }
 
 class PrismAPI {
-  PrismAPI({http.Client? client}) : _client = client ?? createPrismHttpClient();
+  PrismAPI({http.Client? client, Uri? origin})
+    : _client = client ?? createPrismHttpClient(),
+      _baseURL = origin == null
+          ? defaultOrigin
+          : prismOrigin(origin.toString());
 
-  static final Uri _baseURL = Uri.parse(
+  final Uri _baseURL;
+  Uri get origin => _baseURL;
+
+  static final Uri defaultOrigin = Uri.parse(
     const String.fromEnvironment(
       'PRISM_API_ORIGIN',
       defaultValue: 'https://link.neri.moe',
@@ -121,7 +144,7 @@ class PrismAPI {
       body: jsonEncode({'shopCode': shopCode, 'publicId': publicId}),
     );
     final payload = _decode(response);
-    return PrismMachineSession.fromJson(payload);
+    return PrismMachineSession.fromJson(payload, origin: _baseURL);
   }
 
   Future<List<PrismCard>> cards() async {

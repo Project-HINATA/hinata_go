@@ -16,7 +16,7 @@ import 'navigation/router.dart'; // Keep this import as it's not explicitly remo
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  PrismInvocationService.instance.initialize();
+  await PrismInvocationService.instance.initialize();
 
   final prefs = await SharedPreferences.getInstance();
 

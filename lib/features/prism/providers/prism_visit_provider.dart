@@ -15,18 +15,23 @@ typedef PrismRequest =
       Map<String, dynamic>? body,
       bool requireLocation,
     });
-final prismRequestProvider = Provider<PrismRequest>((ref) {
-  final api = PrismAPI();
-  ref.onDispose(api.dispose);
-  final native = PrismNativeService();
-  return (path, {body, requireLocation = false}) =>
-      PrismNativeService.isAvailable
-      ? native.request(path, body: body, requireLocation: requireLocation)
-      : api.request(path, body: body, requireLocation: requireLocation);
-});
+final prismOriginProvider = Provider<Uri>((ref) => PrismAPI.defaultOrigin);
+final prismRequestProvider = Provider<PrismRequest>(
+  dependencies: [prismOriginProvider],
+  (ref) {
+    final api = PrismAPI(origin: ref.watch(prismOriginProvider));
+    ref.onDispose(api.dispose);
+    final native = PrismNativeService(origin: ref.watch(prismOriginProvider));
+    return (path, {body, requireLocation = false}) =>
+        PrismNativeService.isAvailable
+        ? native.request(path, body: body, requireLocation: requireLocation)
+        : api.request(path, body: body, requireLocation: requireLocation);
+  },
+);
 final prismVisitProvider =
     NotifierProvider.autoDispose<PrismVisitController, PrismVisit>(
       PrismVisitController.new,
+      dependencies: [prismRequestProvider, prismOriginProvider],
     );
 
 // These JSON values are the existing shop/pricing/settlement API documents.
@@ -282,7 +287,15 @@ class PrismVisitController extends Notifier<PrismVisit> {
     final version = _version;
     final prefs = await SharedPreferences.getInstance();
     if (!ref.mounted || version != _version) throw StateError('Visit changed');
-    final storageKey = 'prism.operation.$_userId.$shopCode.$key';
+    final storageKey =
+        'prism.operation.${ref.read(prismOriginProvider).origin}.$_userId.$shopCode.$key';
+    final legacyKey = 'prism.operation.$_userId.$shopCode.$key';
+    if (ref.read(prismOriginProvider).origin == 'https://link.neri.moe' &&
+        !prefs.containsKey(storageKey) &&
+        prefs.containsKey(legacyKey)) {
+      await prefs.setString(storageKey, prefs.getString(legacyKey)!);
+      await prefs.remove(legacyKey);
+    }
     final saved = prefs.getString(storageKey);
     if (saved != null && key.startsWith('device.')) {
       throw const PrismException(

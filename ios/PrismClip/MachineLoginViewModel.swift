@@ -51,7 +51,7 @@ final class MachineLoginViewModel: ObservableObject {
   }
   var showVisit: Bool { visit?.shop.billingEnabled == true }
 
-  let api: PrismAPI
+  private(set) var api: PrismAPI
   private let passkey = PasskeyAuthenticationService()
   private let munet = MunetAuthenticationService()
   private let location = LocationService()
@@ -62,6 +62,7 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func handleInvocation(_ url: URL) async {
+    let api = self.api
     guard let invocation = InvocationParser.invocation(from: url) else {
       invocationVersion += 1
       shopCode = nil
@@ -71,10 +72,12 @@ final class MachineLoginViewModel: ObservableObject {
       errorMessage = nil
       return
     }
+    self.api = api.atOrigin(invocation.origin)
     await start(shopCode: invocation.shopCode, publicId: invocation.machinePublicId)
   }
 
   func start(shopCode: String, publicId: String) async {
+    let api = self.api
     invocationVersion += 1
     polling?.cancel()
     visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; notice = nil; user = nil; waitingPower = false
@@ -109,6 +112,7 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func authenticateWithPasskey() async {
+    let api = self.api
     guard state == .unauthenticated, authenticating == nil else { return }
     authenticating = "passkey"
     let version = invocationVersion
@@ -129,13 +133,14 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func authenticateWithMunet() async {
+    let api = self.api
     guard state == .unauthenticated, authenticating == nil else { return }
     authenticating = "munet"
     let version = invocationVersion
     errorMessage = nil
     defer { if version == invocationVersion { authenticating = nil } }
     do {
-      let code = try await munet.authenticate()
+      let code = try await munet.authenticate(origin: api.baseURL)
       try await api.exchangeAppClipAuth(code: code)
       guard version == invocationVersion else { return }
       await reloadCards()
@@ -148,19 +153,23 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func logout() async {
+    let api = self.api
+    let version = invocationVersion
     guard !deviceBusy, ![.locating, .sending].contains(state) else { return }
     do {
       _ = try await api.requestJSON(path: "/api/v1/auth/logout", body: [:])
+      guard version == invocationVersion else { return }
       invocationVersion += 1
       polling?.cancel()
       visit = nil; binding = nil; summary = nil; doorPassword = nil; checkoutPreview = nil; deviceState = nil; notice = nil; assets = []; history = []; userId = ""; user = nil
       state = ticket == nil ? .expired : .unauthenticated
       cards = []
       errorMessage = nil
-    } catch { errorMessage = String(localized: "退出账号失败，请重试") }
+    } catch { guard version == invocationVersion else { return }; errorMessage = String(localized: "退出账号失败，请重试") }
   }
 
   func reloadCards() async {
+    let api = self.api
     let version = invocationVersion
     state = .loadingCards
     errorMessage = nil
@@ -180,6 +189,8 @@ final class MachineLoginViewModel: ObservableObject {
   func clearError() { errorMessage = nil }
 
   func login(card: ArcadeCard) async {
+    let api = self.api
+    let version = invocationVersion
     guard state == .ready, !deviceBusy, canUseCards else { return }
     guard let ticket else {
       state = .expired
@@ -191,7 +202,7 @@ final class MachineLoginViewModel: ObservableObject {
     errorMessage = nil
     do {
       let position: LocationSample? = (machine?.shop.locationEnabled ?? machine?.shop.machineGeo) == false ? nil : try await location.currentLocation()
-      guard self.ticket == ticket else { return }
+      guard version == invocationVersion, self.ticket == ticket else { return }
       state = .sending
       _ = try await api.loginMachine(MachineLoginRequest(
         cardId: card.id,
@@ -200,12 +211,12 @@ final class MachineLoginViewModel: ObservableObject {
         accuracy: position?.accuracy,
         ticket: ticket,
       ))
-      guard self.ticket == ticket else { return }
+      guard version == invocationVersion, self.ticket == ticket else { return }
       try? await Task.sleep(nanoseconds: 3_000_000_000)
-      guard self.ticket == ticket else { return }
+      guard version == invocationVersion, self.ticket == ticket else { return }
       expire()
     } catch {
-      guard self.ticket == ticket else { return }
+      guard version == invocationVersion, self.ticket == ticket else { return }
       let message = friendlyMessage(error)
       if ["DEVICE_RESULT_UNKNOWN", "DEVICE_UNAVAILABLE", "OPERATION_PENDING"].contains((error as? PrismAPIError)?.code ?? "") || error is URLError { expire(); return }
       if (error as? PrismAPIError)?.isSessionExpired == true { state = .expired } else { state = .ready }
@@ -220,6 +231,7 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func refreshVisit() async {
+    let api = self.api
     guard machine?.capabilities != nil, state != .unauthenticated else { return }
     visitRevision += 1
     polling?.cancel()
@@ -293,6 +305,7 @@ final class MachineLoginViewModel: ObservableObject {
   func pricingDate(_ date: String) async throws -> PrismShopResponse { try await api.request(shopPath() + "?date=" + date) }
 
   func bindQQ() async {
+    let api = self.api
     await perform {
       let version = invocationVersion
       let value: PrismBinding = try await api.request(shopPath("qq-binding"), body: [:])
@@ -303,8 +316,15 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   private func operation(_ key: String, path: String, body: [String: Any], requiresLocation: Bool) async throws -> Data {
+    let api = self.api
     let version = invocationVersion
-    let storageKey = "prism.operation.\(userId).\(shopCode ?? "").\(key)"
+    let storageKey = "prism.operation.\(api.baseURL.absoluteString).\(userId).\(shopCode ?? "").\(key)"
+    let legacyKey = "prism.operation.\(userId).\(shopCode ?? "").\(key)"
+    if api.baseURL.absoluteString == "https://link.neri.moe", UserDefaults.standard.data(forKey: storageKey) == nil,
+       let legacy = UserDefaults.standard.data(forKey: legacyKey) {
+      UserDefaults.standard.set(legacy, forKey: storageKey)
+      UserDefaults.standard.removeObject(forKey: legacyKey)
+    }
     let saved = UserDefaults.standard.data(forKey: storageKey)
     if saved != nil && key.hasPrefix("device.") { throw PrismAPIError.api(code: "OPERATION_PENDING", message: "本次会话已失效") }
     var payload = saved == nil ? body : try JSONSerialization.jsonObject(with: saved!) as! [String: Any]
@@ -347,6 +367,7 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
   func previewCheckout() async {
+    let api = self.api
     await perform {
       let version = invocationVersion
       let value: PrismCheckout = try await api.request(shopPath("player/checkout/preview"), body: [:])

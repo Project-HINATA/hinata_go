@@ -13,6 +13,7 @@ import io.flutter.plugin.common.MethodChannel
 import android.util.Log
 
 class MainActivity : FlutterActivity() {
+    private var prismInvocationChannel: MethodChannel? = null
     private var prismBridge: PrismNativeBridge? = null
     private var pendingTag: Tag? = null
     private val nfcChannel = "moe.neri.hinatago/nfc_launcher"
@@ -21,6 +22,12 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        prismInvocationChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "moe.neri.hinatago/prism").also {
+            it.setMethodCallHandler { call, result ->
+                if (call.method == "getInitialURL") result.success(intent?.dataString)
+                else result.notImplemented()
+            }
+        }
         prismBridge = PrismNativeBridge(this).also {
             it.attach(flutterEngine.dartExecutor.binaryMessenger)
         }
@@ -62,6 +69,7 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (prismBridge?.handleAuthCallback(intent) == true) return
+        intent.dataString?.let { prismInvocationChannel?.invokeMethod("invocation", it) }
         handleNfcIntent(intent)
     }
 

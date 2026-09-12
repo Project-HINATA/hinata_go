@@ -30,6 +30,25 @@ void main() {
     expect(service.pendingPublicId, 'machine_123');
   });
 
+  test('keeps the scanned origin and rejects unsafe invocations', () {
+    for (final origin in [
+      'https://link-beta.neri.moe',
+      'https://example.com:8443',
+    ]) {
+      service.handleURL('$origin/t/shop/device');
+      expect(service.pendingOrigin.toString(), origin);
+      service.clear();
+    }
+    for (final url in [
+      'http://example.com/t/shop/device',
+      'https://user@example.com/t/shop/device',
+      'https://example.com/t/shop/a%2Fb',
+    ]) {
+      service.handleURL(url);
+      expect(service.pendingOrigin, isNull);
+    }
+  });
+
   test('rejects the old machine-only URL shape', () {
     service.handleURL('https://link.neri.moe/t/machine_123');
 

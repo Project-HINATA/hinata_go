@@ -5,6 +5,7 @@ import Foundation
 final class PrismNativeBridge {
   static let shared = PrismNativeBridge()
 
+  private var clients: [String: PrismAPI] = [:]
   private let munet = MunetAuthenticationService()
   private let passkey = PasskeyAuthenticationService()
   private let location = LocationService()
@@ -28,18 +29,23 @@ final class PrismNativeBridge {
 
   private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) async {
     do {
+      guard let arguments = call.arguments as? [String: Any],
+            let raw = arguments["origin"] as? String, let url = URL(string: raw),
+            let origin = InvocationParser.origin(from: url) else { throw PrismAPIError.invalidURL }
+      let api = clients[origin.absoluteString] ?? PrismAPI(origin: origin)
+      clients[origin.absoluteString] = api
       switch call.method {
       case "authenticateMunet":
-        let code = try await munet.authenticate()
-        try await PrismAPI.shared.exchangeAppClipAuth(code: code)
+        let code = try await munet.authenticate(origin: api.baseURL)
+        try await api.exchangeAppClipAuth(code: code)
         result(nil)
       case "authenticatePasskey":
-        let options = try await PrismAPI.shared.passkeyOptions()
+        let options = try await api.passkeyOptions()
         let assertion = try await passkey.authenticate(options: options)
-        try await PrismAPI.shared.loginWithPasskey(assertion)
+        try await api.loginWithPasskey(assertion)
         result(nil)
       case "cards":
-        let cards = try await PrismAPI.shared.cards().cards
+        let cards = try await api.cards().cards
         result(cards.map { card in
           var value: [String: Any] = [
             "id": card.id,
@@ -60,7 +66,7 @@ final class PrismNativeBridge {
           let position = try await location.currentLocation()
           body?["location"] = ["lat": position.latitude, "lng": position.longitude, "accuracy": position.accuracy]
         }
-        let data = try await PrismAPI.shared.requestJSON(path: path, body: body)
+        let data = try await api.requestJSON(path: path, body: body)
         result(String(data: data, encoding: .utf8))
       case "loginMachine":
         guard let arguments = call.arguments as? [String: Any],
@@ -71,7 +77,7 @@ final class PrismNativeBridge {
         }
         let position: LocationSample? = arguments["requireLocation"] as? Bool == false ? nil : try await location.currentLocation()
         channel?.invokeMethod("machineLoginSending", arguments: nil)
-        let response = try await PrismAPI.shared.loginMachine(MachineLoginRequest(
+        let response = try await api.loginMachine(MachineLoginRequest(
           cardId: cardId,
           lat: position?.latitude,
           lng: position?.longitude,

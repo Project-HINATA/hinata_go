@@ -56,10 +56,21 @@ void main() {
           for (var entry = 0; entry < 3; entry++) {
             if (entry == 1) router.go('/prism/shop/machine');
             if (entry == 2) {
-              invocation.handleURL('https://link.neri.moe/t/shop/machine');
+              invocation.handleURL('https://link-beta.neri.moe/t/shop/machine');
             }
             await tester.pumpAndSettle();
             expect(find.byType(PrismMachineLoginPage), findsOneWidget);
+            if (entry == 2) {
+              expect(
+                tester
+                    .widget<PrismMachineLoginPage>(
+                      find.byType(PrismMachineLoginPage),
+                    )
+                    .origin
+                    .toString(),
+                'https://link-beta.neri.moe',
+              );
+            }
             await tester.tap(find.byTooltip('返回主页'));
             await tester.pumpAndSettle();
 

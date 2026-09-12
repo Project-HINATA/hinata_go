@@ -32,20 +32,32 @@ enum PrismAPIError: LocalizedError {
 final class PrismAPI {
   static let shared = PrismAPI()
 
-  private let baseURL: URL = {
+  static let defaultOrigin: URL = {
     #if DEBUG
     if let origin = ProcessInfo.processInfo.environment["PRISM_API_ORIGIN"], let url = URL(string: origin), ["localhost", "127.0.0.1"].contains(url.host ?? "") { return url }
     #endif
     return URL(string: "https://link.neri.moe")!
   }()
+  let baseURL: URL
   private let session: URLSession
   private let decoder = JSONDecoder()
   private let encoder = JSONEncoder()
 
-  init(configuration: URLSessionConfiguration = .default) {
+  init(configuration: URLSessionConfiguration = .ephemeral, origin: URL = PrismAPI.defaultOrigin) {
+    self.baseURL = origin
     configuration.httpCookieAcceptPolicy = .always
     configuration.httpShouldSetCookies = true
     session = URLSession(configuration: configuration)
+  }
+
+  func atOrigin(_ origin: URL) -> PrismAPI {
+    #if DEBUG
+    if ["localhost", "127.0.0.1"].contains(Self.defaultOrigin.host ?? "") { return self }
+    #endif
+    if baseURL == origin { return self }
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = session.configuration.protocolClasses
+    return PrismAPI(configuration: configuration, origin: origin)
   }
 
   func startMachineSession(shopCode: String, publicId: String) async throws -> MachineSessionResponse {
@@ -85,7 +97,7 @@ final class PrismAPI {
   }
 
   func webFallbackURL(ticket: String) -> URL? {
-    URL(string: "https://link.neri.moe/m?ticket=\(ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ticket)")
+    URL(string: "\(baseURL.absoluteString)/m?ticket=\(ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ticket)")
   }
 
   func requestJSON(path: String, body: [String: Any]? = nil) async throws -> Data {
@@ -108,7 +120,7 @@ final class PrismAPI {
   }
 
   private func makeRequest(path: String, method: String = "GET") throws -> URLRequest {
-    guard path.hasPrefix("/api/v1/"), !path.contains(".."), let url = URL(string: path, relativeTo: baseURL)?.absoluteURL, url.host == baseURL.host else {
+    guard path.hasPrefix("/api/v1/"), !path.contains(".."), let url = URL(string: path, relativeTo: baseURL)?.absoluteURL, url.scheme == baseURL.scheme, url.host == baseURL.host, url.port == baseURL.port else {
       throw PrismAPIError.invalidURL
     }
     var request = URLRequest(url: url)

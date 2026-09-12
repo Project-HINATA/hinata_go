@@ -357,12 +357,16 @@ class PrismAccountMenu extends ConsumerWidget {
                 onLogout();
                 return;
               }
+              final container = ProviderScope.containerOf(context);
               await showModalBottomSheet<void>(
                 context: context,
                 isScrollControlled: true,
                 useSafeArea: true,
                 showDragHandle: true,
-                builder: (_) => PrismAccountSheet(section: section),
+                builder: (_) => UncontrolledProviderScope(
+                  container: container,
+                  child: PrismAccountSheet(section: section),
+                ),
               );
             },
       child: Row(

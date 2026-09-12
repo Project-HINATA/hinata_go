@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:hinata_go/features/prism/services/prism_api.dart';
 
 class PrismNativeService {
+  PrismNativeService({Uri? origin}) : origin = origin ?? PrismAPI.defaultOrigin;
+  final Uri origin;
   static const _channel = MethodChannel('moe.neri.hinatago/prism_native');
 
   static bool get isAvailable =>
@@ -18,15 +20,23 @@ class PrismNativeService {
   static bool get supportsNativeMunet => isAvailable;
 
   Future<void> authenticateWithPasskey() async {
-    await _channel.invokeMethod<void>('authenticatePasskey');
+    await _channel.invokeMethod<void>('authenticatePasskey', {
+      'origin': origin.toString(),
+    });
   }
 
   Future<void> authenticateWithMunet() async {
-    await _channel.invokeMethod<void>('authenticateMunet');
+    await _channel.invokeMethod<void>('authenticateMunet', {
+      'origin': origin.toString(),
+    });
   }
 
   Future<List<PrismCard>> loadCards() async {
-    final raw = await _channel.invokeMethod<List<dynamic>>('cards') ?? const [];
+    final raw =
+        await _channel.invokeMethod<List<dynamic>>('cards', {
+          'origin': origin.toString(),
+        }) ??
+        const [];
     return raw
         .map(
           (value) => PrismCard.fromJson(
@@ -42,6 +52,7 @@ class PrismNativeService {
     bool requireLocation = false,
   }) async {
     final raw = await _channel.invokeMethod<String>('request', {
+      'origin': origin.toString(),
       'path': path,
       if (body != null) 'body': jsonEncode(body),
       'requireLocation': requireLocation,
@@ -60,6 +71,7 @@ class PrismNativeService {
     });
     try {
       final raw = await _channel.invokeMethod<String>('loginMachine', {
+        'origin': origin.toString(),
         'cardId': cardId,
         'ticket': ticket,
         'requireLocation': requireLocation,

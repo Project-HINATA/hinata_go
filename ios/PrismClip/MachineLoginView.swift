@@ -109,7 +109,7 @@ private struct ClipSessionPage: View {
   var body: some View {
     VStack(spacing: 52) {
       if let machine = model.machine {
-        ClipShopHero(shop: machine.shop, machineName: machine.name).id(machine.shop.heroUrl)
+        ClipShopHero(shop: machine.shop, machineName: machine.name, origin: model.api.baseURL).id(machine.shop.heroUrl)
 
       }
 
@@ -175,7 +175,7 @@ private struct ClipSessionPage: View {
       if model.cards.isEmpty {
         Text("还没有可用卡片，请先在 Prism 添加卡片")
           .foregroundStyle(.secondary).multilineTextAlignment(.center)
-        Link("添加卡片", destination: URL(string: "https://link.neri.moe/cards")!)
+        Link("添加卡片", destination: model.api.baseURL.appendingPathComponent("cards"))
           .buttonStyle(ClipActionStyle()).padding(.top, 16)
         Button("重新加载卡片") { Task { await model.reloadCards() } }
           .buttonStyle(ClipActionStyle()).padding(.top, 24)
@@ -233,10 +233,11 @@ private struct ClipSessionPage: View {
 struct ClipShopHero: View {
   let shop: Shop
   let machineName: String
+  var origin: URL = PrismAPI.defaultOrigin
   @State private var image: UIImage?
 
   private var url: URL? {
-    shop.heroUrl.flatMap { URL(string: $0, relativeTo: URL(string: "https://link.neri.moe"))?.absoluteURL }
+    shop.heroUrl.flatMap { URL(string: $0, relativeTo: origin)?.absoluteURL }
   }
 
   // A separate public-image cache; authentication and machine sessions stay untouched.

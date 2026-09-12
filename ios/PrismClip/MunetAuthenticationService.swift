@@ -9,8 +9,9 @@ final class MunetAuthenticationService: NSObject, ASWebAuthenticationPresentatio
   private var session: ASWebAuthenticationSession?
   private var continuation: CheckedContinuation<String, Error>?
 
-  func authenticate() async throws -> String {
-    guard let url = URL(string: "https://link.neri.moe/api/v1/appclip/auth/start") else {
+  func authenticate(origin: URL) async throws -> String {
+    guard continuation == nil else { throw PrismAPIError.server("登录正在进行") }
+    guard let url = URL(string: "/api/v1/appclip/auth/start", relativeTo: origin)?.absoluteURL else {
       throw PrismAPIError.invalidURL
     }
 

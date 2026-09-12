@@ -35,8 +35,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final publicId = invocationService.pendingPublicId;
       if (shopCode == null || publicId == null) return null;
       final target =
-          '/prism/${Uri.encodeComponent(shopCode)}/${Uri.encodeComponent(publicId)}';
-      return state.uri.path == target ? null : target;
+          '/prism/${Uri.encodeComponent(shopCode)}/${Uri.encodeComponent(publicId)}?origin=${Uri.encodeComponent(invocationService.pendingOrigin!.origin)}';
+      return state.uri.toString() == target ? null : target;
     },
     routes: [
       GoRoute(
@@ -126,8 +126,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/t/:shopCode/:publicId',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => PrismMachineLoginPage(
+          origin: state.uri.hasAuthority
+              ? Uri.parse(state.uri.origin)
+              : (state.uri.queryParameters['origin'] == null
+                    ? null
+                    : Uri.parse(state.uri.queryParameters['origin']!)),
           key: ValueKey(
-            '${state.pathParameters['shopCode']}/${state.pathParameters['publicId']}',
+            '${state.uri.host}/${state.uri.query}/${state.pathParameters['shopCode']}/${state.pathParameters['publicId']}',
           ),
           shopCode: state.pathParameters['shopCode']!,
           publicId: state.pathParameters['publicId']!,
@@ -137,8 +142,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/prism/:shopCode/:publicId',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => PrismMachineLoginPage(
+          origin: state.uri.hasAuthority
+              ? Uri.parse(state.uri.origin)
+              : (state.uri.queryParameters['origin'] == null
+                    ? null
+                    : Uri.parse(state.uri.queryParameters['origin']!)),
           key: ValueKey(
-            '${state.pathParameters['shopCode']}/${state.pathParameters['publicId']}',
+            '${state.uri.host}/${state.uri.query}/${state.pathParameters['shopCode']}/${state.pathParameters['publicId']}',
           ),
           shopCode: state.pathParameters['shopCode']!,
           publicId: state.pathParameters['publicId']!,
