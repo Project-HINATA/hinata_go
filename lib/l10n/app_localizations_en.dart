@@ -40,7 +40,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get github => 'GitHub';
 
   @override
-  String get arcadeLink => 'Arcade Link';
+  String get prism => 'PRiSM';
 
   @override
   String updateToVersion(String version) {
@@ -883,174 +883,167 @@ class AppLocalizationsEn extends AppLocalizations {
       'Card writing was cancelled before any data was changed';
 
   @override
-  String get arcadeLinkSelectCard => 'Select a card';
+  String get prismSelectCard => 'Select a card';
 
   @override
-  String get arcadeLinkSignOut => 'Sign out';
+  String get prismSignOut => 'Sign out';
 
   @override
-  String get arcadeLinkSignOutConfirm => 'Sign out?';
+  String get prismSignOutConfirm => 'Sign out?';
 
   @override
-  String get arcadeLinkSignOutAction => 'Sign out';
+  String get prismSignOutAction => 'Sign out';
 
   @override
-  String get arcadeLinkOk => 'OK';
+  String get prismOk => 'OK';
 
   @override
-  String get arcadeLinkRetry => 'Retry';
+  String get prismRetry => 'Retry';
 
   @override
-  String get arcadeLinkContinueLogin => 'Continue sign-in';
+  String get prismContinueLogin => 'Continue sign-in';
 
   @override
-  String get arcadeLinkConnectingMunet => 'Connecting to MuNET…';
+  String get prismConnectingMunet => 'Connecting to MuNET…';
 
   @override
-  String get arcadeLinkSignInMunet => 'Sign in with MuNET';
+  String get prismSignInMunet => 'Sign in with MuNET';
 
   @override
-  String get arcadeLinkVerifyingPasskey => 'Verifying passkey…';
+  String get prismVerifyingPasskey => 'Verifying passkey…';
 
   @override
-  String get arcadeLinkSignInPasskey => 'Sign in with a passkey';
+  String get prismSignInPasskey => 'Sign in with a passkey';
 
   @override
-  String get arcadeLinkPasskeyOnWeb => 'Use a passkey on the web';
+  String get prismPasskeyOnWeb => 'Use a passkey on the web';
 
   @override
-  String get arcadeLinkReturnAfterAuth =>
+  String get prismReturnAfterAuth =>
       'After signing in, return here to reload your cards.';
 
   @override
-  String get arcadeLinkReloadCards => 'Reload cards';
+  String get prismReloadCards => 'Reload cards';
 
   @override
-  String get arcadeLinkLoadingCards => 'Loading cards';
+  String get prismLoadingCards => 'Loading cards';
 
   @override
-  String get arcadeLinkCardsFailed => 'Could not load cards';
+  String get prismCardsFailed => 'Could not load cards';
 
   @override
-  String get arcadeLinkNoCards =>
-      'No cards available. Add a card in PRiSM first.';
+  String get prismNoCards => 'No cards available. Add a card in PRiSM first.';
 
   @override
-  String get arcadeLinkLoading => 'Loading';
+  String get prismLoading => 'Loading';
 
   @override
-  String get arcadeLinkSessionFailed => 'Could not start machine session';
+  String get prismSessionFailed => 'Could not start machine session';
 
   @override
-  String get arcadeLinkExpired => 'This session has expired';
+  String get prismExpired => 'This session has expired';
 
   @override
-  String get arcadeLinkScanAgain =>
-      'Tap the NFC tag or scan the QR code again.';
+  String get prismScanAgain => 'Tap the NFC tag or scan the QR code again.';
 
   @override
-  String get arcadeLinkCompleted => 'Sign-in complete';
+  String get prismCompleted => 'Sign-in complete';
 
   @override
-  String get arcadeLinkClosePage => 'You can close this page';
+  String get prismClosePage => 'You can close this page';
 
   @override
-  String get arcadeLinkSignedIn => 'Signed in';
+  String get prismSignedIn => 'Signed in';
 
   @override
-  String get arcadeLinkSigningIn => 'Signing in…';
+  String get prismSigningIn => 'Signing in…';
 
   @override
-  String get arcadeLinkLocating => 'Checking location…';
+  String get prismLocating => 'Checking location…';
 
   @override
-  String arcadeLinkCardEnding(String digits) {
+  String prismCardEnding(String digits) {
     return 'Ending in $digits';
   }
 
   @override
-  String get arcadeLinkBackHome => 'Back to home';
+  String get prismBackHome => 'Back to home';
 
   @override
-  String get arcadeLinkMachineInfoFailed =>
-      'Could not load machine information';
+  String get prismMachineInfoFailed => 'Could not load machine information';
 
   @override
-  String get arcadeLinkOpenWebFailed =>
+  String get prismOpenWebFailed =>
       'Could not open the web page. Please try again.';
 
   @override
-  String get arcadeLinkOpenMunetFailed => 'Could not open MuNET sign-in';
+  String get prismOpenMunetFailed => 'Could not open MuNET sign-in';
 
   @override
-  String get arcadeLinkLocationDenied =>
+  String get prismLocationDenied =>
       'Allow location access to confirm you are at the arcade.';
 
   @override
-  String get arcadeLinkLocationFailed => 'Could not determine your location';
+  String get prismLocationFailed => 'Could not determine your location';
 
   @override
-  String get arcadeLinkLocationTimeout =>
-      'Location timed out. Please try again.';
+  String get prismLocationTimeout => 'Location timed out. Please try again.';
 
   @override
-  String get arcadeLinkLocationBusy =>
+  String get prismLocationBusy =>
       'Getting your location. Please try again shortly.';
 
   @override
-  String get arcadeLinkAtArcade => 'Please sign in when you are at the arcade.';
+  String get prismAtArcade => 'Please sign in when you are at the arcade.';
 
   @override
-  String get arcadeLinkMachineUnavailable =>
+  String get prismMachineUnavailable =>
       'This machine is unavailable. Please try again later.';
 
   @override
-  String get arcadeLinkNetworkFailed =>
+  String get prismNetworkFailed =>
       'Connection failed. Check your network and try again.';
 
   @override
-  String get arcadeLinkOperationFailed =>
+  String get prismOperationFailed =>
       'Something went wrong. Please try again later.';
 
   @override
-  String get arcadeLinkRateLimited =>
-      'Too many requests. Please try again later.';
+  String get prismRateLimited => 'Too many requests. Please try again later.';
 
   @override
-  String get arcadeLinkRestricted => 'This action is currently unavailable';
+  String get prismRestricted => 'This action is currently unavailable';
 
   @override
-  String get arcadeLinkAccountUnavailable =>
-      'This account is currently unavailable';
+  String get prismAccountUnavailable => 'This account is currently unavailable';
 
   @override
-  String get arcadeLinkCardUnavailable =>
-      'This card is unavailable or has expired';
+  String get prismCardUnavailable => 'This card is unavailable or has expired';
 
   @override
-  String get arcadeLinkSignInRequired => 'Please sign in first';
+  String get prismSignInRequired => 'Please sign in first';
 
   @override
-  String get arcadeLinkAuthExpired =>
+  String get prismAuthExpired =>
       'Authorization code expired. Please sign in again.';
 
   @override
-  String get arcadeLinkMunetFailed => 'MuNET sign-in failed';
+  String get prismMunetFailed => 'MuNET sign-in failed';
 
   @override
-  String get arcadeLinkPasskeyFailed => 'Passkey verification failed';
+  String get prismPasskeyFailed => 'Passkey verification failed';
 
   @override
-  String get arcadeLinkPasskeyExpired => 'The passkey request has expired';
+  String get prismPasskeyExpired => 'The passkey request has expired';
 
   @override
-  String get arcadeLinkPasskeyUnknown => 'Passkey not recognized';
+  String get prismPasskeyUnknown => 'Passkey not recognized';
 
   @override
-  String get arcadeLinkInvalidURL => 'Invalid PRiSM URL';
+  String get prismInvalidURL => 'Invalid PRiSM URL';
 
   @override
-  String get arcadeLinkInvalidResponse => 'Invalid response from ArcadeLink';
+  String get prismInvalidResponse => 'Invalid response from PRiSM';
 
   @override
   String get prismRefresh => 'Refresh';

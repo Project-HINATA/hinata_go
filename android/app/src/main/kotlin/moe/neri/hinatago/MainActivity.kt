@@ -13,7 +13,7 @@ import io.flutter.plugin.common.MethodChannel
 import android.util.Log
 
 class MainActivity : FlutterActivity() {
-    private var arcadeLinkBridge: ArcadeLinkNativeBridge? = null
+    private var prismBridge: PrismNativeBridge? = null
     private var pendingTag: Tag? = null
     private val nfcChannel = "moe.neri.hinatago/nfc_launcher"
     private val appUpdateChannel = "moe.neri.hinatago/app_update"
@@ -21,7 +21,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        arcadeLinkBridge = ArcadeLinkNativeBridge(this).also {
+        prismBridge = PrismNativeBridge(this).also {
             it.attach(flutterEngine.dartExecutor.binaryMessenger)
         }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, nfcChannel).setMethodCallHandler { call, result ->
@@ -61,7 +61,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (arcadeLinkBridge?.handleAuthCallback(intent) == true) return
+        if (prismBridge?.handleAuthCallback(intent) == true) return
         handleNfcIntent(intent)
     }
 
@@ -70,14 +70,14 @@ class MainActivity : FlutterActivity() {
         permissions: Array<out String>,
         grantResults: IntArray,
     ) {
-        if (arcadeLinkBridge?.handlePermissionResult(requestCode, grantResults) != true) {
+        if (prismBridge?.handlePermissionResult(requestCode, grantResults) != true) {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
     }
 
     override fun onDestroy() {
-        arcadeLinkBridge?.dispose()
-        arcadeLinkBridge = null
+        prismBridge?.dispose()
+        prismBridge = null
         super.onDestroy()
     }
 

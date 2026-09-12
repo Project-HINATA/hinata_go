@@ -8,11 +8,11 @@ class SceneDelegate: FlutterSceneDelegate {
     options connectionOptions: UIScene.ConnectionOptions,
   ) {
     super.scene(scene, willConnectTo: session, options: connectionOptions)
-    connectionOptions.userActivities.forEach { ArcadeLinkURLBridge.shared.handle($0) }
+    connectionOptions.userActivities.forEach { PrismURLBridge.shared.handle($0) }
   }
 
   override func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
-    ArcadeLinkURLBridge.shared.handle(userActivity)
+    PrismURLBridge.shared.handle(userActivity)
     super.scene(scene, continue: userActivity)
   }
 }

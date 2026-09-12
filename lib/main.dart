@@ -11,12 +11,12 @@ import 'package:hinata_go/providers/nfc_provider.dart';
 import 'package:hinata_go/providers/settings_provider.dart';
 import 'package:hinata_go/providers/storage_provider.dart';
 import 'package:hinata_go/services/notification_service.dart';
-import 'services/arcadelink_invocation_service.dart';
+import 'package:hinata_go/features/prism/services/prism_invocation_service.dart';
 import 'navigation/router.dart'; // Keep this import as it's not explicitly removed or replaced by the instruction
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  ArcadeLinkInvocationService.instance.initialize();
+  PrismInvocationService.instance.initialize();
 
   final prefs = await SharedPreferences.getInstance();
 

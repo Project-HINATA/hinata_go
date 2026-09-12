@@ -12,7 +12,7 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    ArcadeLinkURLBridge.shared.attach(to: engineBridge.applicationRegistrar.messenger())
-    ArcadeLinkNativeBridge.shared.attach(to: engineBridge.applicationRegistrar.messenger())
+    PrismURLBridge.shared.attach(to: engineBridge.applicationRegistrar.messenger())
+    PrismNativeBridge.shared.attach(to: engineBridge.applicationRegistrar.messenger())
   }
 }

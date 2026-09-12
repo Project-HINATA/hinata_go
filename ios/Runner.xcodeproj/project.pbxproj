@@ -11,7 +11,7 @@
 		AA1100000000000000000003 /* Runner InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000013 /* Runner InfoPlist.xcstrings */; };
 		AA1100000000000000000002 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000012 /* InfoPlist.xcstrings */; };
 		AA1100000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000011 /* Localizable.xcstrings */; };
-		10688FCDEB235C5D7D61F84D /* ArcadeLinkClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = FA100BF03C7C425DBFABB85A /* ArcadeLinkClip.app */; };
+		10688FCDEB235C5D7D61F84D /* PrismClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = FA100BF03C7C425DBFABB85A /* PrismClip.app */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -21,23 +21,23 @@
 		74DE941C77D94C35809D93CD /* MachineLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF6F6518A13450E81934F3B /* MachineLoginViewModel.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
-		7B07656CE2BE43CFBB961A0B /* ArcadeLinkAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9717F4222543435DA2825968 /* ArcadeLinkAPI.swift */; };
+		7B07656CE2BE43CFBB961A0B /* PrismAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9717F4222543435DA2825968 /* PrismAPI.swift */; };
 		85CE8E4C908F471AA82371C9 /* MachineLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6B19610946F463EA0AA012F /* MachineLoginView.swift */; };
-		8DDEA6470F304D2E85B819AD /* ArcadeLinkClipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95064489658D45939E5DA68D /* ArcadeLinkClipApp.swift */; };
+		8DDEA6470F304D2E85B819AD /* PrismClipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95064489658D45939E5DA68D /* PrismClipApp.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		B043ADAE26D84ED38AA21563 /* PasskeyAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */; };
-		B1C000000000000000000001 /* ../ArcadeLinkClip/ArcadeLinkAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000001 /* ../ArcadeLinkClip/ArcadeLinkAPI.swift */; };
-		B1C000000000000000000002 /* ../ArcadeLinkClip/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000002 /* ../ArcadeLinkClip/LocationService.swift */; };
-		B1C000000000000000000003 /* ../ArcadeLinkClip/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000003 /* ../ArcadeLinkClip/Models.swift */; };
-		B1C000000000000000000004 /* ../ArcadeLinkClip/MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000004 /* ../ArcadeLinkClip/MunetAuthenticationService.swift */; };
-		B1C000000000000000000005 /* ArcadeLinkNativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000001 /* ArcadeLinkNativeBridge.swift */; };
+		B1C000000000000000000001 /* ../PrismClip/PrismAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000001 /* ../PrismClip/PrismAPI.swift */; };
+		B1C000000000000000000002 /* ../PrismClip/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000002 /* ../PrismClip/LocationService.swift */; };
+		B1C000000000000000000003 /* ../PrismClip/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000003 /* ../PrismClip/Models.swift */; };
+		B1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift */; };
+		B1C000000000000000000005 /* PrismNativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000001 /* PrismNativeBridge.swift */; };
 	B1C000000000000000000006 /* MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000002 /* MunetAuthenticationService.swift */; };
 	B1C000000000000000000007 /* PasskeyAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */; };
 		CDC41510304F0F2B000BCB4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		E0C7EC6A900846209454DF9E /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF425FBD0BA44528796FEA8 /* LocationService.swift */; };
-		E2C01C24144A55EDAC6C5ADC /* ArcadeLinkURLBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AF5A4F2ED44122568D6750 /* ArcadeLinkURLBridge.swift */; };
+		E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,7 +46,7 @@
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 536456333E034E609C9EF501;
-			remoteInfo = ArcadeLinkClip;
+			remoteInfo = PrismClip;
 		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -74,7 +74,7 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/AppClips";
 			dstSubfolderSpec = 16;
 			files = (
-				10688FCDEB235C5D7D61F84D /* ArcadeLinkClip.app in Embed App Clips */,
+				10688FCDEB235C5D7D61F84D /* PrismClip.app in Embed App Clips */,
 			);
 			name = "Embed App Clips";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -88,14 +88,14 @@
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		1CE5A12DC74545CC94497385 /* InvocationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationParser.swift; sourceTree = "<group>"; };
-		29AF5A4F2ED44122568D6750 /* ArcadeLinkURLBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeLinkURLBridge.swift; sourceTree = "<group>"; };
-		2A1C00000000000000000001 /* ArcadeLinkNativeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeLinkNativeBridge.swift; sourceTree = "<group>"; };
+		29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismURLBridge.swift; sourceTree = "<group>"; };
+		2A1C00000000000000000001 /* PrismNativeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismNativeBridge.swift; sourceTree = "<group>"; };
 		2A1C00000000000000000002 /* MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MunetAuthenticationService.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		3B3967171E833CAA004F5970 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
-		528A9C250BB7499AA1C86919 /* ArcadeLinkClip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArcadeLinkClip.entitlements; sourceTree = "<group>"; };
+		528A9C250BB7499AA1C86919 /* PrismClip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrismClip.entitlements; sourceTree = "<group>"; };
 		5FF425FBD0BA44528796FEA8 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		5FF6F6518A13450E81934F3B /* MachineLoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineLoginViewModel.swift; sourceTree = "<group>"; };
 		68E4FBE53FF24A51BEABF086 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -104,8 +104,8 @@
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
-		95064489658D45939E5DA68D /* ArcadeLinkClipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeLinkClipApp.swift; sourceTree = "<group>"; };
-		9717F4222543435DA2825968 /* ArcadeLinkAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeLinkAPI.swift; sourceTree = "<group>"; };
+		95064489658D45939E5DA68D /* PrismClipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismClipApp.swift; sourceTree = "<group>"; };
+		9717F4222543435DA2825968 /* PrismAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismAPI.swift; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -116,11 +116,11 @@
 		9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasskeyAuthenticationService.swift; sourceTree = "<group>"; };
 		A5A69BF1B7CB460C94E4212E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A6B19610946F463EA0AA012F /* MachineLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineLoginView.swift; sourceTree = "<group>"; };
-		D1C000000000000000000001 /* ../ArcadeLinkClip/ArcadeLinkAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ArcadeLinkClip/ArcadeLinkAPI.swift; sourceTree = "<group>"; };
-		D1C000000000000000000002 /* ../ArcadeLinkClip/LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ArcadeLinkClip/LocationService.swift; sourceTree = "<group>"; };
-		D1C000000000000000000003 /* ../ArcadeLinkClip/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ArcadeLinkClip/Models.swift; sourceTree = "<group>"; };
-		D1C000000000000000000004 /* ../ArcadeLinkClip/MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ArcadeLinkClip/MunetAuthenticationService.swift; sourceTree = "<group>"; };
-		FA100BF03C7C425DBFABB85A /* ArcadeLinkClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArcadeLinkClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D1C000000000000000000001 /* ../PrismClip/PrismAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/PrismAPI.swift; sourceTree = "<group>"; };
+		D1C000000000000000000002 /* ../PrismClip/LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/LocationService.swift; sourceTree = "<group>"; };
+		D1C000000000000000000003 /* ../PrismClip/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/Models.swift; sourceTree = "<group>"; };
+		D1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/MunetAuthenticationService.swift; sourceTree = "<group>"; };
+		FA100BF03C7C425DBFABB85A /* PrismClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PrismClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,13 +157,13 @@
 			path = RunnerTests;
 			sourceTree = "<group>";
 		};
-		5E2F2F514F92411DB9A621D6 /* ArcadeLinkClip */ = {
+		5E2F2F514F92411DB9A621D6 /* PrismClip */ = {
 			isa = PBXGroup;
 			children = (
-				95064489658D45939E5DA68D /* ArcadeLinkClipApp.swift */,
+				95064489658D45939E5DA68D /* PrismClipApp.swift */,
 				AA1100000000000000000011 /* Localizable.xcstrings */,
 				AA1100000000000000000012 /* InfoPlist.xcstrings */,
-				9717F4222543435DA2825968 /* ArcadeLinkAPI.swift */,
+				9717F4222543435DA2825968 /* PrismAPI.swift */,
 				1CE5A12DC74545CC94497385 /* InvocationParser.swift */,
 				5FF425FBD0BA44528796FEA8 /* LocationService.swift */,
 				68E4FBE53FF24A51BEABF086 /* Models.swift */,
@@ -171,10 +171,10 @@
 				5FF6F6518A13450E81934F3B /* MachineLoginViewModel.swift */,
 				9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */,
 				2A1C00000000000000000002 /* MunetAuthenticationService.swift */,
-				528A9C250BB7499AA1C86919 /* ArcadeLinkClip.entitlements */,
+				528A9C250BB7499AA1C86919 /* PrismClip.entitlements */,
 				A5A69BF1B7CB460C94E4212E /* Info.plist */,
 			);
-			path = ArcadeLinkClip;
+			path = PrismClip;
 			sourceTree = "<group>";
 		};
 		77720948BB04B7975B2E6226 /* Pods */ = {
@@ -201,7 +201,7 @@
 			children = (
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
-				5E2F2F514F92411DB9A621D6 /* ArcadeLinkClip */,
+				5E2F2F514F92411DB9A621D6 /* PrismClip */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				77720948BB04B7975B2E6226 /* Pods */,
@@ -212,7 +212,7 @@
 			isa = PBXGroup;
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
-				FA100BF03C7C425DBFABB85A /* ArcadeLinkClip.app */,
+				FA100BF03C7C425DBFABB85A /* PrismClip.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 			);
 			name = Products;
@@ -230,13 +230,13 @@
 				3B3967171E833CAA004F5970 /* Runner.entitlements */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
-				29AF5A4F2ED44122568D6750 /* ArcadeLinkURLBridge.swift */,
-				2A1C00000000000000000001 /* ArcadeLinkNativeBridge.swift */,
+				29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */,
+				2A1C00000000000000000001 /* PrismNativeBridge.swift */,
 				AA1100000000000000000013 /* Runner InfoPlist.xcstrings */,
-				D1C000000000000000000001 /* ../ArcadeLinkClip/ArcadeLinkAPI.swift */,
-				D1C000000000000000000002 /* ../ArcadeLinkClip/LocationService.swift */,
-				D1C000000000000000000003 /* ../ArcadeLinkClip/Models.swift */,
-				D1C000000000000000000004 /* ../ArcadeLinkClip/MunetAuthenticationService.swift */,
+				D1C000000000000000000001 /* ../PrismClip/PrismAPI.swift */,
+				D1C000000000000000000002 /* ../PrismClip/LocationService.swift */,
+				D1C000000000000000000003 /* ../PrismClip/Models.swift */,
+				D1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -263,9 +263,9 @@
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		536456333E034E609C9EF501 /* ArcadeLinkClip */ = {
+		536456333E034E609C9EF501 /* PrismClip */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "ArcadeLinkClip" */;
+			buildConfigurationList = D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "PrismClip" */;
 			buildPhases = (
 				8ECE75F7F54840CE98A6AB36 /* Sources */,
 				2E7B08B9EBEF453882BC5093 /* Frameworks */,
@@ -275,9 +275,9 @@
 			);
 			dependencies = (
 			);
-			name = ArcadeLinkClip;
-			productName = ArcadeLinkClip;
-			productReference = FA100BF03C7C425DBFABB85A /* ArcadeLinkClip.app */;
+			name = PrismClip;
+			productName = PrismClip;
+			productReference = FA100BF03C7C425DBFABB85A /* PrismClip.app */;
 			productType = "com.apple.product-type.application.on-demand-install-capable";
 		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
@@ -347,7 +347,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
-				536456333E034E609C9EF501 /* ArcadeLinkClip */,
+				536456333E034E609C9EF501 /* PrismClip */,
 			);
 		};
 /* End PBXProject section */
@@ -432,8 +432,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DDEA6470F304D2E85B819AD /* ArcadeLinkClipApp.swift in Sources */,
-				7B07656CE2BE43CFBB961A0B /* ArcadeLinkAPI.swift in Sources */,
+				8DDEA6470F304D2E85B819AD /* PrismClipApp.swift in Sources */,
+				7B07656CE2BE43CFBB961A0B /* PrismAPI.swift in Sources */,
 				4EFBD8768DB3455FB7560F91 /* InvocationParser.swift in Sources */,
 				E0C7EC6A900846209454DF9E /* LocationService.swift in Sources */,
 				40A355512C794E78A542B262 /* Models.swift in Sources */,
@@ -451,12 +451,12 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
-				E2C01C24144A55EDAC6C5ADC /* ArcadeLinkURLBridge.swift in Sources */,
-				B1C000000000000000000005 /* ArcadeLinkNativeBridge.swift in Sources */,
-				B1C000000000000000000001 /* ../ArcadeLinkClip/ArcadeLinkAPI.swift in Sources */,
-				B1C000000000000000000002 /* ../ArcadeLinkClip/LocationService.swift in Sources */,
-				B1C000000000000000000003 /* ../ArcadeLinkClip/Models.swift in Sources */,
-				B1C000000000000000000004 /* ../ArcadeLinkClip/MunetAuthenticationService.swift in Sources */,
+				E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */,
+				B1C000000000000000000005 /* PrismNativeBridge.swift in Sources */,
+				B1C000000000000000000001 /* ../PrismClip/PrismAPI.swift in Sources */,
+				B1C000000000000000000002 /* ../PrismClip/LocationService.swift in Sources */,
+				B1C000000000000000000003 /* ../PrismClip/Models.swift in Sources */,
+				B1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift in Sources */,
 				B1C000000000000000000007 /* PasskeyAuthenticationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -471,7 +471,7 @@
 		};
 		BC786F95A1F694CF2AB8CD10 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 536456333E034E609C9EF501 /* ArcadeLinkClip */;
+			target = 536456333E034E609C9EF501 /* PrismClip */;
 			targetProxy = 267667C52F32B900379558AA /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -636,20 +636,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = ArcadeLinkClip/ArcadeLinkClip.entitlements;
+				CODE_SIGN_ENTITLEMENTS = PrismClip/PrismClip.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = XKKMJBTHX5;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = ArcadeLinkClip/Info.plist;
+				INFOPLIST_FILE = PrismClip/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.ArcadeLink;
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.prism;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -666,20 +666,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = ArcadeLinkClip/ArcadeLinkClip.entitlements;
+				CODE_SIGN_ENTITLEMENTS = PrismClip/PrismClip.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = XKKMJBTHX5;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = ArcadeLinkClip/Info.plist;
+				INFOPLIST_FILE = PrismClip/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.ArcadeLink;
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.prism;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -697,20 +697,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = ArcadeLinkClip/ArcadeLinkClip.entitlements;
+				CODE_SIGN_ENTITLEMENTS = PrismClip/PrismClip.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = XKKMJBTHX5;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = ArcadeLinkClip/Info.plist;
+				INFOPLIST_FILE = PrismClip/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.ArcadeLink;
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.prism;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -934,7 +934,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "ArcadeLinkClip" */ = {
+		D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "PrismClip" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3EC0B25A1D5A480914150A40 /* Debug */,

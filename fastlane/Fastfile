@@ -11,7 +11,7 @@ platform :ios do
       in_house: false
     )
 
-    ["moe.neri.hinatago", "moe.neri.hinatago.ArcadeLink"].each do |bundle_id|
+    ["moe.neri.hinatago", "moe.neri.hinatago.prism"].each do |bundle_id|
       get_provisioning_profile(
         api_key: api_key,
         app_identifier: bundle_id,

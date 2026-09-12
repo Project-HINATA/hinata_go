@@ -152,11 +152,11 @@ abstract class AppLocalizations {
   /// **'GitHub'**
   String get github;
 
-  /// Settings entry for the Arcade Link website
+  /// Settings entry for the PRiSM website
   ///
   /// In en, this message translates to:
-  /// **'Arcade Link'**
-  String get arcadeLink;
+  /// **'PRiSM'**
+  String get prism;
 
   /// Button text to initiate a firmware/software update
   ///
@@ -1682,311 +1682,311 @@ abstract class AppLocalizations {
   /// **'Card writing was cancelled before any data was changed'**
   String get cardWriteCancelled;
 
-  /// No description provided for @arcadeLinkSelectCard.
+  /// No description provided for @prismSelectCard.
   ///
   /// In en, this message translates to:
   /// **'Select a card'**
-  String get arcadeLinkSelectCard;
+  String get prismSelectCard;
 
-  /// No description provided for @arcadeLinkSignOut.
+  /// No description provided for @prismSignOut.
   ///
   /// In en, this message translates to:
   /// **'Sign out'**
-  String get arcadeLinkSignOut;
+  String get prismSignOut;
 
-  /// No description provided for @arcadeLinkSignOutConfirm.
+  /// No description provided for @prismSignOutConfirm.
   ///
   /// In en, this message translates to:
   /// **'Sign out?'**
-  String get arcadeLinkSignOutConfirm;
+  String get prismSignOutConfirm;
 
-  /// No description provided for @arcadeLinkSignOutAction.
+  /// No description provided for @prismSignOutAction.
   ///
   /// In en, this message translates to:
   /// **'Sign out'**
-  String get arcadeLinkSignOutAction;
+  String get prismSignOutAction;
 
-  /// No description provided for @arcadeLinkOk.
+  /// No description provided for @prismOk.
   ///
   /// In en, this message translates to:
   /// **'OK'**
-  String get arcadeLinkOk;
+  String get prismOk;
 
-  /// No description provided for @arcadeLinkRetry.
+  /// No description provided for @prismRetry.
   ///
   /// In en, this message translates to:
   /// **'Retry'**
-  String get arcadeLinkRetry;
+  String get prismRetry;
 
-  /// No description provided for @arcadeLinkContinueLogin.
+  /// No description provided for @prismContinueLogin.
   ///
   /// In en, this message translates to:
   /// **'Continue sign-in'**
-  String get arcadeLinkContinueLogin;
+  String get prismContinueLogin;
 
-  /// No description provided for @arcadeLinkConnectingMunet.
+  /// No description provided for @prismConnectingMunet.
   ///
   /// In en, this message translates to:
   /// **'Connecting to MuNET…'**
-  String get arcadeLinkConnectingMunet;
+  String get prismConnectingMunet;
 
-  /// No description provided for @arcadeLinkSignInMunet.
+  /// No description provided for @prismSignInMunet.
   ///
   /// In en, this message translates to:
   /// **'Sign in with MuNET'**
-  String get arcadeLinkSignInMunet;
+  String get prismSignInMunet;
 
-  /// No description provided for @arcadeLinkVerifyingPasskey.
+  /// No description provided for @prismVerifyingPasskey.
   ///
   /// In en, this message translates to:
   /// **'Verifying passkey…'**
-  String get arcadeLinkVerifyingPasskey;
+  String get prismVerifyingPasskey;
 
-  /// No description provided for @arcadeLinkSignInPasskey.
+  /// No description provided for @prismSignInPasskey.
   ///
   /// In en, this message translates to:
   /// **'Sign in with a passkey'**
-  String get arcadeLinkSignInPasskey;
+  String get prismSignInPasskey;
 
-  /// No description provided for @arcadeLinkPasskeyOnWeb.
+  /// No description provided for @prismPasskeyOnWeb.
   ///
   /// In en, this message translates to:
   /// **'Use a passkey on the web'**
-  String get arcadeLinkPasskeyOnWeb;
+  String get prismPasskeyOnWeb;
 
-  /// No description provided for @arcadeLinkReturnAfterAuth.
+  /// No description provided for @prismReturnAfterAuth.
   ///
   /// In en, this message translates to:
   /// **'After signing in, return here to reload your cards.'**
-  String get arcadeLinkReturnAfterAuth;
+  String get prismReturnAfterAuth;
 
-  /// No description provided for @arcadeLinkReloadCards.
+  /// No description provided for @prismReloadCards.
   ///
   /// In en, this message translates to:
   /// **'Reload cards'**
-  String get arcadeLinkReloadCards;
+  String get prismReloadCards;
 
-  /// No description provided for @arcadeLinkLoadingCards.
+  /// No description provided for @prismLoadingCards.
   ///
   /// In en, this message translates to:
   /// **'Loading cards'**
-  String get arcadeLinkLoadingCards;
+  String get prismLoadingCards;
 
-  /// No description provided for @arcadeLinkCardsFailed.
+  /// No description provided for @prismCardsFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not load cards'**
-  String get arcadeLinkCardsFailed;
+  String get prismCardsFailed;
 
-  /// No description provided for @arcadeLinkNoCards.
+  /// No description provided for @prismNoCards.
   ///
   /// In en, this message translates to:
   /// **'No cards available. Add a card in PRiSM first.'**
-  String get arcadeLinkNoCards;
+  String get prismNoCards;
 
-  /// No description provided for @arcadeLinkLoading.
+  /// No description provided for @prismLoading.
   ///
   /// In en, this message translates to:
   /// **'Loading'**
-  String get arcadeLinkLoading;
+  String get prismLoading;
 
-  /// No description provided for @arcadeLinkSessionFailed.
+  /// No description provided for @prismSessionFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not start machine session'**
-  String get arcadeLinkSessionFailed;
+  String get prismSessionFailed;
 
-  /// No description provided for @arcadeLinkExpired.
+  /// No description provided for @prismExpired.
   ///
   /// In en, this message translates to:
   /// **'This session has expired'**
-  String get arcadeLinkExpired;
+  String get prismExpired;
 
-  /// No description provided for @arcadeLinkScanAgain.
+  /// No description provided for @prismScanAgain.
   ///
   /// In en, this message translates to:
   /// **'Tap the NFC tag or scan the QR code again.'**
-  String get arcadeLinkScanAgain;
+  String get prismScanAgain;
 
-  /// No description provided for @arcadeLinkCompleted.
+  /// No description provided for @prismCompleted.
   ///
   /// In en, this message translates to:
   /// **'Sign-in complete'**
-  String get arcadeLinkCompleted;
+  String get prismCompleted;
 
-  /// No description provided for @arcadeLinkClosePage.
+  /// No description provided for @prismClosePage.
   ///
   /// In en, this message translates to:
   /// **'You can close this page'**
-  String get arcadeLinkClosePage;
+  String get prismClosePage;
 
-  /// No description provided for @arcadeLinkSignedIn.
+  /// No description provided for @prismSignedIn.
   ///
   /// In en, this message translates to:
   /// **'Signed in'**
-  String get arcadeLinkSignedIn;
+  String get prismSignedIn;
 
-  /// No description provided for @arcadeLinkSigningIn.
+  /// No description provided for @prismSigningIn.
   ///
   /// In en, this message translates to:
   /// **'Signing in…'**
-  String get arcadeLinkSigningIn;
+  String get prismSigningIn;
 
-  /// No description provided for @arcadeLinkLocating.
+  /// No description provided for @prismLocating.
   ///
   /// In en, this message translates to:
   /// **'Checking location…'**
-  String get arcadeLinkLocating;
+  String get prismLocating;
 
-  /// No description provided for @arcadeLinkCardEnding.
+  /// No description provided for @prismCardEnding.
   ///
   /// In en, this message translates to:
   /// **'Ending in {digits}'**
-  String arcadeLinkCardEnding(String digits);
+  String prismCardEnding(String digits);
 
-  /// No description provided for @arcadeLinkBackHome.
+  /// No description provided for @prismBackHome.
   ///
   /// In en, this message translates to:
   /// **'Back to home'**
-  String get arcadeLinkBackHome;
+  String get prismBackHome;
 
-  /// No description provided for @arcadeLinkMachineInfoFailed.
+  /// No description provided for @prismMachineInfoFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not load machine information'**
-  String get arcadeLinkMachineInfoFailed;
+  String get prismMachineInfoFailed;
 
-  /// No description provided for @arcadeLinkOpenWebFailed.
+  /// No description provided for @prismOpenWebFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not open the web page. Please try again.'**
-  String get arcadeLinkOpenWebFailed;
+  String get prismOpenWebFailed;
 
-  /// No description provided for @arcadeLinkOpenMunetFailed.
+  /// No description provided for @prismOpenMunetFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not open MuNET sign-in'**
-  String get arcadeLinkOpenMunetFailed;
+  String get prismOpenMunetFailed;
 
-  /// No description provided for @arcadeLinkLocationDenied.
+  /// No description provided for @prismLocationDenied.
   ///
   /// In en, this message translates to:
   /// **'Allow location access to confirm you are at the arcade.'**
-  String get arcadeLinkLocationDenied;
+  String get prismLocationDenied;
 
-  /// No description provided for @arcadeLinkLocationFailed.
+  /// No description provided for @prismLocationFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not determine your location'**
-  String get arcadeLinkLocationFailed;
+  String get prismLocationFailed;
 
-  /// No description provided for @arcadeLinkLocationTimeout.
+  /// No description provided for @prismLocationTimeout.
   ///
   /// In en, this message translates to:
   /// **'Location timed out. Please try again.'**
-  String get arcadeLinkLocationTimeout;
+  String get prismLocationTimeout;
 
-  /// No description provided for @arcadeLinkLocationBusy.
+  /// No description provided for @prismLocationBusy.
   ///
   /// In en, this message translates to:
   /// **'Getting your location. Please try again shortly.'**
-  String get arcadeLinkLocationBusy;
+  String get prismLocationBusy;
 
-  /// No description provided for @arcadeLinkAtArcade.
+  /// No description provided for @prismAtArcade.
   ///
   /// In en, this message translates to:
   /// **'Please sign in when you are at the arcade.'**
-  String get arcadeLinkAtArcade;
+  String get prismAtArcade;
 
-  /// No description provided for @arcadeLinkMachineUnavailable.
+  /// No description provided for @prismMachineUnavailable.
   ///
   /// In en, this message translates to:
   /// **'This machine is unavailable. Please try again later.'**
-  String get arcadeLinkMachineUnavailable;
+  String get prismMachineUnavailable;
 
-  /// No description provided for @arcadeLinkNetworkFailed.
+  /// No description provided for @prismNetworkFailed.
   ///
   /// In en, this message translates to:
   /// **'Connection failed. Check your network and try again.'**
-  String get arcadeLinkNetworkFailed;
+  String get prismNetworkFailed;
 
-  /// No description provided for @arcadeLinkOperationFailed.
+  /// No description provided for @prismOperationFailed.
   ///
   /// In en, this message translates to:
   /// **'Something went wrong. Please try again later.'**
-  String get arcadeLinkOperationFailed;
+  String get prismOperationFailed;
 
-  /// No description provided for @arcadeLinkRateLimited.
+  /// No description provided for @prismRateLimited.
   ///
   /// In en, this message translates to:
   /// **'Too many requests. Please try again later.'**
-  String get arcadeLinkRateLimited;
+  String get prismRateLimited;
 
-  /// No description provided for @arcadeLinkRestricted.
+  /// No description provided for @prismRestricted.
   ///
   /// In en, this message translates to:
   /// **'This action is currently unavailable'**
-  String get arcadeLinkRestricted;
+  String get prismRestricted;
 
-  /// No description provided for @arcadeLinkAccountUnavailable.
+  /// No description provided for @prismAccountUnavailable.
   ///
   /// In en, this message translates to:
   /// **'This account is currently unavailable'**
-  String get arcadeLinkAccountUnavailable;
+  String get prismAccountUnavailable;
 
-  /// No description provided for @arcadeLinkCardUnavailable.
+  /// No description provided for @prismCardUnavailable.
   ///
   /// In en, this message translates to:
   /// **'This card is unavailable or has expired'**
-  String get arcadeLinkCardUnavailable;
+  String get prismCardUnavailable;
 
-  /// No description provided for @arcadeLinkSignInRequired.
+  /// No description provided for @prismSignInRequired.
   ///
   /// In en, this message translates to:
   /// **'Please sign in first'**
-  String get arcadeLinkSignInRequired;
+  String get prismSignInRequired;
 
-  /// No description provided for @arcadeLinkAuthExpired.
+  /// No description provided for @prismAuthExpired.
   ///
   /// In en, this message translates to:
   /// **'Authorization code expired. Please sign in again.'**
-  String get arcadeLinkAuthExpired;
+  String get prismAuthExpired;
 
-  /// No description provided for @arcadeLinkMunetFailed.
+  /// No description provided for @prismMunetFailed.
   ///
   /// In en, this message translates to:
   /// **'MuNET sign-in failed'**
-  String get arcadeLinkMunetFailed;
+  String get prismMunetFailed;
 
-  /// No description provided for @arcadeLinkPasskeyFailed.
+  /// No description provided for @prismPasskeyFailed.
   ///
   /// In en, this message translates to:
   /// **'Passkey verification failed'**
-  String get arcadeLinkPasskeyFailed;
+  String get prismPasskeyFailed;
 
-  /// No description provided for @arcadeLinkPasskeyExpired.
+  /// No description provided for @prismPasskeyExpired.
   ///
   /// In en, this message translates to:
   /// **'The passkey request has expired'**
-  String get arcadeLinkPasskeyExpired;
+  String get prismPasskeyExpired;
 
-  /// No description provided for @arcadeLinkPasskeyUnknown.
+  /// No description provided for @prismPasskeyUnknown.
   ///
   /// In en, this message translates to:
   /// **'Passkey not recognized'**
-  String get arcadeLinkPasskeyUnknown;
+  String get prismPasskeyUnknown;
 
-  /// No description provided for @arcadeLinkInvalidURL.
+  /// No description provided for @prismInvalidURL.
   ///
   /// In en, this message translates to:
   /// **'Invalid PRiSM URL'**
-  String get arcadeLinkInvalidURL;
+  String get prismInvalidURL;
 
-  /// No description provided for @arcadeLinkInvalidResponse.
+  /// No description provided for @prismInvalidResponse.
   ///
   /// In en, this message translates to:
-  /// **'Invalid response from ArcadeLink'**
-  String get arcadeLinkInvalidResponse;
+  /// **'Invalid response from PRiSM'**
+  String get prismInvalidResponse;
 
   /// No description provided for @prismRefresh.
   ///

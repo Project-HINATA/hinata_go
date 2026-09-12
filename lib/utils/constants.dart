@@ -9,7 +9,7 @@ class AppConstants {
       'https://play.google.com/store/apps/details?id=moe.neri.hinatago';
   static const String appStoreUrl = 'https://apps.apple.com/app/id6760301105';
   static const String githubUrl = 'https://github.com/Project-HINATA/hinata_go';
-  static const String arcadeLinkUrl = 'https://link.neri.moe';
+  static const String prismUrl = 'https://link.neri.moe';
   static const String githubReleasesUrl =
       'https://github.com/nerimoe/hinata_go/releases/latest';
 

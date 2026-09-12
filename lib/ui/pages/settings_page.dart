@@ -42,10 +42,10 @@ class SettingsPage extends HookConsumerWidget {
                 icon: Icons.code_rounded,
                 url: AppConstants.githubUrl,
               ),
-              arcadeLinkItem: _buildExternalLinkItem(
-                title: l10n.arcadeLink,
+              prismItem: _buildExternalLinkItem(
+                title: l10n.prism,
                 icon: Icons.link,
-                url: AppConstants.arcadeLinkUrl,
+                url: AppConstants.prismUrl,
               ),
               updateActionButton:
                   updateState.isUpdateSupported && updateState.hasUpdate
@@ -291,7 +291,7 @@ class _SettingsList extends StatelessWidget {
     required this.dataManagementItem,
     required this.aboutItem,
     required this.githubItem,
-    required this.arcadeLinkItem,
+    required this.prismItem,
     required this.updateActionButton,
   });
 
@@ -300,7 +300,7 @@ class _SettingsList extends StatelessWidget {
   final Widget dataManagementItem;
   final Widget aboutItem;
   final Widget githubItem;
-  final Widget arcadeLinkItem;
+  final Widget prismItem;
   final Widget? updateActionButton;
 
   @override
@@ -314,7 +314,7 @@ class _SettingsList extends StatelessWidget {
         const Divider(),
         aboutItem,
         githubItem,
-        arcadeLinkItem,
+        prismItem,
         ...(updateActionButton == null ? const [] : [updateActionButton!]),
       ],
     );

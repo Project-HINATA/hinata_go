@@ -87,7 +87,7 @@ final class FixtureProtocol: URLProtocol {
       }
     }
     let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [FixtureProtocol.self]
-    let model = MachineLoginViewModel(api: ArcadeLinkAPI(configuration: config))
+    let model = MachineLoginViewModel(api: PrismAPI(configuration: config))
     await model.start(shopCode:"store",publicId:"device")
     precondition(model.state == .ready && model.deviceState?.gate == "qq")
     precondition(model.binding?.code == "ABC123")
