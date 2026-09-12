@@ -35,7 +35,7 @@ xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner \
   "${signing_args[@]}" archive
 
 app_path=build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app
-clip_path="$app_path/AppClips/PrismClip.app"
+clip_path="$app_path/AppClips/PRiSM Link.app"
 test -d "$clip_path"
 for plist_key in CFBundleShortVersionString CFBundleVersion; do
   app_version="$(/usr/libexec/PlistBuddy -c "Print :$plist_key" "$app_path/Info.plist")"

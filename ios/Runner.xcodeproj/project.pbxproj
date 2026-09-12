@@ -3,16 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B1C000000000000000000008 /* InvocationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE5A12DC74545CC94497385 /* InvocationParser.swift */; };
-		AA1100000000000000000004 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000011 /* Localizable.xcstrings */; };
-		AA1100000000000000000003 /* Runner InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000013 /* Runner InfoPlist.xcstrings */; };
-		AA1100000000000000000002 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000012 /* InfoPlist.xcstrings */; };
-		AA1100000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000011 /* Localizable.xcstrings */; };
-		10688FCDEB235C5D7D61F84D /* PrismClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = FA100BF03C7C425DBFABB85A /* PrismClip.app */; };
+		10688FCDEB235C5D7D61F84D /* PRiSM Link.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = FA100BF03C7C425DBFABB85A /* PRiSM Link.app */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -28,14 +23,19 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		AA1100000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000011 /* Localizable.xcstrings */; };
+		AA1100000000000000000002 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000012 /* InfoPlist.xcstrings */; };
+		AA1100000000000000000003 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000013 /* InfoPlist.xcstrings */; };
+		AA1100000000000000000004 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000011 /* Localizable.xcstrings */; };
 		B043ADAE26D84ED38AA21563 /* PasskeyAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */; };
 		B1C000000000000000000001 /* ../PrismClip/PrismAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000001 /* ../PrismClip/PrismAPI.swift */; };
 		B1C000000000000000000002 /* ../PrismClip/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000002 /* ../PrismClip/LocationService.swift */; };
 		B1C000000000000000000003 /* ../PrismClip/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000003 /* ../PrismClip/Models.swift */; };
 		B1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift */; };
 		B1C000000000000000000005 /* PrismNativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000001 /* PrismNativeBridge.swift */; };
-	B1C000000000000000000006 /* MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000002 /* MunetAuthenticationService.swift */; };
-	B1C000000000000000000007 /* PasskeyAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */; };
+		B1C000000000000000000006 /* MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000002 /* MunetAuthenticationService.swift */; };
+		B1C000000000000000000007 /* PasskeyAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */; };
+		B1C000000000000000000008 /* InvocationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE5A12DC74545CC94497385 /* InvocationParser.swift */; };
 		CDC41510304F0F2B000BCB4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		E0C7EC6A900846209454DF9E /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF425FBD0BA44528796FEA8 /* LocationService.swift */; };
 		E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */; };
@@ -47,7 +47,7 @@
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 536456333E034E609C9EF501;
-			remoteInfo = PrismClip;
+			remoteInfo = "PRiSM Link";
 		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -75,7 +75,7 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/AppClips";
 			dstSubfolderSpec = 16;
 			files = (
-				10688FCDEB235C5D7D61F84D /* PrismClip.app in Embed App Clips */,
+				10688FCDEB235C5D7D61F84D /* PRiSM Link.app in Embed App Clips */,
 			);
 			name = "Embed App Clips";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -83,9 +83,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		AA1100000000000000000013 /* Runner InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
-		AA1100000000000000000012 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
-		AA1100000000000000000011 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		1CE5A12DC74545CC94497385 /* InvocationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationParser.swift; sourceTree = "<group>"; };
@@ -117,11 +114,14 @@
 		9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasskeyAuthenticationService.swift; sourceTree = "<group>"; };
 		A5A69BF1B7CB460C94E4212E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A6B19610946F463EA0AA012F /* MachineLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineLoginView.swift; sourceTree = "<group>"; };
+		AA1100000000000000000011 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		AA1100000000000000000012 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		AA1100000000000000000013 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		D1C000000000000000000001 /* ../PrismClip/PrismAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/PrismAPI.swift; sourceTree = "<group>"; };
 		D1C000000000000000000002 /* ../PrismClip/LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/LocationService.swift; sourceTree = "<group>"; };
 		D1C000000000000000000003 /* ../PrismClip/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/Models.swift; sourceTree = "<group>"; };
 		D1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/MunetAuthenticationService.swift; sourceTree = "<group>"; };
-		FA100BF03C7C425DBFABB85A /* PrismClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PrismClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FA100BF03C7C425DBFABB85A /* PRiSM Link.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PRiSM Link.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -213,7 +213,7 @@
 			isa = PBXGroup;
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
-				FA100BF03C7C425DBFABB85A /* PrismClip.app */,
+				FA100BF03C7C425DBFABB85A /* PRiSM Link.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 			);
 			name = Products;
@@ -233,7 +233,7 @@
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */,
 				2A1C00000000000000000001 /* PrismNativeBridge.swift */,
-				AA1100000000000000000013 /* Runner InfoPlist.xcstrings */,
+				AA1100000000000000000013 /* InfoPlist.xcstrings */,
 				D1C000000000000000000001 /* ../PrismClip/PrismAPI.swift */,
 				D1C000000000000000000002 /* ../PrismClip/LocationService.swift */,
 				D1C000000000000000000003 /* ../PrismClip/Models.swift */,
@@ -264,9 +264,9 @@
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		536456333E034E609C9EF501 /* PrismClip */ = {
+		536456333E034E609C9EF501 /* PRiSM Link */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "PrismClip" */;
+			buildConfigurationList = D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "PRiSM Link" */;
 			buildPhases = (
 				8ECE75F7F54840CE98A6AB36 /* Sources */,
 				2E7B08B9EBEF453882BC5093 /* Frameworks */,
@@ -276,9 +276,9 @@
 			);
 			dependencies = (
 			);
-			name = PrismClip;
-			productName = PrismClip;
-			productReference = FA100BF03C7C425DBFABB85A /* PrismClip.app */;
+			name = "PRiSM Link";
+			productName = "PRiSM Link";
+			productReference = FA100BF03C7C425DBFABB85A /* PRiSM Link.app */;
 			productType = "com.apple.product-type.application.on-demand-install-capable";
 		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
@@ -348,7 +348,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
-				536456333E034E609C9EF501 /* PrismClip */,
+				536456333E034E609C9EF501 /* PRiSM Link */,
 			);
 		};
 /* End PBXProject section */
@@ -379,7 +379,7 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				CDC41510304F0F2B000BCB4B /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
-				AA1100000000000000000003 /* Runner InfoPlist.xcstrings in Resources */,
+				AA1100000000000000000003 /* InfoPlist.xcstrings in Resources */,
 				AA1100000000000000000004 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -473,7 +473,7 @@
 		};
 		BC786F95A1F694CF2AB8CD10 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 536456333E034E609C9EF501 /* PrismClip */;
+			target = 536456333E034E609C9EF501 /* PRiSM Link */;
 			targetProxy = 267667C52F32B900379558AA /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -936,7 +936,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "PrismClip" */ = {
+		D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "PRiSM Link" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3EC0B25A1D5A480914150A40 /* Debug */,

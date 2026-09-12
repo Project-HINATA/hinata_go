@@ -43,6 +43,7 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var notice: String?
   private var userId = ""
   private var polling: Task<Void, Never>?
+  private var sceneActive = true
   private var visitRevision = 0
   var canUseCards: Bool { machine?.has("card") == true && (machine?.capabilities == nil || deviceState?.gate == "ready") && deviceState?.power != "off" }
   var showDeviceControls: Bool {
@@ -230,9 +231,32 @@ final class MachineLoginViewModel: ObservableObject {
     "/api/v1/shops/\(shopCode ?? "")" + (suffix.isEmpty ? "" : "/" + suffix)
   }
 
-  func refreshVisit() async {
+  func setSceneActive(_ active: Bool) async {
+    guard active != sceneActive else { return }
+    sceneActive = active
+    if !active {
+      visitRevision += 1
+      polling?.cancel()
+      polling = nil
+    } else if !deviceBusy, ![.locating, .sending].contains(state) {
+      await refreshVisit(silent: true)
+    }
+  }
+
+  private func scheduleRefresh() {
+    guard sceneActive, ticket != nil else { return }
+    polling?.cancel()
+    polling = Task { [weak self] in
+      do { try await Task.sleep(nanoseconds: 3_000_000_000) } catch { return }
+      guard let self, self.sceneActive, !self.deviceBusy, !Task.isCancelled else { return }
+      self.polling = nil
+      await self.refreshVisit(silent: true)
+    }
+  }
+
+  func refreshVisit(silent: Bool = false) async {
     let api = self.api
-    guard machine?.capabilities != nil, state != .unauthenticated else { return }
+    guard sceneActive, machine?.capabilities != nil, state != .unauthenticated else { return }
     visitRevision += 1
     polling?.cancel()
     let revision = visitRevision
@@ -270,14 +294,15 @@ final class MachineLoginViewModel: ObservableObject {
         binding = value
       }
       if ticket != nil, currentDevice?.gate == "qq" || currentDevice?.power == "off" || machine?.has("mahjong") == true {
-        polling = Task { [weak self] in
-          do { try await Task.sleep(nanoseconds: 3_000_000_000) } catch { return }
-          guard let self, !self.deviceBusy, !Task.isCancelled else { return }
-          await self.refreshVisit()
-        }
+        scheduleRefresh()
       }
     } catch {
       if version == invocationVersion, revision == visitRevision {
+        if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled { return }
+        if silent, error is URLError {
+          scheduleRefresh()
+          return
+        }
         if (error as? PrismAPIError)?.code == "AUTHENTICATION_REQUIRED" { state = .unauthenticated }
         errorMessage = friendlyMessage(error)
       }

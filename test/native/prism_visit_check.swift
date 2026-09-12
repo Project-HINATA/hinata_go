@@ -41,6 +41,8 @@ final class FixtureProtocol: URLProtocol {
     var member = false, active = false
     var billing = true
     var capabilities = ["power":true,"coin":true,"card":true,"door":true]
+    var statusReads = 0
+    var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
     var checkoutIds: [String] = []
     let testUser = UUID().uuidString
@@ -61,7 +63,10 @@ final class FixtureProtocol: URLProtocol {
       case "/api/v1/machines/session/start": sessionStarts += 1; return ok(["ticket":"ticket-\(sessionStarts)", "expiresIn":300, "machine":["publicId":"device", "name":"Device", "webOnly":true, "coinAfterSwipe":true, "capabilities":capabilities, "shop":["name":"Store", "latitude":35,"longitude":139,"radiusMeters":80,"machineGeo":false,"billingEnabled":billing]]])
       case "/api/v1/me": return ok(["user":["id":testUser,"username":"test","displayName":"Test"]])
       case "/api/v1/cards": return ok(["cards":[["id":"card","label":"Aime","accessCode":"01234567890123456789"]]])
-      case "/api/v1/shops/store": return ok(["shop":["billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"QQ Bot","timeZone":"Asia/Tokyo"],"membership":member ? ["playerId":"p"] : NSNull(),"entryPricing":[]])
+      case "/api/v1/shops/store":
+        statusReads += 1
+        if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
+        return ok(["shop":["billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"QQ Bot","timeZone":"Asia/Tokyo"],"membership":member ? ["playerId":"p"] : NSNull(),"entryPricing":[]])
       case "/api/v1/devices/session/state": return ok(["gate":!billing ? "ready" : member ? (active ? "ready" : "entry") : "qq", "power":"unknown","mahjong":["capacity":4,"seats":mahjongSeats]])
       case "/api/v1/shops/store/qq-binding": return ok(["code":"ABC123","expiresAt":"2999-01-01T00:00:00Z"])
       case "/api/v1/shops/store/player/me": return ok(["wallet":[],"activeSession":active ? ["id":"entry","startedAt":"2026-09-12T00:00:00Z"] : NSNull()])
@@ -96,6 +101,17 @@ final class FixtureProtocol: URLProtocol {
     await model.handleInvocation(origin.appendingPathComponent("t/store/device"))
     precondition(model.state == .ready && model.deviceState?.gate == "qq")
     precondition(model.binding?.code == "ABC123")
+    try await Task.sleep(nanoseconds: 3_300_000_000)
+    precondition(statusReads >= 2 && model.errorMessage == nil, "Polling must not cancel its own requests")
+    await model.setSceneActive(false)
+    let readsBeforeBackground = statusReads
+    await model.refreshVisit()
+    precondition(statusReads == readsBeforeBackground)
+    failNextStatusRead = true
+    await model.setSceneActive(true)
+    precondition(model.errorMessage == nil && model.ticket != nil, "Resume network errors must not show an alert")
+    try await Task.sleep(nanoseconds: 3_300_000_000)
+    precondition(statusReads >= readsBeforeBackground + 2 && sessionStarts == 1 && model.binding?.code == "ABC123")
     member = true; await model.refreshVisit(); precondition(model.deviceState?.gate == "entry")
     await model.device("door.open", consent:true)
     precondition(model.doorPassword?.temporaryPassword == "12345678" && model.summary?.activeSession != nil)
