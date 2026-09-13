@@ -2,16 +2,18 @@ import Flutter
 import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+@objc class AppDelegate: FlutterAppDelegate {
+  let flutterEngine = FlutterEngine(name: "dev.hinata.go.main")
+  lazy var nativeShellBridge = NativeShellBridge(messenger: flutterEngine.binaryMessenger)
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-
-  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    flutterEngine.run(withEntrypoint: "nativeMain")
+    GeneratedPluginRegistrant.register(with: flutterEngine)
     PrismURLBridge.shared.attach()
+    _ = nativeShellBridge
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

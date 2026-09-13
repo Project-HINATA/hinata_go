@@ -12,15 +12,24 @@ import 'package:hinata_go/providers/settings_provider.dart';
 import 'package:hinata_go/providers/storage_provider.dart';
 import 'package:hinata_go/services/notification_service.dart';
 import 'navigation/router.dart'; // Keep this import as it's not explicitly removed or replaced by the instruction
+import 'core/app_host_mode.dart';
 
-void main() async {
+Future<void> main() => _bootstrap(AppHostMode.flutterShell);
+
+@pragma('vm:entry-point')
+Future<void> nativeMain() => _bootstrap(AppHostMode.nativeIOS);
+
+Future<void> _bootstrap(AppHostMode hostMode) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
 
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        appHostModeProvider.overrideWithValue(hostMode),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
       child: const MyApp(),
     ),
   );

@@ -16,16 +16,23 @@ import '../ui/pages/scan_logs_page.dart';
 import '../ui/pages/scan_page.dart';
 import '../ui/pages/settings_page.dart';
 import '../ui/scaffold_with_navbar.dart';
+import '../ui/native_hosted_scaffold.dart';
+import '../ui/shell_state_sync.dart';
 import '../ui/widgets/animated_branch_container.dart';
+import '../core/app_host_mode.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
 );
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final hostMode = ref.watch(appHostModeProvider);
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/scan',
+    observers: hostMode == AppHostMode.nativeIOS
+        ? [NativeShellNavigatorObserver()]
+        : null,
     routes: [
       GoRoute(
         path: '/camera',
@@ -49,14 +56,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         navigatorContainerBuilder: (context, navigationShell, children) {
           return AnimatedBranchContainer(
             currentIndex: navigationShell.currentIndex,
-            axis: context.appLayout.useRailNavigation
+            axis: hostMode == AppHostMode.nativeIOS
+                ? Axis.horizontal
+                : context.appLayout.useRailNavigation
                 ? Axis.vertical
                 : Axis.horizontal,
             children: children,
           );
         },
         builder: (context, state, navigationShell) {
-          return ScaffoldWithNavBar(navigationShell: navigationShell);
+          return hostMode == AppHostMode.nativeIOS
+              ? NativeHostedScaffold(navigationShell: navigationShell)
+              : ScaffoldWithNavBar(navigationShell: navigationShell);
         },
         branches: [
           StatefulShellBranch(

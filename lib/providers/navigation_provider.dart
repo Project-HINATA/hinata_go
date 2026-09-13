@@ -1,5 +1,21 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+enum NativeShellAction { addFolder, addCard }
+
+final nativeShellActionProvider =
+    NotifierProvider<NativeShellActionNotifier, NativeShellAction?>(() {
+      return NativeShellActionNotifier();
+    });
+
+class NativeShellActionNotifier extends Notifier<NativeShellAction?> {
+  @override
+  NativeShellAction? build() => null;
+
+  void trigger(NativeShellAction action) => state = action;
+
+  void clear() => state = null;
+}
+
 /// Provider to track the current active branch index in the main scaffold.
 /// 0: Reader, 1: Cards, 2: Settings
 final activeBranchProvider = NotifierProvider<ActiveBranchNotifier, int>(() {

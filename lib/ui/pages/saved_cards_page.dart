@@ -19,6 +19,8 @@ import '../components/saved_cards/folder_selection_strip.dart';
 import '../components/saved_cards/add_card_dialog.dart';
 import '../components/saved_cards/add_folder_dialog.dart';
 import '../components/instances/select_instance_dialog.dart';
+import '../../core/app_host_mode.dart';
+import '../../providers/navigation_provider.dart';
 
 class SavedCardsPage extends HookConsumerWidget {
   const SavedCardsPage({super.key});
@@ -158,8 +160,25 @@ class SavedCardsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final layout = context.appLayout;
+    final hostMode = ref.watch(appHostModeProvider);
     final selectedFolderIdState = useState('favorites_folder');
+    ref.listen(nativeShellActionProvider, (_, action) {
+      if (action == null) return;
+      if (action == NativeShellAction.addFolder) {
+        _showAddFolderDialog(
+          context,
+          (newId) => selectedFolderIdState.value = newId,
+        );
+      } else if (selectedFolderIdState.value != 'history_folder') {
+        _showAddCardDialog(
+          context,
+          selectedFolderIdState.value,
+          (newId) => selectedFolderIdState.value = newId,
+        );
+      }
+      ref.read(nativeShellActionProvider.notifier).clear();
+    });
+    final layout = context.appLayout;
     final folders = ref.watch(cardFoldersProvider);
     final allCards = ref.watch(savedCardsProvider);
     final folderCards = allCards
@@ -179,7 +198,9 @@ class SavedCardsPage extends HookConsumerWidget {
           folderCards,
         ),
       ),
-      floatingActionButton: _buildFABs(context, selectedFolderIdState),
+      floatingActionButton: hostMode == AppHostMode.nativeIOS
+          ? null
+          : _buildFABs(context, selectedFolderIdState),
     );
   }
 

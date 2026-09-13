@@ -9,8 +9,8 @@ import '../providers/app_update_provider.dart';
 import '../providers/app_state_provider.dart';
 import '../providers/display_rotation_provider.dart';
 import '../providers/hardware_device_provider.dart';
-import '../providers/navigation_provider.dart';
 import 'components/device/device_mini_bar.dart';
+import 'shell_state_sync.dart';
 
 const double _bottomFloatingDeviceBarInset = 80;
 
@@ -51,7 +51,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    _syncShellState(context, ref);
+    syncShellState(context, ref, navigationShell.currentIndex);
     final destinations = _buildNavDestinations(context, ref);
 
     return LayoutBuilder(
@@ -87,26 +87,6 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         );
       },
     );
-  }
-
-  void _syncShellState(BuildContext context, WidgetRef ref) {
-    final bool isScaffoldVisible = context.modalRoute?.isCurrent ?? false;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (ref.read(isScaffoldCoveredProvider) == isScaffoldVisible) {
-        ref
-            .read(isScaffoldCoveredProvider.notifier)
-            .setCovered(!isScaffoldVisible);
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (ref.read(activeBranchProvider) != navigationShell.currentIndex) {
-        ref
-            .read(activeBranchProvider.notifier)
-            .setIndex(navigationShell.currentIndex);
-      }
-    });
   }
 
   List<NavigationDestination> _buildNavDestinations(
