@@ -8,30 +8,34 @@ import '../providers/navigation_provider.dart';
 const _channel = MethodChannel('dev.hinata.go/native_shell');
 
 class NativeShellNavigatorObserver extends NavigatorObserver {
-  void _publishCoverage() {
+  void _publishCoverage([Route<dynamic>? topRoute]) {
+    final covered = navigator?.canPop() ?? false;
+    final hideNativeChrome =
+        covered && topRoute is ModalRoute<dynamic> && topRoute.opaque;
     _channel.invokeMethod('setScaffoldCovered', {
-      'covered': navigator?.canPop() ?? false,
+      'covered': covered,
+      'hideNativeChrome': hideNativeChrome,
     });
   }
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    _publishCoverage();
+    _publishCoverage(route);
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    _publishCoverage();
+    _publishCoverage(previousRoute);
   }
 
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    _publishCoverage();
+    _publishCoverage(previousRoute);
   }
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    _publishCoverage();
+    _publishCoverage(newRoute);
   }
 }
 

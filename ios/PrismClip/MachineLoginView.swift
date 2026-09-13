@@ -34,10 +34,18 @@ struct MachineLoginView: View {
     .background(Color(.systemGroupedBackground).ignoresSafeArea())
     .overlay(alignment: .topLeading) {
       if allowsDismiss {
-        Button { dismiss() } label: { Image(systemName: "xmark") }
-          .buttonStyle(.bordered)
-          .tint(.primary)
-          .padding(.top, 8).padding(.leading, 20)
+        Group {
+          if #available(iOS 26.0, *) {
+            Button { dismiss() } label: { Image(systemName: "xmark") }
+              .buttonStyle(.glass)
+              .buttonBorderShape(.circle)
+          } else {
+            Button { dismiss() } label: { Image(systemName: "xmark") }
+              .buttonStyle(.bordered)
+          }
+        }
+        .tint(.primary)
+        .padding(.top, 8).padding(.leading, 20)
       }
     }
     .overlay(alignment: .topTrailing) {
@@ -530,9 +538,12 @@ private struct ClipAccountSheet: View {
   @ViewBuilder private var closeButton: some View {
     if #available(iOS 26.0, *) {
       Button(role: .close) { dismiss() } label: { Image(systemName: "xmark") }
+        .buttonStyle(.glass).buttonBorderShape(.circle)
         .tint(.primary).accessibilityLabel("关闭")
     } else {
-      Button { dismiss() } label: { Image(systemName: "xmark") }.tint(.primary).accessibilityLabel("关闭")
+      Button { dismiss() } label: { Image(systemName: "xmark") }
+        .buttonStyle(.bordered)
+        .tint(.primary).accessibilityLabel("关闭")
     }
   }
   var body: some View {

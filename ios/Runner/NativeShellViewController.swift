@@ -9,6 +9,7 @@ final class NativeShellViewController: UITabBarController,
   private var flutterConstraints: [NSLayoutConstraint] = []
   private var cardsActionButton: UIButton!
   private var scaffoldCovered = false
+  private var nativeChromeHidden = false
   private var localizedStrings = [
     "scan": "Scan",
     "cards": "Cards",
@@ -142,9 +143,9 @@ final class NativeShellViewController: UITabBarController,
   }
 
   private func updateCardsActionsVisibility() {
-    cardsActionButton?.isHidden = selectedIndex != 1
+    cardsActionButton?.isHidden = selectedIndex != 1 || nativeChromeHidden
     cardsActionButton?.alpha = scaffoldCovered ? 0.46 : 1
-    cardsActionButton?.isUserInteractionEnabled = !scaffoldCovered
+    cardsActionButton?.isUserInteractionEnabled = !scaffoldCovered && !nativeChromeHidden
   }
 
   func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
@@ -167,9 +168,11 @@ final class NativeShellViewController: UITabBarController,
     viewControllers?[2].tabBarItem.badgeValue = visible ? "1" : nil
   }
 
-  func nativeShell(setScaffoldCovered covered: Bool) {
+  func nativeShell(setScaffoldCovered covered: Bool, hideNativeChrome: Bool) {
     scaffoldCovered = covered
-    tabBar.isUserInteractionEnabled = !covered
+    nativeChromeHidden = hideNativeChrome || (nativeChromeHidden && covered)
+    tabBar.isHidden = nativeChromeHidden
+    tabBar.isUserInteractionEnabled = !covered && !hideNativeChrome
     tabBar.alpha = covered ? 0.20 : 1
     updateCardsActionsVisibility()
   }

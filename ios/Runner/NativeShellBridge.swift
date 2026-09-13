@@ -4,7 +4,7 @@ import Foundation
 protocol NativeShellBridgeDelegate: AnyObject {
   func nativeShell(setSelectedIndex index: Int)
   func nativeShell(setSettingsBadge visible: Bool)
-  func nativeShell(setScaffoldCovered covered: Bool)
+  func nativeShell(setScaffoldCovered covered: Bool, hideNativeChrome: Bool)
   func nativeShell(setLocalizedStrings strings: [String: String])
 }
 
@@ -48,7 +48,10 @@ final class NativeShellBridge {
           result(FlutterError(code: "invalid_args", message: nil, details: nil))
           return
         }
-        self.delegate?.nativeShell(setScaffoldCovered: covered)
+        self.delegate?.nativeShell(
+          setScaffoldCovered: covered,
+          hideNativeChrome: args["hideNativeChrome"] as? Bool ?? false
+        )
         result(nil)
       case "setLocalizedStrings":
         let strings = args.compactMapValues { $0 as? String }
