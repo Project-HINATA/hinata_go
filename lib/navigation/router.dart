@@ -17,27 +17,15 @@ import '../ui/pages/scan_page.dart';
 import '../ui/pages/settings_page.dart';
 import '../ui/scaffold_with_navbar.dart';
 import '../ui/widgets/animated_branch_container.dart';
-import 'package:hinata_go/features/prism/prism_machine_login_page.dart';
-import 'package:hinata_go/features/prism/services/prism_invocation_service.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
 );
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final invocationService = ref.watch(prismInvocationProvider);
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/scan',
-    refreshListenable: invocationService,
-    redirect: (context, state) {
-      final shopCode = invocationService.pendingShopCode;
-      final publicId = invocationService.pendingPublicId;
-      if (shopCode == null || publicId == null) return null;
-      final target =
-          '/prism/${Uri.encodeComponent(shopCode)}/${Uri.encodeComponent(publicId)}?origin=${Uri.encodeComponent(invocationService.pendingOrigin!.origin)}';
-      return state.uri.toString() == target ? null : target;
-    },
     routes: [
       GoRoute(
         path: '/camera',
@@ -121,38 +109,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ),
         ],
-      ),
-      GoRoute(
-        path: '/t/:shopCode/:publicId',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => PrismMachineLoginPage(
-          origin: state.uri.hasAuthority
-              ? Uri.parse(state.uri.origin)
-              : (state.uri.queryParameters['origin'] == null
-                    ? null
-                    : Uri.parse(state.uri.queryParameters['origin']!)),
-          key: ValueKey(
-            '${state.uri.host}/${state.uri.query}/${state.pathParameters['shopCode']}/${state.pathParameters['publicId']}',
-          ),
-          shopCode: state.pathParameters['shopCode']!,
-          publicId: state.pathParameters['publicId']!,
-        ),
-      ),
-      GoRoute(
-        path: '/prism/:shopCode/:publicId',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => PrismMachineLoginPage(
-          origin: state.uri.hasAuthority
-              ? Uri.parse(state.uri.origin)
-              : (state.uri.queryParameters['origin'] == null
-                    ? null
-                    : Uri.parse(state.uri.queryParameters['origin']!)),
-          key: ValueKey(
-            '${state.uri.host}/${state.uri.query}/${state.pathParameters['shopCode']}/${state.pathParameters['publicId']}',
-          ),
-          shopCode: state.pathParameters['shopCode']!,
-          publicId: state.pathParameters['publicId']!,
-        ),
       ),
     ],
   );

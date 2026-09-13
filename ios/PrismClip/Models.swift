@@ -153,6 +153,7 @@ struct PrismHistory: Decodable {
   }
 }
 struct PrismCheckout: Decodable {
+  let timeline: PrismBillTimeline?
   let settlementPreview: Settlement
   let chargeItems: [Item]; let adjustments: [Item]
   struct Settlement: Decodable { let total: Double }
@@ -182,4 +183,24 @@ struct PrismMahjong: Decodable {
   let capacity: Int
   let seats: [Seat]
   struct Seat: Decodable { let name: String; let mine: Bool; let playing: Bool }
+}
+
+struct PrismBillTimeline: Decodable {
+  let totals: [Total]
+  struct Total: Decodable { let name: String; let amount: Double }
+  let tracks: [Track]
+  let events: [Event]
+  struct Track: Decodable, Identifiable {
+    let id: String; let name: String; let lane: Int; let color: Int
+    let startedAt: String; let endedAt: String
+  }
+  struct Event: Decodable { let at: String; let time: String; let date: String; let entries: [Entry] }
+  struct Entry: Decodable {
+    let trackId: String?; let kind: String; let name: String
+    let periodLabel: String?
+    let rule: String?; let nextRule: String?; let amount: Double?
+    let startedAt: String?; let endedAt: String?
+    let unitMinutes: Double?; let unitPrice: Double?; let units: Double?
+    let cap: Double?; let paidBefore: Double?
+  }
 }

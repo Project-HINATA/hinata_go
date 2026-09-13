@@ -1,21 +1,19 @@
-import Flutter
 import Foundation
+import SwiftUI
+import UIKit
 
+@MainActor
 final class PrismURLBridge {
   static let shared = PrismURLBridge()
-
-  private var channel: FlutterMethodChannel?
+  private var ready = false
   private var pendingURL: URL?
-
+  private var nativeModel: MachineLoginViewModel?
+  private var nativeController: UIViewController?
   private init() {}
 
-  func attach(to messenger: FlutterBinaryMessenger) {
-    channel = FlutterMethodChannel(name: "moe.neri.hinatago/prism", binaryMessenger: messenger)
-    channel?.setMethodCallHandler { [weak self] call, result in
-      guard call.method == "getInitialURL" else { result(FlutterMethodNotImplemented); return }
-      result(self?.pendingURL?.absoluteString)
-      self?.pendingURL = nil
-    }
+  func attach() {
+    ready = true
+    if let url = pendingURL { presentNative(url) }
   }
 
   func handle(_ userActivity: NSUserActivity) {
@@ -24,15 +22,28 @@ final class PrismURLBridge {
   }
 
   func handle(_ url: URL) {
-    guard InvocationParser.invocation(from: url) != nil else {
-      return
-    }
+    guard InvocationParser.invocation(from: url) != nil else { return }
     pendingURL = url
-    guard channel != nil else { return }
-    emit(url)
+    if ready { presentNative(url) }
   }
 
-  private func emit(_ url: URL) {
-    channel?.invokeMethod("invocation", arguments: url.absoluteString)
+  private func presentNative(_ url: URL) {
+    guard let root = UIApplication.shared.connectedScenes
+      .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController }).first else { return }
+    var presenter = root
+    while let presented = presenter.presentedViewController { presenter = presented }
+    if nativeController?.presentingViewController != nil { nativeController?.dismiss(animated: false) }
+    let model = MachineLoginViewModel()
+    nativeModel = model
+    let controller = UIHostingController(rootView: MachineLoginView(allowsDismiss: true).environmentObject(model))
+    controller.modalPresentationStyle = .pageSheet
+    if let sheet = controller.sheetPresentationController {
+      sheet.detents = [.large()]
+      sheet.prefersGrabberVisible = true
+    }
+    nativeController = controller
+    presenter.present(controller, animated: true) {
+      Task { await model.handleInvocation(url); self.pendingURL = nil }
+    }
   }
 }

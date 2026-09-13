@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct MachineLoginView: View {
+  var allowsDismiss = false
+  @Environment(\.dismiss) private var dismiss
   @EnvironmentObject private var model: MachineLoginViewModel
   @State private var showingError = false
   @State private var section: Int?
@@ -30,6 +32,14 @@ struct MachineLoginView: View {
       }
     }
     .background(Color(.systemGroupedBackground).ignoresSafeArea())
+    .overlay(alignment: .topLeading) {
+      if allowsDismiss {
+        Button { dismiss() } label: { Image(systemName: "xmark") }
+          .buttonStyle(.bordered)
+          .tint(.primary)
+          .padding(.top, 8).padding(.leading, 20)
+      }
+    }
     .overlay(alignment: .topTrailing) {
       if let user = model.user {
         Group {
@@ -535,9 +545,42 @@ private struct ClipAccountSheet: View {
       NavigationView { content }.navigationViewStyle(.stack)
     }
   }
+  @ViewBuilder private func billTotals(_ timeline: PrismBillTimeline) -> some View {
+    ForEach(Array(timeline.totals.enumerated()), id: \.offset) { _, item in
+      (Text(item.name + " ").foregroundColor(.secondary) + Text(item.amount.formatted(.number.precision(.fractionLength(2)))).foregroundColor(item.amount < 0 ? .green : .secondary)).font(.caption)
+    }
+  }
+  @ViewBuilder private var checkoutButton: some View {
+    if #available(iOS 26.0, *) {
+      Button { Task { await model.checkout(); done = model.errorMessage == nil } } label: {
+        HStack { if model.deviceBusy { ProgressView() }; Text("结账").font(.headline) }.frame(maxWidth: .infinity).padding(.vertical, 12)
+      }.buttonStyle(.glassProminent).tint(.blue).disabled(model.deviceBusy)
+    } else {
+      Button { Task { await model.checkout(); done = model.errorMessage == nil } } label: {
+        HStack { if model.deviceBusy { ProgressView() }; Text("结账") }.frame(maxWidth: .infinity).padding(.vertical, 12)
+      }.buttonStyle(.borderedProminent).tint(.blue).disabled(model.deviceBusy)
+    }
+  }
   private var content: some View {
-    ScrollView {
+    VStack(spacing: 0) {
+      ScrollView {
       VStack(alignment: .leading, spacing: 20) {
+      if section == 0, !done, let preview = model.checkoutPreview {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("合计").font(.subheadline).foregroundStyle(.secondary)
+          Text(preview.settlementPreview.total.formatted(.number.precision(.fractionLength(2))))
+            .font(.largeTitle.bold()).monospacedDigit()
+          if let timeline = preview.timeline {
+            if #available(iOS 16.0, *) {
+              ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { billTotals(timeline) }
+                VStack(alignment: .leading, spacing: 4) { billTotals(timeline) }
+              }.padding(.top, 6)
+            } else { VStack(alignment: .leading, spacing: 4) { billTotals(timeline) }.padding(.top, 6) }
+          }
+        }.frame(maxWidth: 480, alignment: .leading).padding(.bottom, 4)
+      }
+
         if let error = loadError ?? model.errorMessage {
           VStack(alignment: .leading, spacing: 8) {
             Text(error).font(.subheadline).foregroundStyle(.red)
@@ -548,10 +591,11 @@ private struct ClipAccountSheet: View {
         if section == 0 {
           if done { Text("已结账") }
           else if let preview = model.checkoutPreview {
-            if let session = model.summary?.activeSession { Text(prismDate(session.startedAt) + " – " + String(localized: "现在")).font(.caption).foregroundStyle(.secondary) }
-            ForEach(preview.chargeItems) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
-            ForEach(preview.adjustments) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
-            PrismLabeledRow(String(localized: "合计"), value: preview.settlementPreview.total.formatted(.number.precision(.fractionLength(2)))).font(.title3.bold())
+            if let timeline = preview.timeline { ClipBillTimeline(timeline: timeline) }
+            else {
+              ForEach(preview.chargeItems) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
+              ForEach(preview.adjustments) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
+            }
           } else if !model.deviceBusy && model.errorMessage == nil && loadError == nil { Text("暂无待结账单") }
         } else if section == 1 {
           if done { Text("兑换成功") } else {
@@ -570,16 +614,13 @@ private struct ClipAccountSheet: View {
           if model.assets.isEmpty && !model.deviceBusy && loadError == nil { Text("暂无资产") }
           ForEach(model.assets) { item in PrismLabeledRow(item.assetName ?? item.assetCode, value: item.quantity.formatted()) }
         }
-      }.disabled(model.deviceBusy).padding(24).frame(maxWidth: 480).frame(maxWidth: .infinity)
-    }
-    .safeAreaInset(edge: .bottom, spacing: 0) {
-      if section == 0, !done, model.checkoutPreview != nil {
-        Button { Task { await model.checkout(); done = model.errorMessage == nil } } label: {
-          HStack { if model.deviceBusy { ProgressView() }; Text("结账") }
+      }.disabled(model.deviceBusy).padding(24).padding(.bottom, section == 0 && !done ? 100 : 0).frame(maxWidth: 480).frame(maxWidth: .infinity)
+      }
+      .overlay(alignment: .bottom) {
+        if section == 0, !done, model.checkoutPreview != nil {
+          checkoutButton.padding(.horizontal, 24)
+            .frame(maxWidth: 480).frame(maxWidth: .infinity)
         }
-        .buttonStyle(ClipActionStyle(primary: true)).disabled(model.deviceBusy)
-        .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 24)
-        .frame(maxWidth: 480).frame(maxWidth: .infinity)
       }
     }
     .navigationTitle(title)
@@ -609,4 +650,104 @@ private struct PrismLabeledRow: View {
   let title: String; let value: String
   init(_ title: String, value: String) { self.title = title; self.value = value }
   var body: some View { HStack(alignment: .firstTextBaseline) { Text(title); Spacer(); Text(value) }.padding(.vertical, 12) }
+}
+
+private func billClock(_ value: String) -> String { prismParsedDate(value)?.formatted(date: .omitted, time: .shortened) ?? value }
+private func billEventLabel(_ kind: String) -> String {
+  switch kind {
+  case "start": return String(localized: "开始计费")
+  case "end": return String(localized: "结束计费")
+  case "switch": return String(localized: "切换计费规则")
+  case "current": return String(localized: "现在")
+  default: return ""
+  }
+}
+private struct ClipBillTimeline: View {
+  let timeline: PrismBillTimeline
+  var body: some View {
+    VStack(spacing: 0) {
+      ForEach(Array(timeline.events.enumerated()), id: \.offset) { index, event in
+        ClipBillEvent(event: event, tracks: timeline.tracks, hasNext: index + 1 < timeline.events.count)
+      }
+    }
+  }
+}
+private struct ClipBillEvent: View {
+  let event: PrismBillTimeline.Event
+  let tracks: [PrismBillTimeline.Track]
+  let hasNext: Bool
+  private let colors: [Color] = [.blue, .brown, .purple, .teal, .pink, .orange]
+  private var lanes: Int { max(1, (tracks.map(\.lane).max() ?? 0) + 1) }
+  private var kinds: Set<String> { Set(event.entries.filter { $0.trackId != nil }.map(\.kind)) }
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      HStack(alignment: .firstTextBaseline) {
+        Text(event.time + (kinds.count == 1 ? " · " + billEventLabel(kinds.first!) : "")).font(.subheadline.bold())
+        Spacer(minLength: 8)
+        Text(prismParsedDate(event.date + "T12:00:00Z")?.formatted(.dateTime.month().day()) ?? "").font(.caption).foregroundStyle(.secondary)
+      }
+      ForEach(Array(event.entries.enumerated()), id: \.offset) { _, entry in
+        ClipBillEntry(entry: entry, showKind: kinds.count > 1, trackColor: tracks.first(where: { $0.id == entry.trackId }).map { colors[$0.color % colors.count] })
+      }
+    }
+    .padding(.leading, CGFloat(lanes * 14 + 18)).padding(.bottom, 28)
+    .background {
+      GeometryReader { proxy in
+        ForEach(tracks) { track in
+          let point = event.entries.contains { $0.trackId == track.id }
+          let above = track.endedAt > event.at && track.startedAt <= event.at
+          let below = hasNext && track.startedAt < event.at && track.endedAt >= event.at
+          let x = CGFloat(track.lane * 14 + 5)
+          Path { path in
+            if above { path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x, y: 11)) }
+            if below { path.move(to: CGPoint(x: x, y: 11)); path.addLine(to: CGPoint(x: x, y: proxy.size.height)) }
+          }.stroke(colors[track.color % colors.count].opacity(0.7), lineWidth: 3)
+          if point { Circle().fill(colors[track.color % colors.count]).frame(width: 9, height: 9).position(x: x, y: 11) }
+        }
+      }.accessibilityHidden(true)
+    }
+  }
+}
+private struct ClipBillEntry: View {
+  let entry: PrismBillTimeline.Entry
+  let showKind: Bool
+  let trackColor: Color?
+  private var period: String? {
+    guard let start = entry.startedAt, let end = entry.endedAt else { return nil }
+    let minutes = Int((prismParsedDate(end)?.timeIntervalSince(prismParsedDate(start) ?? Date()) ?? 0) / 60)
+    return (entry.periodLabel ?? (billClock(start) + " – " + billClock(end))) + " · " + minutes.formatted() + " " + String(localized: "分钟")
+  }
+  private var rate: String? {
+    guard let unit = entry.unitMinutes, let price = entry.unitPrice else { return nil }
+    return price.formatted() + " / " + unit.formatted() + " " + String(localized: "分钟") + (entry.units.map { " × " + $0.formatted() } ?? "")
+  }
+  private var cap: String? {
+    guard let cap = entry.cap else { return nil }
+    let name = entry.trackId == nil ? String(localized: "跨方案封顶") : String(localized: "时段封顶")
+    let history = (entry.paidBefore ?? 0) != 0 ? " · " + String(localized: "历史已计入") + " " + entry.paidBefore!.formatted() : ""
+    return name + " " + cap.formatted() + history
+  }
+  var body: some View {
+    VStack(alignment: .leading, spacing: 5) {
+      HStack(alignment: .firstTextBaseline) {
+        HStack(spacing: 8) {
+          if let trackColor { Circle().fill(trackColor).frame(width: 6, height: 6).accessibilityHidden(true) }
+          Text(entry.name).font(.subheadline.weight(.medium))
+        }
+        Spacer(minLength: 8)
+        if let amount = entry.amount {
+          Text(amount.formatted(.number.precision(.fractionLength(2)))).font(.subheadline.bold()).monospacedDigit().foregroundStyle(amount < 0 ? Color.green : Color.primary)
+        }
+      }
+      Group {
+        if showKind, entry.trackId != nil { Text(billEventLabel(entry.kind)) }
+        if let rule = entry.rule { Text(rule + (entry.nextRule.map { " → " + $0 } ?? "")) }
+        if let period { Text(period) }
+        if let rate { Text(rate) }
+        if let cap { Text(cap) }
+      }.font(.caption).foregroundStyle(.secondary)
+    }.padding(entry.trackId == nil ? 0 : 12)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(entry.trackId == nil ? Color.clear : Color.primary.opacity(0.025), in: RoundedRectangle(cornerRadius: 14))
+  }
 }

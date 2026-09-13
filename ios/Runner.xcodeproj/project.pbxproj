@@ -32,7 +32,6 @@
 		B1C000000000000000000002 /* ../PrismClip/LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000002 /* ../PrismClip/LocationService.swift */; };
 		B1C000000000000000000003 /* ../PrismClip/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000003 /* ../PrismClip/Models.swift */; };
 		B1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift */; };
-		B1C000000000000000000005 /* PrismNativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000001 /* PrismNativeBridge.swift */; };
 		B1C000000000000000000006 /* MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000002 /* MunetAuthenticationService.swift */; };
 		B1C000000000000000000007 /* PasskeyAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */; };
 		B1C000000000000000000008 /* InvocationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE5A12DC74545CC94497385 /* InvocationParser.swift */; };
@@ -87,7 +86,6 @@
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		1CE5A12DC74545CC94497385 /* InvocationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationParser.swift; sourceTree = "<group>"; };
 		29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismURLBridge.swift; sourceTree = "<group>"; };
-		2A1C00000000000000000001 /* PrismNativeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismNativeBridge.swift; sourceTree = "<group>"; };
 		2A1C00000000000000000002 /* MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MunetAuthenticationService.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -232,7 +230,6 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */,
-				2A1C00000000000000000001 /* PrismNativeBridge.swift */,
 				AA1100000000000000000013 /* InfoPlist.xcstrings */,
 				D1C000000000000000000001 /* ../PrismClip/PrismAPI.swift */,
 				D1C000000000000000000002 /* ../PrismClip/LocationService.swift */,
@@ -454,7 +451,6 @@
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */,
-				B1C000000000000000000005 /* PrismNativeBridge.swift in Sources */,
 				B1C000000000000000000001 /* ../PrismClip/PrismAPI.swift in Sources */,
 				B1C000000000000000000002 /* ../PrismClip/LocationService.swift in Sources */,
 				B1C000000000000000000003 /* ../PrismClip/Models.swift in Sources */,
