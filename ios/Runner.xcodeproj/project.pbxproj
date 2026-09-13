@@ -451,6 +451,8 @@
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */,
+				85CE8E4C908F471AA82371C9 /* MachineLoginView.swift in Sources */,
+				74DE941C77D94C35809D93CD /* MachineLoginViewModel.swift in Sources */,
 				B1C000000000000000000001 /* ../PrismClip/PrismAPI.swift in Sources */,
 				B1C000000000000000000002 /* ../PrismClip/LocationService.swift in Sources */,
 				B1C000000000000000000003 /* ../PrismClip/Models.swift in Sources */,
