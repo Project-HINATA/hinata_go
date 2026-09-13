@@ -1218,8 +1218,10 @@
   "prismContinuousPeriod": "连续时段",
   "prismMahjongTable": "麻将桌",
   "prismMahjongPlaying": "麻将计费中",
-  "prismMahjongWaiting": "等待开桌",
+  "prismMahjongWaiting": "等待玩家",
   "prismMahjongYou": "你",
   "prismMahjongJoin": "上桌",
-  "prismMahjongLeave": "下桌"
+  "prismMahjongLeave": "下桌",
+  "prismMahjongEmpty": "空位",
+  "prismMahjongFull": "已满桌"
 }

@@ -31,8 +31,31 @@ final class FixtureProtocol: URLProtocol {
   override func stopLoading() {}
 }
 
+enum PersistentCookieCheck {
+  static func check() async throws {
+    let port = ProcessInfo.processInfo.environment["PRISM_COOKIE_TEST_PORT"]!
+    let origin = URL(string: "http://127.0.0.1:\(port)")!
+    let first = PrismAPI(origin: origin)
+    try await first.exchangeAppClipAuth(code: "test")
+    let loggedIn = try await first.me().user?.id == "persisted"
+    precondition(loggedIn)
+    let reopened = PrismAPI(origin: origin)
+    let restored = try await reopened.me().user?.id == "persisted"
+    precondition(restored, "Recreating the client must preserve login")
+    let other = first.atOrigin(URL(string: "http://localhost:\(port)")!)
+    let isolated = try await other.me().user == nil
+    precondition(isolated, "Login cookies must not reach another host")
+    let returned = try await other.atOrigin(origin).me().user?.id == "persisted"
+    precondition(returned)
+    _ = try await reopened.requestJSON(path: "/api/v1/auth/logout", body: [:])
+    let loggedOut = try await PrismAPI(origin: origin).me().user == nil
+    precondition(loggedOut, "Logout must remain effective after reopening")
+  }
+}
+
 @main struct PrismVisitCheck {
   @MainActor static func main() async throws {
+    try await PersistentCookieCheck.check()
     let origin = URL(string: "https://link-beta.neri.moe")!
     precondition(InvocationParser.invocation(from: URL(string: "https://example.com:8443/t/store/device")!)?.origin.absoluteString == "https://example.com:8443")
     precondition(InvocationParser.invocation(from: URL(string: "http://example.com/t/store/device")!) == nil)
@@ -41,6 +64,8 @@ final class FixtureProtocol: URLProtocol {
     var member = false, active = false
     var billing = true
     var capabilities = ["power":true,"coin":true,"card":true,"door":true]
+    var historyReads = 0, assetReads = 0
+    var failBillRead = true
     var statusReads = 0
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
@@ -70,8 +95,8 @@ final class FixtureProtocol: URLProtocol {
       case "/api/v1/devices/session/state": return ok(["gate":!billing ? "ready" : member ? (active ? "ready" : "entry") : "qq", "power":"unknown","mahjong":["capacity":4,"seats":mahjongSeats]])
       case "/api/v1/shops/store/qq-binding": return ok(["code":"ABC123","expiresAt":"2999-01-01T00:00:00Z"])
       case "/api/v1/shops/store/player/me": return ok(["wallet":[],"activeSession":active ? ["id":"entry","startedAt":"2026-09-12T00:00:00Z"] : NSNull()])
-      case "/api/v1/shops/store/player/assets": return ok(["holdings":[]])
-      case "/api/v1/shops/store/player/sessions/history": return ok(["sessions":[]])
+      case "/api/v1/shops/store/player/assets": assetReads += 1; return ok(["holdings":[]])
+      case "/api/v1/shops/store/player/sessions/history": historyReads += 1; return ok(["sessions":[]])
       case "/api/v1/shops/store/devices": return ok(["devices":[]])
       case "/api/v1/devices/session/actions":
         if body["action"] as? String == "mahjong.join" {
@@ -87,7 +112,9 @@ final class FixtureProtocol: URLProtocol {
         active = true
         return ok(["temporaryPassword":"12345678","expiresAt":"2999-01-01T00:00:00Z"])
       case "/api/v1/machines/login": return ok(["ok":true,"coin":["status":"unknown"]])
-      case "/api/v1/shops/store/player/checkout/preview": return ok(["settlementPreview":["total":12],"chargeItems":[],"adjustments":[]])
+      case "/api/v1/shops/store/player/checkout/preview":
+        if failBillRead { failBillRead = false; throw URLError(.networkConnectionLost) }
+        return ok(["settlementPreview":["total":12],"chargeItems":[],"adjustments":[]])
       case "/api/v1/shops/store/player/checkout/confirm":
         checkoutIds.append(body["operationId"] as! String); checkoutCalls += 1
         if checkoutCalls == 1 { return (400,["error":["code":"INSUFFICIENT_BALANCE","message":"余额不足"]]) }
@@ -117,10 +144,17 @@ final class FixtureProtocol: URLProtocol {
     precondition(model.doorPassword?.temporaryPassword == "12345678" && model.summary?.activeSession != nil)
     precondition(model.canUseCards && model.deviceState?.power == "unknown")
     await model.device("coin"); await model.device("coin"); precondition(coinCalls == 1)
-    precondition(model.state == .expired && model.ticket == nil && sessionStarts == 1)
+    precondition(model.state == .ready && model.ticket != nil && model.errorMessage != nil && sessionStarts == 1)
     await model.refreshVisit(); precondition(sessionStarts == 1)
     await model.start(shopCode: "store", publicId: "device")
-    await model.login(card:model.cards[0]); precondition(model.state == .expired && model.ticket == nil)
+    await model.login(card:model.cards[0]); precondition(model.state == .ready && model.ticket != nil)
+    precondition(historyReads == 0 && assetReads == 0, "Status, admission and device operations must not fetch wallet/history")
+    try await model.loadAccountSection(0)
+    precondition(historyReads == 0 && assetReads == 0, "Bill must not fetch unrelated account data")
+    try await model.loadAccountSection(2)
+    precondition(historyReads == 1 && assetReads == 0)
+    try await model.loadAccountSection(3)
+    precondition(historyReads == 1 && assetReads == 1)
     await model.previewCheckout(); precondition(model.checkoutPreview?.settlementPreview.total == 12)
     await model.checkout(); precondition(model.summary?.activeSession != nil)
     await model.checkout(); await model.checkout()

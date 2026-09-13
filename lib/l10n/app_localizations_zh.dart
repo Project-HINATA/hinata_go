@@ -1228,7 +1228,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get prismMahjongPlaying => '麻将计费中';
 
   @override
-  String get prismMahjongWaiting => '等待开桌';
+  String get prismMahjongWaiting => '等待玩家';
 
   @override
   String get prismMahjongYou => '你';
@@ -1238,4 +1238,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get prismMahjongLeave => '下桌';
+
+  @override
+  String get prismMahjongEmpty => '空位';
+
+  @override
+  String get prismMahjongFull => '已满桌';
 }

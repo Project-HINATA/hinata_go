@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -83,9 +84,10 @@ class PrismVisit {
     Object? error,
     String? notice,
     bool clearPreview = false,
+    bool clearSummary = false,
   }) => PrismVisit(
     shop: shop ?? this.shop,
-    summary: summary ?? this.summary,
+    summary: clearSummary ? null : summary ?? this.summary,
     assets: assets ?? this.assets,
     history: history ?? this.history,
     user: user ?? this.user,
@@ -110,6 +112,7 @@ class PrismVisitController extends Notifier<PrismVisit> {
   Timer? _timer;
   int _refreshRevision = 0;
   bool ticketConsumed = false;
+  bool _sceneActive = true;
   @override
   PrismVisit build() {
     ref.onDispose(() {
@@ -127,11 +130,24 @@ class PrismVisitController extends Notifier<PrismVisit> {
     bool requireLocation = false,
   }) async {
     final version = _version;
-    final result = await ref.read(prismRequestProvider)(
-      path,
-      body: body,
-      requireLocation: requireLocation,
-    );
+    final send = ref.read(prismRequestProvider);
+    Map<String, dynamic> result;
+    try {
+      result = await send(path, body: body, requireLocation: requireLocation);
+    } catch (error) {
+      if ((error is PlatformException &&
+              error.details is Map &&
+              error.details['readRetried'] == true) ||
+          !_networkFailure(error) ||
+          (body != null && !path.endsWith('/checkout/preview'))) {
+        rethrow;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!ref.mounted || version != _version) {
+        throw StateError('Visit changed');
+      }
+      result = await send(path, body: body, requireLocation: requireLocation);
+    }
     if (!ref.mounted || version != _version) throw StateError('Visit changed');
     return result;
   }
@@ -158,7 +174,23 @@ class PrismVisitController extends Notifier<PrismVisit> {
       (error is PrismException && error.code == 'TICKET_EXPIRED') ||
       (error is PlatformException && error.code == 'TICKET_EXPIRED');
 
-  Future<void> refresh() async {
+  static bool _networkFailure(Object error) =>
+      error is http.ClientException ||
+      (error is PlatformException && error.code == 'network_error');
+
+  void setSceneActive(bool active) {
+    _sceneActive = active;
+    if (!active) {
+      _timer?.cancel();
+      _refreshRevision++;
+    } else if (state.shop != null && !state.busy) {
+      unawaited(refresh(silent: true));
+    }
+  }
+
+  Future<void> refresh({bool silent = false}) async {
+    if (silent && !_sceneActive) return;
+    if (!silent) state = state.copy();
     final revision = ++_refreshRevision;
     _timer?.cancel();
     final version = _version;
@@ -182,24 +214,21 @@ class PrismVisitController extends Notifier<PrismVisit> {
         }
       }
       Map<String, dynamic>? summary;
-      List<Map<String, dynamic>> assets = [], history = [];
       if (shop['membership'] != null &&
           shop['shop']['billingEnabled'] == true) {
         summary = await request(path('player/me'));
-        assets = _rows((await request(path('player/assets')))['holdings']);
-        history = _rows(
-          (await request(path('player/sessions/history')))['sessions'],
-        );
       }
       if (!ref.mounted || version != _version || revision != _refreshRevision) {
         return;
       }
+      final sameUser = _userId == userId;
       _userId = userId;
       state = state.copy(
         shop: shop,
         summary: summary,
-        assets: assets,
-        history: history,
+        clearSummary: summary == null,
+        assets: sameUser ? state.assets : [],
+        history: sameUser ? state.history : [],
         user: me['user'] as Map<String, dynamic>?,
         coinUsed: device['coinUsed'] == true || state.coinUsed,
         mahjong: device['mahjong'] as Map<String, dynamic>?,
@@ -216,22 +245,55 @@ class PrismVisitController extends Notifier<PrismVisit> {
         if (revision != _refreshRevision) return;
         state = state.copy(binding: binding);
       }
-      if (!ticketConsumed &&
-          (state.gate == 'qq' ||
-              state.power == 'off' ||
-              session.machine.has('mahjong'))) {
-        _timer = Timer(const Duration(seconds: 3), () {
-          if (!state.busy) {
-            unawaited(refresh());
-          }
-        });
-      }
+      _scheduleRefresh();
     } catch (error) {
       if (ref.mounted && version == _version && revision == _refreshRevision) {
-        state = state.copy(error: error);
+        if (silent && _sceneActive && _networkFailure(error)) {
+          _timer = Timer(const Duration(seconds: 3), () {
+            if (!state.busy) unawaited(refresh(silent: true));
+          });
+        } else {
+          state = state.copy(error: error);
+        }
       }
     }
   }
+
+  void _scheduleRefresh() {
+    _timer?.cancel();
+    if (_sceneActive &&
+        !ticketConsumed &&
+        (state.gate == 'qq' ||
+            state.power == 'off' ||
+            session.machine.has('mahjong'))) {
+      _timer = Timer(const Duration(seconds: 3), () {
+        if (!state.busy) unawaited(refresh(silent: true));
+      });
+    }
+  }
+
+  Future<void> loadAccountSection(int section) => _act(() async {
+    if (section == 0) {
+      state = state.copy(clearPreview: true);
+      final summary = await request(path('player/me'));
+      state = state.copy(summary: summary);
+      if (state.active) {
+        state = state.copy(
+          preview: await request(path('player/checkout/preview'), body: {}),
+        );
+      }
+    } else if (section == 2) {
+      state = state.copy(
+        history: _rows(
+          (await request(path('player/sessions/history')))['sessions'],
+        ),
+      );
+    } else if (section == 3) {
+      state = state.copy(
+        assets: _rows((await request(path('player/assets')))['holdings']),
+      );
+    }
+  });
 
   Future<void> _act(Future<void> Function() action) async {
     if (state.busy) return;
@@ -248,8 +310,7 @@ class PrismVisitController extends Notifier<PrismVisit> {
             : error is PlatformException
             ? error.code
             : null;
-        if (_expired(error) ||
-            ['DEVICE_RESULT_UNKNOWN', 'OPERATION_PENDING'].contains(code)) {
+        if (_expired(error)) {
           expire();
         } else if (code == 'COIN_ALREADY_USED') {
           state = state.copy(coinUsed: true);
@@ -260,6 +321,7 @@ class PrismVisitController extends Notifier<PrismVisit> {
     } finally {
       if (ref.mounted && version == _version) {
         state = state.copy(busy: false, error: state.error);
+        _scheduleRefresh();
       }
     }
   }
@@ -298,10 +360,7 @@ class PrismVisitController extends Notifier<PrismVisit> {
     }
     final saved = prefs.getString(storageKey);
     if (saved != null && key.startsWith('device.')) {
-      throw const PrismException(
-        '操作结果待确认，请联系店员，不要重复操作',
-        code: 'OPERATION_PENDING',
-      );
+      throw const PrismException('操作失败，请重新扫码后重试', code: 'OPERATION_PENDING');
     }
     final payload = saved == null
         ? {...body, 'operationId': const Uuid().v4()}
@@ -346,7 +405,10 @@ class PrismVisitController extends Notifier<PrismVisit> {
         await prefs.remove(storageKey);
       }
       if (key.startsWith('device.') && !definitive) {
-        throw const PrismException('本次会话已失效', code: 'DEVICE_RESULT_UNKNOWN');
+        throw const PrismException(
+          '设备连接失败，请重新扫码后重试',
+          code: 'DEVICE_UNAVAILABLE',
+        );
       }
       rethrow;
     }

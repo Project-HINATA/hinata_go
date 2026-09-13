@@ -30,11 +30,14 @@ class PrismDeviceControls extends HookConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (visit.gate == 'loading')
-          PrismAction(
-            label: l.prismRefresh,
-            onPressed: busy ? null : controller.refresh,
-            secondary: true,
-          ),
+          if (visit.error == null)
+            const Center(child: CircularProgressIndicator())
+          else
+            PrismAction(
+              label: l.prismRetry,
+              onPressed: controller.refresh,
+              secondary: true,
+            ),
         if (visit.gate == 'qq') ...[
           Text(l.prismBindQQ, textAlign: TextAlign.center, style: heading),
           const SizedBox(height: 24),
@@ -198,50 +201,121 @@ class PrismMahjongTable extends ConsumerWidget {
     final l = context.l10n;
     final seats = (table['seats'] as List).cast<Map<String, dynamic>>();
     final mine = seats.any((s) => s['mine'] == true);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final capacity = table['capacity'] as int;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 16,
       children: [
-        Text(
-          l.prismMahjongTable,
-          style: Theme.of(context).textTheme.headlineSmall,
-          textAlign: TextAlign.center,
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 4,
+                children: [
+                  Text(l.prismMahjongTable, style: theme.textTheme.titleLarge),
+                  Text(
+                    seats.any((s) => s['playing'] == true)
+                        ? l.prismMahjongPlaying
+                        : l.prismMahjongWaiting,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text('${seats.length}', style: theme.textTheme.headlineSmall),
+            Text(
+              ' / $capacity',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
-        Text(
-          "${seats.length} / ${table['capacity']}",
-          style: Theme.of(context).textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-        Text(
-          seats.any((s) => s['playing'] == true)
-              ? l.prismMahjongPlaying
-              : l.prismMahjongWaiting,
-          textAlign: TextAlign.center,
-        ),
-        if (seats.isNotEmpty)
-          Card.filled(
-            child: Column(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns =
+                MediaQuery.textScalerOf(context).scale(16) > 24 ||
+                    constraints.maxWidth < 280
+                ? 1
+                : 2;
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
               children: [
-                for (final seat in seats)
-                  ListTile(
-                    title: Text(seat['name'] as String),
-                    trailing: seat['mine'] == true
-                        ? Text(l.prismMahjongYou)
-                        : null,
+                for (var i = 0; i < capacity; i++)
+                  SizedBox(
+                    width:
+                        (constraints.maxWidth - (columns - 1) * 10) / columns,
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 84),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: i < seats.length
+                            ? colors.surfaceContainer
+                            : null,
+                        borderRadius: BorderRadius.circular(16),
+                        border: i >= seats.length || seats[i]['mine'] == true
+                            ? Border.all(
+                                color: i < seats.length
+                                    ? colors.outline
+                                    : colors.outlineVariant,
+                              )
+                            : null,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        spacing: 6,
+                        children: [
+                          Text(
+                            i < seats.length
+                                ? seats[i]['name'] as String
+                                : l.prismMahjongEmpty,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: i < seats.length
+                                  ? colors.onSurface
+                                  : colors.onSurfaceVariant,
+                            ),
+                          ),
+                          if (i < seats.length && seats[i]['mine'] == true)
+                            Text(
+                              l.prismMahjongYou,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
               ],
-            ),
-          ),
-        PrismAction(
-          label: mine ? l.prismMahjongLeave : l.prismMahjongJoin,
-          busy: busy,
-          onPressed:
-              busy || (!mine && seats.length >= (table['capacity'] as int))
-              ? null
-              : () => ref
-                    .read(prismVisitProvider.notifier)
-                    .device(mine ? 'mahjong.leave' : 'mahjong.join'),
+            );
+          },
         ),
+        if (!mine && seats.length >= capacity)
+          Text(
+            l.prismMahjongFull,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          )
+        else
+          PrismAction(
+            label: mine ? l.prismMahjongLeave : l.prismMahjongJoin,
+            secondary: mine,
+            busy: busy,
+            onPressed: busy
+                ? null
+                : () => ref
+                      .read(prismVisitProvider.notifier)
+                      .device(mine ? 'mahjong.leave' : 'mahjong.join'),
+          ),
       ],
     );
   }
@@ -267,12 +341,10 @@ class PrismDeviceFooter extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 24),
       child: PrismAction(
-        label: visit.coinUsed
-            ? context.l10n.prismCoinSent
-            : context.l10n.prismCoin,
+        label: context.l10n.prismCoin,
         busy: visit.busy,
-        icon: Icon(visit.coinUsed ? Icons.check : Icons.toll, size: 22),
-        onPressed: cardBusy || visit.busy || visit.coinUsed
+        icon: const Icon(Icons.toll, size: 22),
+        onPressed: cardBusy || visit.busy
             ? null
             : () => ref.read(prismVisitProvider.notifier).device('coin'),
       ),
@@ -372,6 +444,19 @@ class PrismAccountMenu extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (visit.active) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: colors.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(l.prismBilling, style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(width: 8),
+          ],
           Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 4),
           const Icon(Icons.expand_more, size: 20),
@@ -392,12 +477,7 @@ class PrismAccountSheet extends HookConsumerWidget {
     useListenable(code);
     final done = useState(false);
     useEffect(() {
-      Future.microtask(() async {
-        await controller.refresh();
-        if (section == 0 && ref.read(prismVisitProvider).active) {
-          await controller.previewCheckout();
-        }
-      });
+      Future.microtask(() => controller.loadAccountSection(section));
       return null;
     }, const []);
     final l = context.l10n;
@@ -448,11 +528,24 @@ class PrismAccountSheet extends HookConsumerWidget {
                             color: colors.errorContainer,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(
-                            prismError(visit.error!),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colors.onErrorContainer,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                prismError(visit.error!),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colors.onErrorContainer,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: visit.busy
+                                    ? null
+                                    : () => controller.loadAccountSection(
+                                        section,
+                                      ),
+                                child: Text(l.prismRetry),
+                              ),
+                            ],
                           ),
                         ),
                       ),

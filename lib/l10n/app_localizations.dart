@@ -2423,7 +2423,7 @@ abstract class AppLocalizations {
   /// No description provided for @prismMahjongWaiting.
   ///
   /// In en, this message translates to:
-  /// **'Waiting to start'**
+  /// **'Waiting for players'**
   String get prismMahjongWaiting;
 
   /// No description provided for @prismMahjongYou.
@@ -2443,6 +2443,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Leave table'**
   String get prismMahjongLeave;
+
+  /// No description provided for @prismMahjongEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Open seat'**
+  String get prismMahjongEmpty;
+
+  /// No description provided for @prismMahjongFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Table full'**
+  String get prismMahjongFull;
 }
 
 class _AppLocalizationsDelegate

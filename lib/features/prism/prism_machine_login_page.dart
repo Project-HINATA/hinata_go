@@ -45,7 +45,8 @@ class _PrismSessionPage extends ConsumerStatefulWidget {
   ConsumerState<_PrismSessionPage> createState() => _PrismSessionPageState();
 }
 
-class _PrismSessionPageState extends ConsumerState<_PrismSessionPage> {
+class _PrismSessionPageState extends ConsumerState<_PrismSessionPage>
+    with WidgetsBindingObserver {
   late final _api = PrismAPI(origin: ref.read(prismOriginProvider));
   late final _native = PrismNativeService(
     origin: ref.read(prismOriginProvider),
@@ -69,6 +70,7 @@ class _PrismSessionPageState extends ConsumerState<_PrismSessionPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(prismInvocationProvider).clear();
     });
@@ -85,7 +87,17 @@ class _PrismSessionPageState extends ConsumerState<_PrismSessionPage> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_session?.machine.unified == true) {
+      ref
+          .read(prismVisitProvider.notifier)
+          .setSceneActive(state == AppLifecycleState.resumed);
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _api.dispose();
     super.dispose();
   }
@@ -291,32 +303,35 @@ class _PrismSessionPageState extends ConsumerState<_PrismSessionPage> {
     }
 
     try {
+      Map<String, dynamic> result;
       if (PrismNativeService.isAvailable) {
-        await _native.loginMachine(
+        result = await _native.loginMachine(
           cardId: card.id,
           ticket: ticket,
           requireLocation: session.machine.machineGeo,
           onSending: onSending,
         );
       } else {
-        await _api.loginMachine(
+        result = await _api.loginMachine(
           cardId: card.id,
           ticket: ticket,
           requireLocation: session.machine.machineGeo,
         );
       }
       if (!mounted || session != _session) return;
-      if (session.machine.unified) {
-        ref.read(prismVisitProvider.notifier).expire();
-      }
       setState(() {
         _loggingIn = false;
-        Future<void>.delayed(const Duration(seconds: 3), () {
-          if (mounted && session == _session) {
-            setState(() => _page = _SessionPage.expired);
-          }
-        });
+        _success = true;
       });
+      if (session.machine.unified) {
+        await ref.read(prismVisitProvider.notifier).refresh();
+      }
+      if (mounted &&
+          ['failed', 'unknown'].contains((result['coin'] as Map?)?['status'])) {
+        await _showErrorDialog(context.l10n.prismCoinFailed);
+      }
+      await Future<void>.delayed(const Duration(seconds: 1));
+      if (mounted && session == _session) setState(() => _success = false);
     } catch (error) {
       if (!mounted || session != _session) return;
       setState(() {
@@ -333,17 +348,6 @@ class _PrismSessionPageState extends ConsumerState<_PrismSessionPage> {
         await ref
             .read(prismVisitProvider.notifier)
             .load(widget.shopCode, session);
-        return;
-      }
-      if ([
-        'DEVICE_RESULT_UNKNOWN',
-        'DEVICE_UNAVAILABLE',
-        'OPERATION_PENDING',
-      ].contains(code)) {
-        if (session.machine.unified) {
-          ref.read(prismVisitProvider.notifier).expire();
-        }
-        setState(() => _page = _SessionPage.expired);
         return;
       }
       if (_page != _SessionPage.expired && !_isCancellation(error)) {
@@ -449,7 +453,7 @@ class _PrismSessionPageState extends ConsumerState<_PrismSessionPage> {
                                     visit.error != null)
                             ? PrismDeviceControls(
                                 machine: _session!.machine,
-                                cardBusy: _loggingIn || _success,
+                                cardBusy: _loggingIn,
                               )
                             : null,
                         afterCards:
@@ -458,7 +462,7 @@ class _PrismSessionPageState extends ConsumerState<_PrismSessionPage> {
                                 !_authRequired
                             ? PrismDeviceFooter(
                                 machine: _session!.machine,
-                                cardBusy: _loggingIn || _success,
+                                cardBusy: _loggingIn,
                               )
                             : null,
                         authRequired: _authRequired,

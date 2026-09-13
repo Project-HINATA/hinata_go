@@ -43,8 +43,10 @@ final class PrismAPI {
   private let decoder = JSONDecoder()
   private let encoder = JSONEncoder()
 
-  init(configuration: URLSessionConfiguration = .ephemeral, origin: URL = PrismAPI.defaultOrigin) {
+  init(configuration: URLSessionConfiguration = .default, origin: URL = PrismAPI.defaultOrigin) {
     self.baseURL = origin
+    configuration.urlCache = nil
+    configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
     configuration.httpCookieAcceptPolicy = .always
     configuration.httpShouldSetCookies = true
     session = URLSession(configuration: configuration)
@@ -55,8 +57,7 @@ final class PrismAPI {
     if ["localhost", "127.0.0.1"].contains(Self.defaultOrigin.host ?? "") { return self }
     #endif
     if baseURL == origin { return self }
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = session.configuration.protocolClasses
+    let configuration = session.configuration
     return PrismAPI(configuration: configuration, origin: origin)
   }
 
@@ -103,7 +104,7 @@ final class PrismAPI {
   func requestJSON(path: String, body: [String: Any]? = nil) async throws -> Data {
     var request = try makeRequest(path: path, method: body == nil ? "GET" : "POST")
     if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await responseData(for: request)
     guard let http = response as? HTTPURLResponse else { throw PrismAPIError.invalidResponse }
     guard 200..<300 ~= http.statusCode else {
       if let error = try? decoder.decode(ServerError.self, from: data).error {
@@ -117,6 +118,16 @@ final class PrismAPI {
 
   func request<T: Decodable>(_ path: String, body: [String: Any]? = nil) async throws -> T {
     try decoder.decode(T.self, from: await requestJSON(path: path, body: body))
+  }
+
+  private func responseData(for request: URLRequest) async throws -> (Data, URLResponse) {
+    do { return try await session.data(for: request) }
+    catch let error as URLError {
+      let readOnly = request.httpMethod == "GET" || request.url?.path.hasSuffix("/checkout/preview") == true
+      guard readOnly, [.networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost].contains(error.code) else { throw error }
+      try await Task.sleep(nanoseconds: 300_000_000)
+      return try await session.data(for: request)
+    }
   }
 
   private func makeRequest(path: String, method: String = "GET") throws -> URLRequest {
@@ -133,7 +144,7 @@ final class PrismAPI {
   }
 
   private func send<Response: Decodable>(_ request: URLRequest) async throws -> Response {
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await responseData(for: request)
     guard let httpResponse = response as? HTTPURLResponse else {
       throw PrismAPIError.invalidResponse
     }

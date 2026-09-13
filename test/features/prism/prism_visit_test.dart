@@ -18,7 +18,7 @@ import 'package:hinata_go/features/prism/prism_visit_content.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets(
-    'mahjong roster uses native join/leave controls and disables full tables',
+    'mahjong roster shows empty and personal seats without a full-table join button',
     (tester) async {
       Future<void> show(List<Map<String, dynamic>> seats) => tester.pumpWidget(
         ProviderScope(
@@ -39,7 +39,15 @@ void main() {
         {'name': '甲', 'mine': false, 'playing': false},
       ]);
       expect(find.text('上桌'), findsOneWidget);
-      expect(find.text('1 / 2'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text(' / 2'), findsOneWidget);
+      expect(find.text('空位'), findsOneWidget);
+      await show([
+        {'name': '甲', 'mine': false, 'playing': true},
+        {'name': '乙', 'mine': false, 'playing': true},
+      ]);
+      expect(find.text('已满桌'), findsOneWidget);
+      expect(find.text('上桌'), findsNothing);
       await show([
         {'name': '甲', 'mine': true, 'playing': true},
       ]);
@@ -248,7 +256,8 @@ void main() {
       await controller.load('store', session);
       await controller.device('coin');
       expect(calls, 1);
-      expect(container.read(prismVisitProvider).gate, 'expired');
+      expect(container.read(prismVisitProvider).gate, 'ready');
+      expect(container.read(prismVisitProvider).error, isNotNull);
     },
   );
 
@@ -327,6 +336,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       addTearDown(tester.view.resetPhysicalSize);
       var powered = false, active = true;
+      var assetReads = 0, historyReads = 0, billReads = 0;
       Future<Map<String, dynamic>> request(
         String path, {
         Map<String, dynamic>? body,
@@ -368,15 +378,19 @@ void main() {
           };
         }
         if (path.endsWith('/player/assets')) {
+          assetReads++;
           return {'holdings': []};
         }
         if (path.endsWith('/sessions/history')) {
+          historyReads++;
           return {'sessions': []};
         }
         if (path.endsWith('/devices')) {
           return {'devices': []};
         }
         if (path.endsWith('/checkout/preview')) {
+          billReads++;
+          if (billReads == 1) throw PlatformException(code: 'network_error');
           return {
             'settlementPreview': {'total': 12},
             'chargeItems': List.generate(
@@ -432,6 +446,8 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(find.text('设备尚未开机'), findsOneWidget);
+          expect(find.text('正在计费'), findsOneWidget);
+          expect(assetReads + historyReads, 0);
           expect(
             tester.getSize(find.widgetWithText(FilledButton, '开机')).height,
             greaterThanOrEqualTo(48),
@@ -454,6 +470,8 @@ void main() {
           expect(find.byType(PrismAccountSheet), findsOneWidget);
           expect(find.byType(BottomSheet), findsOneWidget);
           expect(find.text('12.00'), findsOneWidget);
+          expect(billReads, 2);
+          expect(assetReads + historyReads, 0);
           final checkout = find.widgetWithText(FilledButton, '结账');
           expect(checkout.hitTestable(), findsOneWidget);
           final checkoutRect = tester.getRect(checkout);
@@ -471,6 +489,7 @@ void main() {
           await tester.tap(find.text('结账'));
           await tester.pumpAndSettle();
           expect(active, isFalse);
+          expect(find.text('正在计费'), findsNothing);
           expect(find.text('已结账'), findsOneWidget);
           await tester.tap(find.byType(CloseButton));
           await tester.pumpAndSettle();

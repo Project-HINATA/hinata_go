@@ -1271,7 +1271,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get prismMahjongPlaying => 'Mahjong billing active';
 
   @override
-  String get prismMahjongWaiting => 'Waiting to start';
+  String get prismMahjongWaiting => 'Waiting for players';
 
   @override
   String get prismMahjongYou => 'You';
@@ -1281,4 +1281,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get prismMahjongLeave => 'Leave table';
+
+  @override
+  String get prismMahjongEmpty => 'Open seat';
+
+  @override
+  String get prismMahjongFull => 'Table full';
 }

@@ -1,750 +1,182 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "选择卡片": {
-      "extractionState": "manual",
+    "%@ / %@": {
       "localizations": {
         "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "Select a card"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "选择卡片"
+            "state": "new",
+            "value": "%1$@ / %2$@"
           }
         }
       }
     },
-    "退出账号": {
+    "MuNET Access Token 已过期": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign out"
+            "value": "MuNET access token has expired"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "退出账号"
+            "value": "MuNET Access Token 已过期"
           }
         }
       }
     },
-    "退出账号？": {
+    "MuNET 授权失败": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign out?"
+            "value": "MuNET authorization failed"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "退出账号？"
+            "value": "MuNET 授权失败"
           }
         }
       }
     },
-    "退出": {
+    "MuNET 授权已取消": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign out"
+            "value": "MuNET authorization cancelled"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "退出"
+            "value": "MuNET 授权已取消"
           }
         }
       }
     },
-    "知道了": {
+    "MuNET 授权已过期": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "OK"
+            "value": "MuNET authorization has expired"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "知道了"
+            "value": "MuNET 授权已过期"
           }
         }
       }
     },
-    "重试": {
+    "MuNET 授权无效，请重新登录": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Retry"
+            "value": "Invalid MuNET authorization. Please sign in again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重试"
+            "value": "MuNET 授权无效，请重新登录"
           }
         }
       }
     },
-    "继续登录": {
+    "MuNET 授权无效，请重试": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continue sign-in"
+            "value": "Invalid MuNET authorization. Please try again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "继续登录"
+            "value": "MuNET 授权无效，请重试"
           }
         }
       }
     },
-    "正在连接 MuNET…": {
+    "MuNET 暂时无法刷新授权": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connecting to MuNET…"
+            "value": "Could not refresh MuNET authorization"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在连接 MuNET…"
+            "value": "MuNET 暂时无法刷新授权"
           }
         }
       }
     },
-    "使用 MuNET 登录": {
+    "MuNET 暂时无法同步，显示上次结果": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign in with MuNET"
+            "value": "MuNET sync is unavailable. Showing the last synced cards."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用 MuNET 登录"
+            "value": "MuNET 暂时无法同步，显示上次结果"
           }
         }
       }
     },
-    "正在验证 Passkey…": {
+    "MuNET 未返回长期授权凭据": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verifying passkey…"
+            "value": "MuNET did not provide a refresh token"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在验证 Passkey…"
+            "value": "MuNET 未返回长期授权凭据"
           }
         }
       }
     },
-    "使用 Passkey 登录": {
+    "MuNET 用户名或 ID": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign in with a passkey"
+            "value": "MuNET username or ID"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用 Passkey 登录"
-          }
-        }
-      }
-    },
-    "在网页中使用 Passkey": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Use a passkey on the web"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在网页中使用 Passkey"
-          }
-        }
-      }
-    },
-    "完成授权后，返回这里刷新卡片。": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After signing in, return here to reload your cards."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "完成授权后，返回这里刷新卡片。"
-          }
-        }
-      }
-    },
-    "重新加载卡片": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reload cards"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新加载卡片"
-          }
-        }
-      }
-    },
-    "正在加载卡片": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Loading cards"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在加载卡片"
-          }
-        }
-      }
-    },
-    "无法加载卡片": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not load cards"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法加载卡片"
-          }
-        }
-      }
-    },
-    "还没有可用卡片，请先在 PRiSM 添加卡片": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No cards available. Add a card in PRiSM first."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "还没有可用卡片，请先在 PRiSM 添加卡片"
-          }
-        }
-      }
-    },
-    "正在加载": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Loading"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在加载"
-          }
-        }
-      }
-    },
-    "无法进入机台会话": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not start machine session"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法进入机台会话"
-          }
-        }
-      }
-    },
-    "本次会话已失效": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This session has expired"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本次会话已失效"
-          }
-        }
-      }
-    },
-    "请重新碰一下 NFC 或重新扫描二维码。": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tap the NFC tag or scan the QR code again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请重新碰一下 NFC 或重新扫描二维码。"
-          }
-        }
-      }
-    },
-    "本次登录已完成": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sign-in complete"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本次登录已完成"
-          }
-        }
-      }
-    },
-    "可以关闭此页面": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You can close this page"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "可以关闭此页面"
-          }
-        }
-      }
-    },
-    "已登录": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signed in"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已登录"
-          }
-        }
-      }
-    },
-    "正在登录…": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signing in…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在登录…"
-          }
-        }
-      }
-    },
-    "确认位置…": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Checking location…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "确认位置…"
-          }
-        }
-      }
-    },
-    "返回主页": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Back to home"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "返回主页"
-          }
-        }
-      }
-    },
-    "无法读取机台信息": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not load machine information"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法读取机台信息"
-          }
-        }
-      }
-    },
-    "无法打开网页版，请重试": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not open the web page. Please try again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法打开网页版，请重试"
-          }
-        }
-      }
-    },
-    "无法打开 MuNET 登录页面": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not open MuNET sign-in"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法打开 MuNET 登录页面"
-          }
-        }
-      }
-    },
-    "需要定位权限才能确认你在店内": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allow location access to confirm you are at the arcade."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "需要定位权限才能确认你在店内"
-          }
-        }
-      }
-    },
-    "定位获取失败": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not determine your location"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "定位获取失败"
-          }
-        }
-      }
-    },
-    "获取位置超时，请稍后重试": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Location timed out. Please try again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "获取位置超时，请稍后重试"
-          }
-        }
-      }
-    },
-    "正在获取当前位置，请稍后再试": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Getting your location. Please try again shortly."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在获取当前位置，请稍后再试"
-          }
-        }
-      }
-    },
-    "请到店再进行登录": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Please sign in when you are at the arcade."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请到店再进行登录"
-          }
-        }
-      }
-    },
-    "这台机台暂时不可用，请稍后重试": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This machine is unavailable. Please try again later."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这台机台暂时不可用，请稍后重试"
-          }
-        }
-      }
-    },
-    "网络连接失败，请检查网络后重试": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connection failed. Check your network and try again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "网络连接失败，请检查网络后重试"
-          }
-        }
-      }
-    },
-    "操作失败，请稍后重试": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Something went wrong. Please try again later."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "操作失败，请稍后重试"
-          }
-        }
-      }
-    },
-    "操作过于频繁，请稍后重试": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Too many requests. Please try again later."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "操作过于频繁，请稍后重试"
-          }
-        }
-      }
-    },
-    "当前无法进行此操作": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This action is currently unavailable"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "当前无法进行此操作"
-          }
-        }
-      }
-    },
-    "这个账号暂时无法使用": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This account is currently unavailable"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这个账号暂时无法使用"
-          }
-        }
-      }
-    },
-    "卡片不可用或已失效": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This card is unavailable or has expired"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "卡片不可用或已失效"
-          }
-        }
-      }
-    },
-    "请先登录": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Please sign in first"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请先登录"
-          }
-        }
-      }
-    },
-    "授权码已失效，请重新登录": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Authorization code expired. Please sign in again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "授权码已失效，请重新登录"
+            "value": "MuNET 用户名或 ID"
           }
         }
       }
@@ -766,19 +198,53 @@
         }
       }
     },
-    "Passkey 验证失败": {
+    "MuNET 登录尚未配置": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passkey verification failed"
+            "value": "MuNET sign-in is not configured"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passkey 验证失败"
+            "value": "MuNET 登录尚未配置"
+          }
+        }
+      }
+    },
+    "MuNET 返回的数据无法识别": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid response from MuNET"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MuNET 返回的数据无法识别"
+          }
+        }
+      }
+    },
+    "Passkey 操作失败": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passkey operation failed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passkey 操作失败"
           }
         }
       }
@@ -800,19 +266,19 @@
         }
       }
     },
-    "无法识别这个 Passkey": {
+    "Passkey 验证失败": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passkey not recognized"
+            "value": "Passkey verification failed"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法识别这个 Passkey"
+            "value": "Passkey 验证失败"
           }
         }
       }
@@ -851,121 +317,248 @@
         }
       }
     },
-    "无效的机台地址": {
-      "extractionState": "manual",
+    "prism.bind %@": {},
+    "QQ Bot 联系方式": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invalid machine URL"
+            "value": "QQ bot contact"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无效的机台地址"
+            "value": "QQ Bot 联系方式"
           }
         }
       }
     },
-    "退出账号失败，请重试": {
-      "extractionState": "manual",
+    "上桌": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not sign out. Please try again."
+            "value": "Join table"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "退出账号失败，请重试"
+            "value": "上桌"
           }
         }
       }
     },
-    "卡片": {
-      "extractionState": "manual",
+    "下桌": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cards"
+            "value": "Leave table"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "卡片"
+            "value": "下桌"
           }
         }
       }
     },
-    "账号": {
-      "extractionState": "manual",
+    "不开放入场": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Account"
+            "value": "Entry unavailable"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "账号"
+            "value": "不开放入场"
           }
         }
       }
     },
-    "账号设置": {
-      "extractionState": "manual",
+    "你": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Account settings"
+            "value": "You"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "账号设置"
+            "value": "你"
           }
         }
       }
     },
-    "管理登录身份与设备上的 Passkey。": {
+    "使用 MuNET 登录": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Manage your sign-in methods and passkeys."
+            "value": "Sign in with MuNET"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "管理登录身份与设备上的 Passkey。"
+            "value": "使用 MuNET 登录"
           }
         }
       }
     },
-    "添加 Passkey": {
+    "使用 Passkey 登录": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add a passkey"
+            "value": "Sign in with a passkey"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加 Passkey"
+            "value": "使用 Passkey 登录"
+          }
+        }
+      }
+    },
+    "兑换": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redeem"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兑换"
+          }
+        }
+      }
+    },
+    "兑换成功": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redeemed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兑换成功"
+          }
+        }
+      }
+    },
+    "兑换码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redemption code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兑换码"
+          }
+        }
+      }
+    },
+    "入场并获取开门密码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check in and get door code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入场并获取开门密码"
+          }
+        }
+      }
+    },
+    "全天": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All day"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全天"
+          }
+        }
+      }
+    },
+    "关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
+    "最终金额按确认结账时计算；余额不足或定位未通过时继续计时。": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The final amount is calculated at confirmation. Billing continues if funds or location checks fail."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最终金额按确认结账时计算；余额不足或定位未通过时继续计时。"
+          }
+        }
+      }
+    },
+    "分钟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "minutes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分钟"
           }
         }
       }
@@ -987,172 +580,134 @@
         }
       }
     },
-    "当前设备不支持 Passkey。": {
+    "删除卡片": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This device does not support passkeys."
+            "value": "Delete card"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前设备不支持 Passkey。"
+            "value": "删除卡片"
           }
         }
       }
     },
-    "连接账号，随时管理你的卡片": {
-      "extractionState": "manual",
+    "刷卡已完成，投币冷却中，本次未投币。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connect your account to manage your cards"
+            "value": "Card sent. No coin was inserted because the cooldown is active."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "连接账号，随时管理你的卡片"
+            "value": "刷卡已完成，投币冷却中，本次未投币。"
           }
         }
       }
     },
-    "确定退出当前账号吗？": {
-      "extractionState": "manual",
+    "刷卡已完成，投币结果待确认，请检查机台，不要重复刷卡。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign out of this account?"
+            "value": "Card sent. The coin result is unknown. Check the machine before swiping again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "确定退出当前账号吗？"
+            "value": "刷卡已完成，投币结果待确认，请检查机台，不要重复刷卡。"
           }
         }
       }
     },
-    "当前浏览器不支持 Passkey，请使用 MuNET 登录": {
-      "extractionState": "manual",
+    "刷卡已完成，投币请求失败，请联系店员。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This browser does not support passkeys. Sign in with MuNET."
+            "value": "Card sent. The coin request failed. Please contact staff."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前浏览器不支持 Passkey，请使用 MuNET 登录"
+            "value": "刷卡已完成，投币请求失败，请联系店员。"
           }
         }
       }
     },
-    "这个 Passkey 已经添加过了": {
-      "extractionState": "manual",
+    "刷新状态": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This passkey has already been added"
+            "value": "Refresh"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这个 Passkey 已经添加过了"
+            "value": "刷新状态"
           }
         }
       }
     },
-    "当前环境无法使用 Passkey": {
-      "extractionState": "manual",
+    "加载失败，请重试": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passkeys are unavailable in this environment"
+            "value": "Could not load. Please retry."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前环境无法使用 Passkey"
+            "value": "加载失败，请重试"
           }
         }
       }
     },
-    "Passkey 操作失败": {
+    "卡片": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passkey operation failed"
+            "value": "Cards"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passkey 操作失败"
+            "value": "卡片"
           }
         }
       }
     },
-    "我的卡片": {
+    "卡片不可用或已失效": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "My cards"
+            "value": "This card is unavailable or has expired"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "我的卡片"
-          }
-        }
-      }
-    },
-    "管理用于机台登录的卡片与 MuNET 同步。": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Manage your machine sign-in cards and MuNET sync."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "管理用于机台登录的卡片与 MuNET 同步。"
-          }
-        }
-      }
-    },
-    "添加卡片": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add card"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加卡片"
+            "value": "卡片不可用或已失效"
           }
         }
       }
@@ -1174,19 +729,85 @@
         }
       }
     },
-    "重新连接 MuNET": {
+    "卡片号码必须为20位数字且不能以3开头": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reconnect MuNET"
+            "value": "Card numbers must contain 20 digits and cannot start with 3"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新连接 MuNET"
+            "value": "卡片号码必须为20位数字且不能以3开头"
+          }
+        }
+      }
+    },
+    "取消": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
+    "可以关闭此页面": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can close this page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可以关闭此页面"
+          }
+        }
+      }
+    },
+    "合计": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合计"
+          }
+        }
+      }
+    },
+    "合计封顶": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combined cap"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合计封顶"
           }
         }
       }
@@ -1208,70 +829,569 @@
         }
       }
     },
-    "还没有添加卡片。": {
+    "同步 Passkey": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No cards added yet."
+            "value": "Synced passkey"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "还没有添加卡片。"
+            "value": "同步 Passkey"
           }
         }
       }
     },
-    "来自 MuNET 账号同步": {
-      "extractionState": "manual",
+    "在 QQ 中向本店 Bot 发送：": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Synced from MuNET"
+            "value": "Send this to the store bot in QQ:"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "来自 MuNET 账号同步"
+            "value": "在 QQ 中向本店 Bot 发送："
           }
         }
       }
     },
-    "删除卡片": {
-      "extractionState": "manual",
+    "在 QQ 群中发送": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete card"
+            "value": "Send in the QQ group"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "删除卡片"
+            "value": "在 QQ 群中发送"
           }
         }
       }
     },
-    "账号权限": {
-      "extractionState": "manual",
+    "在店": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Account permissions"
+            "value": "Checked in"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "账号权限"
+            "value": "在店"
+          }
+        }
+      }
+    },
+    "在网页中使用 Passkey": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use a passkey on the web"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在网页中使用 Passkey"
+          }
+        }
+      }
+    },
+    "在门锁上输入密码后按 #": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the code on the lock, then press #"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在门锁上输入密码后按 #"
+          }
+        }
+      }
+    },
+    "复制": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制"
+          }
+        }
+      }
+    },
+    "完成授权后，返回这里刷新卡片。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After signing in, return here to reload your cards."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成授权后，返回这里刷新卡片。"
+          }
+        }
+      }
+    },
+    "定位获取失败": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not determine your location"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定位获取失败"
+          }
+        }
+      }
+    },
+    "宽限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grace"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宽限"
+          }
+        }
+      }
+    },
+    "封顶": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cap"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "封顶"
+          }
+        }
+      }
+    },
+    "尾号 %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ending in %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尾号 %@"
+          }
+        }
+      }
+    },
+    "已刷卡并投一币": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card sent and one coin inserted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已刷卡并投一币"
+          }
+        }
+      }
+    },
+    "已发送开机请求": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Power-on requested"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已发送开机请求"
+          }
+        }
+      }
+    },
+    "已投币": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coin sent"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已投币"
+          }
+        }
+      }
+    },
+    "已登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed in"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已登录"
+          }
+        }
+      }
+    },
+    "已结账": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked out"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已结账"
+          }
+        }
+      }
+    },
+    "店内设备": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Store devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "店内设备"
+          }
+        }
+      }
+    },
+    "开始时间": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Started"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始时间"
+          }
+        }
+      }
+    },
+    "开机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Power on"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开机"
+          }
+        }
+      }
+    },
+    "开门密码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Door code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开门密码"
+          }
+        }
+      }
+    },
+    "当前无法进行此操作": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This action is currently unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前无法进行此操作"
+          }
+        }
+      }
+    },
+    "当前浏览器不支持 Passkey，请使用 MuNET 登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This browser does not support passkeys. Sign in with MuNET."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前浏览器不支持 Passkey，请使用 MuNET 登录"
+          }
+        }
+      }
+    },
+    "当前环境无法使用 Passkey": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passkeys are unavailable in this environment"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前环境无法使用 Passkey"
+          }
+        }
+      }
+    },
+    "当前设备不支持 Passkey。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device does not support passkeys."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前设备不支持 Passkey。"
+          }
+        }
+      }
+    },
+    "我已发送，检查绑定": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check verification"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我已发送，检查绑定"
+          }
+        }
+      }
+    },
+    "我的卡片": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My cards"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我的卡片"
+          }
+        }
+      }
+    },
+    "我的消费": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My spending"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我的消费"
+          }
+        }
+      }
+    },
+    "我的消费 · 离店结账": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My visit · Check out"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我的消费 · 离店结账"
+          }
+        }
+      }
+    },
+    "我确认开始本店计费，并在离店前主动结账；关闭页面不会停止计费。": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I agree to start billing and check out before leaving. Closing this screen does not stop billing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我确认开始本店计费，并在离店前主动结账；关闭页面不会停止计费。"
+          }
+        }
+      }
+    },
+    "投币": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insert coin"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "投币"
+          }
+        }
+      }
+    },
+    "按时段分别计费，不足一个单位向上取整，宽限内不计下一单位。封顶按规则时段累计，跨午夜的同一时段连续累计。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Charges are calculated per period, rounding up after the grace allowance. Caps accumulate within each rule period, including when that period crosses midnight."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按时段分别计费，不足一个单位向上取整，宽限内不计下一单位。封顶按规则时段累计，跨午夜的同一时段连续累计。"
+          }
+        }
+      }
+    },
+    "授权码已失效，请重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorization code expired. Please sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权码已失效，请重新登录"
+          }
+        }
+      }
+    },
+    "授权码无效": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid authorization code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权码无效"
           }
         }
       }
@@ -1293,70 +1413,104 @@
         }
       }
     },
-    "用于机台登录页展示店铺环境、品牌或游戏氛围。建议使用横向照片或插画，避免二维码、价格表和大段文字。推荐尺寸 1800×1200。": {
-      "extractionState": "manual",
+    "操作失败": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show your arcade, brand, or games on the sign-in page. Use a landscape photo or illustration without QR codes, price lists, or long text. Recommended size: 1800×1200."
+            "value": "Operation failed"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "用于机台登录页展示店铺环境、品牌或游戏氛围。建议使用横向照片或插画，避免二维码、价格表和大段文字。推荐尺寸 1800×1200。"
+            "value": "操作失败"
           }
         }
       }
     },
-    "确定要删除店铺「{name}」吗？\n此操作将同时删除该店铺下的所有机台与成员关联，且不可恢复。": {
+    "操作失败，请稍后重试": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete shop “{name}”?\nThis will also delete all its machines and memberships. This cannot be undone."
+            "value": "Something went wrong. Please try again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "确定要删除店铺「{name}」吗？\n此操作将同时删除该店铺下的所有机台与成员关联，且不可恢复。"
+            "value": "操作失败，请稍后重试"
           }
         }
       }
     },
-    "机台连接地址（如 https://... 或 wss://...）": {
-      "extractionState": "manual",
+    "操作结果待确认，请联系店员，不要重复操作": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Machine URL (https://… or wss://…)"
+            "value": "The result is unconfirmed. Contact staff before trying again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "机台连接地址（如 https://... 或 wss://...）"
+            "value": "操作结果待确认，请联系店员，不要重复操作"
           }
         }
       }
     },
-    "MuNET 用户名或 ID": {
+    "操作过于频繁，请稍后重试": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "MuNET username or ID"
+            "value": "Too many requests. Please try again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "MuNET 用户名或 ID"
+            "value": "操作过于频繁，请稍后重试"
+          }
+        }
+      }
+    },
+    "无效的机台地址": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid machine URL"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无效的机台地址"
+          }
+        }
+      }
+    },
+    "无法加载卡片": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not load cards"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法加载卡片"
           }
         }
       }
@@ -1395,291 +1549,70 @@
         }
       }
     },
-    "请求来源无效": {
+    "无法打开 MuNET 登录": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invalid request origin"
+            "value": "Could not open MuNET sign-in"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请求来源无效"
+            "value": "无法打开 MuNET 登录"
           }
         }
       }
     },
-    "没有找到这个 Passkey": {
+    "无法打开 MuNET 登录页面": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passkey not found"
+            "value": "Could not open MuNET sign-in"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "没有找到这个 Passkey"
+            "value": "无法打开 MuNET 登录页面"
           }
         }
       }
     },
-    "MuNET 登录尚未配置": {
+    "无法打开网页版，请重试": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "MuNET sign-in is not configured"
+            "value": "Could not open the web page. Please try again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "MuNET 登录尚未配置"
+            "value": "无法打开网页版，请重试"
           }
         }
       }
     },
-    "MuNET 授权无效，请重新登录": {
+    "无法识别这个 Passkey": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invalid MuNET authorization. Please sign in again."
+            "value": "Passkey not recognized"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "MuNET 授权无效，请重新登录"
-          }
-        }
-      }
-    },
-    "MuNET 授权已取消": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET authorization cancelled"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET 授权已取消"
-          }
-        }
-      }
-    },
-    "MuNET 返回的数据无法识别": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Invalid response from MuNET"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET 返回的数据无法识别"
-          }
-        }
-      }
-    },
-    "MuNET 授权无效，请重试": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Invalid MuNET authorization. Please try again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET 授权无效，请重试"
-          }
-        }
-      }
-    },
-    "MuNET 暂时无法同步，显示上次结果": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET sync is unavailable. Showing the last synced cards."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET 暂时无法同步，显示上次结果"
-          }
-        }
-      }
-    },
-    "这张卡片已经添加过了": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This card has already been added"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这张卡片已经添加过了"
-          }
-        }
-      }
-    },
-    "机台不可用": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Machine unavailable"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "机台不可用"
-          }
-        }
-      }
-    },
-    "机台暂时不可用": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Machine temporarily unavailable"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "机台暂时不可用"
-          }
-        }
-      }
-    },
-    "MuNET 授权失败": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET authorization failed"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET 授权失败"
-          }
-        }
-      }
-    },
-    "MuNET 未返回长期授权凭据": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET did not provide a refresh token"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET 未返回长期授权凭据"
-          }
-        }
-      }
-    },
-    "无法读取 MuNET 账号": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not load MuNET account"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法读取 MuNET 账号"
-          }
-        }
-      }
-    },
-    "MuNET 授权已过期": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET authorization has expired"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET 授权已过期"
-          }
-        }
-      }
-    },
-    "MuNET 暂时无法刷新授权": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not refresh MuNET authorization"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET 暂时无法刷新授权"
-          }
-        }
-      }
-    },
-    "MuNET Access Token 已过期": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET access token has expired"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MuNET Access Token 已过期"
+            "value": "无法识别这个 Passkey"
           }
         }
       }
@@ -1701,189 +1634,268 @@
         }
       }
     },
-    "卡片号码必须为20位数字且不能以3开头": {
+    "无法读取 MuNET 账号": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Card numbers must contain 20 digits and cannot start with 3"
+            "value": "Could not load MuNET account"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "卡片号码必须为20位数字且不能以3开头"
+            "value": "无法读取 MuNET 账号"
           }
         }
       }
     },
-    "请填写正确的机台连接地址": {
+    "无法读取机台信息": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter a valid machine connection URL"
+            "value": "Could not load machine information"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请填写正确的机台连接地址"
+            "value": "无法读取机台信息"
           }
         }
       }
     },
-    "请选择卡片": {
+    "无法进入机台会话": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Select a card"
+            "value": "Could not start machine session"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请选择卡片"
+            "value": "无法进入机台会话"
           }
         }
       }
     },
-    "缺少会话凭证": {
-      "extractionState": "manual",
+    "时段封顶": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Session token missing"
+            "value": "Period cap"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "缺少会话凭证"
+            "value": "时段封顶"
           }
         }
       }
     },
-    "缺少机台编号": {
-      "extractionState": "manual",
+    "时段重叠时，按下方从上到下的顺序采用规则。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Machine ID missing"
+            "value": "When periods overlap, the first matching rule below applies."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "缺少机台编号"
+            "value": "时段重叠时，按下方从上到下的顺序采用规则。"
           }
         }
       }
     },
-    "机台编号无效": {
-      "extractionState": "manual",
+    "星期（0 为周日）": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invalid machine ID"
+            "value": "Weekdays (0 = Sunday)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "机台编号无效"
+            "value": "星期（0 为周日）"
           }
         }
       }
     },
-    "缺少授权码": {
-      "extractionState": "manual",
+    "暂无待结账单": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Authorization code missing"
+            "value": "No outstanding bill"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "缺少授权码"
+            "value": "暂无待结账单"
           }
         }
       }
     },
-    "授权码无效": {
-      "extractionState": "manual",
+    "暂无记录": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invalid authorization code"
+            "value": "No records"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "授权码无效"
+            "value": "暂无记录"
           }
         }
       }
     },
-    "同步 Passkey": {
-      "extractionState": "manual",
+    "暂无资产": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Synced passkey"
+            "value": "No assets"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "同步 Passkey"
+            "value": "暂无资产"
           }
         }
       }
     },
-    "设备 Passkey": {
-      "extractionState": "manual",
+    "有效期至": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Device passkey"
+            "value": "Expires at"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "设备 Passkey"
+            "value": "有效期至"
           }
         }
       }
     },
-    "机台未在线或连接地址不正确": {
-      "extractionState": "manual",
+    "未入场": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The machine is offline or its URL is incorrect"
+            "value": "Not checked in"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "机台未在线或连接地址不正确"
+            "value": "未入场"
+          }
+        }
+      }
+    },
+    "本店仅允许已有玩家使用，请使用在本店登记的 QQ。": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This store accepts existing players only. Use your registered QQ account."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本店仅允许已有玩家使用，请使用在本店登记的 QQ。"
+          }
+        }
+      }
+    },
+    "本店资产": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Store assets"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本店资产"
+          }
+        }
+      }
+    },
+    "本次会话已失效": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This session has expired"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本次会话已失效"
+          }
+        }
+      }
+    },
+    "本次登录已完成": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in complete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本次登录已完成"
+          }
+        }
+      }
+    },
+    "机台不可用": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Machine unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机台不可用"
           }
         }
       }
@@ -1905,36 +1917,1223 @@
         }
       }
     },
-    "尾号 %@": {
+    "机台暂时不可用": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ending in %@"
+            "value": "Machine temporarily unavailable"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "尾号 %@"
+            "value": "机台暂时不可用"
           }
         }
       }
     },
-    "无法打开 MuNET 登录": {
+    "机台未在线或连接地址不正确": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not open MuNET sign-in"
+            "value": "The machine is offline or its URL is incorrect"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法打开 MuNET 登录"
+            "value": "机台未在线或连接地址不正确"
+          }
+        }
+      }
+    },
+    "机台编号无效": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid machine ID"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机台编号无效"
+          }
+        }
+      }
+    },
+    "机台连接地址（如 https://... 或 wss://...）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Machine URL (https://… or wss://…)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机台连接地址（如 https://... 或 wss://...）"
+          }
+        }
+      }
+    },
+    "来自 MuNET 账号同步": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synced from MuNET"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来自 MuNET 账号同步"
+          }
+        }
+      }
+    },
+    "查看结账预览": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview checkout"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看结账预览"
+          }
+        }
+      }
+    },
+    "次日": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "next day "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次日"
+          }
+        }
+      }
+    },
+    "正在加载": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在加载"
+          }
+        }
+      }
+    },
+    "正在加载卡片": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading cards"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在加载卡片"
+          }
+        }
+      }
+    },
+    "正在登录…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signing in…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在登录…"
+          }
+        }
+      }
+    },
+    "正在获取当前位置，请稍后再试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting your location. Please try again shortly."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在获取当前位置，请稍后再试"
+          }
+        }
+      }
+    },
+    "正在计费": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billing in progress"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在计费"
+          }
+        }
+      }
+    },
+    "正在连接 MuNET…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecting to MuNET…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在连接 MuNET…"
+          }
+        }
+      }
+    },
+    "正在验证 Passkey…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifying passkey…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在验证 Passkey…"
+          }
+        }
+      }
+    },
+    "每次入场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per entry"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每次入场"
+          }
+        }
+      }
+    },
+    "每计费单位宽限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grace per unit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每计费单位宽限"
+          }
+        }
+      }
+    },
+    "没有找到这个 Passkey": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passkey not found"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有找到这个 Passkey"
+          }
+        }
+      }
+    },
+    "消费仍在计时，结账成功后才会停止。": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billing continues until checkout succeeds."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "消费仍在计时，结账成功后才会停止。"
+          }
+        }
+      }
+    },
+    "消费记录": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visit history"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "消费记录"
+          }
+        }
+      }
+    },
+    "添加 Passkey": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a passkey"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加 Passkey"
+          }
+        }
+      }
+    },
+    "添加卡片": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add card"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加卡片"
+          }
+        }
+      }
+    },
+    "现在": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "现在"
+          }
+        }
+      }
+    },
+    "生成验证码": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "生成验证码"
+          }
+        }
+      }
+    },
+    "用于机台登录页展示店铺环境、品牌或游戏氛围。建议使用横向照片或插画，避免二维码、价格表和大段文字。推荐尺寸 1800×1200。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show your arcade, brand, or games on the sign-in page. Use a landscape photo or illustration without QR codes, price lists, or long text. Recommended size: 1800×1200."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于机台登录页展示店铺环境、品牌或游戏氛围。建议使用横向照片或插画，避免二维码、价格表和大段文字。推荐尺寸 1800×1200。"
+          }
+        }
+      }
+    },
+    "知道了": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "知道了"
+          }
+        }
+      }
+    },
+    "确定要删除店铺「{name}」吗？\n此操作将同时删除该店铺下的所有机台与成员关联，且不可恢复。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete shop “{name}”?\nThis will also delete all its machines and memberships. This cannot be undone."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确定要删除店铺「{name}」吗？\n此操作将同时删除该店铺下的所有机台与成员关联，且不可恢复。"
+          }
+        }
+      }
+    },
+    "确定退出当前账号吗？": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out of this account?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确定退出当前账号吗？"
+          }
+        }
+      }
+    },
+    "确认位置…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking location…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认位置…"
+          }
+        }
+      }
+    },
+    "确认入场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check in"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认入场"
+          }
+        }
+      }
+    },
+    "确认开始计费，离店前请结账。关闭页面不会停止计费。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start billing and check out before leaving. Closing this page does not stop billing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认开始计费，离店前请结账。关闭页面不会停止计费。"
+          }
+        }
+      }
+    },
+    "确认结账并出场": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm checkout"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认结账并出场"
+          }
+        }
+      }
+    },
+    "等待玩家": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for players"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待玩家"
+          }
+        }
+      }
+    },
+    "等待电源启动": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for power"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待电源启动"
+          }
+        }
+      }
+    },
+    "管理用于机台登录的卡片与 MuNET 同步。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage your machine sign-in cards and MuNET sync."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理用于机台登录的卡片与 MuNET 同步。"
+          }
+        }
+      }
+    },
+    "管理登录身份与设备上的 Passkey。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage your sign-in methods and passkeys."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理登录身份与设备上的 Passkey。"
+          }
+        }
+      }
+    },
+    "绑定 QQ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bind QQ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "绑定 QQ"
+          }
+        }
+      }
+    },
+    "绑定本店 QQ": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link QQ for this store"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "绑定本店 QQ"
+          }
+        }
+      }
+    },
+    "结账": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check out"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结账"
+          }
+        }
+      }
+    },
+    "结账成功，计费已结束": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked out. Billing has stopped."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结账成功，计费已结束"
+          }
+        }
+      }
+    },
+    "结账预览": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checkout preview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结账预览"
+          }
+        }
+      }
+    },
+    "继续操作设备": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue with device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续操作设备"
+          }
+        }
+      }
+    },
+    "继续登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue sign-in"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续登录"
+          }
+        }
+      }
+    },
+    "缺少会话凭证": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session token missing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少会话凭证"
+          }
+        }
+      }
+    },
+    "缺少授权码": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorization code missing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少授权码"
+          }
+        }
+      }
+    },
+    "缺少机台编号": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Machine ID missing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少机台编号"
+          }
+        }
+      }
+    },
+    "网络连接失败，请检查网络后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection failed. Check your network and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络连接失败，请检查网络后重试"
+          }
+        }
+      }
+    },
+    "获取位置超时，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location timed out. Please try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "获取位置超时，请稍后重试"
+          }
+        }
+      }
+    },
+    "获取开门密码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get door code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "获取开门密码"
+          }
+        }
+      }
+    },
+    "计费中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billing in progress"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计费中"
+          }
+        }
+      }
+    },
+    "计费日期": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pricing date"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计费日期"
+          }
+        }
+      }
+    },
+    "计费时段": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rates by time"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计费时段"
+          }
+        }
+      }
+    },
+    "记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记录"
+          }
+        }
+      }
+    },
+    "设备 Passkey": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device passkey"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备 Passkey"
+          }
+        }
+      }
+    },
+    "设备尚未开机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device is powered off"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备尚未开机"
+          }
+        }
+      }
+    },
+    "请先登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please sign in first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先登录"
+          }
+        }
+      }
+    },
+    "请到店再进行登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please sign in when you are at the arcade."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请到店再进行登录"
+          }
+        }
+      }
+    },
+    "请填写正确的机台连接地址": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a valid machine connection URL"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请填写正确的机台连接地址"
+          }
+        }
+      }
+    },
+    "请求来源无效": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid request origin"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求来源无效"
+          }
+        }
+      }
+    },
+    "请离开店铺定位范围后再结账": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please leave the store location area before checking out."
+          }
+        }
+      }
+    },
+    "请选择卡片": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a card"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择卡片"
+          }
+        }
+      }
+    },
+    "请重新碰一下 NFC 或重新扫描二维码。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the NFC tag or scan the QR code again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请重新碰一下 NFC 或重新扫描二维码。"
+          }
+        }
+      }
+    },
+    "账单": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bill"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账单"
+          }
+        }
+      }
+    },
+    "账号": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账号"
+          }
+        }
+      }
+    },
+    "账号权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账号权限"
+          }
+        }
+      }
+    },
+    "账号设置": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账号设置"
+          }
+        }
+      }
+    },
+    "返回主页": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to home"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回主页"
+          }
+        }
+      }
+    },
+    "返回机台登录": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回机台登录"
+          }
+        }
+      }
+    },
+    "还没有可用卡片，请先在 Prism 添加卡片": {},
+    "还没有可用卡片，请先在 PRiSM 添加卡片": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No cards available. Add a card in PRiSM first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有可用卡片，请先在 PRiSM 添加卡片"
+          }
+        }
+      }
+    },
+    "还没有添加卡片。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No cards added yet."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有添加卡片。"
+          }
+        }
+      }
+    },
+    "这个 Passkey 已经添加过了": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This passkey has already been added"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这个 Passkey 已经添加过了"
+          }
+        }
+      }
+    },
+    "这个账号暂时无法使用": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This account is currently unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这个账号暂时无法使用"
+          }
+        }
+      }
+    },
+    "这台机台暂时不可用，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This machine is unavailable. Please try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这台机台暂时不可用，请稍后重试"
+          }
+        }
+      }
+    },
+    "这张卡片已经添加过了": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This card has already been added"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这张卡片已经添加过了"
           }
         }
       }
@@ -1956,776 +3155,143 @@
         }
       }
     },
-    "取消": {
+    "连接账号，随时管理你的卡片": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cancel"
+            "value": "Connect your account to manage your cards"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "取消"
+            "value": "连接账号，随时管理你的卡片"
           }
         }
       }
     },
-    "刷新状态": {
+    "连续时段": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Refresh"
+            "value": "Continuous period"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "刷新状态"
+            "value": "连续时段"
           }
         }
       }
     },
-    "绑定本店 QQ": {
+    "退出": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Link QQ for this store"
+            "value": "Sign out"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "绑定本店 QQ"
+            "value": "退出"
           }
         }
       }
     },
-    "验证后将为你建立本店玩家档案。": {
+    "退出账号": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A player profile will be created after verification."
+            "value": "Sign out"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "验证后将为你建立本店玩家档案。"
+            "value": "退出账号"
           }
         }
       }
     },
-    "本店仅允许已有玩家使用，请使用在本店登记的 QQ。": {
+    "退出账号？": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This store accepts existing players only. Use your registered QQ account."
+            "value": "Sign out?"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "本店仅允许已有玩家使用，请使用在本店登记的 QQ。"
+            "value": "退出账号？"
           }
         }
       }
     },
-    "在 QQ 中向本店 Bot 发送：": {
+    "退出账号失败，请重试": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Send this to the store bot in QQ:"
+            "value": "Could not sign out. Please try again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在 QQ 中向本店 Bot 发送："
+            "value": "退出账号失败，请重试"
           }
         }
       }
     },
-    "有效期至": {
+    "选择卡片": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Expires at"
+            "value": "Select a card"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "有效期至"
+            "value": "选择卡片"
           }
         }
       }
     },
-    "复制": {
+    "重新加载卡片": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copy"
+            "value": "Reload cards"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "复制"
-          }
-        }
-      }
-    },
-    "生成验证码": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Generate code"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "生成验证码"
-          }
-        }
-      }
-    },
-    "我已发送，检查绑定": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Check verification"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "我已发送，检查绑定"
-          }
-        }
-      }
-    },
-    "确认入场": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Check in"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "确认入场"
-          }
-        }
-      }
-    },
-    "我确认开始本店计费，并在离店前主动结账；关闭页面不会停止计费。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "I agree to start billing and check out before leaving. Closing this screen does not stop billing."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "我确认开始本店计费，并在离店前主动结账；关闭页面不会停止计费。"
-          }
-        }
-      }
-    },
-    "开门密码": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Door code"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开门密码"
-          }
-        }
-      }
-    },
-    "在门锁上输入密码后按 #": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enter the code on the lock, then press #"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在门锁上输入密码后按 #"
-          }
-        }
-      }
-    },
-    "入场并获取开门密码": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Check in and get door code"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "入场并获取开门密码"
-          }
-        }
-      }
-    },
-    "获取开门密码": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Get door code"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "获取开门密码"
-          }
-        }
-      }
-    },
-    "设备尚未开机": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Device is powered off"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设备尚未开机"
-          }
-        }
-      }
-    },
-    "开机": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Power on"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开机"
-          }
-        }
-      }
-    },
-    "投币": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Insert coin"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "投币"
-          }
-        }
-      }
-    },
-    "我的消费 · 离店结账": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My visit · Check out"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "我的消费 · 离店结账"
-          }
-        }
-      }
-    },
-    "在店": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Checked in"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在店"
-          }
-        }
-      }
-    },
-    "未入场": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not checked in"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未入场"
-          }
-        }
-      }
-    },
-    "开始时间": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Started"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开始时间"
-          }
-        }
-      }
-    },
-    "查看结账预览": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Preview checkout"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "查看结账预览"
-          }
-        }
-      }
-    },
-    "结账预览": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Checkout preview"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "结账预览"
-          }
-        }
-      }
-    },
-    "合计": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Total"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "合计"
-          }
-        }
-      }
-    },
-    "最终金额按确认结账时计算；余额不足或定位未通过时继续计时。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The final amount is calculated at confirmation. Billing continues if funds or location checks fail."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最终金额按确认结账时计算；余额不足或定位未通过时继续计时。"
-          }
-        }
-      }
-    },
-    "确认结账并出场": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Confirm checkout"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "确认结账并出场"
-          }
-        }
-      }
-    },
-    "本店资产": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Store assets"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本店资产"
-          }
-        }
-      }
-    },
-    "兑换码": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Redemption code"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "兑换码"
-          }
-        }
-      }
-    },
-    "兑换": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Redeem"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "兑换"
-          }
-        }
-      }
-    },
-    "消费记录": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Visit history"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "消费记录"
-          }
-        }
-      }
-    },
-    "全天": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All day"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "全天"
-          }
-        }
-      }
-    },
-    "分钟": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "minutes"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "分钟"
-          }
-        }
-      }
-    },
-    "宽限": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Grace"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "宽限"
-          }
-        }
-      }
-    },
-    "封顶": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cap"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "封顶"
-          }
-        }
-      }
-    },
-    "星期（0 为周日）": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weekdays (0 = Sunday)"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "星期（0 为周日）"
-          }
-        }
-      }
-    },
-    "已投币": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Coin sent"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已投币"
-          }
-        }
-      }
-    },
-    "已发送开机请求": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Power-on requested"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已发送开机请求"
-          }
-        }
-      }
-    },
-    "结账成功，计费已结束": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Checked out. Billing has stopped."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "结账成功，计费已结束"
-          }
-        }
-      }
-    },
-    "兑换成功": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Redeemed"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "兑换成功"
-          }
-        }
-      }
-    },
-    "继续操作设备": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Continue with device"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "继续操作设备"
-          }
-        }
-      }
-    },
-    "已刷卡并投一币": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Card sent and one coin inserted"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已刷卡并投一币"
-          }
-        }
-      }
-    },
-    "刷卡已完成，投币冷却中，本次未投币。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Card sent. No coin was inserted because the cooldown is active."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "刷卡已完成，投币冷却中，本次未投币。"
-          }
-        }
-      }
-    },
-    "刷卡已完成，投币请求失败，请联系店员。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Card sent. The coin request failed. Please contact staff."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "刷卡已完成，投币请求失败，请联系店员。"
-          }
-        }
-      }
-    },
-    "刷卡已完成，投币结果待确认，请检查机台，不要重复刷卡。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Card sent. The coin result is unknown. Check the machine before swiping again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "刷卡已完成，投币结果待确认，请检查机台，不要重复刷卡。"
-          }
-        }
-      }
-    },
-    "关闭": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Close"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关闭"
-          }
-        }
-      }
-    },
-    "操作结果待确认，请联系店员，不要重复操作": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The result is unconfirmed. Contact staff before trying again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "操作结果待确认，请联系店员，不要重复操作"
+            "value": "重新加载卡片"
           }
         }
       }
     },
     "重新生成验证码": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -2737,134 +3303,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "重新生成验证码"
-          }
-        }
-      }
-    },
-    "等待电源启动": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Waiting for power"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "等待电源启动"
-          }
-        }
-      }
-    },
-    "我的消费": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My spending"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "我的消费"
-          }
-        }
-      }
-    },
-    "消费仍在计时，结账成功后才会停止。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Billing continues until checkout succeeds."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "消费仍在计时，结账成功后才会停止。"
-          }
-        }
-      }
-    },
-    "正在计费": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Billing in progress"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在计费"
-          }
-        }
-      }
-    },
-    "返回机台登录": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Back to device"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "返回机台登录"
-          }
-        }
-      }
-    },
-    "店内设备": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Store devices"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "店内设备"
-          }
-        }
-      }
-    },
-    "绑定 QQ": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bind QQ"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "绑定 QQ"
-          }
-        }
-      }
-    },
-    "在 QQ 群中发送": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send in the QQ group"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在 QQ 群中发送"
           }
         }
       }
@@ -2885,34 +3323,36 @@
         }
       }
     },
-    "账单": {
+    "重新连接 MuNET": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bill"
+            "value": "Reconnect MuNET"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "账单"
+            "value": "重新连接 MuNET"
           }
         }
       }
     },
-    "记录": {
+    "重试": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "History"
+            "value": "Retry"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "记录"
+            "value": "重试"
           }
         }
       }
@@ -2933,364 +3373,36 @@
         }
       }
     },
-    "已结账": {
+    "需要定位权限才能确认你在店内": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Checked out"
+            "value": "Allow location access to confirm you are at the arcade."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已结账"
+            "value": "需要定位权限才能确认你在店内"
           }
         }
       }
     },
-    "现在": {
+    "验证后将为你建立本店玩家档案。": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Now"
+            "value": "A player profile will be created after verification."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "现在"
-          }
-        }
-      }
-    },
-    "暂无待结账单": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No outstanding bill"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂无待结账单"
-          }
-        }
-      }
-    },
-    "暂无资产": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No assets"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂无资产"
-          }
-        }
-      }
-    },
-    "暂无记录": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No records"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂无记录"
-          }
-        }
-      }
-    },
-    "计费中": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Billing in progress"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "计费中"
-          }
-        }
-      }
-    },
-    "计费时段": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rates by time"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "计费时段"
-          }
-        }
-      }
-    },
-    "计费日期": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pricing date"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "计费日期"
-          }
-        }
-      }
-    },
-    "每次入场": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Per entry"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每次入场"
-          }
-        }
-      }
-    },
-    "不开放入场": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entry unavailable"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "不开放入场"
-          }
-        }
-      }
-    },
-    "合计封顶": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Combined cap"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "合计封顶"
-          }
-        }
-      }
-    },
-    "时段封顶": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Period cap"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "时段封顶"
-          }
-        }
-      }
-    },
-    "每计费单位宽限": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Grace per unit"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每计费单位宽限"
-          }
-        }
-      }
-    },
-    "加载失败，请重试": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not load. Please retry."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "加载失败，请重试"
-          }
-        }
-      }
-    },
-    "确认开始计费，离店前请结账。关闭页面不会停止计费。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start billing and check out before leaving. Closing this page does not stop billing."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "确认开始计费，离店前请结账。关闭页面不会停止计费。"
-          }
-        }
-      }
-    },
-    "按时段分别计费，不足一个单位向上取整，宽限内不计下一单位。封顶按规则时段累计，跨午夜的同一时段连续累计。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Charges are calculated per period, rounding up after the grace allowance. Caps accumulate within each rule period, including when that period crosses midnight."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按时段分别计费，不足一个单位向上取整，宽限内不计下一单位。封顶按规则时段累计，跨午夜的同一时段连续累计。"
-          }
-        }
-      }
-    },
-    "QQ Bot 联系方式": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "QQ bot contact"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "QQ Bot 联系方式"
-          }
-        }
-      }
-    },
-    "操作失败": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Operation failed"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "操作失败"
-          }
-        }
-      }
-    },
-    "结账": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Check out"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "结账"
-          }
-        }
-      }
-    },
-    "次日": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "次日"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "next day "
-          }
-        }
-      }
-    },
-    "时段重叠时，按下方从上到下的顺序采用规则。": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "时段重叠时，按下方从上到下的顺序采用规则。"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "When periods overlap, the first matching rule below applies."
-          }
-        }
-      }
-    },
-    "连续时段": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "连续时段"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Continuous period"
-          }
-        }
-      }
-    },
-    "请离开店铺定位范围后再结账": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Please leave the store location area before checking out."
+            "value": "验证后将为你建立本店玩家档案。"
           }
         }
       }
@@ -3327,66 +3439,34 @@
         }
       }
     },
-    "等待开桌": {
+    "空位": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Waiting to start"
+            "value": "Open seat"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "等待开桌"
+            "value": "空位"
           }
         }
       }
     },
-    "你": {
+    "已满桌": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You"
+            "value": "Table full"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "你"
-          }
-        }
-      }
-    },
-    "上桌": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Join table"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "上桌"
-          }
-        }
-      }
-    },
-    "下桌": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Leave table"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "下桌"
+            "value": "已满桌"
           }
         }
       }

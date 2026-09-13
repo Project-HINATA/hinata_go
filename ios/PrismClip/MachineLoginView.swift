@@ -64,6 +64,10 @@ struct MachineLoginView: View {
       Button("退出登录") { Task { await model.logout() } }
     } label: {
       HStack(spacing: 8) {
+        if model.summary?.activeSession != nil {
+          Circle().fill(.green).frame(width: 6, height: 6)
+          Text("计费中").font(.caption).foregroundStyle(.secondary)
+        }
         Text(user.displayName.isEmpty ? user.id : user.displayName).lineLimit(1)
         Image(systemName: "chevron.down").font(.caption)
       }.font(.subheadline).padding(.horizontal, 8).padding(.vertical, 6)
@@ -140,8 +144,8 @@ private struct ClipSessionPage: View {
           if model.canUseCards { cardsView.disabled(model.deviceBusy) }
           if model.state == .ready, model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
             Button { Task { await model.device("coin") } } label: {
-              HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: model.deviceState?.coinUsed == true ? "checkmark" : "centsign.circle") }; Text(model.deviceState?.coinUsed == true ? "已投币" : "投币") }
-            }.buttonStyle(ClipActionStyle()).disabled(model.deviceBusy || model.deviceState?.coinUsed == true)
+              HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
+            }.buttonStyle(ClipActionStyle()).disabled(model.deviceBusy)
           }
         case .loadingCards:
           ProgressView().accessibilityLabel("正在加载卡片")
@@ -396,18 +400,42 @@ private struct ClipDeviceControls: View {
           }
           if device.gate == "ready", device.power != "off", let table = device.mahjong {
             let mine = table.seats.contains { $0.mine }
-            VStack(spacing: 20) {
-              Text("麻将桌").font(.title2)
-              Text("\(table.seats.count) / \(table.capacity)").font(.headline).monospacedDigit()
-              Text(table.seats.contains { $0.playing } ? "麻将计费中" : "等待开桌").font(.subheadline).foregroundStyle(.secondary)
-              ForEach(Array(table.seats.enumerated()), id: \.offset) { _, seat in
-                HStack { Text(seat.name); Spacer(); if seat.mine { Text("你").foregroundStyle(.secondary) } }.font(.body)
+            VStack(spacing: 16) {
+              HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 4) {
+                  Text("麻将桌").font(.title3.weight(.semibold))
+                  Text(table.seats.contains { $0.playing } ? "麻将计费中" : "等待玩家")
+                    .font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer()
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                  Text("\(table.seats.count)").font(.title2.weight(.semibold))
+                  Text("/ \(table.capacity)").font(.body).foregroundStyle(.secondary)
+                }.monospacedDigit()
               }
-              Button { Task { await model.device(mine ? "mahjong.leave" : "mahjong.join") } } label: {
-                HStack { if model.deviceBusy { ProgressView() }; Text(mine ? "下桌" : "上桌") }
-              }.buttonStyle(ClipActionStyle(primary: true))
-                .disabled(!mine && table.seats.count >= table.capacity)
+              LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 10)], spacing: 10) {
+                ForEach(0..<table.capacity, id: \.self) { index in
+                  let seat = index < table.seats.count ? table.seats[index] : nil
+                  VStack(alignment: .leading, spacing: 6) {
+                    if let seat { Text(seat.name).font(.body.weight(.medium)) }
+                    else { Text("空位").font(.body).foregroundStyle(.tertiary) }
+                    if seat?.mine == true { Text("你").font(.caption).foregroundStyle(.secondary) }
+                  }
+                  .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                  .padding(16)
+                  .background(seat == nil ? Color.clear : Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 18))
+                  .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.primary.opacity(seat?.mine == true ? 0.3 : seat == nil ? 0.08 : 0), lineWidth: seat?.mine == true ? 1.5 : 1))
+                }
+              }
+              if !mine && table.seats.count >= table.capacity {
+                Text("已满桌").font(.subheadline).foregroundStyle(.secondary)
+              } else {
+                Button { Task { await model.device(mine ? "mahjong.leave" : "mahjong.join") } } label: {
+                  HStack { if model.deviceBusy { ProgressView() }; Text(mine ? "下桌" : "上桌") }
+                }.buttonStyle(ClipActionStyle(primary: !mine))
+              }
             }.frame(maxWidth: .infinity)
+
           }
           if device.gate == "ready", device.power == "off" {
             VStack(spacing: 28) {
@@ -418,7 +446,9 @@ private struct ClipDeviceControls: View {
             }.frame(maxWidth: .infinity)
           }
         }
-      } else { Button("刷新状态") { Task { await model.refreshVisit() } }.buttonStyle(ClipActionStyle()) }
+      } else if model.errorMessage != nil {
+        Button("重试") { Task { model.clearError(); await model.refreshVisit() } }.buttonStyle(ClipActionStyle())
+      } else { ProgressView().accessibilityLabel("正在加载") }
     }.disabled(model.deviceBusy || [.locating, .sending].contains(model.state))
   }
 }
@@ -484,12 +514,13 @@ private struct ClipAccountSheet: View {
   let section: Int
   @State private var redeemCode = ""
   @State private var done = false
+  @State private var loadError: String?
+  @State private var attempt = 0
   private var title: LocalizedStringKey { ["账单", "兑换", "记录", "钱包"][section] }
   @ViewBuilder private var closeButton: some View {
     if #available(iOS 26.0, *) {
       Button(role: .close) { dismiss() } label: { Image(systemName: "xmark") }
-        .buttonStyle(.glass(.regular.tint(.white))).buttonBorderShape(.circle).controlSize(.large)
-        .tint(.black).accessibilityLabel("关闭")
+        .tint(.primary).accessibilityLabel("关闭")
     } else {
       Button { dismiss() } label: { Image(systemName: "xmark") }.tint(.primary).accessibilityLabel("关闭")
     }
@@ -497,11 +528,7 @@ private struct ClipAccountSheet: View {
   var body: some View {
     if #available(iOS 26.0, *) {
       NavigationStack { content }
-        .overlay(alignment: .topTrailing) {
-          // The 22-point button radius plus 18-point inset shares the sheet's 40-point corner center.
-          closeButton.frame(width: 44, height: 44).padding(18)
-        }
-        .presentationCornerRadius(40)
+        .presentationCornerRadius(nil)
     } else if #available(iOS 16.0, *) {
       NavigationStack { content }
     } else {
@@ -511,7 +538,12 @@ private struct ClipAccountSheet: View {
   private var content: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 20) {
-        if let error = model.errorMessage { Text(error).font(.subheadline).foregroundStyle(.red) }
+        if let error = loadError ?? model.errorMessage {
+          VStack(alignment: .leading, spacing: 8) {
+            Text(error).font(.subheadline).foregroundStyle(.red)
+            Button("重试") { attempt += 1 }
+          }
+        }
         if model.deviceBusy && model.checkoutPreview == nil { ProgressView().frame(maxWidth: .infinity) }
         if section == 0 {
           if done { Text("已结账") }
@@ -520,14 +552,14 @@ private struct ClipAccountSheet: View {
             ForEach(preview.chargeItems) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
             ForEach(preview.adjustments) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
             PrismLabeledRow(String(localized: "合计"), value: preview.settlementPreview.total.formatted(.number.precision(.fractionLength(2)))).font(.title3.bold())
-          } else if !model.deviceBusy && model.errorMessage == nil { Text("暂无待结账单") }
+          } else if !model.deviceBusy && model.errorMessage == nil && loadError == nil { Text("暂无待结账单") }
         } else if section == 1 {
           if done { Text("兑换成功") } else {
             TextField("兑换码", text: $redeemCode).textInputAutocapitalization(.never).autocorrectionDisabled().padding(18).overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.15)))
             Button { Task { await model.redeem(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines)); done = model.errorMessage == nil } } label: { HStack { if model.deviceBusy { ProgressView() }; Text("兑换") } }.buttonStyle(ClipActionStyle(primary: true)).disabled(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
           }
         } else if section == 2 {
-          if model.history.isEmpty && !model.deviceBusy { Text("暂无记录") }
+          if model.history.isEmpty && !model.deviceBusy && loadError == nil { Text("暂无记录") }
           ForEach(model.history) { item in
             VStack(alignment: .leading, spacing: 6) {
               PrismLabeledRow(prismDate(item.startedAt), value: item.total?.formatted(.number.precision(.fractionLength(2))) ?? "—")
@@ -535,7 +567,7 @@ private struct ClipAccountSheet: View {
             }
           }
         } else {
-          if model.assets.isEmpty && !model.deviceBusy { Text("暂无资产") }
+          if model.assets.isEmpty && !model.deviceBusy && loadError == nil { Text("暂无资产") }
           ForEach(model.assets) { item in PrismLabeledRow(item.assetName ?? item.assetCode, value: item.quantity.formatted()) }
         }
       }.disabled(model.deviceBusy).padding(24).frame(maxWidth: 480).frame(maxWidth: .infinity)
@@ -554,13 +586,16 @@ private struct ClipAccountSheet: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .navigationBarTrailing) {
-        if #unavailable(iOS 26.0) { closeButton }
+        closeButton
       }
     }
-    .task {
-      model.clearError()
-      await model.refreshVisit()
-      if section == 0, model.summary?.activeSession != nil { await model.previewCheckout() }
+    .task(id: attempt) {
+      loadError = nil
+      do { try await model.loadAccountSection(section) }
+      catch {
+        guard !Task.isCancelled, !(error is CancellationError), (error as? URLError)?.code != .cancelled else { return }
+        loadError = error is URLError ? String(localized: "网络连接失败，请检查网络后重试") : error.localizedDescription
+      }
     }
   }
 }

@@ -1221,8 +1221,10 @@
   "prismContinuousPeriod": "Continuous period",
   "prismMahjongTable": "Mahjong table",
   "prismMahjongPlaying": "Mahjong billing active",
-  "prismMahjongWaiting": "Waiting to start",
+  "prismMahjongWaiting": "Waiting for players",
   "prismMahjongYou": "You",
   "prismMahjongJoin": "Join table",
-  "prismMahjongLeave": "Leave table"
+  "prismMahjongLeave": "Leave table",
+  "prismMahjongEmpty": "Open seat",
+  "prismMahjongFull": "Table full"
 }

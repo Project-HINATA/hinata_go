@@ -113,7 +113,7 @@ final class PrismNativeBridge {
         case .unavailable: code = "location_unavailable"
         }
       }
-      if error is URLError { code = "network_error" }
+      if error is URLError { code = "network_error"; details = ["readRetried": true] }
       result(FlutterError(
         code: code,
         message: message,

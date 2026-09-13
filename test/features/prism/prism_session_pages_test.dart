@@ -293,10 +293,15 @@ void main() {
             loginError = null;
             await tester.tap(find.text('红黑卡'));
             await tester.pumpAndSettle();
-            expect(find.text(strings.prismSignedIn), findsNothing);
+            expect(find.text(strings.prismSignedIn), findsOneWidget);
             await tester.pump(const Duration(seconds: 3));
-            expect(find.byType(PrismExpiredPage), findsOneWidget);
-            noSessionContent();
+            expect(find.byType(PrismExpiredPage), findsNothing);
+            expect(find.text(strings.prismSelectCard), findsOneWidget);
+            await tester.tap(find.text('红黑卡'));
+            await tester.pumpAndSettle();
+            expect(find.text(strings.prismSignedIn), findsOneWidget);
+            await tester.pump(const Duration(seconds: 2));
+            expect(find.byType(PrismExpiredPage), findsNothing);
             expect(tester.takeException(), isNull);
           },
           () => MockClient((request) {
