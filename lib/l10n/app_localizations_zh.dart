@@ -38,6 +38,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get github => 'GitHub';
 
   @override
+  String get prism => 'PRiSM';
+
+  @override
   String updateToVersion(String version) {
     return '更新到 $version';
   }

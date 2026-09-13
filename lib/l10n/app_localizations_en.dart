@@ -40,6 +40,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get github => 'GitHub';
 
   @override
+  String get prism => 'PRiSM';
+
+  @override
   String updateToVersion(String version) {
     return 'UPDATE TO $version';
   }

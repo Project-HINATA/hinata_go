@@ -43,6 +43,10 @@
   "@github": {
     "description": "项目 GitHub 仓库入口"
   },
+  "prism": "PRiSM",
+  "@prism": {
+    "description": "PRiSM 网站入口"
+  },
   "updateToVersion": "更新到 {version}",
   "@updateToVersion": {
     "description": "更新按钮文本",

@@ -42,6 +42,11 @@ class SettingsPage extends HookConsumerWidget {
                 icon: Icons.code_rounded,
                 url: AppConstants.githubUrl,
               ),
+              prismItem: _buildExternalLinkItem(
+                title: l10n.prism,
+                icon: Icons.link,
+                url: AppConstants.prismUrl,
+              ),
               updateActionButton:
                   updateState.isUpdateSupported && updateState.hasUpdate
                   ? _buildUpdateActionButton(context, updateState)
@@ -286,6 +291,7 @@ class _SettingsList extends StatelessWidget {
     required this.dataManagementItem,
     required this.aboutItem,
     required this.githubItem,
+    required this.prismItem,
     required this.updateActionButton,
   });
 
@@ -294,6 +300,7 @@ class _SettingsList extends StatelessWidget {
   final Widget dataManagementItem;
   final Widget aboutItem;
   final Widget githubItem;
+  final Widget prismItem;
   final Widget? updateActionButton;
 
   @override
@@ -307,6 +314,7 @@ class _SettingsList extends StatelessWidget {
         const Divider(),
         aboutItem,
         githubItem,
+        prismItem,
         ...(updateActionButton == null ? const [] : [updateActionButton!]),
       ],
     );

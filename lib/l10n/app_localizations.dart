@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'GitHub'**
   String get github;
 
+  /// Settings entry for the PRiSM website
+  ///
+  /// In en, this message translates to:
+  /// **'PRiSM'**
+  String get prism;
+
   /// Button text to initiate a firmware/software update
   ///
   /// In en, this message translates to:
