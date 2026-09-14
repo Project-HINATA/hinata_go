@@ -16,6 +16,10 @@
         <string>HINATA CI App Store moe.neri.hinatago</string>
         <key>moe.neri.hinatago.prism</key>
         <string>HINATA CI App Store moe.neri.hinatago.prism</string>
+        <key>moe.neri.hinatago.liveactivity</key>
+        <string>HINATA CI App Store moe.neri.hinatago.liveactivity</string>
+        <key>moe.neri.hinatago.prism.liveactivity</key>
+        <string>HINATA CI App Store moe.neri.hinatago.prism.liveactivity</string>
     </dict>
     <key>teamID</key>
     <string>XKKMJBTHX5</string>
