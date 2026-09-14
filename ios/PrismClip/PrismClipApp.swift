@@ -7,7 +7,7 @@ struct PrismClipApp: App {
 
   var body: some Scene {
     WindowGroup {
-      MachineLoginView()
+      MachineLoginView(presentsAppClipNotice: true)
         .environmentObject(model)
         .task {
           #if DEBUG

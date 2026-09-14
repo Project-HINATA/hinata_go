@@ -2,12 +2,50 @@ import SwiftUI
 
 struct MachineLoginView: View {
   var allowsDismiss = false
+  /// Set when this is the App Clip root: the top of the screen belongs to the system provider
+  /// notice, so the controls stay floating above the pushed-down content. The main app presents
+  /// this as a page sheet instead, where both controls belong in a navigation toolbar.
+  var presentsAppClipNotice = false
   @Environment(\.dismiss) private var dismiss
   @EnvironmentObject private var model: MachineLoginViewModel
   @State private var showingError = false
   @State private var section: Int?
 
   var body: some View {
+    Group {
+      if presentsAppClipNotice {
+        page
+          .overlay(alignment: .topLeading) { floatingDismissButton }
+          .overlay(alignment: .topTrailing) { floatingAccountMenu }
+      } else {
+        NavigationStack {
+          page
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+              ToolbarItem(placement: .topBarLeading) { toolbarDismissButton }
+              ToolbarItem(placement: .topBarTrailing) { toolbarAccountMenu }
+            }
+        }
+      }
+    }
+    .sheet(isPresented: Binding(get: { section != nil }, set: { if !$0 { section = nil } })) {
+      if let section {
+        if #available(iOS 16.0, *) { ClipAccountSheet(section: section).environmentObject(model).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) }
+        else { ClipAccountSheet(section: section).environmentObject(model) }
+      }
+    }
+    .alert("PRiSM", isPresented: $showingError) {
+      Button("知道了") { model.clearError() }
+
+    } message: {
+      Text(model.errorMessage ?? "")
+    }
+    .onChange(of: model.errorMessage) { value in
+      showingError = value != nil && section == nil
+    }
+  }
+
+  private var page: some View {
     GeometryReader { geometry in
       ScrollView {
         VStack(spacing: 28) {
@@ -26,51 +64,57 @@ struct MachineLoginView: View {
         .frame(maxWidth: 480)
         .frame(minHeight: max(0, geometry.size.height - 168), alignment: .top)
         .padding(.horizontal, 20).padding(.bottom, 28)
-        // Keep device content below the App Clip provider notice; the menu stays at the top.
-        .padding(.top, 140)
+        // In the App Clip the content has to clear the provider notice; in a sheet the toolbar
+        // already reserves that space.
+        .padding(.top, presentsAppClipNotice ? 140 : 12)
         .frame(maxWidth: .infinity)
       }
     }
     .background(Color(.systemGroupedBackground).ignoresSafeArea())
-    .overlay(alignment: .topLeading) {
-      if allowsDismiss {
-        Group {
-          if #available(iOS 26.0, *) {
-            Button { dismiss() } label: { Image(systemName: "xmark") }
-              .buttonStyle(.glass)
-              .buttonBorderShape(.circle)
-          } else {
-            Button { dismiss() } label: { Image(systemName: "xmark") }
-              .buttonStyle(.bordered)
-          }
-        }
-        .tint(.primary)
-        .padding(.top, 8).padding(.leading, 20)
-      }
-    }
-    .overlay(alignment: .topTrailing) {
-      if let user = model.user {
-        Group {
-          if #available(iOS 26.0, *) { accountMenu(user).buttonStyle(.glass).buttonBorderShape(.capsule) }
-          else { accountMenu(user).buttonStyle(.bordered).buttonBorderShape(.capsule) }
-        }
-        .disabled(model.deviceBusy || [.locating, .sending].contains(model.state)).padding(.top, 8).padding(.trailing, 20)
-      }
-    }
-    .sheet(isPresented: Binding(get: { section != nil }, set: { if !$0 { section = nil } })) {
-      if let section {
-        if #available(iOS 16.0, *) { ClipAccountSheet(section: section).environmentObject(model).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) }
-        else { ClipAccountSheet(section: section).environmentObject(model) }
-      }
-    }
-    .alert("PRiSM", isPresented: $showingError) {
-      Button("知道了") { model.clearError() }
+  }
 
-    } message: {
-      Text(model.errorMessage ?? "")
+  @ViewBuilder private var floatingDismissButton: some View {
+    if allowsDismiss {
+      Group {
+        if #available(iOS 26.0, *) {
+          Button { dismiss() } label: { Image(systemName: "xmark") }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+        } else {
+          Button { dismiss() } label: { Image(systemName: "xmark") }
+            .buttonStyle(.bordered)
+        }
+      }
+      .tint(.primary)
+      .padding(.top, 8).padding(.leading, 20)
     }
-    .onChange(of: model.errorMessage) { value in
-      showingError = value != nil && section == nil
+  }
+
+  @ViewBuilder private var floatingAccountMenu: some View {
+    if let user = model.user {
+      Group {
+        if #available(iOS 26.0, *) { accountMenu(user).buttonStyle(.glass).buttonBorderShape(.capsule) }
+        else { accountMenu(user).buttonStyle(.bordered).buttonBorderShape(.capsule) }
+      }
+      .disabled(model.deviceBusy || [.locating, .sending].contains(model.state)).padding(.top, 8).padding(.trailing, 20)
+    }
+  }
+
+  /// Toolbar items rely on the system appearance, so no glass or bordered style is applied here.
+  @ViewBuilder private var toolbarDismissButton: some View {
+    if allowsDismiss {
+      if #available(iOS 26.0, *) {
+        Button(role: .close) { dismiss() }
+      } else {
+        Button { dismiss() } label: { Image(systemName: "xmark") }
+          .accessibilityLabel("关闭")
+      }
+    }
+  }
+
+  @ViewBuilder private var toolbarAccountMenu: some View {
+    if let user = model.user {
+      accountMenu(user).disabled(model.deviceBusy || [.locating, .sending].contains(model.state))
     }
   }
 
@@ -112,7 +156,10 @@ private struct ClipFailurePage: View {
   var body: some View {
     VStack(spacing: 20) {
       ClipStatusMessage(title: "无法进入机台会话", message: message, symbol: "exclamationmark.triangle")
-      if let retry { Button("重试", action: retry).buttonStyle(.borderedProminent) }
+      if let retry {
+        Button(action: retry) { Text("重试").frame(maxWidth: .infinity).padding(.vertical, 12) }
+          .clipActionStyle(primary: true)
+      }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
@@ -149,13 +196,13 @@ private struct ClipSessionPage: View {
                           icon: Image("MuNETLogo").renderingMode(.original),
                           busy: model.authenticating == "munet")
             }
-            .buttonStyle(ClipActionStyle(primary: true))
+            .clipActionStyle(primary: true)
             Button { Task { await model.authenticateWithPasskey() } } label: {
               actionLabel(model.authenticating == "passkey" ? "正在验证 Passkey…" : "使用 Passkey 登录",
                           icon: Image(systemName: "touchid"),
                           busy: model.authenticating == "passkey")
             }
-            .buttonStyle(ClipActionStyle())
+            .clipActionStyle()
           }
           .disabled(model.authenticating != nil)
         case .ready, .locating, .sending, .success:
@@ -163,15 +210,18 @@ private struct ClipSessionPage: View {
           if model.state == .ready, model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
             Button { Task { await model.device("coin") } } label: {
               HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
-            }.buttonStyle(ClipActionStyle()).disabled(model.deviceBusy)
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+            }.clipActionStyle().disabled(model.deviceBusy)
           }
         case .loadingCards:
           ProgressView().accessibilityLabel("正在加载卡片")
         case .cardsFailed(let message):
           VStack(spacing: 20) {
             ClipStatusMessage(title: "无法加载卡片", message: message, symbol: "exclamationmark.triangle")
-            Button("重新加载卡片") { Task { await model.reloadCards() } }
-              .buttonStyle(.borderedProminent)
+            Button { Task { await model.reloadCards() } } label: {
+              Text("重新加载卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
+            }
+            .clipActionStyle(primary: true)
           }
         case .idle, .loadingMachine, .failed, .completed, .expired:
           EmptyView()
@@ -189,7 +239,7 @@ private struct ClipSessionPage: View {
       .frame(width: 24, height: 24)
       .accessibilityHidden(true)
       Text(title).multilineTextAlignment(.center)
-    }.frame(maxWidth: .infinity)
+    }.frame(maxWidth: .infinity).padding(.vertical, 12)
   }
 
   private var cardsView: some View {
@@ -197,10 +247,14 @@ private struct ClipSessionPage: View {
       if model.cards.isEmpty {
         Text("还没有可用卡片，请先在 Prism 添加卡片")
           .foregroundStyle(.secondary).multilineTextAlignment(.center)
-        Link("添加卡片", destination: model.api.baseURL.appendingPathComponent("cards"))
-          .buttonStyle(ClipActionStyle()).padding(.top, 16)
-        Button("重新加载卡片") { Task { await model.reloadCards() } }
-          .buttonStyle(ClipActionStyle()).padding(.top, 24)
+        Link(destination: model.api.baseURL.appendingPathComponent("cards")) {
+          Text("添加卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
+        }
+        .clipActionStyle().padding(.top, 16)
+        Button { Task { await model.reloadCards() } } label: {
+          Text("重新加载卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
+        }
+        .clipActionStyle().padding(.top, 24)
       } else {
         VStack(spacing: 0) {
           ForEach(Array(model.cards.enumerated()), id: \.element.id) { index, card in
@@ -354,6 +408,25 @@ private struct ClipStatusMessage: View {
   }
 }
 
+/// Action buttons render as Liquid Glass on iOS 26+ (prominent for the main action,
+/// regular glass for secondary ones) and keep the flat pill on earlier systems.
+private struct ClipActionModifier: ViewModifier {
+  var primary = false
+
+  @ViewBuilder func body(content: Content) -> some View {
+    if #available(iOS 26.0, *) {
+      if primary {
+        content.font(.headline).buttonStyle(.glassProminent).tint(.blue).buttonBorderShape(.capsule)
+      } else {
+        content.font(.headline).buttonStyle(.glass).buttonBorderShape(.capsule)
+      }
+    } else {
+      content.buttonStyle(ClipActionStyle(primary: primary))
+    }
+  }
+}
+
+/// Fallback used below iOS 26, where glass button styles are unavailable.
 private struct ClipActionStyle: ButtonStyle {
   var primary = false
   @Environment(\.isEnabled) private var enabled
@@ -362,10 +435,16 @@ private struct ClipActionStyle: ButtonStyle {
     configuration.label
       .font(.system(size: 18, weight: .semibold))
       .foregroundStyle(primary ? Color.white : Color.primary)
-      .padding(.horizontal, 24).padding(.vertical, 14)
+      .padding(.horizontal, 24)
       .frame(maxWidth: .infinity, minHeight: 58)
       .background(primary ? Color.blue : Color.primary.opacity(0.065), in: Capsule())
       .opacity(!enabled ? 0.5 : configuration.isPressed ? 0.7 : 1)
+  }
+}
+
+private extension View {
+  func clipActionStyle(primary: Bool = false) -> some View {
+    modifier(ClipActionModifier(primary: primary))
   }
 }
 
@@ -399,7 +478,9 @@ private struct ClipDeviceControls: View {
                 }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
               }.buttonStyle(.plain).accessibilityValue(consent ? "✓" : "—")
               if model.machine?.has("door") != true {
-                Button { Task { await model.enter() } } label: { HStack { if model.deviceBusy { ProgressView() }; Text("确认入场") } }.buttonStyle(ClipActionStyle(primary: true)).disabled(!consent)
+                Button { Task { await model.enter() } } label: {
+                  HStack { if model.deviceBusy { ProgressView() }; Text("确认入场") }.frame(maxWidth: .infinity).padding(.vertical, 12)
+                }.clipActionStyle(primary: true).disabled(!consent)
               }
             }
           }
@@ -414,7 +495,8 @@ private struct ClipDeviceControls: View {
             }
             Button { Task { await model.device("door.open", consent: consent) } } label: {
               HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "door.left.hand.open") }; Text(model.doorPassword != nil ? "重新获取密码" : device.gate == "entry" ? "入场并获取开门密码" : "获取开门密码") }
-            }.buttonStyle(ClipActionStyle(primary: true)).disabled(device.gate == "entry" && !consent)
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+            }.clipActionStyle(primary: true).disabled(device.gate == "entry" && !consent)
           }
           if device.gate == "ready", device.power != "off", let table = device.mahjong {
             let mine = table.seats.contains { $0.mine }
@@ -449,8 +531,8 @@ private struct ClipDeviceControls: View {
                 Text("已满桌").font(.subheadline).foregroundStyle(.secondary)
               } else {
                 Button { Task { await model.device(mine ? "mahjong.leave" : "mahjong.join") } } label: {
-                  HStack { if model.deviceBusy { ProgressView() }; Text(mine ? "下桌" : "上桌") }
-                }.buttonStyle(ClipActionStyle(primary: !mine))
+                  HStack { if model.deviceBusy { ProgressView() }; Text(mine ? "下桌" : "上桌") }.frame(maxWidth: .infinity).padding(.vertical, 12)
+                }.clipActionStyle(primary: !mine)
               }
             }.frame(maxWidth: .infinity)
 
@@ -460,12 +542,15 @@ private struct ClipDeviceControls: View {
               Text("设备尚未开机").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
               Button { Task { await model.device("power.on") } } label: {
                 HStack(spacing: 10) { if model.deviceBusy || model.waitingPower { ProgressView() } else { Image(systemName: "power") }; Text("开机") }
-              }.buttonStyle(ClipActionStyle(primary: true)).disabled(model.waitingPower)
+                  .frame(maxWidth: .infinity).padding(.vertical, 12)
+              }.clipActionStyle(primary: true).disabled(model.waitingPower)
             }.frame(maxWidth: .infinity)
           }
         }
       } else if model.errorMessage != nil {
-        Button("重试") { Task { model.clearError(); await model.refreshVisit() } }.buttonStyle(ClipActionStyle())
+        Button { Task { model.clearError(); await model.refreshVisit() } } label: {
+          Text("重试").frame(maxWidth: .infinity).padding(.vertical, 12)
+        }.clipActionStyle()
       } else { ProgressView().accessibilityLabel("正在加载") }
     }.disabled(model.deviceBusy || [.locating, .sending].contains(model.state))
   }
@@ -561,16 +646,12 @@ private struct ClipAccountSheet: View {
       (Text(item.name + " ").foregroundColor(.secondary) + Text(item.amount.formatted(.number.precision(.fractionLength(2)))).foregroundColor(item.amount < 0 ? .green : .secondary)).font(.caption)
     }
   }
-  @ViewBuilder private var checkoutButton: some View {
-    if #available(iOS 26.0, *) {
-      Button { Task { await model.checkout(); done = model.errorMessage == nil } } label: {
-        HStack { if model.deviceBusy { ProgressView() }; Text("结账").font(.headline) }.frame(maxWidth: .infinity).padding(.vertical, 12)
-      }.buttonStyle(.glassProminent).tint(.blue).disabled(model.deviceBusy)
-    } else {
-      Button { Task { await model.checkout(); done = model.errorMessage == nil } } label: {
-        HStack { if model.deviceBusy { ProgressView() }; Text("结账") }.frame(maxWidth: .infinity).padding(.vertical, 12)
-      }.buttonStyle(.borderedProminent).tint(.blue).disabled(model.deviceBusy)
+  private var checkoutButton: some View {
+    Button { Task { await model.checkout(); done = model.errorMessage == nil } } label: {
+      HStack { if model.deviceBusy { ProgressView() }; Text("结账") }.frame(maxWidth: .infinity).padding(.vertical, 12)
     }
+    .clipActionStyle(primary: true)
+    .disabled(model.deviceBusy)
   }
   private var content: some View {
     VStack(spacing: 0) {
@@ -611,7 +692,9 @@ private struct ClipAccountSheet: View {
         } else if section == 1 {
           if done { Text("兑换成功") } else {
             TextField("兑换码", text: $redeemCode).textInputAutocapitalization(.never).autocorrectionDisabled().padding(18).overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.15)))
-            Button { Task { await model.redeem(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines)); done = model.errorMessage == nil } } label: { HStack { if model.deviceBusy { ProgressView() }; Text("兑换") } }.buttonStyle(ClipActionStyle(primary: true)).disabled(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            Button { Task { await model.redeem(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines)); done = model.errorMessage == nil } } label: {
+              HStack { if model.deviceBusy { ProgressView() }; Text("兑换") }.frame(maxWidth: .infinity).padding(.vertical, 12)
+            }.clipActionStyle(primary: true).disabled(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
           }
         } else if section == 2 {
           if model.history.isEmpty && !model.deviceBusy && loadError == nil { Text("暂无记录") }
@@ -637,7 +720,7 @@ private struct ClipAccountSheet: View {
     .navigationTitle(title)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      ToolbarItem(placement: .navigationBarTrailing) {
+      ToolbarItem(placement: .topBarTrailing) {
         closeButton
       }
     }
