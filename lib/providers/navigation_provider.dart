@@ -156,19 +156,45 @@ class ActiveBranchNotifier extends Notifier<int> {
   }
 }
 
-/// Provider to track if the main scaffold is currently covered by a root-level route (like a dialog or CardDetail).
-final isScaffoldCoveredProvider =
-    NotifierProvider<ScaffoldCoveredNotifier, bool>(() {
-      return ScaffoldCoveredNotifier();
+/// What the native shell currently shows, derived from the root navigator's route stack.
+///
+/// The native tab bar belongs to the shell, which is the bottom-most route of the root navigator.
+/// It stays on screen while that route is what the user sees — a dialog presented on top of it
+/// only dims the chrome — and goes away as soon as an opaque route replaces it.
+@immutable
+class NativeShellCoverage {
+  const NativeShellCoverage({
+    this.visibleRoute,
+    this.shellRoute,
+    this.modalOnTop = false,
+  });
+
+  /// The top-most opaque route of the root navigator: what the user is actually looking at.
+  final Route<dynamic>? visibleRoute;
+
+  /// The bottom-most route of the root navigator, which hosts the shell.
+  final Route<dynamic>? shellRoute;
+
+  /// A modal route such as a dialog or bottom sheet sits above everything else.
+  final bool modalOnTop;
+
+  /// True when an opaque route replaces the shell, so its chrome does not belong on screen.
+  bool get shellCovered =>
+      visibleRoute != null &&
+      shellRoute != null &&
+      !identical(visibleRoute, shellRoute);
+}
+
+final nativeShellCoverageProvider =
+    NotifierProvider<NativeShellCoverageNotifier, NativeShellCoverage>(() {
+      return NativeShellCoverageNotifier();
     });
 
-class ScaffoldCoveredNotifier extends Notifier<bool> {
+class NativeShellCoverageNotifier extends Notifier<NativeShellCoverage> {
   @override
-  bool build() {
-    return false;
-  }
+  NativeShellCoverage build() => const NativeShellCoverage();
 
-  void setCovered(bool covered) {
-    state = covered;
+  void update(NativeShellCoverage coverage) {
+    state = coverage;
   }
 }

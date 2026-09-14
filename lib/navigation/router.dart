@@ -31,7 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: '/scan',
     observers: hostMode == AppHostMode.nativeIOS
-        ? [NativeShellNavigatorObserver()]
+        ? [ref.watch(nativeShellNavigatorObserverProvider)]
         : null,
     routes: [
       GoRoute(
@@ -63,6 +63,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ScanLogsPage(),
       ),
       StatefulShellRoute(
+        // Branch navigators must not forward their events to the root observers: the native shell
+        // tracks the root navigator's stack, and branch routes would pollute it.
+        notifyRootObserver: false,
         navigatorContainerBuilder: (context, navigationShell, children) {
           return AnimatedBranchContainer(
             currentIndex: navigationShell.currentIndex,

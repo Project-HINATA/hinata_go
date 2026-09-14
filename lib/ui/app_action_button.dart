@@ -126,25 +126,47 @@ class _AppActionRegistrarState extends ConsumerState<_AppActionRegistrar> {
   void _sync() {
     if (!mounted) return;
 
+    final config = widget.config;
+    if (config == null) {
+      _notifier.clear();
+      return;
+    }
+
     // Only the page the user is looking at may own the native action button. Every shell branch
     // stays mounted, so an inactive branch would otherwise keep claiming to be current.
-    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
     final isSelectedBranch = _isSelectedBranch;
-    final isShellHidden =
-        isSelectedBranch != null &&
-        (!isSelectedBranch || ref.read(isScaffoldCoveredProvider));
+    final bool isVisible;
 
-    if (widget.config == null || !isCurrent || isShellHidden) {
-      _notifier.clear();
+    if (isSelectedBranch != null) {
+      // Shell page: it owns the button while its branch is selected. A dialog presented on top of
+      // the shell does not take it away — the native chrome dims the button instead, so the
+      // transition is not interrupted by it popping out.
+      isVisible =
+          isSelectedBranch &&
+          !ref.read(nativeShellCoverageProvider).shellCovered;
     } else {
-      _notifier.setConfig(widget.config!);
+      // Root-level route: it owns the button while it is what the user sees, which modals on top of
+      // it do not change. An opaque route pushed above it takes the button over.
+      final route = ModalRoute.of(context);
+      final isCurrent = route?.isCurrent ?? false;
+      final isVisibleRoute = identical(
+        ref.read(nativeShellCoverageProvider).visibleRoute,
+        route,
+      );
+      isVisible = isCurrent || isVisibleRoute;
+    }
+
+    if (isVisible) {
+      _notifier.setConfig(config);
+    } else {
+      _notifier.clear();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     _isSelectedBranch = ShellBranchScope.maybeIsSelected(context);
-    ref.listen(isScaffoldCoveredProvider, (previous, next) => _sync());
+    ref.listen(nativeShellCoverageProvider, (previous, next) => _sync());
     WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
     return const SizedBox.shrink();
   }
