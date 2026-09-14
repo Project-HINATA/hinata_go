@@ -37,6 +37,7 @@ class _CardsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(_shellRebuild);
     return Scaffold(
       body: const SizedBox(),
       floatingActionButton: buildAppActionButton(
@@ -80,6 +81,16 @@ class _PlainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Scaffold(body: SizedBox());
+}
+
+/// Bumped by a test to rebuild the shell page while a root-level page sits on top of it.
+final _shellRebuild = NotifierProvider<_ShellRebuild, int>(_ShellRebuild.new);
+
+class _ShellRebuild extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
 }
 
 void main() {
@@ -269,5 +280,47 @@ void main() {
     router.pop();
     await tester.pumpAndSettle();
     expect(chromeCalls.last['tabBarVisible'], isTrue);
+  });
+
+  testWidgets(
+    'the branch page takes the action button back when a root page pops',
+    (tester) async {
+      await pumpApp(tester);
+
+      shell.goBranch(1);
+      await tester.pumpAndSettle();
+      expect(container.read(appActionNotifierProvider)?.id, 'cardsAction');
+
+      router.push('/root_action');
+      await tester.pumpAndSettle();
+      expect(container.read(appActionNotifierProvider)?.id, 'rootAction');
+
+      // The page being popped reports itself after the page below it has already claimed the button,
+      // so a claim that is simply withdrawn must not be able to wipe the one that is still on screen.
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(container.read(appActionNotifierProvider)?.id, 'cardsAction');
+    },
+  );
+
+  testWidgets('a branch page under a root page cannot take the button over', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+
+    shell.goBranch(1);
+    await tester.pumpAndSettle();
+
+    router.push('/root_action');
+    await tester.pumpAndSettle();
+    expect(container.read(appActionNotifierProvider)?.id, 'rootAction');
+
+    // Rebuild the shell page while the root page is on top: its registrar re-syncs with the shell
+    // covered, and must leave the button alone.
+    container.read(_shellRebuild.notifier).bump();
+    await tester.pumpAndSettle();
+
+    expect(container.read(appActionNotifierProvider)?.id, 'rootAction');
+    expect(chromeCalls.last['tabBarVisible'], isFalse);
   });
 }

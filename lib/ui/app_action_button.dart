@@ -108,6 +108,9 @@ class _AppActionRegistrar extends ConsumerStatefulWidget {
 class _AppActionRegistrarState extends ConsumerState<_AppActionRegistrar> {
   late final AppActionNotifier _notifier;
 
+  /// Identifies this page's claim, so it can be withdrawn without disturbing anyone else's.
+  final Object _owner = Object();
+
   /// `null` for pages that live outside the shell, such as root-level routes.
   bool? _isSelectedBranch;
 
@@ -119,48 +122,39 @@ class _AppActionRegistrarState extends ConsumerState<_AppActionRegistrar> {
 
   @override
   void dispose() {
-    _notifier.clear();
+    _notifier.release(_owner);
     super.dispose();
   }
 
   void _sync() {
     if (!mounted) return;
 
-    final config = widget.config;
-    if (config == null) {
-      _notifier.clear();
-      return;
-    }
-
     // Only the page the user is looking at may own the native action button. Every shell branch
     // stays mounted, so an inactive branch would otherwise keep claiming to be current.
     final isSelectedBranch = _isSelectedBranch;
-    final bool isVisible;
+    final coverage = ref.read(nativeShellCoverageProvider);
+    final bool onScreen;
 
     if (isSelectedBranch != null) {
       // Shell page: it owns the button while its branch is selected. A dialog presented on top of
       // the shell does not take it away — the native chrome dims the button instead, so the
       // transition is not interrupted by it popping out.
-      isVisible =
-          isSelectedBranch &&
-          !ref.read(nativeShellCoverageProvider).shellCovered;
+      onScreen = isSelectedBranch && !coverage.shellCovered;
     } else {
       // Root-level route: it owns the button while it is what the user sees, which modals on top of
       // it do not change. An opaque route pushed above it takes the button over.
       final route = ModalRoute.of(context);
-      final isCurrent = route?.isCurrent ?? false;
-      final isVisibleRoute = identical(
-        ref.read(nativeShellCoverageProvider).visibleRoute,
-        route,
-      );
-      isVisible = isCurrent || isVisibleRoute;
+      onScreen =
+          (route?.isCurrent ?? false) ||
+          identical(coverage.visibleRoute, route);
     }
 
-    if (isVisible) {
-      _notifier.setConfig(config);
-    } else {
-      _notifier.clear();
-    }
+    _notifier.claim(
+      _owner,
+      onScreen: onScreen,
+      inShell: isSelectedBranch != null,
+      config: widget.config,
+    );
   }
 
   @override

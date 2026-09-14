@@ -91,18 +91,61 @@ final appActionNotifierProvider =
       return AppActionNotifier();
     });
 
-class AppActionNotifier extends Notifier<AppActionConfig?> {
-  @override
-  AppActionConfig? build() => null;
+/// The claim one page holds on the native action button while it is on screen.
+class _ActionClaim {
+  const _ActionClaim({required this.config, required this.inShell});
 
-  void setConfig(AppActionConfig config) {
-    state = config;
+  final AppActionConfig config;
+
+  /// The page lives inside the shell. A page outside it — a root-level route such as `/instances` —
+  /// outranks it, because a root-level route covers the shell when it is the one being shown.
+  final bool inShell;
+}
+
+class AppActionNotifier extends Notifier<AppActionConfig?> {
+  final Map<Object, _ActionClaim> _claims = <Object, _ActionClaim>{};
+
+  @override
+  AppActionConfig? build() {
+    _claims.clear();
+    return null;
   }
 
-  void clear() {
-    if (state != null) {
-      state = null;
+  /// Publishes what the page behind [owner] wants the native button to show.
+  ///
+  /// Pages leave and arrive in an order the framework does not promise: when a route pops, the page
+  /// being removed can report itself after the page below it has already claimed the button. Claims
+  /// are therefore collected per owner rather than written over each other, and the button is
+  /// resolved from what is left on screen, so a page that goes away can only withdraw its own claim.
+  void claim(
+    Object owner, {
+    required bool onScreen,
+    required bool inShell,
+    AppActionConfig? config,
+  }) {
+    if (!onScreen || config == null) {
+      _claims.remove(owner);
+    } else {
+      _claims[owner] = _ActionClaim(config: config, inShell: inShell);
     }
+    _resolve();
+  }
+
+  /// Drops the claim of a page that is going away for good.
+  void release(Object owner) {
+    if (_claims.remove(owner) != null) _resolve();
+  }
+
+  void _resolve() {
+    _ActionClaim? winner;
+    for (final claim in _claims.values) {
+      if (winner == null || (winner.inShell && !claim.inShell)) {
+        winner = claim;
+      }
+    }
+
+    final next = winner?.config;
+    if (!identical(next, state)) state = next;
   }
 
   void execute(String actionId) {
