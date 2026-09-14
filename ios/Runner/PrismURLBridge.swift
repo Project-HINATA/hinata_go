@@ -37,9 +37,12 @@ final class PrismURLBridge {
     nativeModel = model
     let controller = UIHostingController(rootView: MachineLoginView(allowsDismiss: true).environmentObject(model))
     controller.modalPresentationStyle = .pageSheet
+    // The sheet carries an in-progress machine session, so a stray swipe must not take it down.
+    // Closing stays available through the toolbar button, which calls `dismiss()`.
+    controller.isModalInPresentation = true
     if let sheet = controller.sheetPresentationController {
       sheet.detents = [.large()]
-      sheet.prefersGrabberVisible = true
+      sheet.prefersGrabberVisible = false
     }
     nativeController = controller
     presenter.present(controller, animated: true) {
