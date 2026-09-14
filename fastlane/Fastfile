@@ -11,7 +11,8 @@ platform :ios do
       in_house: false
     )
 
-    bundle_id_client = Spaceship::ConnectAPI::Client.new(token: api_key)
+    bundle_id_token = Spaceship::ConnectAPI::Token.create(**api_key)
+    bundle_id_client = Spaceship::ConnectAPI::Client.new(token: bundle_id_token)
     [
       ["moe.neri.hinatago.liveactivity", "HINATA Live Activity"],
       ["moe.neri.hinatago.prism.liveactivity", "HINATA PRiSM Live Activity"]
