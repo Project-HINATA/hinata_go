@@ -10,7 +10,6 @@ import '../providers/display_rotation_provider.dart';
 import '../providers/hardware_device_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'components/device/device_mini_bar.dart';
-import 'shell_state_sync.dart';
 
 const double _bottomFloatingDeviceBarInset = 80;
 
@@ -51,7 +50,6 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    syncShellState(context, ref, navigationShell.currentIndex);
     final destinations = _buildNavDestinations(context, ref);
 
     return LayoutBuilder(

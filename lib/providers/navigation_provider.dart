@@ -123,39 +123,6 @@ class AppActionNotifier extends Notifier<AppActionConfig?> {
   }
 }
 
-enum NativeShellAction { addFolder, addCard }
-
-final nativeShellActionProvider =
-    NotifierProvider<NativeShellActionNotifier, NativeShellAction?>(() {
-      return NativeShellActionNotifier();
-    });
-
-class NativeShellActionNotifier extends Notifier<NativeShellAction?> {
-  @override
-  NativeShellAction? build() => null;
-
-  void trigger(NativeShellAction action) => state = action;
-
-  void clear() => state = null;
-}
-
-/// Provider to track the current active branch index in the main scaffold.
-/// 0: Reader, 1: Cards, 2: Settings
-final activeBranchProvider = NotifierProvider<ActiveBranchNotifier, int>(() {
-  return ActiveBranchNotifier();
-});
-
-class ActiveBranchNotifier extends Notifier<int> {
-  @override
-  int build() {
-    return 0;
-  }
-
-  void setIndex(int index) {
-    state = index;
-  }
-}
-
 /// What the native shell currently shows, derived from the root navigator's route stack.
 ///
 /// The native tab bar belongs to the shell, which is the bottom-most route of the root navigator.

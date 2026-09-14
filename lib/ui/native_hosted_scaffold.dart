@@ -5,7 +5,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/app_update_provider.dart';
 import '../providers/navigation_provider.dart';
-import 'shell_state_sync.dart';
 
 class NativeHostedScaffold extends ConsumerStatefulWidget {
   const NativeHostedScaffold({required this.navigationShell, super.key});
@@ -57,14 +56,6 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
         final actionStr = arguments['action'] as String?;
         if (actionStr != null) {
           ref.read(appActionNotifierProvider.notifier).execute(actionStr);
-          final legacyAction = switch (actionStr) {
-            'addFolder' => NativeShellAction.addFolder,
-            'addCard' => NativeShellAction.addCard,
-            _ => null,
-          };
-          if (legacyAction != null) {
-            ref.read(nativeShellActionProvider.notifier).trigger(legacyAction);
-          }
         }
     }
   }
@@ -129,7 +120,6 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
       _publishActionButton(config);
     });
 
-    syncShellState(context, ref, widget.navigationShell.currentIndex);
     return Scaffold(body: widget.navigationShell);
   }
 }

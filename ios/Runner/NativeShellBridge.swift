@@ -4,11 +4,9 @@ import Foundation
 protocol NativeShellBridgeDelegate: AnyObject {
   func nativeShell(setSelectedIndex index: Int)
   func nativeShell(setSettingsBadge visible: Bool)
-  func nativeShell(setScaffoldCovered covered: Bool, hideNativeChrome: Bool)
   func nativeShell(setChromeVisibility tabBarVisible: Bool, dimmed: Bool)
   func nativeShell(setTabs tabs: [[String: Any]])
   func nativeShell(setActionButton config: [String: Any]?)
-  func nativeShell(setLocalizedStrings strings: [String: String])
 }
 
 final class NativeShellBridge {
@@ -46,16 +44,6 @@ final class NativeShellBridge {
         }
         self.delegate?.nativeShell(setSettingsBadge: visible)
         result(nil)
-      case "setScaffoldCovered":
-        guard let covered = args["covered"] as? Bool else {
-          result(FlutterError(code: "invalid_args", message: nil, details: nil))
-          return
-        }
-        self.delegate?.nativeShell(
-          setScaffoldCovered: covered,
-          hideNativeChrome: args["hideNativeChrome"] as? Bool ?? false
-        )
-        result(nil)
       case "setChromeVisibility":
         let tabBarVisible = args["tabBarVisible"] as? Bool ?? true
         let dimmed = args["dimmed"] as? Bool ?? false
@@ -68,10 +56,6 @@ final class NativeShellBridge {
       case "setActionButton":
         let config = args["config"] as? [String: Any]
         self.delegate?.nativeShell(setActionButton: config)
-        result(nil)
-      case "setLocalizedStrings":
-        let strings = args.compactMapValues { $0 as? String }
-        self.delegate?.nativeShell(setLocalizedStrings: strings)
         result(nil)
       default:
         result(FlutterMethodNotImplemented)

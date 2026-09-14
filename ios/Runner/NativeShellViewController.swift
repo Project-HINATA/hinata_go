@@ -230,26 +230,9 @@ final class NativeShellViewController: UITabBarController,
     view.layoutIfNeeded()
   }
 
-  func nativeShell(setScaffoldCovered covered: Bool, hideNativeChrome: Bool) {
-    nativeShell(setChromeVisibility: !hideNativeChrome, dimmed: covered && !hideNativeChrome)
-  }
-
   func nativeShell(setActionButton config: [String: Any]?) {
     currentActionConfig = config
     updateActionButton()
-  }
-
-  func nativeShell(setLocalizedStrings strings: [String: String]) {
-    guard let controllers = viewControllers else { return }
-    if let scan = strings["scan"], controllers.indices.contains(0) {
-      controllers[0].tabBarItem.title = scan
-    }
-    if let cards = strings["cards"], controllers.indices.contains(1) {
-      controllers[1].tabBarItem.title = cards
-    }
-    if let settings = strings["settings"], controllers.indices.contains(2) {
-      controllers[2].tabBarItem.title = settings
-    }
   }
 
   // MARK: - Action Button Helpers

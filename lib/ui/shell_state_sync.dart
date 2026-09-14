@@ -97,11 +97,3 @@ class NativeShellNavigatorObserver extends NavigatorObserver {
     return null;
   }
 }
-
-void syncShellState(BuildContext context, WidgetRef ref, int activeIndex) {
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (ref.read(activeBranchProvider) != activeIndex) {
-      ref.read(activeBranchProvider.notifier).setIndex(activeIndex);
-    }
-  });
-}
