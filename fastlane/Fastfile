@@ -11,16 +11,19 @@ platform :ios do
       in_house: false
     )
 
+    bundle_id_client = Spaceship::ConnectAPI::Client.new(token: api_key)
     [
       ["moe.neri.hinatago.liveactivity", "HINATA Live Activity"],
       ["moe.neri.hinatago.prism.liveactivity", "HINATA PRiSM Live Activity"]
     ].each do |bundle_id, app_name|
-      produce(
-        api_key: api_key,
-        app_identifier: bundle_id,
-        app_name: app_name,
-        skip_itc: true
-      )
+      unless Spaceship::ConnectAPI::BundleId.find(bundle_id, client: bundle_id_client)
+        Spaceship::ConnectAPI::BundleId.create(
+          client: bundle_id_client,
+          name: app_name,
+          platform: "IOS",
+          identifier: bundle_id
+        )
+      end
     end
 
     [
