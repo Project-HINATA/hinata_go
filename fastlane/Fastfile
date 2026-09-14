@@ -12,6 +12,18 @@ platform :ios do
     )
 
     [
+      ["moe.neri.hinatago.liveactivity", "HINATA Live Activity"],
+      ["moe.neri.hinatago.prism.liveactivity", "HINATA PRiSM Live Activity"]
+    ].each do |bundle_id, app_name|
+      produce(
+        api_key: api_key,
+        app_identifier: bundle_id,
+        app_name: app_name,
+        skip_itc: true
+      )
+    end
+
+    [
       "moe.neri.hinatago",
       "moe.neri.hinatago.prism",
       "moe.neri.hinatago.liveactivity",
