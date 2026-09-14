@@ -147,9 +147,7 @@ class DataManagementSheet extends HookConsumerWidget {
         context.navigator.pop();
         try {
           await dataManagement.exportToFile();
-          ref
-              .read(notificationServiceProvider)
-              .showSuccess(l10n.exportSuccess);
+          ref.read(notificationServiceProvider).showSuccess(l10n.exportSuccess);
         } catch (e) {
           ref
               .read(notificationServiceProvider)
@@ -171,9 +169,7 @@ class DataManagementSheet extends HookConsumerWidget {
         context.navigator.pop();
         try {
           await dataManagement.exportToClipboard();
-          ref
-              .read(notificationServiceProvider)
-              .showSuccess(l10n.exportSuccess);
+          ref.read(notificationServiceProvider).showSuccess(l10n.exportSuccess);
         } catch (e) {
           ref
               .read(notificationServiceProvider)

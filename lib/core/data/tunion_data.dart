@@ -29012,8 +29012,10 @@ const Map<String, String> tunionStationMap = {
 /// Look up T-Union Card Name by Card Number (ASN) or Issuer Code
 String? lookupTUnionIssuer(String? cardNumber) {
   if (cardNumber == null || cardNumber.isEmpty) return null;
-  final cleanNum = cardNumber.replaceAll(RegExp(r'[^0-9A-Fa-f]'), '').toUpperCase();
-  
+  final cleanNum = cardNumber
+      .replaceAll(RegExp(r'[^0-9A-Fa-f]'), '')
+      .toUpperCase();
+
   // 1. Try variable length IIN prefixes (e.g. 10-digit, 8-digit)
   if (cleanNum.length >= 10) {
     final iin10 = cleanNum.substring(0, 10);
@@ -29084,7 +29086,10 @@ TUnionStationInfo? lookupTUnionStation({
 
   // 1. Station code matching within city
   if (cleanCity.isNotEmpty && cleanStation.isNotEmpty) {
-    final strippedTrailingZeros = cleanStation.replaceAll(RegExp(r'(00)+$'), '');
+    final strippedTrailingZeros = cleanStation.replaceAll(
+      RegExp(r'(00)+$'),
+      '',
+    );
 
     // 1.1 First priority: Match exact station entries (with non-empty station name)
     final candidates = <String>[];
@@ -29098,7 +29103,9 @@ TUnionStationInfo? lookupTUnionStation({
       // 00LL00SS -> 010014 (6 chars)
       candidates.add(cleanStation.substring(2));
       // 00LL00SS -> 020E (2-digit line + 2-digit station)
-      candidates.add(cleanStation.substring(2, 4) + cleanStation.substring(6, 8));
+      candidates.add(
+        cleanStation.substring(2, 4) + cleanStation.substring(6, 8),
+      );
     }
 
     // Try finding an exact station match in CSV (e.g. 七里河, 青年宫, 马栏广场, 机场, 莘庄)
@@ -29107,7 +29114,9 @@ TUnionStationInfo? lookupTUnionStation({
       if (match != null) {
         final parsed = parseEntry(cleanCity, match);
         // If it has a specific station name, it is a confirmed station match!
-        if (parsed.station.isNotEmpty || parsed.type == '公交' || parsed.type == 'BRT') {
+        if (parsed.station.isNotEmpty ||
+            parsed.type == '公交' ||
+            parsed.type == 'BRT') {
           return parsed;
         }
       }
@@ -29118,7 +29127,23 @@ TUnionStationInfo? lookupTUnionStation({
     final c = cleanCity;
     final paddedStation = cleanStation.padRight(8, '0');
 
-    if (['2900', '3104', '3100', '2000', '4520', '4510', '7910', '3930', '4210', '7310', '3030', '3010', '3610', '8810', '8210'].contains(c)) {
+    if ([
+      '2900',
+      '3104',
+      '3100',
+      '2000',
+      '4520',
+      '4510',
+      '7910',
+      '3930',
+      '4210',
+      '7310',
+      '3030',
+      '3010',
+      '3610',
+      '8810',
+      '8210',
+    ].contains(c)) {
       // 前4位，10进制 (Shanghai, Qingdao, Jinan, Xi'an, Xiamen, Nanchang, Kunming, Xuzhou, Nanjing, Hefei, Urumqi, Lanzhou)
       final pfx4 = paddedStation.substring(0, 4);
       if (RegExp(r'^\d+$').hasMatch(pfx4)) {
@@ -29135,7 +29160,8 @@ TUnionStationInfo? lookupTUnionStation({
     } else if (c == '2220') {
       // 大连: 前4位，10或16进制
       final pfx4 = paddedStation.substring(0, 4);
-      if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) && RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
+      if (RegExp(r'^[0-9A-Fa-f]+$').hasMatch(pfx4) &&
+          RegExp(r'[A-Fa-f]').hasMatch(pfx4)) {
         final val = int.tryParse(pfx4, radix: 16);
         if (val != null && val > 0) parsedLine = '$val路';
       } else if (RegExp(r'^\d+$').hasMatch(pfx4)) {
@@ -29203,7 +29229,10 @@ TUnionStationInfo? lookupTUnionStation({
     // Shanghai CU terminal prefix 31LLSS
     if (cleanTerm.startsWith('31') && cleanTerm.length >= 6) {
       final pfx6 = cleanTerm.substring(0, 6);
-      final shMatch = tunionStationMap['2900,$pfx6'] ?? tunionStationMap['2000,$pfx6'] ?? tunionStationMap['3104,$pfx6'];
+      final shMatch =
+          tunionStationMap['2900,$pfx6'] ??
+          tunionStationMap['2000,$pfx6'] ??
+          tunionStationMap['3104,$pfx6'];
       if (shMatch != null) {
         return parseEntry('2900', shMatch);
       }
@@ -29249,7 +29278,10 @@ String formatTUnionDetails({
   );
 
   // If entry station is provided
-  if (entryCityCode != null && entryCityCode.isNotEmpty && entryStationCode != null && entryStationCode.isNotEmpty) {
+  if (entryCityCode != null &&
+      entryCityCode.isNotEmpty &&
+      entryStationCode != null &&
+      entryStationCode.isNotEmpty) {
     final entryInfo = lookupTUnionStation(
       cityCode: entryCityCode,
       stationCode: entryStationCode,
@@ -29264,9 +29296,15 @@ String formatTUnionDetails({
     } else {
       // Completed trip (entry -> exit)
       if (entryInfo != null && exitInfo != null) {
-        final entryName = entryInfo.station.isNotEmpty ? entryInfo.station : (entryInfo.line.isNotEmpty ? entryInfo.line : entryStationCode);
-        final exitName = exitInfo.station.isNotEmpty ? exitInfo.station : (exitInfo.line.isNotEmpty ? exitInfo.line : (stationCode ?? ''));
-        final linePrefix = exitInfo.line.isNotEmpty ? '${exitInfo.line} ' : (entryInfo.line.isNotEmpty ? '${entryInfo.line} ' : '');
+        final entryName = entryInfo.station.isNotEmpty
+            ? entryInfo.station
+            : (entryInfo.line.isNotEmpty ? entryInfo.line : entryStationCode);
+        final exitName = exitInfo.station.isNotEmpty
+            ? exitInfo.station
+            : (exitInfo.line.isNotEmpty ? exitInfo.line : (stationCode ?? ''));
+        final linePrefix = exitInfo.line.isNotEmpty
+            ? '${exitInfo.line} '
+            : (entryInfo.line.isNotEmpty ? '${entryInfo.line} ' : '');
         final city = exitInfo.cityName ?? entryInfo.cityName ?? '';
         final cityTag = city.isNotEmpty ? '[$city${exitInfo.type}] ' : '';
         if (entryName == exitName) {
@@ -29278,7 +29316,8 @@ String formatTUnionDetails({
   }
 
   if (exitInfo != null) {
-    if (typeCode == 0x03 || (amount == 0.0 && stationCode != null && stationCode.isNotEmpty)) {
+    if (typeCode == 0x03 ||
+        (amount == 0.0 && stationCode != null && stationCode.isNotEmpty)) {
       return '${exitInfo.formatted} (乘入)';
     }
     if (typeCode == 0x04 && exitInfo.type != '公交') {

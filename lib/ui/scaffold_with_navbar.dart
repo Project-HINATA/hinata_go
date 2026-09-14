@@ -5,10 +5,10 @@ import 'package:hinata_go/context_extensions.dart';
 
 import '../models/scanning_mode.dart';
 import 'app_layout.dart';
-import '../providers/app_update_provider.dart';
 import '../providers/app_state_provider.dart';
 import '../providers/display_rotation_provider.dart';
 import '../providers/hardware_device_provider.dart';
+import '../providers/navigation_provider.dart';
 import 'components/device/device_mini_bar.dart';
 import 'shell_state_sync.dart';
 
@@ -93,22 +93,14 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final hasUpdate = ref.watch(appUpdateProvider).hasUpdate;
+    final tabs = ref.watch(navigationTabsProvider);
 
-    return [
-      NavigationDestination(icon: const Icon(Icons.nfc), label: l10n.scan),
-      NavigationDestination(
-        icon: const Icon(Icons.credit_card),
-        label: l10n.cards,
-      ),
-      NavigationDestination(
-        icon: Badge(
-          isLabelVisible: hasUpdate,
-          child: const Icon(Icons.settings),
-        ),
-        label: l10n.settings,
-      ),
-    ];
+    return tabs.map((tab) {
+      return NavigationDestination(
+        icon: Badge(isLabelVisible: tab.hasBadge, child: Icon(tab.icon)),
+        label: tab.label,
+      );
+    }).toList();
   }
 }
 
@@ -216,24 +208,13 @@ class _RailColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasUpdate = ref.watch(appUpdateProvider).hasUpdate;
-    final railDestinations = [
-      NavigationRailDestination(
-        icon: const Icon(Icons.nfc),
-        label: Text(l10n.scan),
-      ),
-      NavigationRailDestination(
-        icon: const Icon(Icons.credit_card),
-        label: Text(l10n.cards),
-      ),
-      NavigationRailDestination(
-        icon: Badge(
-          isLabelVisible: hasUpdate,
-          child: const Icon(Icons.settings),
-        ),
-        label: Text(l10n.settings),
-      ),
-    ];
+    final tabs = ref.watch(navigationTabsProvider);
+    final railDestinations = tabs.map((tab) {
+      return NavigationRailDestination(
+        icon: Badge(isLabelVisible: tab.hasBadge, child: Icon(tab.icon)),
+        label: Text(tab.label),
+      );
+    }).toList();
 
     return SafeArea(
       minimum: const EdgeInsets.symmetric(vertical: 8),

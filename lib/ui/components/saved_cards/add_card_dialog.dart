@@ -122,9 +122,7 @@ class AddCardDialog extends HookConsumerWidget {
           children: [
             TextField(
               controller: nameController,
-              decoration: InputDecoration(
-                labelText: l10n.nameDescription,
-              ),
+              decoration: InputDecoration(labelText: l10n.nameDescription),
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
@@ -135,9 +133,7 @@ class AddCardDialog extends HookConsumerWidget {
                 ...folders.map(
                   (folder) => DropdownMenuItem(
                     value: folder.id,
-                    child: Text(
-                      folderDisplayName(folder.id, folder.name),
-                    ),
+                    child: Text(folderDisplayName(folder.id, folder.name)),
                   ),
                 ),
                 DropdownMenuItem(
@@ -162,8 +158,7 @@ class AddCardDialog extends HookConsumerWidget {
               controller: valueController,
               decoration: InputDecoration(
                 labelText: l10n.accessCode,
-                helperText:
-                    value.isNotEmpty && !isCodeValid
+                helperText: value.isNotEmpty && !isCodeValid
                     ? l10n.invalidAccessCodeLength
                     : null,
                 helperMaxLines: 3,

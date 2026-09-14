@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../l10n/l10n.dart';
 import '../providers/app_update_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'shell_state_sync.dart';
@@ -26,8 +25,10 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
     super.initState();
     _channel.setMethodCallHandler(_handleNativeCall);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _publishTabs(ref.read(navigationTabsProvider));
       _publishSelection();
       _publishSettingsBadge(ref.read(appUpdateProvider).hasUpdate);
+      _publishActionButton(ref.read(appActionNotifierProvider));
     });
   }
 
@@ -53,15 +54,52 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
         }
       case 'nativeAction':
         final arguments = Map<String, dynamic>.from(call.arguments as Map);
-        final action = switch (arguments['action']) {
-          'addFolder' => NativeShellAction.addFolder,
-          'addCard' => NativeShellAction.addCard,
-          _ => null,
-        };
-        if (action != null) {
-          ref.read(nativeShellActionProvider.notifier).trigger(action);
+        final actionStr = arguments['action'] as String?;
+        if (actionStr != null) {
+          ref.read(appActionNotifierProvider.notifier).execute(actionStr);
+          final legacyAction = switch (actionStr) {
+            'addFolder' => NativeShellAction.addFolder,
+            'addCard' => NativeShellAction.addCard,
+            _ => null,
+          };
+          if (legacyAction != null) {
+            ref.read(nativeShellActionProvider.notifier).trigger(legacyAction);
+          }
         }
     }
+  }
+
+  Future<void> _publishTabs(List<NavigationTab> tabs) =>
+      _channel.invokeMethod('setTabs', {
+        'tabs': tabs
+            .map(
+              (t) => {
+                'index': t.index,
+                'label': t.label,
+                'symbol': t.iosSymbol,
+                'hasBadge': t.hasBadge,
+              },
+            )
+            .toList(),
+      });
+
+  Future<void> _publishActionButton(AppActionConfig? config) {
+    if (config == null) {
+      return _channel.invokeMethod('setActionButton', {'config': null});
+    }
+
+    final items = config.menuItems
+        ?.map((item) => {'id': item.id, 'title': item.label})
+        .toList();
+
+    return _channel.invokeMethod('setActionButton', {
+      'config': {
+        'actionId': config.id,
+        'label': config.tooltip,
+        'symbol': config.nativeSymbol ?? 'plus',
+        'items': items ?? [],
+      },
+    });
   }
 
   Future<void> _publishSelection() => _channel.invokeMethod(
@@ -72,15 +110,6 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
   Future<void> _publishSettingsBadge(bool visible) =>
       _channel.invokeMethod('setSettingsBadge', {'visible': visible});
 
-  Future<void> _publishLocalizedStrings(AppLocalizations localizations) =>
-      _channel.invokeMethod('setLocalizedStrings', {
-        'scan': localizations.scan,
-        'cards': localizations.cards,
-        'settings': localizations.settings,
-        'addCard': localizations.addCard,
-        'newFolder': localizations.newFolder,
-      });
-
   @override
   void dispose() {
     _channel.setMethodCallHandler(null);
@@ -89,10 +118,17 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    _publishLocalizedStrings(AppLocalizations.of(context));
+    final tabs = ref.watch(navigationTabsProvider);
+    _publishTabs(tabs);
+
     ref.listen(appUpdateProvider, (_, next) {
       _publishSettingsBadge(next.hasUpdate);
     });
+
+    ref.listen<AppActionConfig?>(appActionNotifierProvider, (_, config) {
+      _publishActionButton(config);
+    });
+
     syncShellState(
       context,
       ref,

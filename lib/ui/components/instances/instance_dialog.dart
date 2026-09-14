@@ -78,9 +78,7 @@ class InstanceDialog extends HookConsumerWidget {
 
     return AlertDialog(
       title: Text(
-        existingInstance != null
-            ? l10n.editInstance
-            : l10n.addInstance,
+        existingInstance != null ? l10n.editInstance : l10n.addInstance,
       ),
       content: _InstanceDialogContent(
         nameField: _buildNameField(context, nameController),
@@ -217,10 +215,7 @@ class InstanceDialog extends HookConsumerWidget {
         onPressed: () => Navigator.pop(context),
         child: Text(l10n.cancel),
       ),
-      FilledButton(
-        onPressed: isValid ? onSave : null,
-        child: Text(l10n.save),
-      ),
+      FilledButton(onPressed: isValid ? onSave : null, child: Text(l10n.save)),
     ];
   }
 }

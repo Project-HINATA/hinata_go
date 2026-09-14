@@ -136,9 +136,7 @@ class ApiService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final decoded = jsonDecode(response.body);
       final capabilities = RemoteCapabilities.fromResponseJson(decoded);
-      log(
-        'Remote DLL capabilities: version=${capabilities.clientVersion}',
-      );
+      log('Remote DLL capabilities: version=${capabilities.clientVersion}');
       return capabilities;
     }
 

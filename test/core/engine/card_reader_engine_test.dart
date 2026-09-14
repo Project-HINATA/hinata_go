@@ -315,165 +315,241 @@ void main() {
     expect(result.card?.isUsable, isFalse);
   });
 
-  test('reads and decodes SFI 0x18 transit records with Shanghai and Hangzhou stations', () async {
-    // 0x18 Record 1: Shanghai Metro Line 1 Xinzhuang (31 01 11 74 43 02), 300 cents, Ride
-    final record1 = <int>[
-      0x00, 0x01, // seq 1
-      0x00, 0x00, 0x00, // overdraft
-      0x00, 0x00, 0x01, 0x2C, // amount 300 cents (3.00 CNY)
-      0x09, // type Ride
-      0x31, 0x01, 0x11, 0x74, 0x43, 0x02, // terminalId Shanghai Line 1 Xinzhuang
-      0x20, 0x23, 0x08, 0x15, // date 20230815
-      0x18, 0x30, 0x00, // time 183000
-      0x90, 0x00, // SW 9000
-    ];
+  test(
+    'reads and decodes SFI 0x18 transit records with Shanghai and Hangzhou stations',
+    () async {
+      // 0x18 Record 1: Shanghai Metro Line 1 Xinzhuang (31 01 11 74 43 02), 300 cents, Ride
+      final record1 = <int>[
+        0x00, 0x01, // seq 1
+        0x00, 0x00, 0x00, // overdraft
+        0x00, 0x00, 0x01, 0x2C, // amount 300 cents (3.00 CNY)
+        0x09, // type Ride
+        0x31,
+        0x01,
+        0x11,
+        0x74,
+        0x43,
+        0x02, // terminalId Shanghai Line 1 Xinzhuang
+        0x20, 0x23, 0x08, 0x15, // date 20230815
+        0x18, 0x30, 0x00, // time 183000
+        0x90, 0x00, // SW 9000
+      ];
 
-    // 0x18 Record 2: Hangzhou Metro Line 4 Citizen Center (41 31 01 78 48 16), 200 cents, Ride
-    final record2 = <int>[
-      0x00, 0x02, // seq 2
-      0x00, 0x00, 0x00, // overdraft
-      0x00, 0x00, 0x00, 0xC8, // amount 200 cents (2.00 CNY)
-      0x09, // type Ride
-      0x41, 0x31, 0x01, 0x78, 0x48, 0x16, // terminalId Hangzhou Citizen Center
-      0x20, 0x23, 0x08, 0x16, // date 20230816
-      0x08, 0x15, 0x00, // time 081500
-      0x90, 0x00, // SW 9000
-    ];
+      // 0x18 Record 2: Hangzhou Metro Line 4 Citizen Center (41 31 01 78 48 16), 200 cents, Ride
+      final record2 = <int>[
+        0x00, 0x02, // seq 2
+        0x00, 0x00, 0x00, // overdraft
+        0x00, 0x00, 0x00, 0xC8, // amount 200 cents (2.00 CNY)
+        0x09, // type Ride
+        0x41,
+        0x31,
+        0x01,
+        0x78,
+        0x48,
+        0x16, // terminalId Hangzhou Citizen Center
+        0x20, 0x23, 0x08, 0x16, // date 20230816
+        0x08, 0x15, 0x00, // time 081500
+        0x90, 0x00, // SW 9000
+      ];
 
-    // Info response with Shanghai IIN: 31 04 77 00 12 34 56 78 90 00
-    final shanghaiInfo = _successResponse(32);
-    shanghaiInfo[10] = 0x31;
-    shanghaiInfo[11] = 0x04;
-    shanghaiInfo[12] = 0x77;
-    shanghaiInfo[13] = 0x00;
-    shanghaiInfo[14] = 0x12;
-    shanghaiInfo[15] = 0x34;
-    shanghaiInfo[16] = 0x56;
-    shanghaiInfo[17] = 0x78;
-    shanghaiInfo[18] = 0x90;
-    shanghaiInfo[19] = 0x00;
+      // Info response with Shanghai IIN: 31 04 77 00 12 34 56 78 90 00
+      final shanghaiInfo = _successResponse(32);
+      shanghaiInfo[10] = 0x31;
+      shanghaiInfo[11] = 0x04;
+      shanghaiInfo[12] = 0x77;
+      shanghaiInfo[13] = 0x00;
+      shanghaiInfo[14] = 0x12;
+      shanghaiInfo[15] = 0x34;
+      shanghaiInfo[16] = 0x56;
+      shanghaiInfo[17] = 0x78;
+      shanghaiInfo[18] = 0x90;
+      shanghaiInfo[19] = 0x00;
 
-    final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
-    final read1ERec1_00 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
-    final read18Rec1_17 = <int>[0x00, 0xB2, 0x01, 0xC4, 0x17];
-    final read18Rec2_17 = <int>[0x00, 0xB2, 0x02, 0xC4, 0x17];
-    final read18Rec3_17 = <int>[0x00, 0xB2, 0x03, 0xC4, 0x17];
+      final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
+      final read1ERec1_00 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
+      final read18Rec1_17 = <int>[0x00, 0xB2, 0x01, 0xC4, 0x17];
+      final read18Rec2_17 = <int>[0x00, 0xB2, 0x02, 0xC4, 0x17];
+      final read18Rec3_17 = <int>[0x00, 0xB2, 0x03, 0xC4, 0x17];
 
-    final channel = _ScriptedChannel({
-      _selectAid: [_successResponse(53)],
-      _readInfo: [shanghaiInfo],
-      _readBalance: [
-        [0, 0, 0x04, 0x00, 0x90, 0x00],
-      ],
-      read1ERec1_30: [[0x6A, 0x82]], // SFI 0x1E not supported on this card
-      read1ERec1_00: [[0x6A, 0x82]],
-      read18Rec1_17: [record1],
-      read18Rec2_17: [record2],
-      read18Rec3_17: [[0x6A, 0x83]], // Record not found / end of records
-    });
+      final channel = _ScriptedChannel({
+        _selectAid: [_successResponse(53)],
+        _readInfo: [shanghaiInfo],
+        _readBalance: [
+          [0, 0, 0x04, 0x00, 0x90, 0x00],
+        ],
+        read1ERec1_30: [
+          [0x6A, 0x82],
+        ], // SFI 0x1E not supported on this card
+        read1ERec1_00: [
+          [0x6A, 0x82],
+        ],
+        read18Rec1_17: [record1],
+        read18Rec2_17: [record2],
+        read18Rec3_17: [
+          [0x6A, 0x83],
+        ], // Record not found / end of records
+      });
 
-    final result = await CardReaderEngine(
-      channel,
-    ).processTag(_tag(), readExtended: true);
+      final result = await CardReaderEngine(
+        channel,
+      ).processTag(_tag(), readExtended: true);
 
-expect(result.status, CardReadStatus.recognized);
-    final card = result.card?.card;
-    expect(card, isA<TUnion>());
-    final tunion = card as TUnion;
-    expect(tunion.name, '上海公共交通卡');
-    expect(tunion.tags, [
-      CardTag.issuer('上海公共交通卡'),
-      CardTag.tUnion,
-      CardTag.isoDep,
-    ]);
-    expect(tunion.transactions.length, 2);
-  });
+      expect(result.status, CardReadStatus.recognized);
+      final card = result.card?.card;
+      expect(card, isA<TUnion>());
+      final tunion = card as TUnion;
+      expect(tunion.name, '上海公共交通卡');
+      expect(tunion.tags, [
+        CardTag.issuer('上海公共交通卡'),
+        CardTag.tUnion,
+        CardTag.isoDep,
+      ]);
+      expect(tunion.transactions.length, 2);
+    },
+  );
 
-  test('reads and decodes SFI 0x1E JT/T 978 48-byte composite records with entry and exit stations', () async {
-    // 0x1E Record 1: Luoyang Metro exit tap (Qingniangong, 3.00 CNY)
-    final record1E_1 = <int>[
-      0x04, // 0x00: typeCode (Exit)
-      0x41, 0x31, 0x06, 0x23, 0x10, 0x94, 0x00, 0x00, // 0x01..0x09: terminalId
-      0x02, // 0x09: industry (0x02 = Metro)
-      0x01, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, // 0x0A..0x11: station 010014 (Qingniangong)
-      0x00, 0x00, 0x01, 0x2C, // 0x11..0x15: amount 300 cents (3.00 CNY)
-      0x00, 0x00, 0x03, 0xE8, // 0x15..0x19: balance 1000 cents
-      0x20, 0x25, 0x12, 0x21, 0x11, 0x32, 0x14, // 0x19..0x20: timestamp 20251221113214
-      0x49, 0x30, // 0x20..0x22: city Luoyang (4930)
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x22..0x2A: acquirerId
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x2A..0x30: reserved
-      0x90, 0x00, // SW 9000
-    ];
+  test(
+    'reads and decodes SFI 0x1E JT/T 978 48-byte composite records with entry and exit stations',
+    () async {
+      // 0x1E Record 1: Luoyang Metro exit tap (Qingniangong, 3.00 CNY)
+      final record1E_1 = <int>[
+        0x04, // 0x00: typeCode (Exit)
+        0x41,
+        0x31,
+        0x06,
+        0x23,
+        0x10,
+        0x94,
+        0x00,
+        0x00, // 0x01..0x09: terminalId
+        0x02, // 0x09: industry (0x02 = Metro)
+        0x01,
+        0x00,
+        0x14,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x0A..0x11: station 010014 (Qingniangong)
+        0x00, 0x00, 0x01, 0x2C, // 0x11..0x15: amount 300 cents (3.00 CNY)
+        0x00, 0x00, 0x03, 0xE8, // 0x15..0x19: balance 1000 cents
+        0x20,
+        0x25,
+        0x12,
+        0x21,
+        0x11,
+        0x32,
+        0x14, // 0x19..0x20: timestamp 20251221113214
+        0x49, 0x30, // 0x20..0x22: city Luoyang (4930)
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x22..0x2A: acquirerId
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x2A..0x30: reserved
+        0x90, 0x00, // SW 9000
+      ];
 
-    // 0x1E Record 2: Luoyang Metro entry tap (Qilihe, 0.00 CNY)
-    final record1E_2 = <int>[
-      0x03, // 0x00: typeCode (Entry)
-      0x41, 0x31, 0x06, 0x23, 0x10, 0x94, 0x00, 0x00, // 0x01..0x09: terminalId
-      0x02, // 0x09: industry (0x02 = Metro)
-      0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, // 0x0A..0x11: station 010008 (Qilihe)
-      0x00, 0x00, 0x00, 0x00, // 0x11..0x15: amount 0 cents (0.00 CNY)
-      0x00, 0x00, 0x03, 0xE8, // 0x15..0x19: balance 1000 cents
-      0x20, 0x25, 0x12, 0x21, 0x10, 0x15, 0x30, // 0x19..0x20: timestamp 20251221101530
-      0x49, 0x30, // 0x20..0x22: city Luoyang (4930)
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x22..0x2A: acquirerId
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x2A..0x30: reserved
-      0x90, 0x00, // SW 9000
-    ];
+      // 0x1E Record 2: Luoyang Metro entry tap (Qilihe, 0.00 CNY)
+      final record1E_2 = <int>[
+        0x03, // 0x00: typeCode (Entry)
+        0x41,
+        0x31,
+        0x06,
+        0x23,
+        0x10,
+        0x94,
+        0x00,
+        0x00, // 0x01..0x09: terminalId
+        0x02, // 0x09: industry (0x02 = Metro)
+        0x01,
+        0x00,
+        0x08,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x0A..0x11: station 010008 (Qilihe)
+        0x00, 0x00, 0x00, 0x00, // 0x11..0x15: amount 0 cents (0.00 CNY)
+        0x00, 0x00, 0x03, 0xE8, // 0x15..0x19: balance 1000 cents
+        0x20,
+        0x25,
+        0x12,
+        0x21,
+        0x10,
+        0x15,
+        0x30, // 0x19..0x20: timestamp 20251221101530
+        0x49, 0x30, // 0x20..0x22: city Luoyang (4930)
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x22..0x2A: acquirerId
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x2A..0x30: reserved
+        0x90, 0x00, // SW 9000
+      ];
 
-    final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
-    final read1ERec2_30 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x30];
-    final read1ERec3_30 = <int>[0x00, 0xB2, 0x03, 0xF4, 0x30];
+      final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
+      final read1ERec2_30 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x30];
+      final read1ERec3_30 = <int>[0x00, 0xB2, 0x03, 0xF4, 0x30];
 
-    final dalianInfo = _successResponse(32);
-    // Card Number: 31051200019246251520 (Dalian Mingzhu Card, IIN 31051200)
-    dalianInfo[10] = 0x31;
-    dalianInfo[11] = 0x05;
-    dalianInfo[12] = 0x12;
-    dalianInfo[13] = 0x00;
-    dalianInfo[14] = 0x01;
-    dalianInfo[15] = 0x92;
-    dalianInfo[16] = 0x46;
-    dalianInfo[17] = 0x25;
-    dalianInfo[18] = 0x15;
-    dalianInfo[19] = 0x20;
+      final dalianInfo = _successResponse(32);
+      // Card Number: 31051200019246251520 (Dalian Mingzhu Card, IIN 31051200)
+      dalianInfo[10] = 0x31;
+      dalianInfo[11] = 0x05;
+      dalianInfo[12] = 0x12;
+      dalianInfo[13] = 0x00;
+      dalianInfo[14] = 0x01;
+      dalianInfo[15] = 0x92;
+      dalianInfo[16] = 0x46;
+      dalianInfo[17] = 0x25;
+      dalianInfo[18] = 0x15;
+      dalianInfo[19] = 0x20;
 
-    final channel = _ScriptedChannel({
-      _selectAid: [_successResponse(53)],
-      _readInfo: [dalianInfo],
-      _readBalance: [
-        [0, 0, 0x00, 0x0A, 0x90, 0x00], // 0.10 CNY
-      ],
-      read1ERec1_30: [record1E_1],
-      read1ERec2_30: [record1E_2],
-      read1ERec3_30: [[0x6A, 0x83]], // End of records
-    });
+      final channel = _ScriptedChannel({
+        _selectAid: [_successResponse(53)],
+        _readInfo: [dalianInfo],
+        _readBalance: [
+          [0, 0, 0x00, 0x0A, 0x90, 0x00], // 0.10 CNY
+        ],
+        read1ERec1_30: [record1E_1],
+        read1ERec2_30: [record1E_2],
+        read1ERec3_30: [
+          [0x6A, 0x83],
+        ], // End of records
+      });
 
-    final result = await CardReaderEngine(
-      channel,
-    ).processTag(_tag(), readExtended: true);
+      final result = await CardReaderEngine(
+        channel,
+      ).processTag(_tag(), readExtended: true);
 
-    expect(result.status, CardReadStatus.recognized);
-    final card = result.card?.card;
-    expect(card, isA<TUnion>());
-    final tunion = card as TUnion;
-    expect(tunion.name, '大连明珠卡');
-    expect(tunion.tags, [
-      CardTag.issuer('大连明珠卡'),
-      CardTag.tUnion,
-      CardTag.isoDep,
-    ]);
-    expect(tunion.transactions.length, 2);
+      expect(result.status, CardReadStatus.recognized);
+      final card = result.card?.card;
+      expect(card, isA<TUnion>());
+      final tunion = card as TUnion;
+      expect(tunion.name, '大连明珠卡');
+      expect(tunion.tags, [
+        CardTag.issuer('大连明珠卡'),
+        CardTag.tUnion,
+        CardTag.isoDep,
+      ]);
+      expect(tunion.transactions.length, 2);
 
-    final tx1 = tunion.transactions[0];
-    expect(tx1.type, 'Ride');
-    expect(tx1.amount, -3.00);
-    expect(tx1.details, '[洛阳地铁] 1号线 青年宫 (乘出)');
+      final tx1 = tunion.transactions[0];
+      expect(tx1.type, 'Ride');
+      expect(tx1.amount, -3.00);
+      expect(tx1.details, '[洛阳地铁] 1号线 青年宫 (乘出)');
 
-    final tx2 = tunion.transactions[1];
-    expect(tx2.type, 'Ride');
-    expect(tx2.amount, 0.00);
-    expect(tx2.details, '[洛阳地铁] 1号线 七里河 (乘入)');
-  });
+      final tx2 = tunion.transactions[1];
+      expect(tx2.type, 'Ride');
+      expect(tx2.amount, 0.00);
+      expect(tx2.details, '[洛阳地铁] 1号线 七里河 (乘入)');
+    },
+  );
 
   test('falls back to SFI 0x18 when SFI 0x1E is not supported', () async {
     // 0x18 Record:
@@ -502,10 +578,16 @@ expect(result.status, CardReadStatus.recognized);
       _readBalance: [
         [0, 0, 0x02, 0x00, 0x90, 0x00],
       ],
-      read1ERec1_30: [[0x6A, 0x82]], // SFI 0x1E not supported
-      read1ERec1_00: [[0x6A, 0x82]],
+      read1ERec1_30: [
+        [0x6A, 0x82],
+      ], // SFI 0x1E not supported
+      read1ERec1_00: [
+        [0x6A, 0x82],
+      ],
       read18Rec1_17: [record18],
-      read18Rec2_17: [[0x6A, 0x83]],
+      read18Rec2_17: [
+        [0x6A, 0x83],
+      ],
     });
 
     final result = await CardReaderEngine(
@@ -523,107 +605,171 @@ expect(result.status, CardReadStatus.recognized);
     expect(tx.details, '[杭州地铁] 4 市民中心');
   });
 
-  test('handles 6C <La> wrong Le status word and auto retries with Le = La', () async {
-    final record1E = <int>[
-      0x03, // 0x00: typeCode (Entry)
-      0x41, 0x31, 0x06, 0x23, 0x14, 0x96, 0x00, 0x00, // 0x01..0x09: terminalId
-      0x02, // 0x09: industry (0x02 = Metro)
-      0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, // 0x0A..0x11: station 010008 (Qilihe)
-      0x00, 0x00, 0x00, 0x00, // 0x11..0x15: amount 0 cents
-      0x00, 0x00, 0x05, 0x14, // 0x15..0x19: balance 1300 cents
-      0x20, 0x25, 0x12, 0x21, 0x11, 0x09, 0x55, // 0x19..0x20: timestamp 20251221110955
-      0x49, 0x30, // 0x20..0x22: city Luoyang (4930)
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x22..0x2A: acquirerId
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x2A..0x30: reserved
-      0x90, 0x00, // SW 9000
-    ];
+  test(
+    'handles 6C <La> wrong Le status word and auto retries with Le = La',
+    () async {
+      final record1E = <int>[
+        0x03, // 0x00: typeCode (Entry)
+        0x41,
+        0x31,
+        0x06,
+        0x23,
+        0x14,
+        0x96,
+        0x00,
+        0x00, // 0x01..0x09: terminalId
+        0x02, // 0x09: industry (0x02 = Metro)
+        0x01,
+        0x00,
+        0x08,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x0A..0x11: station 010008 (Qilihe)
+        0x00, 0x00, 0x00, 0x00, // 0x11..0x15: amount 0 cents
+        0x00, 0x00, 0x05, 0x14, // 0x15..0x19: balance 1300 cents
+        0x20,
+        0x25,
+        0x12,
+        0x21,
+        0x11,
+        0x09,
+        0x55, // 0x19..0x20: timestamp 20251221110955
+        0x49, 0x30, // 0x20..0x22: city Luoyang (4930)
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x22..0x2A: acquirerId
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x2A..0x30: reserved
+        0x90, 0x00, // SW 9000
+      ];
 
-    // Initial probe with Le = 0x00 returns 6C 30
-    final read1ERec1_00 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
-    final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
-    final read1ERec2_30 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x30];
+      // Initial probe with Le = 0x00 returns 6C 30
+      final read1ERec1_00 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x00];
+      final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
+      final read1ERec2_30 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x30];
 
-    final channel = _ScriptedChannel({
-      _selectAid: [_successResponse(53)],
-      _readInfo: [_infoResponse()],
-      _readBalance: [
-        [0, 0, 0x01, 0x00, 0x90, 0x00],
-      ],
-      read1ERec1_30: [
-        [0x6C, 0x30], // First call returns 6C 30
-        record1E, // Auto-retry call returns the data!
-      ],
-      read1ERec1_00: [[0x6C, 0x30]],
-      read1ERec2_30: [[0x6A, 0x83]],
-    });
+      final channel = _ScriptedChannel({
+        _selectAid: [_successResponse(53)],
+        _readInfo: [_infoResponse()],
+        _readBalance: [
+          [0, 0, 0x01, 0x00, 0x90, 0x00],
+        ],
+        read1ERec1_30: [
+          [0x6C, 0x30], // First call returns 6C 30
+          record1E, // Auto-retry call returns the data!
+        ],
+        read1ERec1_00: [
+          [0x6C, 0x30],
+        ],
+        read1ERec2_30: [
+          [0x6A, 0x83],
+        ],
+      });
 
-    final result = await CardReaderEngine(
-      channel,
-    ).processTag(_tag(), readExtended: true);
+      final result = await CardReaderEngine(
+        channel,
+      ).processTag(_tag(), readExtended: true);
 
-    expect(result.status, CardReadStatus.recognized);
-    final card = result.card?.card as TUnion;
-    expect(card.transactions.length, 1);
-    expect(card.transactions.first.details, contains('七里河'));
-  });
+      expect(result.status, CardReadStatus.recognized);
+      final card = result.card?.card as TUnion;
+      expect(card.transactions.length, 1);
+      expect(card.transactions.first.details, contains('七里河'));
+    },
+  );
 
-  test('reads and decodes Dalian Bus SFI 0x1E records as Bus instead of Metro', () async {
-    // 0x1E Record: Dalian Bus 509路 (0.90 CNY fare, industry = 0x01 Bus, stationCode = 01FD0000000000 -> 0x01FD == 509)
-    final dalianBus509Rec = <int>[
-      0x04, // 0x00: typeCode (Deduction)
-      0x22, 0x20, 0x01, 0x12, 0x34, 0x56, 0x00, 0x00, // 0x01..0x09: terminalId
-      0x01, // 0x09: industry (0x01 = Bus)
-      0x01, 0xFD, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x0A..0x11: station/line code (01FD = 509 in hex)
-      0x00, 0x00, 0x00, 0x5A, // 0x11..0x15: amount 90 cents (0.90 CNY)
-      0x00, 0x00, 0x03, 0xE8, // 0x15..0x19: balance 1000 cents
-      0x20, 0x25, 0x02, 0x21, 0x21, 0x07, 0x25, // 0x19..0x20: timestamp 20250221210725
-      0x22, 0x20, // 0x20..0x22: city Dalian (2220)
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x22..0x2A: acquirerId
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x2A..0x30: reserved
-      0x90, 0x00, // SW 9000
-    ];
+  test(
+    'reads and decodes Dalian Bus SFI 0x1E records as Bus instead of Metro',
+    () async {
+      // 0x1E Record: Dalian Bus 509路 (0.90 CNY fare, industry = 0x01 Bus, stationCode = 01FD0000000000 -> 0x01FD == 509)
+      final dalianBus509Rec = <int>[
+        0x04, // 0x00: typeCode (Deduction)
+        0x22,
+        0x20,
+        0x01,
+        0x12,
+        0x34,
+        0x56,
+        0x00,
+        0x00, // 0x01..0x09: terminalId
+        0x01, // 0x09: industry (0x01 = Bus)
+        0x01,
+        0xFD,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x0A..0x11: station/line code (01FD = 509 in hex)
+        0x00, 0x00, 0x00, 0x5A, // 0x11..0x15: amount 90 cents (0.90 CNY)
+        0x00, 0x00, 0x03, 0xE8, // 0x15..0x19: balance 1000 cents
+        0x20,
+        0x25,
+        0x02,
+        0x21,
+        0x21,
+        0x07,
+        0x25, // 0x19..0x20: timestamp 20250221210725
+        0x22, 0x20, // 0x20..0x22: city Dalian (2220)
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x22..0x2A: acquirerId
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x2A..0x30: reserved
+        0x90, 0x00, // SW 9000
+      ];
 
-    final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
-    final read1ERec2_30 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x30];
+      final read1ERec1_30 = <int>[0x00, 0xB2, 0x01, 0xF4, 0x30];
+      final read1ERec2_30 = <int>[0x00, 0xB2, 0x02, 0xF4, 0x30];
 
-    final dalianInfo = _successResponse(32);
-    // Card Number: 31051200019246251520 (Dalian Mingzhu Card)
-    dalianInfo[10] = 0x31;
-    dalianInfo[11] = 0x05;
-    dalianInfo[12] = 0x12;
-    dalianInfo[13] = 0x00;
-    dalianInfo[14] = 0x01;
-    dalianInfo[15] = 0x92;
-    dalianInfo[16] = 0x46;
-    dalianInfo[17] = 0x25;
-    dalianInfo[18] = 0x15;
-    dalianInfo[19] = 0x20;
+      final dalianInfo = _successResponse(32);
+      // Card Number: 31051200019246251520 (Dalian Mingzhu Card)
+      dalianInfo[10] = 0x31;
+      dalianInfo[11] = 0x05;
+      dalianInfo[12] = 0x12;
+      dalianInfo[13] = 0x00;
+      dalianInfo[14] = 0x01;
+      dalianInfo[15] = 0x92;
+      dalianInfo[16] = 0x46;
+      dalianInfo[17] = 0x25;
+      dalianInfo[18] = 0x15;
+      dalianInfo[19] = 0x20;
 
-    final channel = _ScriptedChannel({
-      _selectAid: [_successResponse(53)],
-      _readInfo: [dalianInfo],
-      _readBalance: [
-        [0, 0, 0x03, 0xE8, 0x90, 0x00],
-      ],
-      read1ERec1_30: [dalianBus509Rec],
-      read1ERec2_30: [[0x6A, 0x83]],
-    });
+      final channel = _ScriptedChannel({
+        _selectAid: [_successResponse(53)],
+        _readInfo: [dalianInfo],
+        _readBalance: [
+          [0, 0, 0x03, 0xE8, 0x90, 0x00],
+        ],
+        read1ERec1_30: [dalianBus509Rec],
+        read1ERec2_30: [
+          [0x6A, 0x83],
+        ],
+      });
 
-    final result = await CardReaderEngine(
-      channel,
-    ).processTag(_tag(), readExtended: true);
+      final result = await CardReaderEngine(
+        channel,
+      ).processTag(_tag(), readExtended: true);
 
-    expect(result.status, CardReadStatus.recognized);
-    final card = result.card?.card as TUnion;
-    expect(card.name, '大连明珠卡');
-    expect(card.tags, [
-      CardTag.issuer('大连明珠卡'),
-      CardTag.tUnion,
-      CardTag.isoDep,
-    ]);
-    expect(card.transactions.length, 1);
-    final tx = card.transactions.first;
-    expect(tx.amount, -0.90);
-    expect(tx.details, '[大连公交] 509路');
-  });
+      expect(result.status, CardReadStatus.recognized);
+      final card = result.card?.card as TUnion;
+      expect(card.name, '大连明珠卡');
+      expect(card.tags, [
+        CardTag.issuer('大连明珠卡'),
+        CardTag.tUnion,
+        CardTag.isoDep,
+      ]);
+      expect(card.transactions.length, 1);
+      final tx = card.transactions.first;
+      expect(tx.amount, -0.90);
+      expect(tx.details, '[大连公交] 509路');
+    },
+  );
 }

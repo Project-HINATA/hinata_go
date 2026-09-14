@@ -52,6 +52,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           throw ArgumentError('Invalid extra for /card_detail: $extra');
         },
       ),
+      GoRoute(
+        path: '/instances',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const InstancesPage(),
+      ),
+      GoRoute(
+        path: '/scan_logs',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ScanLogsPage(),
+      ),
       StatefulShellRoute(
         navigatorContainerBuilder: (context, navigationShell, children) {
           return AnimatedBranchContainer(
@@ -76,10 +86,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/scan',
                 builder: (context, state) => const ScanPage(),
               ),
-              GoRoute(
-                path: '/scan_logs',
-                builder: (context, state) => const ScanLogsPage(),
-              ),
             ],
           ),
           StatefulShellBranch(
@@ -95,10 +101,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/settings',
                 builder: (context, state) => const SettingsPage(),
-              ),
-              GoRoute(
-                path: '/instances',
-                builder: (context, state) => const InstancesPage(),
               ),
             ],
           ),

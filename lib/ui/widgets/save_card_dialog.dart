@@ -50,10 +50,7 @@ class SaveCardDialog extends HookConsumerWidget {
       title: Text(l10n.saveToFolder),
       content: _SaveCardDialogContent(
         nameField: _buildNameField(context, nameController),
-        folderDropdown: _buildFolderDropdown(
-          selectedFolderIdState,
-          folders,
-        ),
+        folderDropdown: _buildFolderDropdown(selectedFolderIdState, folders),
       ),
       actions: _buildActions(
         context,

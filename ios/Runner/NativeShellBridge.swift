@@ -5,6 +5,9 @@ protocol NativeShellBridgeDelegate: AnyObject {
   func nativeShell(setSelectedIndex index: Int)
   func nativeShell(setSettingsBadge visible: Bool)
   func nativeShell(setScaffoldCovered covered: Bool, hideNativeChrome: Bool)
+  func nativeShell(setChromeVisibility tabBarVisible: Bool, dimmed: Bool)
+  func nativeShell(setTabs tabs: [[String: Any]])
+  func nativeShell(setActionButton config: [String: Any]?)
   func nativeShell(setLocalizedStrings strings: [String: String])
 }
 
@@ -52,6 +55,19 @@ final class NativeShellBridge {
           setScaffoldCovered: covered,
           hideNativeChrome: args["hideNativeChrome"] as? Bool ?? false
         )
+        result(nil)
+      case "setChromeVisibility":
+        let tabBarVisible = args["tabBarVisible"] as? Bool ?? true
+        let dimmed = args["dimmed"] as? Bool ?? false
+        self.delegate?.nativeShell(setChromeVisibility: tabBarVisible, dimmed: dimmed)
+        result(nil)
+      case "setTabs":
+        let tabs = args["tabs"] as? [[String: Any]] ?? []
+        self.delegate?.nativeShell(setTabs: tabs)
+        result(nil)
+      case "setActionButton":
+        let config = args["config"] as? [String: Any]
+        self.delegate?.nativeShell(setActionButton: config)
         result(nil)
       case "setLocalizedStrings":
         let strings = args.compactMapValues { $0 as? String }

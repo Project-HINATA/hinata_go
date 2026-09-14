@@ -116,10 +116,7 @@ class CardTag {
   // --- Serialization & Deserialization ---
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      if (customName != null) 'name': customName,
-    };
+    return {'id': id, if (customName != null) 'name': customName};
   }
 
   factory CardTag.fromJson(dynamic json) {

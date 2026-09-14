@@ -39,7 +39,10 @@ void main() {
 
     test('lookupTUnionStation matches Shanghai Metro stations', () {
       // Line 1, Xinzhuang (00010011)
-      final info = lookupTUnionStation(cityCode: '2900', stationCode: '00010011');
+      final info = lookupTUnionStation(
+        cityCode: '2900',
+        stationCode: '00010011',
+      );
       expect(info, isNotNull);
       expect(info!.cityName, '上海');
       expect(info.type, '地铁');
@@ -48,7 +51,10 @@ void main() {
       expect(info.formatted, '[上海地铁] 1号线 莘庄');
 
       // Line 2, People's Square (00020045)
-      final info2 = lookupTUnionStation(cityCode: '2900', stationCode: '00020045');
+      final info2 = lookupTUnionStation(
+        cityCode: '2900',
+        stationCode: '00020045',
+      );
       expect(info2, isNotNull);
       expect(info2!.station, '人民广场');
       expect(info2.line, '2号线');
@@ -67,7 +73,10 @@ void main() {
 
     test('lookupTUnionStation matches Hangzhou Metro POS terminal IDs', () {
       // 413101784816 -> Line 4, Citizen Center
-      final info = lookupTUnionStation(cityCode: '3310', terminalId: '413101784816');
+      final info = lookupTUnionStation(
+        cityCode: '3310',
+        terminalId: '413101784816',
+      );
       expect(info, isNotNull);
       expect(info!.cityName, '杭州');
       expect(info.type, '地铁');
@@ -78,19 +87,28 @@ void main() {
 
     test('lookupTUnionStation matches Shanghai CU terminal IDs by prefix', () {
       // 310111744302 -> Line 1, Xinzhuang
-      final info1 = lookupTUnionStation(cityCode: '3104', terminalId: '310111744302');
+      final info1 = lookupTUnionStation(
+        cityCode: '3104',
+        terminalId: '310111744302',
+      );
       expect(info1, isNotNull);
       expect(info1!.station, '莘庄');
       expect(info1.line, '1号线');
 
       // 310125984402 -> Line 1, Hanzhonglu
-      final info2 = lookupTUnionStation(cityCode: '3104', terminalId: '310125984402');
+      final info2 = lookupTUnionStation(
+        cityCode: '3104',
+        terminalId: '310125984402',
+      );
       expect(info2, isNotNull);
       expect(info2!.station, '汉中路');
       expect(info2.line, '1号线');
 
       // 310623109401 -> Line 6, Shangnanlu
-      final info3 = lookupTUnionStation(cityCode: '3104', terminalId: '310623109401');
+      final info3 = lookupTUnionStation(
+        cityCode: '3104',
+        terminalId: '310623109401',
+      );
       expect(info3, isNotNull);
       expect(info3!.station, '上南路');
       expect(info3.line, '6号线');
@@ -98,41 +116,61 @@ void main() {
 
     test('lookupTUnionStation matches Luoyang and Dalian Metro and Bus', () {
       // Luoyang Line 1, Qingniangong (010014)
-      final luoyangExit = lookupTUnionStation(cityCode: '4930', stationCode: '010014');
+      final luoyangExit = lookupTUnionStation(
+        cityCode: '4930',
+        stationCode: '010014',
+      );
       expect(luoyangExit, isNotNull);
       expect(luoyangExit!.cityName, '洛阳');
       expect(luoyangExit.station, '青年宫');
       expect(luoyangExit.line, '1号线');
 
       // Luoyang Line 1, Qilihe (010008)
-      final luoyangEntry = lookupTUnionStation(cityCode: '4930', stationCode: '010008');
+      final luoyangEntry = lookupTUnionStation(
+        cityCode: '4930',
+        stationCode: '010008',
+      );
       expect(luoyangEntry, isNotNull);
       expect(luoyangEntry!.cityName, '洛阳');
       expect(luoyangEntry.station, '七里河');
       expect(luoyangEntry.line, '1号线');
 
       // Dalian Line 2, Malan Square (020E)
-      final dalianMalan = lookupTUnionStation(cityCode: '2220', stationCode: '020E');
+      final dalianMalan = lookupTUnionStation(
+        cityCode: '2220',
+        stationCode: '020E',
+      );
       expect(dalianMalan, isNotNull);
       expect(dalianMalan!.cityName, '大连');
       expect(dalianMalan.station, '马栏广场');
       expect(dalianMalan.line, '2号线');
 
       // Dalian Line 2, Airport (0213)
-      final dalianAirport = lookupTUnionStation(cityCode: '2220', stationCode: '0213');
+      final dalianAirport = lookupTUnionStation(
+        cityCode: '2220',
+        stationCode: '0213',
+      );
       expect(dalianAirport, isNotNull);
       expect(dalianAirport!.cityName, '大连');
       expect(dalianAirport.station, '机场');
 
       // Dalian Bus 1106 (stationCode 1106)
-      final dalianBus1106 = lookupTUnionStation(cityCode: '2220', stationCode: '1106', industryCode: '0001');
+      final dalianBus1106 = lookupTUnionStation(
+        cityCode: '2220',
+        stationCode: '1106',
+        industryCode: '0001',
+      );
       expect(dalianBus1106, isNotNull);
       expect(dalianBus1106!.cityName, '大连');
       expect(dalianBus1106.type, '公交');
       expect(dalianBus1106.line, '1106路');
 
       // Dalian Bus 509 (stationCode 0509 in BCD)
-      final dalianBus509Bcd = lookupTUnionStation(cityCode: '2220', stationCode: '05090000000000', industryCode: '0001');
+      final dalianBus509Bcd = lookupTUnionStation(
+        cityCode: '2220',
+        stationCode: '05090000000000',
+        industryCode: '0001',
+      );
       expect(dalianBus509Bcd, isNotNull);
       expect(dalianBus509Bcd!.cityName, '大连');
       expect(dalianBus509Bcd.type, '公交');
@@ -140,7 +178,11 @@ void main() {
       expect(dalianBus509Bcd.formatted, '[大连公交] 509路');
 
       // Dalian Bus 509 (stationCode 01FD in Hex, 0x01FD == 509) - should NOT match Dalian Metro Line 1 (01)
-      final dalianBus509Hex = lookupTUnionStation(cityCode: '2220', stationCode: '01FD0000000000', industryCode: '0001');
+      final dalianBus509Hex = lookupTUnionStation(
+        cityCode: '2220',
+        stationCode: '01FD0000000000',
+        industryCode: '0001',
+      );
       expect(dalianBus509Hex, isNotNull);
       expect(dalianBus509Hex!.cityName, '大连');
       expect(dalianBus509Hex.type, '公交');
@@ -148,7 +190,11 @@ void main() {
       expect(dalianBus509Hex.formatted, '[大连公交] 509路');
 
       // Dalian Bus 1 (stationCode 0001 in BCD, 00010000000000)
-      final dalianBus1 = lookupTUnionStation(cityCode: '2220', stationCode: '00010000000000', industryCode: '0001');
+      final dalianBus1 = lookupTUnionStation(
+        cityCode: '2220',
+        stationCode: '00010000000000',
+        industryCode: '0001',
+      );
       expect(dalianBus1, isNotNull);
       expect(dalianBus1!.cityName, '大连');
       expect(dalianBus1.type, '公交');
@@ -156,77 +202,90 @@ void main() {
       expect(dalianBus1.formatted, '[大连公交] 1路');
 
       // Luoyang fallback (2453 / 244B) - terminal dispatch codes or metro line 2 garbage, should cleanly format as [洛阳交通]
-      final luoyangBus1 = lookupTUnionStation(cityCode: '4930', stationCode: '24530000000000');
+      final luoyangBus1 = lookupTUnionStation(
+        cityCode: '4930',
+        stationCode: '24530000000000',
+      );
       expect(luoyangBus1, isNotNull);
       expect(luoyangBus1!.cityName, '洛阳');
       expect(luoyangBus1.type, '交通');
       expect(luoyangBus1.line, '');
       expect(luoyangBus1.formatted, '[洛阳交通]');
 
-      final luoyangBus2 = lookupTUnionStation(cityCode: '4930', stationCode: '244B0000000000');
+      final luoyangBus2 = lookupTUnionStation(
+        cityCode: '4930',
+        stationCode: '244B0000000000',
+      );
       expect(luoyangBus2, isNotNull);
       expect(luoyangBus2!.cityName, '洛阳');
       expect(luoyangBus2.type, '交通');
       expect(luoyangBus2.line, '');
       expect(luoyangBus2.formatted, '[洛阳交通]');
-      
+
       // Dalian BRT fallback matching terminalId even when an unmapped stationCode is provided
       // Assuming a random stationCode '99999999' but a known BRT terminalId '1F480000'
-      final dalianBrt = lookupTUnionStation(cityCode: '2220', stationCode: '99999999000000', terminalId: '1F480000');
+      final dalianBrt = lookupTUnionStation(
+        cityCode: '2220',
+        stationCode: '99999999000000',
+        terminalId: '1F480000',
+      );
       expect(dalianBrt, isNotNull);
       expect(dalianBrt!.cityName, '大连');
       expect(dalianBrt.type, 'BRT');
       expect(dalianBrt.line, '');
     });
 
-    test('formatTUnionDetails formats route when entry and exit stations are provided', () {
-      final formatted = formatTUnionDetails(
-        cityCode: '2900',
-        stationCode: '00010011', // Xinzhuang
-        entryCityCode: '2900',
-        entryStationCode: '00010023', // People's Square
-        amount: 3.0,
-      );
-      expect(formatted, contains('[上海地铁]'));
-      expect(formatted, contains('人民广场 ──► 莘庄'));
+    test(
+      'formatTUnionDetails formats route when entry and exit stations are provided',
+      () {
+        final formatted = formatTUnionDetails(
+          cityCode: '2900',
+          stationCode: '00010011', // Xinzhuang
+          entryCityCode: '2900',
+          entryStationCode: '00010023', // People's Square
+          amount: 3.0,
+        );
+        expect(formatted, contains('[上海地铁]'));
+        expect(formatted, contains('人民广场 ──► 莘庄'));
 
-      // Dalian 509 bus fare (-0.90 CNY) should NOT append (乘出)
-      final dalianBusFormatted = formatTUnionDetails(
-        cityCode: '2220',
-        stationCode: '01FD0000000000',
-        industryCode: '0001',
-        typeCode: 0x04,
-        amount: 0.90,
-      );
-      expect(dalianBusFormatted, '[大连公交] 509路');
+        // Dalian 509 bus fare (-0.90 CNY) should NOT append (乘出)
+        final dalianBusFormatted = formatTUnionDetails(
+          cityCode: '2220',
+          stationCode: '01FD0000000000',
+          industryCode: '0001',
+          typeCode: 0x04,
+          amount: 0.90,
+        );
+        expect(dalianBusFormatted, '[大连公交] 509路');
 
-      // Luoyang entry tap (typeCode = 0x03)
-      final luoyangEntryOnly = formatTUnionDetails(
-        cityCode: '4930',
-        stationCode: '01000800000000',
-        typeCode: 0x03,
-        amount: 0.0,
-      );
-      expect(luoyangEntryOnly, '[洛阳地铁] 1号线 七里河 (乘入)');
+        // Luoyang entry tap (typeCode = 0x03)
+        final luoyangEntryOnly = formatTUnionDetails(
+          cityCode: '4930',
+          stationCode: '01000800000000',
+          typeCode: 0x03,
+          amount: 0.0,
+        );
+        expect(luoyangEntryOnly, '[洛阳地铁] 1号线 七里河 (乘入)');
 
-      // Luoyang exit tap (typeCode = 0x04)
-      final luoyangExitOnly = formatTUnionDetails(
-        cityCode: '4930',
-        stationCode: '01001400000000',
-        typeCode: 0x04,
-        amount: 3.0,
-      );
-      expect(luoyangExitOnly, '[洛阳地铁] 1号线 青年宫 (乘出)');
+        // Luoyang exit tap (typeCode = 0x04)
+        final luoyangExitOnly = formatTUnionDetails(
+          cityCode: '4930',
+          stationCode: '01001400000000',
+          typeCode: 0x04,
+          amount: 3.0,
+        );
+        expect(luoyangExitOnly, '[洛阳地铁] 1号线 青年宫 (乘出)');
 
-      // Luoyang completed trip (amount = 3.0)
-      final luoyangTrip = formatTUnionDetails(
-        cityCode: '4930',
-        stationCode: '010014',
-        entryCityCode: '4930',
-        entryStationCode: '010008',
-        amount: 3.0,
-      );
-      expect(luoyangTrip, '[洛阳地铁] 1号线 七里河 ──► 青年宫');
-    });
+        // Luoyang completed trip (amount = 3.0)
+        final luoyangTrip = formatTUnionDetails(
+          cityCode: '4930',
+          stationCode: '010014',
+          entryCityCode: '4930',
+          entryStationCode: '010008',
+          amount: 3.0,
+        );
+        expect(luoyangTrip, '[洛阳地铁] 1号线 七里河 ──► 青年宫');
+      },
+    );
   });
 }

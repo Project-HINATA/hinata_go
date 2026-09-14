@@ -19,8 +19,7 @@ import '../components/saved_cards/folder_selection_strip.dart';
 import '../components/saved_cards/add_card_dialog.dart';
 import '../components/saved_cards/add_folder_dialog.dart';
 import '../components/instances/select_instance_dialog.dart';
-import '../../core/app_host_mode.dart';
-import '../../providers/navigation_provider.dart';
+import '../app_action_button.dart';
 
 class SavedCardsPage extends HookConsumerWidget {
   const SavedCardsPage({super.key});
@@ -160,24 +159,7 @@ class SavedCardsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hostMode = ref.watch(appHostModeProvider);
     final selectedFolderIdState = useState('favorites_folder');
-    ref.listen(nativeShellActionProvider, (_, action) {
-      if (action == null) return;
-      if (action == NativeShellAction.addFolder) {
-        _showAddFolderDialog(
-          context,
-          (newId) => selectedFolderIdState.value = newId,
-        );
-      } else if (selectedFolderIdState.value != 'history_folder') {
-        _showAddCardDialog(
-          context,
-          selectedFolderIdState.value,
-          (newId) => selectedFolderIdState.value = newId,
-        );
-      }
-      ref.read(nativeShellActionProvider.notifier).clear();
-    });
     final layout = context.appLayout;
     final folders = ref.watch(cardFoldersProvider);
     final allCards = ref.watch(savedCardsProvider);
@@ -198,9 +180,38 @@ class SavedCardsPage extends HookConsumerWidget {
           folderCards,
         ),
       ),
-      floatingActionButton: hostMode == AppHostMode.nativeIOS
-          ? null
-          : _buildFABs(context, selectedFolderIdState),
+      floatingActionButton: buildAppActionButton(
+        context,
+        ref,
+        config: AppActionConfig(
+          id: 'cardsAction',
+          icon: Icons.add,
+          tooltip: l10n.addCard,
+          nativeSymbol: 'plus',
+          visible: selectedFolderIdState.value != 'history_folder',
+          menuItems: [
+            AppActionItem(
+              id: 'addCard',
+              label: l10n.addCard,
+              icon: Icons.add,
+              onPressed: () => _showAddCardDialog(
+                context,
+                selectedFolderIdState.value,
+                (newId) => selectedFolderIdState.value = newId,
+              ),
+            ),
+            AppActionItem(
+              id: 'addFolder',
+              label: l10n.newFolder,
+              icon: Icons.create_new_folder,
+              onPressed: () => _showAddFolderDialog(
+                context,
+                (newId) => selectedFolderIdState.value = newId,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -323,24 +334,6 @@ class SavedCardsPage extends HookConsumerWidget {
       },
     );
   }
-
-  Widget _buildFABs(
-    BuildContext context,
-    ValueNotifier<String> selectedFolderIdState,
-  ) {
-    return _SavedCardsFabGroup(
-      showAddCard: selectedFolderIdState.value != 'history_folder',
-      onAddFolder: () => _showAddFolderDialog(
-        context,
-        (newId) => selectedFolderIdState.value = newId,
-      ),
-      onAddCard: () => _showAddCardDialog(
-        context,
-        selectedFolderIdState.value,
-        (newId) => selectedFolderIdState.value = newId,
-      ),
-    );
-  }
 }
 
 class _SavedCardsWideBody extends StatelessWidget {
@@ -441,44 +434,6 @@ class _SavedCardsFolderRail extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-}
-
-class _SavedCardsFabGroup extends StatelessWidget {
-  const _SavedCardsFabGroup({
-    required this.showAddCard,
-    required this.onAddFolder,
-    required this.onAddCard,
-  });
-
-  final bool showAddCard;
-  final VoidCallback onAddFolder;
-  final VoidCallback onAddCard;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        FloatingActionButton.extended(
-          heroTag: 'saved_cards_new_folder',
-          onPressed: onAddFolder,
-          tooltip: l10n.newFolder,
-          icon: const Icon(Icons.create_new_folder),
-          label: Text(l10n.newFolder),
-        ),
-        if (showAddCard) ...[
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'saved_cards_new_card',
-            onPressed: onAddCard,
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addCard),
-          ),
-        ],
-      ],
     );
   }
 }

@@ -12,6 +12,13 @@ class NativeShellNavigatorObserver extends NavigatorObserver {
     final covered = navigator?.canPop() ?? false;
     final hideNativeChrome =
         covered && topRoute is ModalRoute<dynamic> && topRoute.opaque;
+    final isModalDimmed =
+        covered && topRoute is ModalRoute<dynamic> && !topRoute.opaque;
+
+    _channel.invokeMethod('setChromeVisibility', {
+      'tabBarVisible': !hideNativeChrome,
+      'dimmed': isModalDimmed,
+    });
     _channel.invokeMethod('setScaffoldCovered', {
       'covered': covered,
       'hideNativeChrome': hideNativeChrome,
@@ -54,8 +61,13 @@ void syncShellState(
           .setCovered(!isScaffoldVisible);
     }
     if (publishNative) {
+      _channel.invokeMethod('setChromeVisibility', {
+        'tabBarVisible': isScaffoldVisible,
+        'dimmed': false,
+      });
       _channel.invokeMethod('setScaffoldCovered', {
         'covered': !isScaffoldVisible,
+        'hideNativeChrome': false,
       });
     }
   });

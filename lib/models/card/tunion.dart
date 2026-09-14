@@ -65,28 +65,43 @@ class TUnion extends Iso14443 with TransitCard {
     final activeL10n = customL10n ?? l10n;
     if (cardType == null || cardType!.isEmpty) return null;
     final code = cardType!.trim();
-    if (code == '01' || code == '1' || code.startsWith('普通卡') || code.contains('(01)')) {
+    if (code == '01' ||
+        code == '1' ||
+        code.startsWith('普通卡') ||
+        code.contains('(01)')) {
       return activeL10n.transitCardTypeStandard;
     }
-    if (code == '02' || code == '2' || code.startsWith('学生卡') || code.contains('(02)')) {
+    if (code == '02' ||
+        code == '2' ||
+        code.startsWith('学生卡') ||
+        code.contains('(02)')) {
       return activeL10n.transitCardTypeStudent;
     }
-    if (code == '03' || code == '3' || code.startsWith('老人卡') || code.contains('(03)')) {
+    if (code == '03' ||
+        code == '3' ||
+        code.startsWith('老人卡') ||
+        code.contains('(03)')) {
       return activeL10n.transitCardTypeSenior;
     }
-    if (code == '04' || code == '4' || code.startsWith('军人卡') || code.contains('(04)')) {
+    if (code == '04' ||
+        code == '4' ||
+        code.startsWith('军人卡') ||
+        code.contains('(04)')) {
       return activeL10n.transitCardTypeMilitary;
     }
     // Extract hex code if formatted like "其他 (05)" or raw "05"
     final hexMatch = RegExp(r'([0-9a-fA-F]{2})').firstMatch(code);
-    final displayCode = hexMatch != null ? hexMatch.group(1)!.toUpperCase() : code;
+    final displayCode = hexMatch != null
+        ? hexMatch.group(1)!.toUpperCase()
+        : code;
     return activeL10n.transitCardTypeOther(displayCode);
   }
 
   /// Decode station details using T-Union station database
   static String formatStation(String cityCode, String code) {
     final info = lookupTUnionStation(cityCode: cityCode, stationCode: code);
-    return info?.formatted ?? (cityCode.isNotEmpty ? '[$cityCode] $code' : code);
+    return info?.formatted ??
+        (cityCode.isNotEmpty ? '[$cityCode] $code' : code);
   }
 
   /// Decode transaction details from city, station, and terminal information
@@ -131,7 +146,8 @@ class TUnion extends Iso14443 with TransitCard {
       if (issueDate != null) 'issueDate': issueDate,
       if (expiryDate != null) 'expiryDate': expiryDate,
       if (cardType != null) 'cardType': cardType,
-      if (isInterchangeEnabled != null) 'isInterchangeEnabled': isInterchangeEnabled,
+      if (isInterchangeEnabled != null)
+        'isInterchangeEnabled': isInterchangeEnabled,
     };
   }
 

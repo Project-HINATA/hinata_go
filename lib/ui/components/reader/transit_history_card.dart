@@ -80,9 +80,7 @@ class TransitHistoryCard extends HookWidget {
     }
 
     final currencySymbol = card is Suica ? '¥' : '¥';
-    final datePattern = card is Suica
-        ? 'yyyy/MM/dd'
-        : 'yyyy/MM/dd HH:mm:ss';
+    final datePattern = card is Suica ? 'yyyy/MM/dd' : 'yyyy/MM/dd HH:mm:ss';
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),

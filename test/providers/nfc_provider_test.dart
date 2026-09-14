@@ -155,41 +155,44 @@ void main() {
       );
     });
 
-    test('does not trigger on incomplete read for plain Mifare Classic tag', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      final notifier = container.read(nfcProvider.notifier);
+    test(
+      'does not trigger on incomplete read for plain Mifare Classic tag',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(nfcProvider.notifier);
 
-      final rawMifareTag = NFCTag(
-        NFCTagType.mifare_classic,
-        '01020304',
-        'ISO 14443-3 (Type A)',
-        '0400',
-        '08',
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      );
+        final rawMifareTag = NFCTag(
+          NFCTagType.mifare_classic,
+          '01020304',
+          'ISO 14443-3 (Type A)',
+          '0400',
+          '08',
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+        );
 
-      expect(
-        notifier.shouldAttemptFelicaRetry(
-          rawMifareTag,
-          const CardReadResult.incomplete(),
-        ),
-        isFalse,
-      );
-    });
+        expect(
+          notifier.shouldAttemptFelicaRetry(
+            rawMifareTag,
+            const CardReadResult.incomplete(),
+          ),
+          isFalse,
+        );
+      },
+    );
 
     test('does not trigger when card is recognized', () {
       final container = ProviderContainer();

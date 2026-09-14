@@ -591,8 +591,10 @@ class CardReaderEngine {
 
       // Extract Card Type (Byte 9)
       int rawCardType = infoRes.length > 9 ? infoRes[9] : 0;
-      String cardTypeStr =
-          rawCardType.toRadixString(16).padLeft(2, '0').toUpperCase();
+      String cardTypeStr = rawCardType
+          .toRadixString(16)
+          .padLeft(2, '0')
+          .toUpperCase();
 
       // Extract Dates (Bytes 20-23 start, 24-27 expiry) YYYYMMDD in Hex/BCD
       String? issueDate;
@@ -747,8 +749,9 @@ class CardReaderEngine {
       }
 
       final List<TransitTransaction> transactions = [];
-      final cardCityCode =
-          cardNumber.length >= 4 ? cardNumber.substring(0, 4) : '';
+      final cardCityCode = cardNumber.length >= 4
+          ? cardNumber.substring(0, 4)
+          : '';
 
       for (int i = 0; i < blocksData.length; i++) {
         final recordData = blocksData[i];
@@ -766,8 +769,8 @@ class CardReaderEngine {
           final industryCode = industryByte == 0x01
               ? '0001'
               : (industryByte == 0x02
-                  ? '0002'
-                  : (industryByte == 0x03 ? '0003' : ''));
+                    ? '0002'
+                    : (industryByte == 0x03 ? '0003' : ''));
           final stationCode = recordData
               .sublist(10, 17)
               .map((b) => b.toRadixString(16).padLeft(2, '0'))
@@ -809,7 +812,8 @@ class CardReaderEngine {
           final typeStr = _getTUnionProcessType(typeCode, amountCents);
           final details = TUnion.formatTransactionDetails(
             cityCode: cityCode != '0000' ? cityCode : cardCityCode,
-            stationCode: stationCode.replaceAll(RegExp(r'(00)+$'), '').isNotEmpty
+            stationCode:
+                stationCode.replaceAll(RegExp(r'(00)+$'), '').isNotEmpty
                 ? stationCode
                 : null,
             terminalId: terminalId != '0000000000000000' ? terminalId : null,
@@ -878,13 +882,15 @@ class CardReaderEngine {
               final hStr = hr.toString().padLeft(2, '0');
               final miStr = min.toString().padLeft(2, '0');
               final sStr = sec.toString().padLeft(2, '0');
-              txDateTime =
-                  DateTime.tryParse('$yStr-$mStr-${dStr}T$hStr:$miStr:$sStr');
+              txDateTime = DateTime.tryParse(
+                '$yStr-$mStr-${dStr}T$hStr:$miStr:$sStr',
+              );
             }
           }
 
           final typeStr = _getTUnionProcessType(typeCode, amountCents);
-          final termCity = terminalId.length >= 4 &&
+          final termCity =
+              terminalId.length >= 4 &&
                   tunionCityMap.containsKey(terminalId.substring(0, 4))
               ? terminalId.substring(0, 4)
               : cardCityCode;
@@ -977,8 +983,7 @@ class CardReaderEngine {
 
     // If card responds with 67 00 (Wrong length Le)
     if (res.length == 2 && res[0] == 0x67) {
-      final fallbackLen =
-          expectedLen == 0 ? (sfi == 0x1E ? 0x30 : 0x17) : 0x00;
+      final fallbackLen = expectedLen == 0 ? (sfi == 0x1E ? 0x30 : 0x17) : 0x00;
       cmd = Uint8List.fromList([0x00, 0xB2, recNum, p2, fallbackLen]);
       res = await transceiver.transceive(cmd);
       if (res.length == 2 && res[0] == 0x6C) {

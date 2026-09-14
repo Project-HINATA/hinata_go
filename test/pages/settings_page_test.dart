@@ -33,7 +33,9 @@ void main() {
     }) {
       return ProviderScope(
         overrides: [
-          appUpdateProvider.overrideWith(() => _MockAppUpdateNotifier(updateState)),
+          appUpdateProvider.overrideWith(
+            () => _MockAppUpdateNotifier(updateState),
+          ),
           settingsProvider.overrideWith(() => _MockSettingsNotifier()),
         ],
         child: MaterialApp(
@@ -63,30 +65,39 @@ void main() {
       expect(find.text('HINATA Go v2.4.3 (abcdef1)'), findsOneWidget);
     });
 
-    testWidgets('shows both GitHub and Google Play buttons on Android when update is available', (tester) async {
-      const updateState = AppUpdateState(
-        currentVersion: '2.4.3',
-        latestVersion: '2.5.0',
-        hasUpdate: true,
-        isUpdateSupported: true,
-        downloadUrl: 'https://github.com/nerimoe/hinata_go/releases/tag/v2.5.0',
-      );
-
-      debugDefaultTargetPlatformOverride = TargetPlatform.android;
-      try {
-        await tester.pumpWidget(
-          buildTestWidget(updateState: updateState, platform: TargetPlatform.android),
+    testWidgets(
+      'shows both GitHub and Google Play buttons on Android when update is available',
+      (tester) async {
+        const updateState = AppUpdateState(
+          currentVersion: '2.4.3',
+          latestVersion: '2.5.0',
+          hasUpdate: true,
+          isUpdateSupported: true,
+          downloadUrl:
+              'https://github.com/nerimoe/hinata_go/releases/tag/v2.5.0',
         );
-        await tester.pumpAndSettle();
 
-        expect(find.text('GitHub Release'), findsOneWidget);
-        expect(find.text('Google Play'), findsOneWidget);
-      } finally {
-        debugDefaultTargetPlatformOverride = null;
-      }
-    });
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        try {
+          await tester.pumpWidget(
+            buildTestWidget(
+              updateState: updateState,
+              platform: TargetPlatform.android,
+            ),
+          );
+          await tester.pumpAndSettle();
 
-    testWidgets('shows App Store button on iOS when update is available', (tester) async {
+          expect(find.text('GitHub Release'), findsOneWidget);
+          expect(find.text('Google Play'), findsOneWidget);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      },
+    );
+
+    testWidgets('shows App Store button on iOS when update is available', (
+      tester,
+    ) async {
       const updateState = AppUpdateState(
         currentVersion: '2.4.3',
         latestVersion: '2.5.0',
@@ -98,7 +109,10 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       try {
         await tester.pumpWidget(
-          buildTestWidget(updateState: updateState, platform: TargetPlatform.iOS),
+          buildTestWidget(
+            updateState: updateState,
+            platform: TargetPlatform.iOS,
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -121,8 +135,6 @@ class _MockAppUpdateNotifier extends AppUpdateNotifier {
 
 class _MockSettingsNotifier extends SettingsNotifier {
   @override
-  AppSettings build() => AppSettings(
-        cardExpirationSeconds: 10,
-        language: AppLanguage.system,
-      );
+  AppSettings build() =>
+      AppSettings(cardExpirationSeconds: 10, language: AppLanguage.system);
 }

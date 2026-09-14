@@ -7,16 +7,13 @@ final class NativeShellViewController: UITabBarController,
   private let flutterViewController: FlutterViewController
   private let bridge: NativeShellBridge
   private var flutterConstraints: [NSLayoutConstraint] = []
-  private var cardsActionButton: UIButton!
-  private var scaffoldCovered = false
-  private var nativeChromeHidden = false
-  private var localizedStrings = [
-    "scan": "Scan",
-    "cards": "Cards",
-    "settings": "Settings",
-    "addCard": "Add Card",
-    "newFolder": "New Folder",
-  ]
+  private var actionButton: UIButton!
+  private var actionButtonBottomToTabBar: NSLayoutConstraint!
+  private var actionButtonBottomToSafeArea: NSLayoutConstraint!
+
+  private var isTabBarVisible = true
+  private var isDimmed = false
+  private var currentActionConfig: [String: Any]? = nil
 
   init(flutterViewController: FlutterViewController, bridge: NativeShellBridge) {
     self.flutterViewController = flutterViewController
@@ -39,7 +36,12 @@ final class NativeShellViewController: UITabBarController,
     setViewControllers([scan, cards, settings], animated: false)
     selectedIndex = 0
     attachFlutter(to: scan)
-    installCardsActions()
+    installActionButton()
+  }
+
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    syncSafeAreaInsets()
   }
 
   private func makeSlot(title: String, symbol: String) -> UIViewController {
@@ -77,21 +79,30 @@ final class NativeShellViewController: UITabBarController,
     flutterViewController.didMove(toParent: target)
   }
 
-  private func installCardsActions() {
-    cardsActionButton = makeGlassButton(
-      symbol: "plus",
-      accessibilityLabel: localizedStrings["addCard"] ?? "Add Card"
+  private func installActionButton() {
+    actionButton = makeGlassButton(symbol: "plus", accessibilityLabel: "")
+    view.addSubview(actionButton)
+
+    actionButtonBottomToTabBar = actionButton.bottomAnchor.constraint(
+      equalTo: tabBar.topAnchor,
+      constant: -16
     )
-    cardsActionButton.menu = makeCardsMenu()
-    cardsActionButton.showsMenuAsPrimaryAction = true
-    view.addSubview(cardsActionButton)
+    actionButtonBottomToSafeArea = actionButton.bottomAnchor.constraint(
+      equalTo: view.safeAreaLayoutGuide.bottomAnchor,
+      constant: -16
+    )
+
     NSLayoutConstraint.activate([
-      cardsActionButton.widthAnchor.constraint(equalToConstant: 56),
-      cardsActionButton.heightAnchor.constraint(equalToConstant: 56),
-      cardsActionButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-      cardsActionButton.bottomAnchor.constraint(equalTo: tabBar.topAnchor, constant: -16),
+      actionButton.widthAnchor.constraint(equalToConstant: 56),
+      actionButton.heightAnchor.constraint(equalToConstant: 56),
+      actionButton.trailingAnchor.constraint(
+        equalTo: view.safeAreaLayoutGuide.trailingAnchor,
+        constant: -16
+      ),
+      actionButtonBottomToTabBar,
     ])
-    updateCardsActionsVisibility()
+
+    updateActionVisibility()
   }
 
   private func makeGlassButton(symbol: String, accessibilityLabel: String) -> UIButton {
@@ -122,62 +133,158 @@ final class NativeShellViewController: UITabBarController,
     return button
   }
 
-  private func makeCardsMenu() -> UIMenu {
-    UIMenu(title: "", children: [
-      UIAction(title: localizedStrings["addCard"] ?? "Add Card") { [weak self] _ in
-        self?.bridge.userRequested(action: "addCard")
-      },
-      UIAction(title: localizedStrings["newFolder"] ?? "New Folder") { [weak self] _ in
-        self?.bridge.userRequested(action: "addFolder")
-      },
-    ])
+  private func syncSafeAreaInsets() {
+    let extraTabBarHeight = max(0, tabBar.frame.height - view.safeAreaInsets.bottom)
+    let bottomAdjustment = isTabBarVisible ? 0 : -extraTabBarHeight
+    if flutterViewController.additionalSafeAreaInsets.bottom != bottomAdjustment {
+      flutterViewController.additionalSafeAreaInsets = UIEdgeInsets(
+        top: 0,
+        left: 0,
+        bottom: bottomAdjustment,
+        right: 0
+      )
+    }
   }
 
-  private func applyLocalizedStrings(_ strings: [String: String]) {
-    localizedStrings.merge(strings) { _, new in new }
-    viewControllers?[0].tabBarItem.title = localizedStrings["scan"]
-    viewControllers?[1].tabBarItem.title = localizedStrings["cards"]
-    viewControllers?[2].tabBarItem.title = localizedStrings["settings"]
-    cardsActionButton?.accessibilityLabel = localizedStrings["addCard"]
-    cardsActionButton?.menu = makeCardsMenu()
-  }
-
-  private func updateCardsActionsVisibility() {
-    cardsActionButton?.isHidden = selectedIndex != 1 || nativeChromeHidden
-    cardsActionButton?.alpha = scaffoldCovered ? 0.46 : 1
-    cardsActionButton?.isUserInteractionEnabled = !scaffoldCovered && !nativeChromeHidden
-  }
-
-  func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+  func tabBarController(
+    _ tabBarController: UITabBarController,
+    didSelect viewController: UIViewController
+  ) {
     guard let controllers = viewControllers,
       let index = controllers.firstIndex(of: viewController)
     else { return }
     attachFlutter(to: viewController)
-    updateCardsActionsVisibility()
     bridge.userSelected(index: index)
+  }
+
+  // MARK: - NativeShellBridgeDelegate
+
+  func nativeShell(setTabs tabs: [[String: Any]]) {
+    guard !tabs.isEmpty else { return }
+
+    if viewControllers?.count != tabs.count {
+      let controllers = tabs.map { tab -> UIViewController in
+        let title = tab["label"] as? String ?? ""
+        let symbol = tab["symbol"] as? String ?? "circle"
+        return makeSlot(title: title, symbol: symbol)
+      }
+      setViewControllers(controllers, animated: false)
+      if let first = controllers.first {
+        attachFlutter(to: first)
+      }
+    }
+
+    for (i, tab) in tabs.enumerated() {
+      guard let controller = viewControllers?[i] else { continue }
+      let title = tab["label"] as? String ?? ""
+      let symbol = tab["symbol"] as? String ?? "circle"
+      let hasBadge = tab["hasBadge"] as? Bool ?? false
+
+      controller.tabBarItem.title = title
+      controller.tabBarItem.image = UIImage(systemName: symbol)
+      controller.tabBarItem.badgeValue = hasBadge ? "1" : nil
+    }
   }
 
   func nativeShell(setSelectedIndex index: Int) {
     guard let controllers = viewControllers, controllers.indices.contains(index) else { return }
     if selectedIndex != index { selectedIndex = index }
     attachFlutter(to: controllers[index])
-    updateCardsActionsVisibility()
   }
 
   func nativeShell(setSettingsBadge visible: Bool) {
-    viewControllers?[2].tabBarItem.badgeValue = visible ? "1" : nil
+    guard let controllers = viewControllers, controllers.count > 2 else { return }
+    controllers[2].tabBarItem.badgeValue = visible ? "1" : nil
+  }
+
+  func nativeShell(setChromeVisibility tabBarVisible: Bool, dimmed: Bool) {
+    isTabBarVisible = tabBarVisible
+    isDimmed = dimmed
+
+    tabBar.isHidden = !tabBarVisible
+    tabBar.isUserInteractionEnabled = tabBarVisible && !dimmed
+    tabBar.alpha = dimmed ? 0.20 : 1.0
+
+    actionButtonBottomToTabBar.isActive = tabBarVisible
+    actionButtonBottomToSafeArea.isActive = !tabBarVisible
+
+    syncSafeAreaInsets()
+    updateActionVisibility()
+    view.layoutIfNeeded()
   }
 
   func nativeShell(setScaffoldCovered covered: Bool, hideNativeChrome: Bool) {
-    scaffoldCovered = covered
-    nativeChromeHidden = hideNativeChrome || (nativeChromeHidden && covered)
-    tabBar.isHidden = nativeChromeHidden
-    tabBar.isUserInteractionEnabled = !covered && !hideNativeChrome
-    tabBar.alpha = covered ? 0.20 : 1
-    updateCardsActionsVisibility()
+    nativeShell(setChromeVisibility: !hideNativeChrome, dimmed: covered && !hideNativeChrome)
+  }
+
+  func nativeShell(setActionButton config: [String: Any]?) {
+    currentActionConfig = config
+    updateActionButton()
   }
 
   func nativeShell(setLocalizedStrings strings: [String: String]) {
-    applyLocalizedStrings(strings)
+    guard let controllers = viewControllers else { return }
+    if let scan = strings["scan"], controllers.indices.contains(0) {
+      controllers[0].tabBarItem.title = scan
+    }
+    if let cards = strings["cards"], controllers.indices.contains(1) {
+      controllers[1].tabBarItem.title = cards
+    }
+    if let settings = strings["settings"], controllers.indices.contains(2) {
+      controllers[2].tabBarItem.title = settings
+    }
+  }
+
+  // MARK: - Action Button Helpers
+
+  private func updateActionButton() {
+    guard let config = currentActionConfig else {
+      updateActionVisibility()
+      return
+    }
+
+    let symbol = config["symbol"] as? String ?? "plus"
+    let accessibilityLabel = config["label"] as? String ?? ""
+    let items = config["items"] as? [[String: String]] ?? []
+    let actionId = config["actionId"] as? String
+
+    actionButton.accessibilityLabel = accessibilityLabel
+
+    var buttonConfig = actionButton.configuration
+    buttonConfig?.image = UIImage(systemName: symbol)
+    actionButton.configuration = buttonConfig
+
+    if !items.isEmpty {
+      let actions = items.map { item -> UIAction in
+        let id = item["id"] ?? ""
+        let title = item["title"] ?? ""
+        return UIAction(title: title) { [weak self] _ in
+          self?.bridge.userRequested(action: id)
+        }
+      }
+      actionButton.menu = UIMenu(title: "", children: actions)
+      actionButton.showsMenuAsPrimaryAction = true
+      actionButton.removeTarget(self, action: #selector(actionButtonTapped), for: .touchUpInside)
+    } else if let _ = actionId {
+      actionButton.menu = nil
+      actionButton.showsMenuAsPrimaryAction = false
+      actionButton.removeTarget(self, action: #selector(actionButtonTapped), for: .touchUpInside)
+      actionButton.addTarget(self, action: #selector(actionButtonTapped), for: .touchUpInside)
+    }
+
+    updateActionVisibility()
+  }
+
+  @objc private func actionButtonTapped() {
+    if let actionId = currentActionConfig?["actionId"] as? String {
+      bridge.userRequested(action: actionId)
+    }
+  }
+
+  private func updateActionVisibility() {
+    let hasConfig = currentActionConfig != nil
+    actionButton?.isHidden = !hasConfig
+    actionButton?.alpha = isDimmed ? 0.46 : 1.0
+    actionButton?.isUserInteractionEnabled = hasConfig && !isDimmed
   }
 }

@@ -18,10 +18,7 @@ void main() {
       expect(CardTag.tUnion, const CardTag('tunion'));
       expect(CardTag.japanTransit, const CardTag('japan_transit'));
       expect(CardTag.issuer('大连明珠卡'), CardTag.issuer('大连明珠卡'));
-      expect(
-        CardTag.issuer('大连明珠卡'),
-        isNot(CardTag.issuer('上海公共交通卡')),
-      );
+      expect(CardTag.issuer('大连明珠卡'), isNot(CardTag.issuer('上海公共交通卡')));
     });
 
     test('CardTag localization in EN and ZH', () async {
@@ -63,11 +60,7 @@ void main() {
       final rawLegacyTags = ['大连明珠卡', '交通联合', 'ISO-DEP'];
       final tags = rawLegacyTags.map(CardTag.fromJson).toList();
 
-      expect(tags, [
-        CardTag.issuer('大连明珠卡'),
-        CardTag.tUnion,
-        CardTag.isoDep,
-      ]);
+      expect(tags, [CardTag.issuer('大连明珠卡'), CardTag.tUnion, CardTag.isoDep]);
     });
   });
 

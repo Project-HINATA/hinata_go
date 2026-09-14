@@ -5,6 +5,7 @@ import '../../l10n/l10n.dart';
 import '../../models/remote_instance.dart';
 import '../../providers/app_state_provider.dart';
 import 'package:hinata_go/context_extensions.dart';
+import '../app_action_button.dart';
 import '../components/instances/instance_item.dart';
 import '../components/instances/instance_dialog.dart';
 
@@ -33,7 +34,18 @@ class InstancesPage extends HookConsumerWidget {
         bottom: false,
         child: _buildBody(context, instances, activeId),
       ),
-      floatingActionButton: _buildFAB(context, ref),
+      floatingActionButton: buildAppActionButton(
+        context,
+        ref,
+        config: AppActionConfig(
+          id: 'addInstance',
+          icon: Icons.add,
+          label: l10n.addInstance,
+          tooltip: l10n.addInstance,
+          nativeSymbol: 'plus',
+          onPressed: () => _showInstanceDialog(context),
+        ),
+      ),
     );
   }
 
@@ -79,14 +91,6 @@ class InstancesPage extends HookConsumerWidget {
       instance: instance,
       isActive: isActive,
       onEdit: () => _showInstanceDialog(context, instance),
-    );
-  }
-
-  Widget _buildFAB(BuildContext context, WidgetRef ref) {
-    return FloatingActionButton.extended(
-      onPressed: () => _showInstanceDialog(context),
-      icon: const Icon(Icons.add),
-      label: Text(l10n.addInstance),
     );
   }
 }

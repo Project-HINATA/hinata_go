@@ -22,7 +22,9 @@ class AppUpdateState {
   });
 
   String get versionDisplay {
-    final hash = commitHash.isNotEmpty ? commitHash : AppConstants.gitCommitHash;
+    final hash = commitHash.isNotEmpty
+        ? commitHash
+        : AppConstants.gitCommitHash;
     final shortHash = hash.length > 7 ? hash.substring(0, 7) : hash;
     if (shortHash.isNotEmpty) {
       return 'HINATA Go v$currentVersion ($shortHash)';
