@@ -77,6 +77,7 @@ final class NativeShellViewController: UITabBarController,
     ]
     NSLayoutConstraint.activate(flutterConstraints)
     flutterViewController.didMove(toParent: target)
+    syncSafeAreaInsets()
   }
 
   private func installActionButton() {
@@ -133,17 +134,33 @@ final class NativeShellViewController: UITabBarController,
     return button
   }
 
+  /// The tab bar reserves part of the bottom safe area for the Flutter content it sits next to.
+  /// Once the chrome goes away that reservation has to go with it, or pages keep leaving a band the
+  /// height of a tab bar at the bottom.
+  ///
+  /// The adjustment belongs to the slot that hosts the Flutter view, not to the Flutter view
+  /// controller itself: UIKit ignores a negative `additionalSafeAreaInsets` on that controller, so
+  /// the value never reaches the engine and the content below the hidden chrome stays inset.
   private func syncSafeAreaInsets() {
-    let extraTabBarHeight = max(0, tabBar.frame.height - view.safeAreaInsets.bottom)
-    let bottomAdjustment = isTabBarVisible ? 0 : -extraTabBarHeight
-    if flutterViewController.additionalSafeAreaInsets.bottom != bottomAdjustment {
-      flutterViewController.additionalSafeAreaInsets = UIEdgeInsets(
+    let adjustment = isTabBarVisible ? 0 : -tabBarHeightAboveSafeArea()
+    let host = flutterViewController.parent
+
+    for slot in viewControllers ?? [] {
+      let bottom = slot === host ? adjustment : 0
+      guard slot.additionalSafeAreaInsets.bottom != bottom else { continue }
+      slot.additionalSafeAreaInsets = UIEdgeInsets(
         top: 0,
         left: 0,
-        bottom: bottomAdjustment,
+        bottom: bottom,
         right: 0
       )
     }
+  }
+
+  /// How much height the tab bar takes up on top of the home-indicator strip, which is the part of
+  /// the bottom safe area that has to disappear together with the chrome.
+  private func tabBarHeightAboveSafeArea() -> CGFloat {
+    max(0, tabBar.frame.height - view.safeAreaInsets.bottom)
   }
 
   func tabBarController(
