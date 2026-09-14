@@ -97,6 +97,18 @@ final class PrismAPI {
     return try await send(request)
   }
 
+  func registerLiveActivity(shopCode: String, sessionId: String, activityId: String, pushToken: String) async throws {
+    _ = try await requestJSON(
+      path: "/api/v1/shops/\(shopCode)/player/live-activities/\(sessionId)",
+      body: [
+        "activityId": activityId,
+        "appKind": Bundle.main.bundleIdentifier?.contains(".prism") == true ? "appclip" : "app",
+        "environment": "production",
+        "pushToken": pushToken,
+      ]
+    )
+  }
+
   func webFallbackURL(ticket: String) -> URL? {
     URL(string: "\(baseURL.absoluteString)/m?ticket=\(ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ticket)")
   }

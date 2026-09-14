@@ -38,6 +38,8 @@
 	<string>We need photo library access to import and export data</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Location access confirms you are at the arcade before signing in to a machine.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

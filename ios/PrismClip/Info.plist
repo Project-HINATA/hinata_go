@@ -27,6 +27,8 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>需要确认你位于对应的地点，才能使用对应服务。</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

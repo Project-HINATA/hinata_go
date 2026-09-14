@@ -284,6 +284,14 @@ final class MachineLoginViewModel: ObservableObject {
       if userId != me.user!.id { assets = []; history = [] }
       userId = me.user!.id
       visit = shop; deviceState = currentDevice; summary = currentSummary; user = me.user
+      if let shopCode = self.shopCode {
+        await StoreVisitLiveActivityManager.shared.reconcile(
+          session: currentSummary?.activeSession,
+          shopCode: shopCode,
+          shopName: shop.shop.name ?? machine?.shop.name ?? "PRiSM",
+          api: api
+        )
+      }
       if currentDevice?.power != "off" { waitingPower = false }
       if shop.membership != nil { binding = nil }
       polling?.cancel()
