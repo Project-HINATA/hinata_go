@@ -537,13 +537,13 @@ private struct ClipAccountSheet: View {
   private var title: LocalizedStringKey { ["账单", "兑换", "记录", "钱包"][section] }
   @ViewBuilder private var closeButton: some View {
     if #available(iOS 26.0, *) {
-      Button(role: .close) { dismiss() } label: { Image(systemName: "xmark") }
-        .buttonStyle(.glass).buttonBorderShape(.circle)
-        .tint(.primary).accessibilityLabel("关闭")
+      Button(role: .close) { dismiss() }
     } else {
       Button { dismiss() } label: { Image(systemName: "xmark") }
         .buttonStyle(.bordered)
-        .tint(.primary).accessibilityLabel("关闭")
+        .buttonBorderShape(.circle)
+        .tint(.primary)
+        .accessibilityLabel("关闭")
     }
   }
   var body: some View {
