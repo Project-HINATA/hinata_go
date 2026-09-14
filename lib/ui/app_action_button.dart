@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../core/app_host_mode.dart';
 import '../providers/navigation_provider.dart';
+import 'widgets/shell_branch_scope.dart';
 
 export '../providers/navigation_provider.dart'
     show AppActionConfig, AppActionItem;
@@ -107,17 +108,13 @@ class _AppActionRegistrar extends ConsumerStatefulWidget {
 class _AppActionRegistrarState extends ConsumerState<_AppActionRegistrar> {
   late final AppActionNotifier _notifier;
 
+  /// `null` for pages that live outside the shell, such as root-level routes.
+  bool? _isSelectedBranch;
+
   @override
   void initState() {
     super.initState();
     _notifier = ref.read(appActionNotifierProvider.notifier);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
-  }
-
-  @override
-  void didUpdateWidget(covariant _AppActionRegistrar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
   }
 
   @override
@@ -128,10 +125,16 @@ class _AppActionRegistrarState extends ConsumerState<_AppActionRegistrar> {
 
   void _sync() {
     if (!mounted) return;
-    final isCovered = ref.read(isScaffoldCoveredProvider);
-    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
 
-    if (!isCurrent || isCovered || widget.config == null) {
+    // Only the page the user is looking at may own the native action button. Every shell branch
+    // stays mounted, so an inactive branch would otherwise keep claiming to be current.
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+    final isSelectedBranch = _isSelectedBranch;
+    final isShellHidden =
+        isSelectedBranch != null &&
+        (!isSelectedBranch || ref.read(isScaffoldCoveredProvider));
+
+    if (widget.config == null || !isCurrent || isShellHidden) {
       _notifier.clear();
     } else {
       _notifier.setConfig(widget.config!);
@@ -140,8 +143,9 @@ class _AppActionRegistrarState extends ConsumerState<_AppActionRegistrar> {
 
   @override
   Widget build(BuildContext context) {
+    _isSelectedBranch = ShellBranchScope.maybeIsSelected(context);
     ref.listen(isScaffoldCoveredProvider, (previous, next) => _sync());
-    ref.listen(activeBranchProvider, (previous, next) => _sync());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
     return const SizedBox.shrink();
   }
 }

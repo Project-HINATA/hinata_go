@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'shell_branch_scope.dart';
+
 class AnimatedBranchContainer extends StatelessWidget {
   final int currentIndex;
   final List<Widget> children;
@@ -83,15 +85,20 @@ class _AnimatedBranchState extends State<_AnimatedBranch> {
 
     return IgnorePointer(
       ignoring: !isCurrent,
-      child: AnimatedSlide(
-        offset: offset,
-        duration: duration,
-        curve: Curves.easeOutCubic,
-        child: AnimatedOpacity(
-          opacity: isCurrent ? 1.0 : 0.0,
+      // Branches stay mounted while off screen, so publish the selection for descendants that need
+      // to know whether they are actually visible.
+      child: ShellBranchScope(
+        isSelected: isCurrent,
+        child: AnimatedSlide(
+          offset: offset,
           duration: duration,
           curve: Curves.easeOutCubic,
-          child: widget.child,
+          child: AnimatedOpacity(
+            opacity: isCurrent ? 1.0 : 0.0,
+            duration: duration,
+            curve: Curves.easeOutCubic,
+            child: widget.child,
+          ),
         ),
       ),
     );

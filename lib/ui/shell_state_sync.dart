@@ -46,12 +46,7 @@ class NativeShellNavigatorObserver extends NavigatorObserver {
   }
 }
 
-void syncShellState(
-  BuildContext context,
-  WidgetRef ref,
-  int activeIndex, {
-  bool publishNative = false,
-}) {
+void syncShellState(BuildContext context, WidgetRef ref, int activeIndex) {
   final isScaffoldVisible = context.modalRoute?.isCurrent ?? false;
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -59,16 +54,6 @@ void syncShellState(
       ref
           .read(isScaffoldCoveredProvider.notifier)
           .setCovered(!isScaffoldVisible);
-    }
-    if (publishNative) {
-      _channel.invokeMethod('setChromeVisibility', {
-        'tabBarVisible': isScaffoldVisible,
-        'dimmed': false,
-      });
-      _channel.invokeMethod('setScaffoldCovered', {
-        'covered': !isScaffoldVisible,
-        'hideNativeChrome': false,
-      });
     }
   });
 

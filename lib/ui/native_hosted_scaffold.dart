@@ -129,12 +129,7 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
       _publishActionButton(config);
     });
 
-    syncShellState(
-      context,
-      ref,
-      widget.navigationShell.currentIndex,
-      publishNative: true,
-    );
+    syncShellState(context, ref, widget.navigationShell.currentIndex);
     return Scaffold(body: widget.navigationShell);
   }
 }
