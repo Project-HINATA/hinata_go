@@ -2,6 +2,15 @@
 // Models, API decoding and the App Clip state machine are the production sources.
 import Foundation
 
+// ActivityKit is unavailable in this macOS check; record the shared call boundary.
+@MainActor final class StoreVisitLiveActivityManager {
+  static let shared = StoreVisitLiveActivityManager()
+  private(set) var session: PrismSummary.Session?
+  func reconcile(session: PrismSummary.Session?, shopCode: String, shopName: String) async {
+    self.session = session
+  }
+}
+
 @MainActor final class PasskeyAuthenticationService {
   func authenticate(options: PasskeyRequestOptions) async throws -> PasskeyAssertion { throw CancellationError() }
 }
@@ -55,6 +64,11 @@ enum PersistentCookieCheck {
 
 @main struct PrismVisitCheck {
   @MainActor static func main() async throws {
+    let wholeSeconds = prismParsedDate("2026-09-12T00:00:00Z")!
+    let milliseconds = prismParsedDate("2026-09-12T00:00:00.123Z")!
+    precondition(abs(milliseconds.timeIntervalSince(wholeSeconds) - 0.123) < 0.00001)
+    precondition(prismParsedDate("2026-09-12T09:00:00.123+09:00") == milliseconds)
+    precondition(prismParsedDate("invalid") == nil)
     try await PersistentCookieCheck.check()
     let origin = URL(string: "https://link-beta.neri.moe")!
     precondition(InvocationParser.invocation(from: URL(string: "https://example.com:8443/t/store/device")!)?.origin.absoluteString == "https://example.com:8443")
@@ -94,7 +108,7 @@ enum PersistentCookieCheck {
         return ok(["shop":["billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"QQ Bot","timeZone":"Asia/Tokyo"],"membership":member ? ["playerId":"p"] : NSNull(),"entryPricing":[]])
       case "/api/v1/devices/session/state": return ok(["gate":!billing ? "ready" : member ? (active ? "ready" : "entry") : "qq", "power":"unknown","mahjong":["capacity":4,"seats":mahjongSeats]])
       case "/api/v1/shops/store/qq-binding": return ok(["code":"ABC123","expiresAt":"2999-01-01T00:00:00Z"])
-      case "/api/v1/shops/store/player/me": return ok(["wallet":[],"activeSession":active ? ["id":"entry","startedAt":"2026-09-12T00:00:00Z"] : NSNull()])
+      case "/api/v1/shops/store/player/me": return ok(["wallet":[],"activeSession":active ? ["id":"entry","startedAt":"2026-09-12T00:00:00.123Z"] : NSNull()])
       case "/api/v1/shops/store/player/assets": assetReads += 1; return ok(["holdings":[]])
       case "/api/v1/shops/store/player/sessions/history": historyReads += 1; return ok(["sessions":[]])
       case "/api/v1/shops/store/devices": return ok(["devices":[]])
@@ -142,6 +156,8 @@ enum PersistentCookieCheck {
     member = true; await model.refreshVisit(); precondition(model.deviceState?.gate == "entry")
     await model.device("door.open", consent:true)
     precondition(model.doorPassword?.temporaryPassword == "12345678" && model.summary?.activeSession != nil)
+    precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
+    precondition(prismParsedDate(StoreVisitLiveActivityManager.shared.session!.startedAt) == milliseconds)
     precondition(model.canUseCards && model.deviceState?.power == "unknown")
     await model.device("coin"); await model.device("coin"); precondition(coinCalls == 1)
     precondition(model.state == .ready && model.ticket != nil && model.errorMessage != nil && sessionStarts == 1)
@@ -160,6 +176,7 @@ enum PersistentCookieCheck {
     await model.checkout(); await model.checkout()
     precondition(checkoutIds[0] != checkoutIds[1] && checkoutIds[1] == checkoutIds[2])
     precondition(model.summary?.activeSession == nil && model.checkoutPreview == nil)
+    precondition(StoreVisitLiveActivityManager.shared.session == nil)
     precondition(LocationService.calls == 4)
     billing = false; member = false; capabilities.removeValue(forKey: "door")
     await model.start(shopCode: "store", publicId: "device")

@@ -1,19 +1,19 @@
 import ActivityKit
 import Foundation
+import OSLog
 
 @MainActor
 final class StoreVisitLiveActivityManager {
   static let shared = StoreVisitLiveActivityManager()
 
-  private var observedActivityIds = Set<String>()
+  private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "PRiSM", category: "LiveActivity")
 
   private init() {}
 
-  func reconcile(session: PrismSummary.Session?, shopCode: String, shopName: String, api: PrismAPI) async {
+  func reconcile(session: PrismSummary.Session?, shopCode: String, shopName: String) async {
     let activities = Activity<StoreVisitAttributes>.activities
     if let session {
-      if let existing = activities.first(where: { $0.attributes.sessionId == session.id }) {
-        await registerToken(for: existing, shopCode: shopCode, api: api)
+      if activities.contains(where: { $0.attributes.sessionId == session.id }) {
         return
       }
 
@@ -21,19 +21,26 @@ final class StoreVisitLiveActivityManager {
         await end(activity, startedAt: activity.content.state.startedAtUnix, endedAt: Date().timeIntervalSince1970)
       }
 
-      guard let startedAt = ISO8601DateFormatter().date(from: session.startedAt) else { return }
+      guard let startedAt = prismParsedDate(session.startedAt) else {
+        logger.error("Cannot start Live Activity: invalid session startedAt")
+        return
+      }
+      guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+        logger.notice("Cannot start Live Activity: activities are disabled")
+        return
+      }
       do {
-        let activity = try Activity.request(
+        _ = try Activity.request(
           attributes: StoreVisitAttributes(sessionId: session.id, shopCode: shopCode, shopName: shopName),
           content: ActivityContent(
             state: .init(phase: "active", startedAtUnix: startedAt.timeIntervalSince1970, endedAtUnix: nil),
             staleDate: nil
           ),
-          pushType: .token
+          pushType: nil
         )
-        await registerToken(for: activity, shopCode: shopCode, api: api)
       } catch {
         // Live Activities are optional and must not affect billing.
+        logger.error("Failed to start Live Activity: \(String(describing: error), privacy: .public)")
       }
     } else {
       for activity in activities where activity.attributes.shopCode == shopCode {
@@ -42,34 +49,7 @@ final class StoreVisitLiveActivityManager {
     }
   }
 
-  private func registerToken(for activity: Activity<StoreVisitAttributes>, shopCode: String, api: PrismAPI) async {
-    guard observedActivityIds.insert(activity.id).inserted else { return }
-    Task { [weak self] in
-      guard let self else { return }
-      if let token = activity.pushToken {
-        await self.upload(token: token, activity: activity, shopCode: shopCode, api: api)
-      }
-      for await token in activity.pushTokenUpdates {
-        await self.upload(token: token, activity: activity, shopCode: shopCode, api: api)
-      }
-    }
-  }
-
-  private func upload(token: Data, activity: Activity<StoreVisitAttributes>, shopCode: String, api: PrismAPI) async {
-    do {
-      try await api.registerLiveActivity(
-        shopCode: shopCode,
-        sessionId: activity.attributes.sessionId,
-        activityId: activity.id,
-        pushToken: token.liveActivityHexString
-      )
-    } catch {
-      // Registration is best-effort until the server endpoint is deployed.
-    }
-  }
-
   private func end(_ activity: Activity<StoreVisitAttributes>, startedAt: Double, endedAt: Double) async {
-    observedActivityIds.remove(activity.id)
     let state = StoreVisitAttributes.ContentState(phase: "ended", startedAtUnix: startedAt, endedAtUnix: endedAt)
     await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .after(Date().addingTimeInterval(60)))
   }

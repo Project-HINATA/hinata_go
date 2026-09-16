@@ -42,7 +42,6 @@
 		E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */; };
 		C1C00000000000000000000B /* StoreVisitAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000B /* StoreVisitAttributes.swift */; };
 		C1C00000000000000000000C /* StoreVisitLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000C /* StoreVisitLiveActivityManager.swift */; };
-		C1C00000000000000000000D /* LiveActivityTokenEncoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000D /* LiveActivityTokenEncoding.swift */; };
 		C1C00000000000000000000E /* StoreVisitActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000E /* StoreVisitActivityView.swift */; };
 		C1C00000000000000000000F /* HINATALiveActivityExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000F /* HINATALiveActivityExtension.swift */; };
 		C1C000000000000000000010 /* StoreVisitAttributes.swift in HINATA Extension */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000018 /* Extension StoreVisitAttributes.swift */; };
@@ -160,7 +159,6 @@
 		D1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/MunetAuthenticationService.swift; sourceTree = "<group>"; };
 		C2C00000000000000000000B /* StoreVisitAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LiveActivityShared/StoreVisitAttributes.swift; sourceTree = "<group>"; };
 		C2C00000000000000000000C /* StoreVisitLiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LiveActivityShared/StoreVisitLiveActivityManager.swift; sourceTree = "<group>"; };
-		C2C00000000000000000000D /* LiveActivityTokenEncoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LiveActivityShared/LiveActivityTokenEncoding.swift; sourceTree = "<group>"; };
 		C2C00000000000000000000E /* StoreVisitActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LiveActivityShared/StoreVisitActivityView.swift; sourceTree = "<group>"; };
 		C2C00000000000000000000F /* HINATALiveActivityExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityBundle.swift; sourceTree = "<group>"; };
 		C2C000000000000000000010 /* HINATA Extension Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -226,7 +224,6 @@
 			children = (
 				C2C00000000000000000000B /* StoreVisitAttributes.swift */,
 				C2C00000000000000000000C /* StoreVisitLiveActivityManager.swift */,
-				C2C00000000000000000000D /* LiveActivityTokenEncoding.swift */,
 				95064489658D45939E5DA68D /* PrismClipApp.swift */,
 				AA1100000000000000000011 /* Localizable.xcstrings */,
 				AA1100000000000000000012 /* InfoPlist.xcstrings */,
@@ -573,7 +570,6 @@
 			files = (
 				C1C00000000000000000000B /* StoreVisitAttributes.swift in Sources */,
 				C1C00000000000000000000C /* StoreVisitLiveActivityManager.swift in Sources */,
-				C1C00000000000000000000D /* LiveActivityTokenEncoding.swift in Sources */,
 				8DDEA6470F304D2E85B819AD /* PrismClipApp.swift in Sources */,
 				7B07656CE2BE43CFBB961A0B /* PrismAPI.swift in Sources */,
 				4EFBD8768DB3455FB7560F91 /* InvocationParser.swift in Sources */,
@@ -592,7 +588,6 @@
 			files = (
 				C1C00000000000000000000B /* StoreVisitAttributes.swift in Sources */,
 				C1C00000000000000000000C /* StoreVisitLiveActivityManager.swift in Sources */,
-				C1C00000000000000000000D /* LiveActivityTokenEncoding.swift in Sources */,
 				B1C000000000000000000008 /* InvocationParser.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				C1C000000000000000000009 /* NativeShellBridge.swift in Sources */,

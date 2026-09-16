@@ -1,5 +1,10 @@
 import Foundation
 
+func prismParsedDate(_ value: String) -> Date? {
+  let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+  return formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
+}
+
 struct PublicMachine: Decodable {
   let publicId: String
   let name: String

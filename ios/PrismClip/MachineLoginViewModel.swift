@@ -288,8 +288,7 @@ final class MachineLoginViewModel: ObservableObject {
         await StoreVisitLiveActivityManager.shared.reconcile(
           session: currentSummary?.activeSession,
           shopCode: shopCode,
-          shopName: shop.shop.name ?? machine?.shop.name ?? "PRiSM",
-          api: api
+          shopName: shop.shop.name ?? machine?.shop.name ?? "PRiSM"
         )
       }
       if currentDevice?.power != "off" { waitingPower = false }

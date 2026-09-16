@@ -736,10 +736,6 @@ private struct ClipAccountSheet: View {
 }
 private func prismDate(_ value: String) -> String { prismParsedDate(value)?.formatted(date: .numeric, time: .shortened) ?? value }
 private func prismTime(_ value: String) -> String { prismParsedDate(value)?.formatted(date: .omitted, time: .standard) ?? value }
-private func prismParsedDate(_ value: String) -> Date? {
-  let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-  return formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
-}
 private struct PrismLabeledRow: View {
   let title: String; let value: String
   init(_ title: String, value: String) { self.title = title; self.value = value }
