@@ -89,6 +89,7 @@ enum PersistentCookieCheck {
     precondition(InvocationParser.shopInvocation(from: URL(string: "https://user@link.neri.moe/t/store")!) == nil)
     var mahjongSeats: [[String:Any]] = []
     var member = false, active = false
+    var signedIn = true
     var billing = true
     let heroUrl: String? = "/api/v1/shops/store/hero?v=abc123"
     var capabilities = ["power":true,"coin":true,"card":true,"door":true]
@@ -118,7 +119,10 @@ enum PersistentCookieCheck {
         // Echo the requested machine so routing can be asserted per link.
         let requested = (body["publicId"] as? String) ?? "device"
         return ok(["ticket":"ticket-\(sessionStarts)", "expiresIn":300, "machine":["publicId":requested, "name":"Device", "webOnly":true, "coinAfterSwipe":true, "capabilities":capabilities, "shop":["name":"Store", "latitude":35,"longitude":139,"radiusMeters":80,"machineGeo":false,"billingEnabled":billing]]])
-      case "/api/v1/me": return ok(["user":["id":testUser,"username":"test","displayName":"Test"]])
+      case "/api/v1/me":
+        // Mirrors the server: signed-in state lives in the cookie store.
+        return ok(["user": signedIn ? ["id":testUser,"username":"test","displayName":"Test"] : NSNull()])
+      case "/api/v1/auth/logout": return ok(["ok": true])
       case "/api/v1/cards": return ok(["cards":[["id":"card","label":"Aime","accessCode":"01234567890123456789"]]])
       case "/api/v1/shops/store":
         statusReads += 1
@@ -339,6 +343,24 @@ enum PersistentCookieCheck {
     precondition(shopOnly.settlement != nil)
     await shopOnly.handleResolvedInvocation(shopB)
     precondition(shopOnly.settlement != nil, "A replayed link must not discard the settlement receipt")
+
+    // Signing out on a shop page keeps the shop card: the shop is public data, and the
+    // player must still see which shop they are dealing with above the sign-in buttons.
+    member = true
+    await shopOnly.handleResolvedInvocation(shopB)
+    signedIn = false
+    await shopOnly.logout()
+    precondition(shopOnly.state == .unauthenticated)
+    precondition(shopOnly.visit != nil, "Sign-out must not remove the shop card")
+    precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
+
+    // Signing back in afterwards completes: the visit has to refresh, or the page hangs.
+    // `reloadCards` is where the machine flow lands after signing in, so it is the call that
+    // has to carry the shop page past its loading state.
+    signedIn = true
+    await shopOnly.reloadCards()
+    precondition(shopOnly.state == .ready && shopOnly.visit != nil, "Sign-in on a shop page must complete")
+    precondition(shopOnly.summary != nil, "The signed-in shop page must have loaded the player's state")
 
     // An unusable link clears the shop and fails without touching the previous session.
     await shopOnly.handleResolvedInvocation(URL(string: "https://link-beta.neri.moe/not-a-link")!)

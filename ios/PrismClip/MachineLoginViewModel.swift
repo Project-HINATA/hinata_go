@@ -162,6 +162,10 @@ final class MachineLoginViewModel: ObservableObject {
     // without its cover and then grow once the image arrived.
     state = .loadingShop
     do {
+      // The shop is public data: load it first so the card is on screen whatever the
+      // sign-in state turns out to be, then layer the player's own state on top.
+      await refreshVisit(silent: true, allowSignedOut: true)
+      guard version == invocationVersion else { return }
       let me = try await api.me()
       guard version == invocationVersion else { return }
       user = me.user
@@ -266,8 +270,13 @@ final class MachineLoginViewModel: ObservableObject {
       guard version == invocationVersion else { return }
       invocationVersion += 1
       polling?.cancel()
-      visit = nil; binding = nil; summary = nil; doorPassword = nil; checkoutPreview = nil; deviceState = nil; notice = nil; settlement = nil; assets = []; history = []; userId = ""; user = nil
-      state = ticket == nil ? .expired : .unauthenticated
+      // A shop link keeps its card across sign-out: the shop is public data, and the player
+      // should still see which shop they are dealing with above the sign-in buttons.
+      if isShopOnly {
+        state = .unauthenticated
+      } else {
+        state = ticket == nil ? .expired : .unauthenticated
+      }
       cards = []
       errorMessage = nil
     } catch { guard version == invocationVersion else { return }; errorMessage = String(localized: "退出账号失败，请重试") }
@@ -282,7 +291,9 @@ final class MachineLoginViewModel: ObservableObject {
       let response = try await api.cards()
       guard version == invocationVersion else { return }
       cards = response.cards.filter { $0.disabledAt == nil }
-      if machine?.capabilities != nil { await refreshVisit() }
+      // Shop-only mode has no machine, so its visit would never refresh here and the page sat
+      // on `.loadingCards` for ever after signing in.
+      if machine?.capabilities != nil || isShopOnly { await refreshVisit() }
       if state == .loadingCards { state = .ready }
     } catch {
       guard version == invocationVersion else { return }
@@ -359,10 +370,11 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  func refreshVisit(silent: Bool = false) async {
+  func refreshVisit(silent: Bool = false, allowSignedOut: Bool = false) async {
     let api = self.api
     // Shop-only mode has no machine, so the machine gate cannot apply there.
-    guard sceneActive, machine?.capabilities != nil || isShopOnly, state != .unauthenticated else { return }
+    guard sceneActive, machine?.capabilities != nil || isShopOnly,
+          allowSignedOut || state != .unauthenticated else { return }
     visitRevision += 1
     polling?.cancel()
     let revision = visitRevision
@@ -371,7 +383,14 @@ final class MachineLoginViewModel: ObservableObject {
       let shop: PrismShopResponse = try await api.request(shopPath())
       let me = try await api.me()
       guard version == invocationVersion, revision == visitRevision else { return }
-      guard me.user != nil else { state = .unauthenticated; return }
+      // The shop is public data, so the card is settled before the signed-in state is judged.
+      // Clearing it here is what made a signed-out shop page lose its card entirely.
+      visit = shop
+      guard me.user != nil else {
+        if !allowSignedOut { state = .unauthenticated }
+        user = nil; summary = nil; checkoutPreview = nil; assets = []; history = []
+        return
+      }
       var currentDevice = deviceState
       if let ticket {
         do { currentDevice = try await api.request("/api/v1/devices/session/state?ticket=\(ticket)") }
@@ -387,7 +406,7 @@ final class MachineLoginViewModel: ObservableObject {
       guard version == invocationVersion, revision == visitRevision else { return }
       if userId != me.user!.id { assets = []; history = [] }
       userId = me.user!.id
-      visit = shop; deviceState = currentDevice; summary = currentSummary; user = me.user
+      deviceState = currentDevice; summary = currentSummary; user = me.user
       if let shopCode = self.shopCode {
         await StoreVisitLiveActivityManager.shared.reconcile(
           session: currentSummary?.activeSession,

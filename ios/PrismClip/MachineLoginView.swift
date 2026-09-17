@@ -368,12 +368,16 @@ struct ClipShopHero: View {
     // height once the image decodes.
     VStack(alignment: .leading, spacing: 0) {
       if url != nil {
-        Color.clear.aspectRatio(1.5, contentMode: .fit)
+        // The box is sized by a definite shape rather than `Color.clear`, whose ideal size is
+        // small: an aspect-ratio box built on it resolved tiny on the first layout pass and
+        // then grew, which is the "small then large" the cover showed.
+        Rectangle()
+          .fill(Color.primary.opacity(0.04))
+          .aspectRatio(1.5, contentMode: .fit)
+          .frame(maxWidth: .infinity)
           .overlay {
             if let image {
               Image(uiImage: image).resizable().scaledToFill()
-            } else {
-              Rectangle().fill(Color.primary.opacity(0.04))
             }
           }
           .clipped()
