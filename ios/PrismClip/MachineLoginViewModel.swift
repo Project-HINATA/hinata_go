@@ -6,6 +6,10 @@ final class MachineLoginViewModel: ObservableObject {
   enum State: Equatable {
     case idle
     case loadingMachine
+    /// The shop link's equivalent of `loadingMachine`: the page is not shown until the shop and
+    /// the player's state are in hand, so the card appears complete instead of growing into
+    /// place once the cover arrives.
+    case loadingShop
     case unauthenticated
     case loadingCards
     case cardsFailed(String)
@@ -153,7 +157,10 @@ final class MachineLoginViewModel: ObservableObject {
     authenticating = nil
     errorMessage = nil
     isShopOnly = true
-    state = .loadingCards
+    // Stay on the loading page until the shop is loaded, exactly as the machine link does with
+    // `.loadingMachine`. Rendering the session page before `visit` exists made the card appear
+    // without its cover and then grow once the image arrived.
+    state = .loadingShop
     do {
       let me = try await api.me()
       guard version == invocationVersion else { return }
@@ -164,7 +171,7 @@ final class MachineLoginViewModel: ObservableObject {
       }
       await refreshVisit()
       guard version == invocationVersion else { return }
-      if state == .loadingCards { state = .ready }
+      if state == .loadingShop { state = .ready }
     } catch {
       guard version == invocationVersion else { return }
       fail(error)

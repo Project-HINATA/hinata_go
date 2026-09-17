@@ -219,9 +219,19 @@ enum PersistentCookieCheck {
     // A bare shop link opens the settle-only surface: no machine, no ticket, no admission.
     billing = true; member = true; active = false
     let shopOnly = MachineLoginViewModel(api: PrismAPI(configuration: config))
-    await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
+    // Before any data is in hand the shop link must sit on its loading state, not render the
+    // session page without a card: that is what made the cover appear small and then grow.
+    let pendingShop = Task { await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store")) }
+    // The task starts on another executor, so yield until it has entered its loading state.
+    // This waits for the state machine, not for a duration.
+    for _ in 0..<200 where shopOnly.state == .idle { await Task.yield() }
+    precondition(shopOnly.state == .loadingShop, "The shop page must wait for its data")
+    precondition(shopOnly.visit == nil, "No card is rendered before the shop is loaded")
+    await pendingShop.value
     precondition(shopOnly.isShopOnly && shopOnly.ticket == nil && shopOnly.machine == nil)
     precondition(shopOnly.state == .ready && shopOnly.summary?.activeSession == nil)
+    precondition(shopOnly.visit != nil, "The card data is present before the page is shown")
+    precondition(shopOnly.visit != nil, "The card data is present before the page is shown")
     // The card's subtitle carries the billing state where a device card shows the machine name.
     precondition(shopOnly.shopBillingState == "未入场")
     precondition(shopOnly.canUseShopSurface && !shopOnly.shopHasActiveSession)

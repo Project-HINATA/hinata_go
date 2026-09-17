@@ -50,7 +50,7 @@ struct MachineLoginView: View {
       ScrollView {
         VStack(spacing: 28) {
           switch model.state {
-          case .idle, .loadingMachine:
+          case .idle, .loadingMachine, .loadingShop:
             ClipLoadingPage()
           case .failed(let message):
             ClipFailurePage(message: message, retry: retrySession)
@@ -255,7 +255,7 @@ private struct ClipSessionPage: View {
             }
             .clipActionStyle(primary: true)
           }
-        case .idle, .loadingMachine, .failed, .completed, .expired:
+        case .idle, .loadingMachine, .loadingShop, .failed, .completed, .expired:
           EmptyView()
         }
       }
