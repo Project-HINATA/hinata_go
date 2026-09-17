@@ -506,15 +506,11 @@ private struct ClipShopControls: View {
             }
           }.frame(maxWidth: .infinity, alignment: .leading)
         } else if shop.shop.billingEnabled {
-          VStack(alignment: .leading, spacing: 10) {
-            Text("请扫描机台上的二维码入场")
-              .font(.headline)
-            Text("入场后可以在这里查看账单并结账。")
-              .font(.subheadline).foregroundStyle(.secondary)
-          }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(20)
-          .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+          Text("请扫描机台上的二维码或碰一下 NFC 入场")
+            .font(.subheadline).foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(20)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
         }
       } else if model.errorMessage != nil {
         Button { Task { model.clearError(); await model.refreshVisit() } } label: {
