@@ -3670,19 +3670,19 @@
         }
       }
     },
-    "请扫描机台上的二维码或碰一下 NFC 入场": {
+    "请碰一下 NFC 或扫描机台上的二维码入场": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Scan the QR code or tap the NFC tag on the machine to check in"
+            "value": "Tap the NFC tag or scan the QR code on the machine to check in"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请扫描机台上的二维码或碰一下 NFC 入场"
+            "value": "请碰一下 NFC 或扫描机台上的二维码入场"
           }
         }
       }

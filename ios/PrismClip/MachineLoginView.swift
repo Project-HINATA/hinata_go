@@ -506,7 +506,7 @@ private struct ClipShopControls: View {
             }
           }.frame(maxWidth: .infinity, alignment: .leading)
         } else if shop.shop.billingEnabled {
-          Text("请扫描机台上的二维码或碰一下 NFC 入场")
+          Text("请碰一下 NFC 或扫描机台上的二维码入场")
             .font(.subheadline).foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
