@@ -94,10 +94,11 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func handleInvocation(_ url: URL) async {
-    // A launch delivers the link that started the app and the link that was just tapped in no
-    // fixed order, so whichever landed last used to win: that is why a Live Activity tap
-    // sometimes opened the machine page instead of the bill. Collect the burst and choose
-    // deliberately once it settles.
+    // One scene activation can deliver two activities: the link that was just tapped, and the
+    // machine link this scene was originally invoked with, which iOS replays. They arrive in no
+    // fixed order, so whichever landed last used to win — that is why a Live Activity tap on an
+    // already-open App Clip opened the machine page about as often as the bill. Collect the
+    // deliveries and choose deliberately once they settle.
     pendingInvocation?.cancel()
     burst.append(url)
     let task = Task { [weak self] in
@@ -112,9 +113,9 @@ final class MachineLoginViewModel: ObservableObject {
     await task.value
   }
 
-  /// A shop link is never a launch context: it comes from a Live Activity tap or the Bot's
-  /// link, so within one burst it outranks the machine link that opened the app. A burst with
-  /// only machine links keeps the last one, which is how a re-scan of a different machine wins.
+  /// A shop link is never a stored invocation: it comes from a Live Activity tap or the Bot's
+  /// link, so within one activation it outranks the machine link being replayed. A batch of
+  /// machine links keeps the last one, which is how a re-scan of another machine still wins.
   static func preferred(from arrivals: [URL]) -> URL? {
     arrivals.last { InvocationParser.shopInvocation(from: $0) != nil } ?? arrivals.last
   }
@@ -122,7 +123,7 @@ final class MachineLoginViewModel: ObservableObject {
   private func apply(_ url: URL) async {
     if url == currentInvocation {
       // Already showing this link: refresh rather than rebuild, so the receipt and any
-      // in-progress sheet survive a system replay of the launch link.
+      // in-progress sheet survive a system replay of the link already on screen.
       if currentPageUnusable {
         await reloadCurrentOrigin()
       } else {
