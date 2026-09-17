@@ -28,5 +28,5 @@ with open(sys.argv[1], 'w') as f: f.write(str(server.server_port))
 server.serve_forever()
 PY_SERVER
 cookie_server_pid=$!
-swiftc -parse-as-library ios/PrismClip/InvocationParser.swift ios/PrismClip/Models.swift ios/PrismClip/PrismAPI.swift ios/PrismClip/MachineLoginViewModel.swift test/native/prism_visit_check.swift -o "$prism_check_dir/prism-visit-check"
+swiftc -parse-as-library ios/PrismClip/InvocationParser.swift ios/PrismClip/InvocationRouter.swift ios/PrismClip/Models.swift ios/PrismClip/PrismAPI.swift ios/PrismClip/MachineLoginViewModel.swift test/native/prism_visit_check.swift -o "$prism_check_dir/prism-visit-check"
 PRISM_COOKIE_TEST_PORT="$(cat "$prism_check_dir/port")" "$prism_check_dir/prism-visit-check"

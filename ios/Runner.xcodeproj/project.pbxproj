@@ -13,6 +13,7 @@
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		40A355512C794E78A542B262 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E4FBE53FF24A51BEABF086 /* Models.swift */; };
 		4EFBD8768DB3455FB7560F91 /* InvocationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE5A12DC74545CC94497385 /* InvocationParser.swift */; };
+		B1C00000000000000000000B /* InvocationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C00000000000000000000C /* InvocationRouter.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		C1C000000000000000000009 /* NativeShellBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C000000000000000000009 /* NativeShellBridge.swift */; };
 		C1C00000000000000000000A /* NativeShellViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C00000000000000000000A /* NativeShellViewController.swift */; };
@@ -37,6 +38,7 @@
 		B1C000000000000000000006 /* MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000002 /* MunetAuthenticationService.swift */; };
 		B1C000000000000000000007 /* PasskeyAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */; };
 		B1C000000000000000000008 /* InvocationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE5A12DC74545CC94497385 /* InvocationParser.swift */; };
+		B1C00000000000000000000D /* InvocationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C00000000000000000000C /* InvocationRouter.swift */; };
 		CDC41510304F0F2B000BCB4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		E0C7EC6A900846209454DF9E /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF425FBD0BA44528796FEA8 /* LocationService.swift */; };
 		E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */; };
@@ -122,6 +124,7 @@
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		1CE5A12DC74545CC94497385 /* InvocationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationParser.swift; sourceTree = "<group>"; };
+		B1C00000000000000000000C /* InvocationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationRouter.swift; sourceTree = "<group>"; };
 		29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismURLBridge.swift; sourceTree = "<group>"; };
 		2A1C00000000000000000002 /* MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MunetAuthenticationService.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
@@ -233,6 +236,7 @@
 				AA1100000000000000000012 /* InfoPlist.xcstrings */,
 				9717F4222543435DA2825968 /* PrismAPI.swift */,
 				1CE5A12DC74545CC94497385 /* InvocationParser.swift */,
+				B1C00000000000000000000C /* InvocationRouter.swift */,
 				5FF425FBD0BA44528796FEA8 /* LocationService.swift */,
 				68E4FBE53FF24A51BEABF086 /* Models.swift */,
 				A6B19610946F463EA0AA012F /* MachineLoginView.swift */,
@@ -581,6 +585,7 @@
 				8DDEA6470F304D2E85B819AD /* PrismClipApp.swift in Sources */,
 				7B07656CE2BE43CFBB961A0B /* PrismAPI.swift in Sources */,
 				4EFBD8768DB3455FB7560F91 /* InvocationParser.swift in Sources */,
+				B1C00000000000000000000B /* InvocationRouter.swift in Sources */,
 				E0C7EC6A900846209454DF9E /* LocationService.swift in Sources */,
 				40A355512C794E78A542B262 /* Models.swift in Sources */,
 				85CE8E4C908F471AA82371C9 /* MachineLoginView.swift in Sources */,
@@ -597,6 +602,7 @@
 				C1C00000000000000000000B /* StoreVisitAttributes.swift in Sources */,
 				C1C00000000000000000000C /* StoreVisitLiveActivityManager.swift in Sources */,
 				B1C000000000000000000008 /* InvocationParser.swift in Sources */,
+				B1C00000000000000000000D /* InvocationRouter.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				C1C000000000000000000009 /* NativeShellBridge.swift in Sources */,
 				C1C00000000000000000000A /* NativeShellViewController.swift in Sources */,

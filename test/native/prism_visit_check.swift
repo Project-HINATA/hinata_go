@@ -113,7 +113,11 @@ enum PersistentCookieCheck {
       let body = try JSONSerialization.jsonObject(with: data) as! [String: Any]
       func ok(_ value: [String: Any]) -> (Int, [String: Any]) { (200, ["data": value]) }
       switch path {
-      case "/api/v1/machines/session/start": sessionStarts += 1; return ok(["ticket":"ticket-\(sessionStarts)", "expiresIn":300, "machine":["publicId":"device", "name":"Device", "webOnly":true, "coinAfterSwipe":true, "capabilities":capabilities, "shop":["name":"Store", "latitude":35,"longitude":139,"radiusMeters":80,"machineGeo":false,"billingEnabled":billing]]])
+      case "/api/v1/machines/session/start":
+        sessionStarts += 1
+        // Echo the requested machine so routing can be asserted per link.
+        let requested = (body["publicId"] as? String) ?? "device"
+        return ok(["ticket":"ticket-\(sessionStarts)", "expiresIn":300, "machine":["publicId":requested, "name":"Device", "webOnly":true, "coinAfterSwipe":true, "capabilities":capabilities, "shop":["name":"Store", "latitude":35,"longitude":139,"radiusMeters":80,"machineGeo":false,"billingEnabled":billing]]])
       case "/api/v1/me": return ok(["user":["id":testUser,"username":"test","displayName":"Test"]])
       case "/api/v1/cards": return ok(["cards":[["id":"card","label":"Aime","accessCode":"01234567890123456789"]]])
       case "/api/v1/shops/store":
@@ -160,7 +164,7 @@ enum PersistentCookieCheck {
     }
     let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [FixtureProtocol.self]
     let model = MachineLoginViewModel(api: PrismAPI(configuration: config))
-    await model.handleInvocation(origin.appendingPathComponent("t/store/device"))
+    await model.handleResolvedInvocation(origin.appendingPathComponent("t/store/device"))
     precondition(model.state == .ready && model.deviceState?.gate == "qq")
     precondition(model.binding?.code == "ABC123")
     try await Task.sleep(nanoseconds: 3_300_000_000)
@@ -215,7 +219,7 @@ enum PersistentCookieCheck {
     // A bare shop link opens the settle-only surface: no machine, no ticket, no admission.
     billing = true; member = true; active = false
     let shopOnly = MachineLoginViewModel(api: PrismAPI(configuration: config))
-    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
+    await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
     precondition(shopOnly.isShopOnly && shopOnly.ticket == nil && shopOnly.machine == nil)
     precondition(shopOnly.state == .ready && shopOnly.summary?.activeSession == nil)
     // The card's subtitle carries the billing state where a device card shows the machine name.
@@ -225,12 +229,12 @@ enum PersistentCookieCheck {
     precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
     // A player who has not verified with the Bot gets the binding explanation.
     member = false
-    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
+    await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
     precondition(shopOnly.visit?.membership == nil && !shopOnly.canUseShopSurface)
     member = true
     // Admission comes from the machine flow, so the shop link reads the bill it opened.
     active = true
-    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
+    await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
     precondition(shopOnly.shopHasActiveSession && shopOnly.shopBillingState == "计费中")
     precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
     precondition(StoreVisitLiveActivityManager.shared.origin?.absoluteString == "https://link-beta.neri.moe")
@@ -248,36 +252,86 @@ enum PersistentCookieCheck {
     precondition(shopOnly.settlement == nil && shopOnly.shopBillingState == "未入场")
 
     // A machine link afterwards must leave shop-only mode behind.
-    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store/device"))
+    await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store/device"))
     precondition(!shopOnly.isShopOnly && shopOnly.machine != nil && shopOnly.ticket != nil)
     precondition(shopOnly.shopBillingState == "", "A device link keeps the machine name, not the billing state")
 
-    // The reported bug: a Live Activity tap and the launch link arrive together in either
-    // order, and the shop link must win because it is the deliberate action.
-    for arrivals in [
-      [origin.appendingPathComponent("t/store/device"), URL(string: "https://link-beta.neri.moe/t/store")!],
-      [URL(string: "https://link-beta.neri.moe/t/store")!, origin.appendingPathComponent("t/store/device")],
-    ] {
-      precondition(MachineLoginViewModel.preferred(from: arrivals)?.path == "/t/store",
-                   "A shop link must outrank the machine link that launched the app")
-    }
-    // Two machine links keep the last one, so re-scanning a different machine still wins.
-    precondition(MachineLoginViewModel.preferred(from: [
-      URL(string: "https://link-beta.neri.moe/t/store/device")!,
-      URL(string: "https://link-beta.neri.moe/t/store/other")!,
-    ])?.path == "/t/store/other")
+    // Routing keeps where each delivery came from. A replayed App Clip invocation must not
+    // displace a Live Activity tap in the same activation, whichever order they arrive in.
+    let machineA = origin.appendingPathComponent("t/store/device")
+    let shopB = URL(string: "https://link-beta.neri.moe/t/store")!
 
-    // Re-tapping the open link refreshes in place, so a settled receipt survives it.
+    // 1. appClipInvocation(machine A) then explicitOpenURL(shop B): B wins.
+    do {
+      let router = InvocationRouter()
+      let target = MachineLoginViewModel(api: PrismAPI(configuration: config))
+      await router.handle(machineA, source: .appClipInvocation, model: target)
+      precondition(!target.isShopOnly)
+      await router.handle(shopB, source: .explicitOpenURL, model: target)
+      precondition(target.isShopOnly && target.shopCode == "store", "An explicit open must take over")
+    }
+
+    // 2. explicitOpenURL(shop B) then appClipInvocation(machine A): B still wins.
+    do {
+      let router = InvocationRouter()
+      let target = MachineLoginViewModel(api: PrismAPI(configuration: config))
+      await router.handle(shopB, source: .explicitOpenURL, model: target)
+      await router.handle(machineA, source: .appClipInvocation, model: target)
+      precondition(target.isShopOnly && target.shopCode == "store", "A replayed invocation must not take over")
+    }
+
+    // 3. A new activation accepts an App Clip invocation again.
+    do {
+      let router = InvocationRouter()
+      let target = MachineLoginViewModel(api: PrismAPI(configuration: config))
+      await router.handle(shopB, source: .explicitOpenURL, model: target)
+      await router.handle(machineA, source: .appClipInvocation, model: target)
+      precondition(target.isShopOnly)
+      router.resetForNextActivation()
+      await router.handle(machineA, source: .appClipInvocation, model: target)
+      precondition(!target.isShopOnly && target.machine != nil, "A new activation must accept the invocation")
+    }
+
+    // 4. machine A, background, then machine C: C takes effect.
+    do {
+      let router = InvocationRouter()
+      let target = MachineLoginViewModel(api: PrismAPI(configuration: config))
+      await router.handle(machineA, source: .appClipInvocation, model: target)
+      precondition(target.publicId == "device")
+      router.resetForNextActivation()
+      await router.handle(origin.appendingPathComponent("t/store/other"), source: .appClipInvocation, model: target)
+      precondition(target.publicId == "other", "A later machine link must take effect in a new activation")
+    }
+
+    // 5. A bare shop link delivered as an App Clip invocation is a normal invocation, not a
+    //    Live Activity, and must be routed on its own merits.
+    do {
+      let router = InvocationRouter()
+      let target = MachineLoginViewModel(api: PrismAPI(configuration: config))
+      await router.handle(shopB, source: .appClipInvocation, model: target)
+      precondition(target.isShopOnly && target.shopCode == "store", "A shop link can be an invocation")
+    }
+
+    // 7. A Live Activity without a widgetURL ranks with an explicit open, above a replay.
+    do {
+      let router = InvocationRouter()
+      let target = MachineLoginViewModel(api: PrismAPI(configuration: config))
+      await router.handle(machineA, source: .appClipInvocation, model: target)
+      await router.handle(shopB, source: .liveActivity, model: target)
+      precondition(target.isShopOnly, "The live-activity fallback must outrank a replayed invocation")
+    }
+
+    // 6. Re-tapping the open link refreshes in place, so a settled receipt survives it.
     active = true
-    await shopOnly.handleInvocation(URL(string: "https://link-beta.neri.moe/t/store")!)
+    await shopOnly.handleResolvedInvocation(shopB)
     try await shopOnly.loadAccountSection(0)
     await shopOnly.checkout()
     precondition(shopOnly.settlement != nil)
-    await shopOnly.handleInvocation(URL(string: "https://link-beta.neri.moe/t/store")!)
+    await shopOnly.handleResolvedInvocation(shopB)
     precondition(shopOnly.settlement != nil, "A replayed link must not discard the settlement receipt")
 
     // An unusable link clears the shop and fails without touching the previous session.
-    await shopOnly.handleInvocation(URL(string: "https://link-beta.neri.moe/not-a-link")!)
+    await shopOnly.handleResolvedInvocation(URL(string: "https://link-beta.neri.moe/not-a-link")!)
     precondition(!shopOnly.isShopOnly && shopOnly.shopCode == nil && shopOnly.ticket == nil)
     for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("prism.operation.\(origin.absoluteString).\(testUser).") { UserDefaults.standard.removeObject(forKey:key) }
     print("App Clip native visit checks passed")

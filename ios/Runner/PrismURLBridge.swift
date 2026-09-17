@@ -8,9 +8,10 @@ import WidgetKit
 final class PrismURLBridge {
   static let shared = PrismURLBridge()
   private var ready = false
-  private var pendingURL: URL?
+  private var pending: (url: URL, source: InvocationRouter.Source)?
   private var nativeModel: MachineLoginViewModel?
   private var nativeController: UIViewController?
+  private let router = InvocationRouter()
   private init() {}
 
   func attach() {
@@ -18,9 +19,16 @@ final class PrismURLBridge {
     presentPending()
   }
 
+  /// Ends the current activation so a later one accepts a system-delivered activity again.
+  func sceneDidEnterBackground() {
+    router.resetForNextActivation()
+  }
+
   func handle(_ userActivity: NSUserActivity) {
     if let url = userActivity.webpageURL {
-      handle(url)
+      // A universal link the system delivered. It may equally be a replay of the link that
+      // launched the app, so it ranks below a URL the player opens just now.
+      accept(url, source: .appClipInvocation)
       return
     }
     // NSUserActivityTypeLiveActivity: a Live Activity tap with no URL of its own. Reuse the
@@ -28,16 +36,24 @@ final class PrismURLBridge {
     if userActivity.activityType == NSUserActivityTypeLiveActivity,
        let stored = UserDefaults.standard.string(forKey: StoreVisitLiveActivityManager.lastLinkKey),
        let url = URL(string: stored) {
-      handle(url)
+      accept(url, source: .liveActivity)
     }
   }
 
+  /// A URL the player opened just now, including a Live Activity `widgetURL`.
   func handle(_ url: URL) {
+    accept(url, source: .explicitOpenURL)
+  }
+
+  private func accept(_ url: URL, source: InvocationRouter.Source) {
     // Either a machine link (`/t/{shop}/{machine}`) or the shop-only link (`/t/{shop}`)
     // that a Live Activity tap produces.
     guard InvocationParser.invocation(from: url) != nil
       || InvocationParser.shopInvocation(from: url) != nil else { return }
-    pendingURL = url
+    // Ranked on arrival, not on presentation: a stronger delivery replaces the pending one,
+    // and a replayed weaker one is dropped even if it arrives later.
+    guard router.shouldAccept(source) else { return }
+    pending = (url, source)
     presentPending()
   }
 
@@ -45,12 +61,13 @@ final class PrismURLBridge {
   /// reaches here from `scene(_:willConnectTo:)`, before the window is on screen, so the
   /// presentation is deferred until a presenter actually exists.
   private func presentPending(attempt: Int = 0) {
-    guard ready, let url = pendingURL else { return }
+    guard ready, let pending else { return }
+    let url = pending.url
     // An open sheet keeps its model: steering it avoids dismissing and re-presenting, which
     // races with the window becoming visible and flashes the page.
     if let model = nativeModel, nativeController?.presentingViewController != nil {
-      pendingURL = nil
-      Task { await model.handleInvocation(url) }
+      self.pending = nil
+      Task { await model.handleResolvedInvocation(url) }
       return
     }
     guard let presenter = topPresenter() else {
@@ -73,9 +90,9 @@ final class PrismURLBridge {
       sheet.prefersGrabberVisible = false
     }
     nativeController = controller
-    pendingURL = nil
+    self.pending = nil
     presenter.present(controller, animated: true) {
-      Task { await model.handleInvocation(url) }
+      Task { await model.handleResolvedInvocation(url) }
     }
   }
 

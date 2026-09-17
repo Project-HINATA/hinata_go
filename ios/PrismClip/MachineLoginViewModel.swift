@@ -77,9 +77,6 @@ final class MachineLoginViewModel: ObservableObject {
   /// The link whose page is on screen. Re-tapping it refreshes in place instead of rebuilding,
   /// which is what used to discard a settlement receipt (a rebuild clears the active session).
   private var currentInvocation: URL?
-  private var pendingInvocation: Task<Void, Never>?
-  /// Links delivered inside the current settle window, before one is chosen.
-  private var burst: [URL] = []
 
   /// True when the page in front of the player cannot be used, so the same link should be
   /// re-run rather than merely refreshed.
@@ -93,37 +90,14 @@ final class MachineLoginViewModel: ObservableObject {
     self.api = api
   }
 
-  func handleInvocation(_ url: URL) async {
-    // One scene activation can deliver two activities: the link that was just tapped, and the
-    // machine link this scene was originally invoked with, which iOS replays. They arrive in no
-    // fixed order, so whichever landed last used to win — that is why a Live Activity tap on an
-    // already-open App Clip opened the machine page about as often as the bill. Collect the
-    // deliveries and choose deliberately once they settle.
-    pendingInvocation?.cancel()
-    burst.append(url)
-    let task = Task { [weak self] in
-      try? await Task.sleep(nanoseconds: 200_000_000)
-      guard !Task.isCancelled, let self else { return }
-      let arrivals = self.burst
-      self.burst = []
-      guard let chosen = Self.preferred(from: arrivals) else { return }
-      await self.apply(chosen)
-    }
-    pendingInvocation = task
-    await task.value
-  }
-
-  /// A shop link is never a stored invocation: it comes from a Live Activity tap or the Bot's
-  /// link, so within one activation it outranks the machine link being replayed. A batch of
-  /// machine links keeps the last one, which is how a re-scan of another machine still wins.
-  static func preferred(from arrivals: [URL]) -> URL? {
-    arrivals.last { InvocationParser.shopInvocation(from: $0) != nil } ?? arrivals.last
-  }
-
-  private func apply(_ url: URL) async {
+  /// Runs a link that has already been arbitrated by `InvocationRouter`.
+  ///
+  /// The arbitration is deliberately not done here: which of two deliveries should win depends
+  /// on where each came from, and only the system callback knows that.
+  func handleResolvedInvocation(_ url: URL) async {
     if url == currentInvocation {
       // Already showing this link: refresh rather than rebuild, so the receipt and any
-      // in-progress sheet survive a system replay of the link already on screen.
+      // in-progress sheet survive a replay of the link already on screen.
       if currentPageUnusable {
         await reloadCurrentOrigin()
       } else {
@@ -158,7 +132,7 @@ final class MachineLoginViewModel: ObservableObject {
   private func reloadCurrentOrigin() async {
     guard let url = currentInvocation else { return }
     currentInvocation = nil
-    await apply(url)
+    await handleResolvedInvocation(url)
   }
 
   /// Device-free entry point for `/t/{shopCode}`: loads the shop and the signed-in player's

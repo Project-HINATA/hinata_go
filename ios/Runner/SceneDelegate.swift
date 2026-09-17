@@ -41,4 +41,10 @@ class SceneDelegate: FlutterSceneDelegate {
     URLContexts.forEach { PrismURLBridge.shared.handle($0.url) }
     super.scene(scene, openURLContexts: URLContexts)
   }
+
+  /// Ends the activation so the next one accepts a system-delivered activity again.
+  override func sceneDidEnterBackground(_ scene: UIScene) {
+    PrismURLBridge.shared.sceneDidEnterBackground()
+    super.sceneDidEnterBackground(scene)
+  }
 }
