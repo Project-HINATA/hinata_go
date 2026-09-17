@@ -88,5 +88,10 @@
 		<string>A000000632010105</string>
 		<string>A00000000386980701</string>
 	</array>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>NSUserActivityTypeBrowsingWeb</string>
+		<string>NSUserActivityTypeLiveActivity</string>
+	</array>
 </dict>
 </plist>

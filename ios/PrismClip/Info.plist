@@ -38,5 +38,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>NSUserActivityTypeBrowsingWeb</string>
+		<string>NSUserActivityTypeLiveActivity</string>
+	</array>
 </dict>
 </plist>

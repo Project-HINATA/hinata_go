@@ -78,6 +78,8 @@ final class MachineLoginViewModel: ObservableObject {
   /// which is what used to discard a settlement receipt (a rebuild clears the active session).
   private var currentInvocation: URL?
   private var pendingInvocation: Task<Void, Never>?
+  /// Links delivered inside the current settle window, before one is chosen.
+  private var burst: [URL] = []
 
   /// True when the page in front of the player cannot be used, so the same link should be
   /// re-run rather than merely refreshed.
@@ -92,16 +94,29 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func handleInvocation(_ url: URL) async {
-    // A launch can deliver the launch link and the tapped link together, in no fixed order.
-    // Settle briefly and let the last arrival win rather than racing them.
+    // A launch delivers the link that started the app and the link that was just tapped in no
+    // fixed order, so whichever landed last used to win: that is why a Live Activity tap
+    // sometimes opened the machine page instead of the bill. Collect the burst and choose
+    // deliberately once it settles.
     pendingInvocation?.cancel()
+    burst.append(url)
     let task = Task { [weak self] in
       try? await Task.sleep(nanoseconds: 200_000_000)
       guard !Task.isCancelled, let self else { return }
-      await self.apply(url)
+      let arrivals = self.burst
+      self.burst = []
+      guard let chosen = Self.preferred(from: arrivals) else { return }
+      await self.apply(chosen)
     }
     pendingInvocation = task
     await task.value
+  }
+
+  /// A shop link is never a launch context: it comes from a Live Activity tap or the Bot's
+  /// link, so within one burst it outranks the machine link that opened the app. A burst with
+  /// only machine links keeps the last one, which is how a re-scan of a different machine wins.
+  static func preferred(from arrivals: [URL]) -> URL? {
+    arrivals.last { InvocationParser.shopInvocation(from: $0) != nil } ?? arrivals.last
   }
 
   private func apply(_ url: URL) async {
