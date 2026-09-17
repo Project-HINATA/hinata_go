@@ -123,11 +123,20 @@ final class PrismAPI {
   private func responseData(for request: URLRequest) async throws -> (Data, URLResponse) {
     do { return try await session.data(for: request) }
     catch let error as URLError {
-      let readOnly = request.httpMethod == "GET" || request.url?.path.hasSuffix("/checkout/preview") == true
-      guard readOnly, [.networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost].contains(error.code) else { throw error }
+      guard Self.isRetryable(request), [.networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost].contains(error.code) else { throw error }
       try await Task.sleep(nanoseconds: 300_000_000)
       return try await session.data(for: request)
     }
+  }
+
+  /// Reads are always safe to repeat. `machines/session/start` is included because a cold
+  /// launch regularly loses its first request while the radio is still coming up; that call
+  /// only mints a ticket, so a repeated attempt leaves an unused row that expires rather than
+  /// a charge. Billing and device actions stay out so they are never sent twice.
+  private static func isRetryable(_ request: URLRequest) -> Bool {
+    if request.httpMethod == "GET" { return true }
+    let path = request.url?.path ?? ""
+    return path.hasSuffix("/checkout/preview") || path.hasSuffix("/machines/session/start")
   }
 
   private func makeRequest(path: String, method: String = "GET") throws -> URLRequest {

@@ -251,6 +251,21 @@ enum PersistentCookieCheck {
     await shopOnly.handleInvocation(origin.appendingPathComponent("t/store/device"))
     precondition(!shopOnly.isShopOnly && shopOnly.machine != nil && shopOnly.ticket != nil)
     precondition(shopOnly.shopBillingState == "", "A device link keeps the machine name, not the billing state")
+
+    // The bug this guards: iOS re-delivers the launch link when the app becomes active. The
+    // newest link wins, so the shop tap lands on the shop page rather than the machine page.
+    await shopOnly.handleInvocation(URL(string: "https://link-beta.neri.moe/t/store")!)
+    precondition(shopOnly.isShopOnly, "The newest shop link must win over the machine page")
+
+    // Re-tapping the open link refreshes in place, so a settled receipt survives it.
+    active = true
+    await shopOnly.handleInvocation(URL(string: "https://link-beta.neri.moe/t/store")!)
+    try await shopOnly.loadAccountSection(0)
+    await shopOnly.checkout()
+    precondition(shopOnly.settlement != nil)
+    await shopOnly.handleInvocation(URL(string: "https://link-beta.neri.moe/t/store")!)
+    precondition(shopOnly.settlement != nil, "A replayed link must not discard the settlement receipt")
+
     // An unusable link clears the shop and fails without touching the previous session.
     await shopOnly.handleInvocation(URL(string: "https://link-beta.neri.moe/not-a-link")!)
     precondition(!shopOnly.isShopOnly && shopOnly.shopCode == nil && shopOnly.ticket == nil)

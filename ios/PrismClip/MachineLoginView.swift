@@ -363,11 +363,19 @@ struct ClipShopHero: View {
   }()
 
   var body: some View {
-    // One decoded image supplies both the cover and the soft color underneath.
+    // One decoded image supplies both the cover and the soft color underneath. The cover box
+    // is reserved before the bytes arrive, so the card does not start short and pop to full
+    // height once the image decodes.
     VStack(alignment: .leading, spacing: 0) {
-      if let image {
+      if url != nil {
         Color.clear.aspectRatio(1.5, contentMode: .fit)
-          .overlay { Image(uiImage: image).resizable().scaledToFill() }
+          .overlay {
+            if let image {
+              Image(uiImage: image).resizable().scaledToFill()
+            } else {
+              Rectangle().fill(Color.primary.opacity(0.04))
+            }
+          }
           .clipped()
           .accessibilityHidden(true)
       }
@@ -493,7 +501,9 @@ private struct ClipShopControls: View {
     VStack(alignment: .leading, spacing: 28) {
       if let shop = model.visit {
         if model.shopHasActiveSession {
-          ClipAccountContent(section: 0)
+          // The page already applies a 20pt horizontal margin, so the bill only adds the
+          // remainder of the sheet's 24pt inset and the two surfaces line up.
+          ClipAccountContent(section: 0, horizontalPadding: 4)
         } else if shop.membership == nil {
           // The shop player row is created by the Bot, so this page can only explain it.
           VStack(alignment: .leading, spacing: 12) {
@@ -777,6 +787,9 @@ private struct ClipAccountSheet: View {
 private struct ClipAccountContent: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   let section: Int
+  /// The toolbar sheet supplies its own inset. The shop page already carries the page's
+  /// horizontal margin, so it passes the remainder and both land on the same edge.
+  var horizontalPadding: CGFloat = 24
   @State private var redeemCode = ""
   @State private var done = false
   @State private var loadError: String?
@@ -848,11 +861,11 @@ private struct ClipAccountContent: View {
           if model.assets.isEmpty && !model.deviceBusy && loadError == nil { Text("暂无资产") }
           ForEach(model.assets) { item in PrismLabeledRow(item.assetName ?? item.assetCode, value: item.quantity.formatted()) }
         }
-      }.disabled(model.deviceBusy).padding(24).padding(.bottom, section == 0 && !done ? 100 : 0).frame(maxWidth: 480).frame(maxWidth: .infinity)
+      }.disabled(model.deviceBusy).padding(.vertical, 24).padding(.horizontal, horizontalPadding).padding(.bottom, section == 0 && !done ? 100 : 0).frame(maxWidth: 480).frame(maxWidth: .infinity)
       }
       .overlay(alignment: .bottom) {
         if section == 0, !done, model.checkoutPreview != nil {
-          checkoutButton.padding(.horizontal, 24)
+          checkoutButton.padding(.horizontal, horizontalPadding)
             .frame(maxWidth: 480).frame(maxWidth: .infinity)
         }
       }

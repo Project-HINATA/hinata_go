@@ -74,12 +74,48 @@ final class MachineLoginViewModel: ObservableObject {
   private let munet = MunetAuthenticationService()
   private let location = LocationService()
   private var invocationVersion = 0
+  /// The link whose page is on screen. Re-tapping it refreshes in place instead of rebuilding,
+  /// which is what used to discard a settlement receipt (a rebuild clears the active session).
+  private var currentInvocation: URL?
+  private var pendingInvocation: Task<Void, Never>?
+
+  /// True when the page in front of the player cannot be used, so the same link should be
+  /// re-run rather than merely refreshed.
+  private var currentPageUnusable: Bool {
+    if case .expired = state { return true }
+    if case .failed = state { return true }
+    return false
+  }
 
   init(api: PrismAPI = .shared) {
     self.api = api
   }
 
   func handleInvocation(_ url: URL) async {
+    // A launch can deliver the launch link and the tapped link together, in no fixed order.
+    // Settle briefly and let the last arrival win rather than racing them.
+    pendingInvocation?.cancel()
+    let task = Task { [weak self] in
+      try? await Task.sleep(nanoseconds: 200_000_000)
+      guard !Task.isCancelled, let self else { return }
+      await self.apply(url)
+    }
+    pendingInvocation = task
+    await task.value
+  }
+
+  private func apply(_ url: URL) async {
+    if url == currentInvocation {
+      // Already showing this link: refresh rather than rebuild, so the receipt and any
+      // in-progress sheet survive a system replay of the launch link.
+      if currentPageUnusable {
+        await reloadCurrentOrigin()
+      } else {
+        await refreshVisit(silent: true)
+      }
+      return
+    }
+    currentInvocation = url
     let api = self.api
     // A bare shop link and a machine link share the `/t/` prefix; the machine form has one
     // extra path component, so the two are unambiguous.
@@ -100,6 +136,13 @@ final class MachineLoginViewModel: ObservableObject {
     isShopOnly = false
     state = .failed(String(localized: "无效的机台地址"))
     errorMessage = nil
+  }
+
+  /// Re-runs the current link, used when the page it produced is no longer usable.
+  private func reloadCurrentOrigin() async {
+    guard let url = currentInvocation else { return }
+    currentInvocation = nil
+    await apply(url)
   }
 
   /// Device-free entry point for `/t/{shopCode}`: loads the shop and the signed-in player's

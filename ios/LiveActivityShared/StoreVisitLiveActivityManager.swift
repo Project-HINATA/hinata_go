@@ -6,6 +6,10 @@ import OSLog
 final class StoreVisitLiveActivityManager {
   static let shared = StoreVisitLiveActivityManager()
 
+  /// Written when an activity starts, read when a tap arrives without a URL of its own.
+  /// Shared with `PrismURLBridge`, which runs in the app rather than this manager.
+  static let lastLinkKey = "prism.last-link"
+
   private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "PRiSM", category: "LiveActivity")
 
   private init() {}
@@ -41,6 +45,11 @@ final class StoreVisitLiveActivityManager {
           ),
           pushType: nil
         )
+        // Remember the tap target in case the activity is delivered without one later (a
+        // non-HTTPS origin, or an activity created before this field existed).
+        if let target = StoreVisitAttributes(sessionId: session.id, shopCode: shopCode, shopName: shopName, origin: originValue).shopURL {
+          UserDefaults.standard.set(target.absoluteString, forKey: Self.lastLinkKey)
+        }
       } catch {
         // Live Activities are optional and must not affect billing.
         logger.error("Failed to start Live Activity: \(String(describing: error), privacy: .public)")
