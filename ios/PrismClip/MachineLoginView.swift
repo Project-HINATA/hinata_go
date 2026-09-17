@@ -182,6 +182,24 @@ private struct ClipSessionPage: View {
   @EnvironmentObject private var model: MachineLoginViewModel
 
   var body: some View {
+    // The receipt takes over the page on both link types, so a settled bill cannot flash back
+    // to the admission view before the player has read the result.
+    if let settlement = model.settlement {
+      VStack(spacing: 28) {
+        if let machine = model.machine {
+          ClipShopHero(name: machine.shop.name, subtitle: machine.name, heroUrl: machine.shop.heroUrl, origin: model.api.baseURL).id(machine.shop.heroUrl)
+        } else if let visit = model.visit {
+          ClipShopHero(name: visit.shop.name ?? "PRiSM", subtitle: model.shopBillingState, heroUrl: visit.shop.heroUrl, origin: model.api.baseURL).id(visit.shop.heroUrl)
+        }
+        ClipSettlementPage(settlement: settlement)
+      }
+      .frame(maxWidth: 480)
+    } else {
+      sessionBody
+    }
+  }
+
+  private var sessionBody: some View {
     VStack(spacing: 52) {
       if let machine = model.machine {
         ClipShopHero(name: machine.shop.name, subtitle: machine.name, heroUrl: machine.shop.heroUrl, origin: model.api.baseURL).id(machine.shop.heroUrl)
@@ -465,32 +483,18 @@ private extension View {
   }
 }
 
-/// What replaces the device controls on a shop link: the bill once this player has checked
-/// in, and self check-in until then.
+/// What replaces the device controls on a shop link. Admission is not offered here: entry
+/// proves physical presence, and only a scanned machine ticket does that, so a player who has
+/// not checked in is pointed at the machine QR instead.
 private struct ClipShopControls: View {
   @EnvironmentObject private var model: MachineLoginViewModel
-  @State private var consent = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
       if let shop = model.visit {
         if model.shopHasActiveSession {
           ClipAccountContent(section: 0)
-        } else if model.canSelfEnter {
-          VStack(alignment: .leading, spacing: 24) {
-            Text("自助入场").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
-            ClipEntryPricing(shop: shop)
-            Button { consent.toggle() } label: {
-              HStack(alignment: .top, spacing: 12) {
-                Image(systemName: consent ? "checkmark.square.fill" : "square").foregroundStyle(consent ? Color.blue : .secondary)
-                Text("确认开始计费，离店前请结账。关闭页面不会停止计费。").font(.subheadline).foregroundStyle(.primary).multilineTextAlignment(.leading)
-              }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            }.buttonStyle(.plain).accessibilityValue(consent ? "✓" : "—")
-            Button { Task { await model.enter() } } label: {
-              HStack { if model.deviceBusy { ProgressView() }; Text("确认入场") }.frame(maxWidth: .infinity).padding(.vertical, 12)
-            }.clipActionStyle(primary: true).disabled(!consent || model.deviceBusy)
-          }
-        } else if model.visit?.membership == nil {
+        } else if shop.membership == nil {
           // The shop player row is created by the Bot, so this page can only explain it.
           VStack(alignment: .leading, spacing: 12) {
             Text("绑定 QQ").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
@@ -502,8 +506,15 @@ private struct ClipShopControls: View {
             }
           }.frame(maxWidth: .infinity, alignment: .leading)
         } else if shop.shop.billingEnabled {
-          Text("本店未开启自助入场，请扫描机台二维码入场。")
-            .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+          VStack(alignment: .leading, spacing: 10) {
+            Text("请扫描机台上的二维码入场")
+              .font(.headline)
+            Text("入场后可以在这里查看账单并结账。")
+              .font(.subheadline).foregroundStyle(.secondary)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(20)
+          .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
         }
       } else if model.errorMessage != nil {
         Button { Task { model.clearError(); await model.refreshVisit() } } label: {
@@ -511,6 +522,56 @@ private struct ClipShopControls: View {
         }.clipActionStyle()
       } else { ProgressView().accessibilityLabel("正在加载") }
     }.disabled(model.deviceBusy || [.locating, .sending].contains(model.state))
+  }
+}
+
+/// The checkout receipt. Rendering it here is what stops a settled bill from falling straight
+/// back to the admission view before the player can read the result.
+private struct ClipSettlementPage: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  let settlement: PrismCheckoutResult
+
+  private func amount(_ value: Double) -> String {
+    value.formatted(.number.precision(.fractionLength(2)))
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 20) {
+      HStack(spacing: 10) {
+        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).font(.title2)
+        Text("结账成功").font(.title2.weight(.semibold))
+      }
+      VStack(alignment: .leading, spacing: 4) {
+        Text("本次消费").font(.subheadline).foregroundStyle(.secondary)
+        Text(amount(settlement.playerSettlement.total))
+          .font(.largeTitle.bold()).monospacedDigit()
+      }
+      if !settlement.chargeItems.isEmpty {
+        VStack(alignment: .leading, spacing: 0) {
+          ForEach(settlement.chargeItems) { item in
+            PrismLabeledRow(item.label, value: amount(item.amount))
+          }
+        }
+      }
+      if !settlement.adjustments.isEmpty {
+        VStack(alignment: .leading, spacing: 0) {
+          ForEach(settlement.adjustments) { item in
+            PrismLabeledRow(item.label, value: amount(item.amount))
+          }
+        }
+      }
+      if let wallet = settlement.wallet {
+        PrismLabeledRow(String(localized: "结账后余额"), value: amount(wallet.balanceAfter))
+      }
+      Text("计费已结束，离店前无需再做其他操作。")
+        .font(.subheadline).foregroundStyle(.secondary)
+      Button { model.clearSettlement() } label: {
+        Text("完成").frame(maxWidth: .infinity).padding(.vertical, 12)
+      }.clipActionStyle(primary: true)
+    }
+    .frame(maxWidth: 480, alignment: .leading)
+    .padding(20)
+    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
   }
 }
 

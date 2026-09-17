@@ -114,8 +114,6 @@ struct PrismShopResponse: Decodable {
     var locationEnabled: Bool? = nil
     let billingEnabled: Bool; let checkinGeo: Bool; let checkoutGeo: Bool
     let autoRegister: Bool; let botContact: String; let timeZone: String
-    /// Shop opt-in for entering without scanning a machine QR code.
-    var remoteEntryEnabled: Bool? = nil
     /// Public cover art path, served from the shop page so a shop link can show the same
     /// card as a device link.
     var heroUrl: String? = nil
@@ -168,6 +166,17 @@ struct PrismCheckout: Decodable {
   let chargeItems: [Item]; let adjustments: [Item]
   struct Settlement: Decodable { let total: Double }
   struct Item: Decodable, Identifiable { let id: String; let label: String; let amount: Double }
+}
+/// What `player/checkout/confirm` returns. The bill is gone from the server by then, so this
+/// is what the success screen renders instead of re-reading the (now empty) preview.
+struct PrismCheckoutResult: Decodable {
+  let playerSettlement: Settlement
+  let chargeItems: [Item]
+  let adjustments: [Item]
+  let wallet: Wallet?
+  struct Settlement: Decodable { let total: Double; let settledAt: String }
+  struct Item: Decodable, Identifiable { let id: String; let label: String; let amount: Double }
+  struct Wallet: Decodable { let balanceAfter: Double }
 }
 struct PrismDevices: Decodable {
   let devices: [Device]

@@ -90,7 +90,6 @@ enum PersistentCookieCheck {
     var mahjongSeats: [[String:Any]] = []
     var member = false, active = false
     var billing = true
-    var remoteEntry = true
     let heroUrl: String? = "/api/v1/shops/store/hero?v=abc123"
     var capabilities = ["power":true,"coin":true,"card":true,"door":true]
     var historyReads = 0, assetReads = 0
@@ -99,7 +98,6 @@ enum PersistentCookieCheck {
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
     var checkoutIds: [String] = []
-    var remoteEntryCalls = 0, remoteEntryIds: [String] = []
     let testUser = UUID().uuidString
     FixtureProtocol.handler = { request in
       precondition(request.url!.host == origin.host)
@@ -121,7 +119,7 @@ enum PersistentCookieCheck {
       case "/api/v1/shops/store":
         statusReads += 1
         if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
-        return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"QQ Bot","timeZone":"Asia/Tokyo","remoteEntryEnabled":remoteEntry,"heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p"] : NSNull(),"entryPricing":[]])
+        return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"QQ Bot","timeZone":"Asia/Tokyo","heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p"] : NSNull(),"entryPricing":[]])
       case "/api/v1/devices/session/state": return ok(["gate":!billing ? "ready" : member ? (active ? "ready" : "entry") : "qq", "power":"unknown","mahjong":["capacity":4,"seats":mahjongSeats]])
       case "/api/v1/shops/store/qq-binding": return ok(["code":"ABC123","expiresAt":"2999-01-01T00:00:00Z"])
       case "/api/v1/shops/store/player/me": return ok(["wallet":[],"activeSession":active ? ["id":"entry","startedAt":"2026-09-12T00:00:00.123Z"] : NSNull()])
@@ -141,15 +139,6 @@ enum PersistentCookieCheck {
         precondition(body["location"] != nil)
         active = true
         return ok(["temporaryPassword":"12345678","expiresAt":"2999-01-01T00:00:00Z"])
-      case "/api/v1/shops/store/player/remote-entry":
-        // Device-free entry must never carry a machine ticket.
-        precondition(body["ticket"] == nil, "Shop-only entry must not send a machine ticket")
-        precondition(body["consent"] as? Bool == true)
-        precondition(body["location"] != nil)
-        remoteEntryIds.append(body["operationId"] as! String)
-        remoteEntryCalls += 1
-        active = true
-        return ok(["session":["id":"entry","playerId":"p","startedAt":"2026-09-12T00:00:00.123Z","status":"active"]])
       case "/api/v1/machines/login": return ok(["ok":true,"coin":["status":"unknown"]])
       case "/api/v1/shops/store/player/checkout/preview":
         if failBillRead { failBillRead = false; throw URLError(.networkConnectionLost) }
@@ -158,7 +147,14 @@ enum PersistentCookieCheck {
         checkoutIds.append(body["operationId"] as! String); checkoutCalls += 1
         if checkoutCalls == 1 { return (400,["error":["code":"INSUFFICIENT_BALANCE","message":"余额不足"]]) }
         if checkoutCalls == 2 { throw URLError(.networkConnectionLost) }
-        active = false; return ok([:])
+        active = false
+        // Mirrors the real confirm payload; the success screen renders from this.
+        return ok([
+          "playerSettlement":["total":12, "settledAt":"2026-09-12T01:00:00Z"],
+          "chargeItems":[["id":"c1","label":"入场费","amount":12]],
+          "adjustments":[],
+          "wallet":["balanceBefore":100,"balanceAfter":88],
+        ])
       default: preconditionFailure("Unexpected API path: \(path)")
       }
     }
@@ -216,50 +212,40 @@ enum PersistentCookieCheck {
     capabilities = [:]
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.state == .ready && model.machine?.empty == true && !model.canUseCards)
-    // A bare shop link opens the device-free surface: no machine, no ticket, no device calls.
+    // A bare shop link opens the settle-only surface: no machine, no ticket, no admission.
     billing = true; member = true; active = false
     let shopOnly = MachineLoginViewModel(api: PrismAPI(configuration: config))
     await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
     precondition(shopOnly.isShopOnly && shopOnly.ticket == nil && shopOnly.machine == nil)
-    precondition(shopOnly.state == .ready && shopOnly.visit?.shop.remoteEntryEnabled == true)
-    precondition(shopOnly.summary?.activeSession == nil)
+    precondition(shopOnly.state == .ready && shopOnly.summary?.activeSession == nil)
     // The card's subtitle carries the billing state where a device card shows the machine name.
     precondition(shopOnly.shopBillingState == "未入场")
-    precondition(shopOnly.canUseShopSurface && shopOnly.canSelfEnter && !shopOnly.shopHasActiveSession)
-    // The deep link supplies the origin, so the Live Activity records it for the tap target.
-    // (The manager is a singleton shared with the machine checks above, so this asserts the
-    // recorded origin rather than an initial nil.)
-    await shopOnly.enter()
-    precondition(remoteEntryCalls == 1 && remoteEntryIds.first != nil)
-    precondition(shopOnly.summary?.activeSession != nil)
-    // Once checked in, the page shows the bill instead of self check-in.
-    precondition(shopOnly.shopHasActiveSession && !shopOnly.canSelfEnter)
-    precondition(shopOnly.shopBillingState.hasPrefix("计费中"))
+    precondition(shopOnly.canUseShopSurface && !shopOnly.shopHasActiveSession)
+    // The shop card needs the cover the shop page now returns, the same as a device card.
+    precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
+    // A player who has not verified with the Bot gets the binding explanation.
+    member = false
+    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
+    precondition(shopOnly.visit?.membership == nil && !shopOnly.canUseShopSurface)
+    member = true
+    // Admission comes from the machine flow, so the shop link reads the bill it opened.
+    active = true
+    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
+    precondition(shopOnly.shopHasActiveSession && shopOnly.shopBillingState == "计费中")
     precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
     precondition(StoreVisitLiveActivityManager.shared.origin?.absoluteString == "https://link-beta.neri.moe")
-    precondition(LocationService.calls == 5)
     // Loading the bill section is what the embedded bill view does on appear.
     try await shopOnly.loadAccountSection(0)
     precondition(shopOnly.checkoutPreview != nil)
-    // Re-entry while a session runs keeps one operation id per key and stays idempotent.
-    await shopOnly.enter()
-    precondition(remoteEntryCalls == 2 && remoteEntryIds[0] != remoteEntryIds[1])
-    // A player who has not verified with the Bot gets the binding explanation, not entry.
-    member = false
-    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
-    precondition(shopOnly.visit?.membership == nil && !shopOnly.canUseShopSurface && !shopOnly.canSelfEnter)
-    member = true
-    // The shop opt-in off means the QR code stays the only way in.
-    active = false
-    remoteEntry = false
-    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
-    precondition(shopOnly.canUseShopSurface && !shopOnly.canSelfEnter, "Opt-in off must hide self check-in")
-    remoteEntry = true
-    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
-    precondition(shopOnly.canSelfEnter)
-    // The shop card needs the cover the shop page now returns, the same as a device card.
-    precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
-    active = true
+    // Settling keeps a receipt on screen; without it the page snapped back to admission.
+    await shopOnly.checkout()
+    precondition(shopOnly.settlement?.playerSettlement.total == 12)
+    precondition(shopOnly.settlement?.wallet?.balanceAfter == 88)
+    precondition(shopOnly.settlement?.chargeItems.first?.label == "入场费")
+    precondition(shopOnly.summary?.activeSession == nil, "The session is settled server-side")
+    precondition(shopOnly.settlement != nil, "The receipt must outlive the refresh that clears the session")
+    shopOnly.clearSettlement()
+    precondition(shopOnly.settlement == nil && shopOnly.shopBillingState == "未入场")
 
     // A machine link afterwards must leave shop-only mode behind.
     await shopOnly.handleInvocation(origin.appendingPathComponent("t/store/device"))

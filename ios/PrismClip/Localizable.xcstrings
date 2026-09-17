@@ -3585,19 +3585,121 @@
         }
       }
     },
-    "本店未开启自助入场，请扫描机台二维码入场。": {
+    "请扫描机台上的二维码入场": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This shop has not enabled self check-in. Scan the machine QR code to check in."
+            "value": "Scan the QR code on the machine to check in"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "本店未开启自助入场，请扫描机台二维码入场。"
+            "value": "请扫描机台上的二维码入场"
+          }
+        }
+      }
+    },
+    "入场后可以在这里查看账单并结账。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once checked in, you can view and settle your bill here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入场后可以在这里查看账单并结账。"
+          }
+        }
+      }
+    },
+    "结账成功": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked out"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结账成功"
+          }
+        }
+      }
+    },
+    "本次消费": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This visit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本次消费"
+          }
+        }
+      }
+    },
+    "结账后余额": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance after checkout"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结账后余额"
+          }
+        }
+      }
+    },
+    "计费已结束，离店前无需再做其他操作。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billing has ended. Nothing else is needed before you leave."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计费已结束，离店前无需再做其他操作。"
+          }
+        }
+      }
+    },
+    "完成": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
           }
         }
       }
