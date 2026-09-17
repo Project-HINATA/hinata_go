@@ -54,6 +54,22 @@ final class MachineLoginViewModel: ObservableObject {
     return deviceState == nil || deviceState?.gate != "ready" || deviceState?.power == "off" || machine?.has("door") == true || machine?.has("mahjong") == true
   }
   var showVisit: Bool { visit?.shop.billingEnabled == true }
+  /// Shop-link subtitle: the machine name on a device link, the billing state here.
+  var shopBillingState: String {
+    guard isShopOnly else { return "" }
+    if let active = summary?.activeSession {
+      let since = prismParsedDate(active.startedAt)?.formatted(date: .omitted, time: .shortened) ?? active.startedAt
+      return String(localized: "计费中") + " · " + since
+    }
+    if visit?.shop.billingEnabled != true { return String(localized: "本店未启用计费") }
+    return String(localized: "未入场")
+  }
+  /// A signed-in shop player who may use the bill and self check-in.
+  var canUseShopSurface: Bool { isShopOnly && visit?.membership != nil && visit?.shop.billingEnabled == true }
+  /// The bill is what the device controls turn into once this player has checked in.
+  var shopHasActiveSession: Bool { summary?.activeSession != nil }
+  /// Self check-in needs the shop opt-in, a bound player and no session already running.
+  var canSelfEnter: Bool { canUseShopSurface && visit?.shop.remoteEntryEnabled == true && !shopHasActiveSession }
 
   private(set) var api: PrismAPI
   private let passkey = PasskeyAuthenticationService()

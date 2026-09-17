@@ -10,6 +10,10 @@ The clients use `/api/v1` and `{data}` responses, with structured error codes. i
 
 A second link shape, `/t/:shopCode` with no device segment, opens the device-free shop surface instead of a machine session. `InvocationParser` treats the two shapes as unambiguous because the machine form has one extra path component; an invalid link clears the shop and fails as before. Shop mode loads only the shop and the signed-in player’s own state — no machine session, no ticket — and offers 自助入场 when the shop enables `remoteEntryEnabled`, otherwise the machine QR remains the only way in. Native entry still requires explicit consent and, when location policy is on, an on-site fix.
 
+The shop link reuses the device link's card rather than inventing a second layout: the same cover art and shop name, with the billing state (计费中 with the start time, 未入场, or 本店未启用计费) on the line that shows the machine name on a device link. `GET /api/v1/shops/:shopCode` therefore returns `shop.heroUrl` alongside the settings, and the shop card hides the cover when the shop has none, exactly as the machine card does.
+
+What sits under the card depends on the player's state. Before check-in the area where a device link shows device controls shows 自助入场 with the entry pricing and the same consent step the device flow uses. Once a session is active it shows the bill in place of those controls, using the same account content as the toolbar sheet. Because the bill already occupies the page, the toolbar menu omits its 账单 entry on a shop link and keeps 兑换, 记录, 钱包 and 退出登录; the device link's menu is unchanged.
+
 ## Live Activity and Dynamic Island
 
 The lock-screen banner and Dynamic Island are a native-minimal presentation: a green/grey status dot, the shop name, a rounded monospaced timer, and a 轻点查看账单 hint. The activity no longer pins a black background, so it follows the system material in both light and dark. Its strings ship in a String Catalog (`ios/LiveActivityShared/Localizable.xcstrings`, en + zh-Hans) built into both widget extensions.

@@ -121,7 +121,13 @@ struct MachineLoginView: View {
   private func accountMenu(_ user: PrismUser) -> some View {
     Menu {
       if model.visit?.shop.billingEnabled == true {
-        Button("账单") { section = 0 }; Button("兑换") { section = 1 }; Button("记录") { section = 2 }; Button("钱包") { section = 3 }
+        // On a shop link the bill already occupies the page, so the menu omits it there;
+        // redeem, history and wallet keep their entries on both surfaces.
+        let sections = model.isShopOnly ? [1, 2, 3] : [0, 1, 2, 3]
+        let labels: [LocalizedStringKey] = ["账单", "兑换", "记录", "钱包"]
+        ForEach(sections, id: \.self) { index in
+          Button(labels[index]) { section = index }
+        }
       }
       Button("退出登录") { Task { await model.logout() } }
     } label: {
@@ -178,32 +184,21 @@ private struct ClipSessionPage: View {
   var body: some View {
     VStack(spacing: 52) {
       if let machine = model.machine {
-        ClipShopHero(shop: machine.shop, machineName: machine.name, origin: model.api.baseURL).id(machine.shop.heroUrl)
+        ClipShopHero(name: machine.shop.name, subtitle: machine.name, heroUrl: machine.shop.heroUrl, origin: model.api.baseURL).id(machine.shop.heroUrl)
 
       } else if model.isShopOnly, let visit = model.visit {
-        // Shop-only deep link: there is no machine, so identify the shop by name and offer
-        // the device-free entry this page exists for. The hero art lives on the machine's
-        // shop payload, which this mode never fetches.
-        VStack(spacing: 20) {
-          Text(visit.shop.name ?? "PRiSM")
-            .font(.title2.bold())
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-          if model.state == .ready, model.summary?.activeSession == nil,
-             visit.shop.billingEnabled, visit.membership != nil, visit.shop.remoteEntryEnabled == true {
-            Button { Task { await model.enter() } } label: {
-              HStack(spacing: 10) { if model.deviceBusy { ProgressView() }; Text("自助入场") }
-                .frame(maxWidth: .infinity).padding(.vertical, 12)
-            }
-            .clipActionStyle(primary: true)
-            .disabled(model.deviceBusy)
-          }
-        }
+        // The shop link shows the same card as a device link; the line that carries the
+        // machine name there carries the billing state here.
+        ClipShopHero(name: visit.shop.name ?? "PRiSM", subtitle: model.shopBillingState, heroUrl: visit.shop.heroUrl, origin: model.api.baseURL).id(visit.shop.heroUrl)
       }
 
       VStack(spacing: 28) {
-        if model.showDeviceControls, [.ready, .locating, .sending, .success].contains(model.state) { ClipDeviceControls() }
-        if model.canUseCards && [.ready, .locating, .sending, .success].contains(model.state) {
+        if model.isShopOnly {
+          if [.ready, .locating, .sending, .success].contains(model.state) { ClipShopControls() }
+        } else if model.showDeviceControls, [.ready, .locating, .sending, .success].contains(model.state) {
+          ClipDeviceControls()
+        }
+        if !model.isShopOnly, model.canUseCards, [.ready, .locating, .sending, .success].contains(model.state) {
           Text("选择卡片").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.bottom, 2)
         }
 
@@ -225,7 +220,7 @@ private struct ClipSessionPage: View {
           }
           .disabled(model.authenticating != nil)
         case .ready, .locating, .sending, .success:
-          if model.canUseCards { cardsView.disabled(model.deviceBusy) }
+          if !model.isShopOnly, model.canUseCards { cardsView.disabled(model.deviceBusy) }
           if model.state == .ready, model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
             Button { Task { await model.device("coin") } } label: {
               HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
@@ -326,13 +321,16 @@ private struct ClipSessionPage: View {
 }
 
 struct ClipShopHero: View {
-  let shop: Shop
-  let machineName: String
+  let name: String
+  /// The line under the shop name: the machine name for a device link, the billing state
+  /// for the shop link.
+  let subtitle: String
+  var heroUrl: String? = nil
   var origin: URL = PrismAPI.defaultOrigin
   @State private var image: UIImage?
 
   private var url: URL? {
-    shop.heroUrl.flatMap { URL(string: $0, relativeTo: origin)?.absoluteURL }
+    heroUrl.flatMap { URL(string: $0, relativeTo: origin)?.absoluteURL }
   }
 
   // A separate public-image cache; authentication and machine sessions stay untouched.
@@ -356,11 +354,11 @@ struct ClipShopHero: View {
           .accessibilityHidden(true)
       }
       VStack(alignment: .leading, spacing: 8) {
-        Text(shop.name)
+        Text(name)
           .font(.title.weight(.bold))
           .fixedSize(horizontal: false, vertical: true)
           .accessibilityAddTraits(.isHeader)
-        Text(machineName).font(.title3.weight(.medium)).foregroundStyle(.secondary)
+        Text(subtitle).font(.title3.weight(.medium)).foregroundStyle(.secondary)
       }
       .padding(.horizontal, 24).padding(.vertical, 22)
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -464,6 +462,55 @@ private struct ClipActionStyle: ButtonStyle {
 private extension View {
   func clipActionStyle(primary: Bool = false) -> some View {
     modifier(ClipActionModifier(primary: primary))
+  }
+}
+
+/// What replaces the device controls on a shop link: the bill once this player has checked
+/// in, and self check-in until then.
+private struct ClipShopControls: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  @State private var consent = false
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 28) {
+      if let shop = model.visit {
+        if model.shopHasActiveSession {
+          ClipAccountContent(section: 0)
+        } else if model.canSelfEnter {
+          VStack(alignment: .leading, spacing: 24) {
+            Text("自助入场").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
+            ClipEntryPricing(shop: shop)
+            Button { consent.toggle() } label: {
+              HStack(alignment: .top, spacing: 12) {
+                Image(systemName: consent ? "checkmark.square.fill" : "square").foregroundStyle(consent ? Color.blue : .secondary)
+                Text("确认开始计费，离店前请结账。关闭页面不会停止计费。").font(.subheadline).foregroundStyle(.primary).multilineTextAlignment(.leading)
+              }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            }.buttonStyle(.plain).accessibilityValue(consent ? "✓" : "—")
+            Button { Task { await model.enter() } } label: {
+              HStack { if model.deviceBusy { ProgressView() }; Text("确认入场") }.frame(maxWidth: .infinity).padding(.vertical, 12)
+            }.clipActionStyle(primary: true).disabled(!consent || model.deviceBusy)
+          }
+        } else if model.visit?.membership == nil {
+          // The shop player row is created by the Bot, so this page can only explain it.
+          VStack(alignment: .leading, spacing: 12) {
+            Text("绑定 QQ").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
+            Text("本店的玩家档案与 QQ 绑定，请在店铺机器人中完成验证后再回到这里。")
+              .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+            if !shop.shop.botContact.isEmpty {
+              Text(String(localized: "店铺联系方式") + " " + shop.shop.botContact)
+                .font(.subheadline).textSelection(.enabled)
+            }
+          }.frame(maxWidth: .infinity, alignment: .leading)
+        } else if shop.shop.billingEnabled {
+          Text("本店未开启自助入场，请扫描机台二维码入场。")
+            .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+        }
+      } else if model.errorMessage != nil {
+        Button { Task { model.clearError(); await model.refreshVisit() } } label: {
+          Text("重试").frame(maxWidth: .infinity).padding(.vertical, 12)
+        }.clipActionStyle()
+      } else { ProgressView().accessibilityLabel("正在加载") }
+    }.disabled(model.deviceBusy || [.locating, .sending].contains(model.state))
   }
 }
 
@@ -634,10 +681,6 @@ private struct ClipAccountSheet: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   @Environment(\.dismiss) private var dismiss
   let section: Int
-  @State private var redeemCode = ""
-  @State private var done = false
-  @State private var loadError: String?
-  @State private var attempt = 0
   private var title: LocalizedStringKey { ["账单", "兑换", "记录", "钱包"][section] }
   @ViewBuilder private var closeButton: some View {
     if #available(iOS 26.0, *) {
@@ -660,6 +703,27 @@ private struct ClipAccountSheet: View {
       NavigationView { content }.navigationViewStyle(.stack)
     }
   }
+  private var content: some View {
+    ClipAccountContent(section: section)
+      .navigationTitle(title)
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          closeButton
+        }
+      }
+  }
+}
+
+/// The account sections' body. Shared by the toolbar sheet and the shop page so the bill has
+/// one implementation; the shop page embeds section 0 without the sheet's navigation chrome.
+private struct ClipAccountContent: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  let section: Int
+  @State private var redeemCode = ""
+  @State private var done = false
+  @State private var loadError: String?
+  @State private var attempt = 0
   @ViewBuilder private func billTotals(_ timeline: PrismBillTimeline) -> some View {
     ForEach(Array(timeline.totals.enumerated()), id: \.offset) { _, item in
       (Text(item.name + " ").foregroundColor(.secondary) + Text(item.amount.formatted(.number.precision(.fractionLength(2)))).foregroundColor(item.amount < 0 ? .green : .secondary)).font(.caption)
@@ -672,7 +736,7 @@ private struct ClipAccountSheet: View {
     .clipActionStyle(primary: true)
     .disabled(model.deviceBusy)
   }
-  private var content: some View {
+  var body: some View {
     VStack(spacing: 0) {
       ScrollView {
       VStack(alignment: .leading, spacing: 20) {
@@ -734,13 +798,6 @@ private struct ClipAccountSheet: View {
           checkoutButton.padding(.horizontal, 24)
             .frame(maxWidth: 480).frame(maxWidth: .infinity)
         }
-      }
-    }
-    .navigationTitle(title)
-    .navigationBarTitleDisplayMode(.inline)
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        closeButton
       }
     }
     .task(id: attempt) {

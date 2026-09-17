@@ -116,6 +116,9 @@ struct PrismShopResponse: Decodable {
     let autoRegister: Bool; let botContact: String; let timeZone: String
     /// Shop opt-in for entering without scanning a machine QR code.
     var remoteEntryEnabled: Bool? = nil
+    /// Public cover art path, served from the shop page so a shop link can show the same
+    /// card as a device link.
+    var heroUrl: String? = nil
   }
   struct Pricing: Decodable, Identifiable {
     let id: String; let name: String; let kind: String; let provider: Provider

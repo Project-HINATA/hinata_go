@@ -3550,6 +3550,57 @@
           }
         }
       }
+    },
+    "本店未启用计费": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This shop has not enabled billing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本店未启用计费"
+          }
+        }
+      }
+    },
+    "店铺联系方式": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shop contact"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "店铺联系方式"
+          }
+        }
+      }
+    },
+    "本店未开启自助入场，请扫描机台二维码入场。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This shop has not enabled self check-in. Scan the machine QR code to check in."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本店未开启自助入场，请扫描机台二维码入场。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
