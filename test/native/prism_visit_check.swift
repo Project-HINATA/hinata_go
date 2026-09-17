@@ -6,8 +6,10 @@ import Foundation
 @MainActor final class StoreVisitLiveActivityManager {
   static let shared = StoreVisitLiveActivityManager()
   private(set) var session: PrismSummary.Session?
-  func reconcile(session: PrismSummary.Session?, shopCode: String, shopName: String) async {
+  private(set) var origin: URL?
+  func reconcile(session: PrismSummary.Session?, shopCode: String, shopName: String, origin: URL?) async {
     self.session = session
+    self.origin = origin
   }
 }
 
@@ -74,6 +76,17 @@ enum PersistentCookieCheck {
     precondition(InvocationParser.invocation(from: URL(string: "https://example.com:8443/t/store/device")!)?.origin.absoluteString == "https://example.com:8443")
     precondition(InvocationParser.invocation(from: URL(string: "http://example.com/t/store/device")!) == nil)
     precondition(InvocationParser.invocation(from: URL(string: "https://user@example.com/t/store/device")!) == nil)
+    // A bare shop code is the device-free shop surface, and must not be read as a machine.
+    let shopLink = InvocationParser.shopInvocation(from: URL(string: "https://link.neri.moe/t/store")!)
+    precondition(shopLink?.shopCode == "store")
+    precondition(shopLink?.origin.absoluteString == "https://link.neri.moe")
+    precondition(InvocationParser.invocation(from: URL(string: "https://link.neri.moe/t/store")!) == nil)
+    precondition(InvocationParser.shopInvocation(from: URL(string: "https://link.neri.moe/t/store/device")!) == nil)
+    precondition(InvocationParser.shopInvocation(from: URL(string: "http://link.neri.moe/t/store")!) == nil)
+    precondition(InvocationParser.shopInvocation(from: URL(string: "https://link.neri.moe/t/store/")!)?.shopCode == "store")
+    precondition(InvocationParser.shopInvocation(from: URL(string: "https://link.neri.moe/t")!) == nil)
+    precondition(InvocationParser.shopInvocation(from: URL(string: "https://link.neri.moe/t/bad!code")!) == nil)
+    precondition(InvocationParser.shopInvocation(from: URL(string: "https://user@link.neri.moe/t/store")!) == nil)
     var mahjongSeats: [[String:Any]] = []
     var member = false, active = false
     var billing = true
@@ -84,6 +97,7 @@ enum PersistentCookieCheck {
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
     var checkoutIds: [String] = []
+    var remoteEntryCalls = 0, remoteEntryIds: [String] = []
     let testUser = UUID().uuidString
     FixtureProtocol.handler = { request in
       precondition(request.url!.host == origin.host)
@@ -105,7 +119,7 @@ enum PersistentCookieCheck {
       case "/api/v1/shops/store":
         statusReads += 1
         if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
-        return ok(["shop":["billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"QQ Bot","timeZone":"Asia/Tokyo"],"membership":member ? ["playerId":"p"] : NSNull(),"entryPricing":[]])
+        return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"QQ Bot","timeZone":"Asia/Tokyo","remoteEntryEnabled":true],"membership":member ? ["playerId":"p"] : NSNull(),"entryPricing":[]])
       case "/api/v1/devices/session/state": return ok(["gate":!billing ? "ready" : member ? (active ? "ready" : "entry") : "qq", "power":"unknown","mahjong":["capacity":4,"seats":mahjongSeats]])
       case "/api/v1/shops/store/qq-binding": return ok(["code":"ABC123","expiresAt":"2999-01-01T00:00:00Z"])
       case "/api/v1/shops/store/player/me": return ok(["wallet":[],"activeSession":active ? ["id":"entry","startedAt":"2026-09-12T00:00:00.123Z"] : NSNull()])
@@ -125,6 +139,15 @@ enum PersistentCookieCheck {
         precondition(body["location"] != nil)
         active = true
         return ok(["temporaryPassword":"12345678","expiresAt":"2999-01-01T00:00:00Z"])
+      case "/api/v1/shops/store/player/remote-entry":
+        // Device-free entry must never carry a machine ticket.
+        precondition(body["ticket"] == nil, "Shop-only entry must not send a machine ticket")
+        precondition(body["consent"] as? Bool == true)
+        precondition(body["location"] != nil)
+        remoteEntryIds.append(body["operationId"] as! String)
+        remoteEntryCalls += 1
+        active = true
+        return ok(["session":["id":"entry","playerId":"p","startedAt":"2026-09-12T00:00:00.123Z","status":"active"]])
       case "/api/v1/machines/login": return ok(["ok":true,"coin":["status":"unknown"]])
       case "/api/v1/shops/store/player/checkout/preview":
         if failBillRead { failBillRead = false; throw URLError(.networkConnectionLost) }
@@ -191,6 +214,31 @@ enum PersistentCookieCheck {
     capabilities = [:]
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.state == .ready && model.machine?.empty == true && !model.canUseCards)
+    // A bare shop link opens the device-free surface: no machine, no ticket, no device calls.
+    billing = true; member = true; active = false
+    let shopOnly = MachineLoginViewModel(api: PrismAPI(configuration: config))
+    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store"))
+    precondition(shopOnly.isShopOnly && shopOnly.ticket == nil && shopOnly.machine == nil)
+    precondition(shopOnly.state == .ready && shopOnly.visit?.shop.remoteEntryEnabled == true)
+    precondition(shopOnly.summary?.activeSession == nil)
+    // The deep link supplies the origin, so the Live Activity records it for the tap target.
+    // (The manager is a singleton shared with the machine checks above, so this asserts the
+    // recorded origin rather than an initial nil.)
+    await shopOnly.enter()
+    precondition(remoteEntryCalls == 1 && remoteEntryIds.first != nil)
+    precondition(shopOnly.summary?.activeSession != nil)
+    precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
+    precondition(StoreVisitLiveActivityManager.shared.origin?.absoluteString == "https://link-beta.neri.moe")
+    precondition(LocationService.calls == 5)
+    // Re-entry while a session runs keeps one operation id per key and stays idempotent.
+    await shopOnly.enter()
+    precondition(remoteEntryCalls == 2 && remoteEntryIds[0] != remoteEntryIds[1])
+    // A machine link afterwards must leave shop-only mode behind.
+    await shopOnly.handleInvocation(origin.appendingPathComponent("t/store/device"))
+    precondition(!shopOnly.isShopOnly && shopOnly.machine != nil && shopOnly.ticket != nil)
+    // An unusable link clears the shop and fails without touching the previous session.
+    await shopOnly.handleInvocation(URL(string: "https://link-beta.neri.moe/not-a-link")!)
+    precondition(!shopOnly.isShopOnly && shopOnly.shopCode == nil && shopOnly.ticket == nil)
     for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("prism.operation.\(origin.absoluteString).\(testUser).") { UserDefaults.standard.removeObject(forKey:key) }
     print("App Clip native visit checks passed")
   }

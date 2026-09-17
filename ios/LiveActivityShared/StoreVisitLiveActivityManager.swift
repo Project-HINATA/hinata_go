@@ -10,8 +10,11 @@ final class StoreVisitLiveActivityManager {
 
   private init() {}
 
-  func reconcile(session: PrismSummary.Session?, shopCode: String, shopName: String) async {
+  /// `origin` is the HTTPS deployment origin; callers pass nil for non-HTTPS debug origins,
+  /// which leaves the activity without a tap target instead of pointing it at a bad host.
+  func reconcile(session: PrismSummary.Session?, shopCode: String, shopName: String, origin: URL?) async {
     let activities = Activity<StoreVisitAttributes>.activities
+    let originValue = origin?.absoluteString
     if let session {
       if activities.contains(where: { $0.attributes.sessionId == session.id }) {
         return
@@ -31,7 +34,7 @@ final class StoreVisitLiveActivityManager {
       }
       do {
         _ = try Activity.request(
-          attributes: StoreVisitAttributes(sessionId: session.id, shopCode: shopCode, shopName: shopName),
+          attributes: StoreVisitAttributes(sessionId: session.id, shopCode: shopCode, shopName: shopName, origin: originValue),
           content: ActivityContent(
             state: .init(phase: "active", startedAtUnix: startedAt.timeIntervalSince1970, endedAtUnix: nil),
             staleDate: nil

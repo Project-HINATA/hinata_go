@@ -46,6 +46,9 @@ final class MachineLoginViewModel: ObservableObject {
   private var sceneActive = true
   private var visitRevision = 0
   var canUseCards: Bool { machine?.has("card") == true && (machine?.capabilities == nil || deviceState?.gate == "ready") && deviceState?.power != "off" }
+  /// True when this session came from a bare `/t/{shopCode}` link: the device-free shop
+  /// surface (bill, redeem, history, wallet, self check-in) with no machine behind it.
+  @Published private(set) var isShopOnly = false
   var showDeviceControls: Bool {
     guard machine?.capabilities != nil, machine?.empty != true else { return false }
     return deviceState == nil || deviceState?.gate != "ready" || deviceState?.power == "off" || machine?.has("door") == true || machine?.has("mahjong") == true
@@ -64,17 +67,61 @@ final class MachineLoginViewModel: ObservableObject {
 
   func handleInvocation(_ url: URL) async {
     let api = self.api
-    guard let invocation = InvocationParser.invocation(from: url) else {
-      invocationVersion += 1
-      shopCode = nil
-      publicId = nil
-      ticket = nil
-      state = .failed(String(localized: "无效的机台地址"))
-      errorMessage = nil
+    // A bare shop link and a machine link share the `/t/` prefix; the machine form has one
+    // extra path component, so the two are unambiguous.
+    if let invocation = InvocationParser.invocation(from: url) {
+      self.api = api.atOrigin(invocation.origin)
+      await start(shopCode: invocation.shopCode, publicId: invocation.machinePublicId)
       return
     }
-    self.api = api.atOrigin(invocation.origin)
-    await start(shopCode: invocation.shopCode, publicId: invocation.machinePublicId)
+    if let shop = InvocationParser.shopInvocation(from: url) {
+      self.api = api.atOrigin(shop.origin)
+      await startShop(shopCode: shop.shopCode)
+      return
+    }
+    invocationVersion += 1
+    shopCode = nil
+    publicId = nil
+    ticket = nil
+    isShopOnly = false
+    state = .failed(String(localized: "无效的机台地址"))
+    errorMessage = nil
+  }
+
+  /// Device-free entry point for `/t/{shopCode}`: loads the shop and the signed-in player's
+  /// state without ever asking for a machine or a ticket.
+  func startShop(shopCode: String) async {
+    let api = self.api
+    invocationVersion += 1
+    polling?.cancel()
+    assets = []; history = []
+    visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; notice = nil; user = nil; waitingPower = false
+    let version = invocationVersion
+    self.shopCode = shopCode
+    self.publicId = nil
+    machine = nil
+    ticket = nil
+    cards = []
+    activeCardId = nil
+    authenticating = nil
+    errorMessage = nil
+    isShopOnly = true
+    state = .loadingCards
+    do {
+      let me = try await api.me()
+      guard version == invocationVersion else { return }
+      user = me.user
+      guard me.user != nil else {
+        state = .unauthenticated
+        return
+      }
+      await refreshVisit()
+      guard version == invocationVersion else { return }
+      if state == .loadingCards { state = .ready }
+    } catch {
+      guard version == invocationVersion else { return }
+      fail(error)
+    }
   }
 
   func start(shopCode: String, publicId: String) async {
@@ -87,6 +134,8 @@ final class MachineLoginViewModel: ObservableObject {
     self.shopCode = shopCode
     self.publicId = publicId
     state = .loadingMachine
+    // Opening a machine link after a shop-only link must leave shop-only mode behind.
+    isShopOnly = false
     machine = nil
     cards = []
     activeCardId = nil
@@ -258,7 +307,8 @@ final class MachineLoginViewModel: ObservableObject {
 
   func refreshVisit(silent: Bool = false) async {
     let api = self.api
-    guard sceneActive, machine?.capabilities != nil, state != .unauthenticated else { return }
+    // Shop-only mode has no machine, so the machine gate cannot apply there.
+    guard sceneActive, machine?.capabilities != nil || isShopOnly, state != .unauthenticated else { return }
     visitRevision += 1
     polling?.cancel()
     let revision = visitRevision
@@ -288,7 +338,9 @@ final class MachineLoginViewModel: ObservableObject {
         await StoreVisitLiveActivityManager.shared.reconcile(
           session: currentSummary?.activeSession,
           shopCode: shopCode,
-          shopName: shop.shop.name ?? machine?.shop.name ?? "PRiSM"
+          shopName: shop.shop.name ?? machine?.shop.name ?? "PRiSM",
+          // Only HTTPS origins can carry a universal link; debug loopback origins are skipped.
+          origin: api.baseURL.scheme?.lowercased() == "https" ? api.baseURL : nil
         )
       }
       if currentDevice?.power != "off" { waitingPower = false }
@@ -391,9 +443,19 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
   func enter() async {
-    guard let ticket else { expire(); return }
+    let requiresLocation = (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true
+    // Shop-only mode has no ticket: the server accepts a ticket-free entry when the shop
+    // opts in, still requiring consent and (when configured) an on-site fix.
+    guard let ticket else {
+      guard isShopOnly else { expire(); return }
+      await perform {
+        _ = try await operation("entry.remote", path: shopPath("player/remote-entry"), body: ["consent": true], requiresLocation: requiresLocation)
+        await refreshVisit()
+      }
+      return
+    }
     await perform {
-      _ = try await operation("entry.\(ticket)", path: shopPath("player/session/start"), body: ["ticket": ticket, "consent": true], requiresLocation: (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true)
+      _ = try await operation("entry.\(ticket)", path: shopPath("player/session/start"), body: ["ticket": ticket, "consent": true], requiresLocation: requiresLocation)
       await refreshVisit()
     }
   }

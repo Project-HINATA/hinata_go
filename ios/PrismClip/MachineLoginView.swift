@@ -180,6 +180,25 @@ private struct ClipSessionPage: View {
       if let machine = model.machine {
         ClipShopHero(shop: machine.shop, machineName: machine.name, origin: model.api.baseURL).id(machine.shop.heroUrl)
 
+      } else if model.isShopOnly, let visit = model.visit {
+        // Shop-only deep link: there is no machine, so identify the shop by name and offer
+        // the device-free entry this page exists for. The hero art lives on the machine's
+        // shop payload, which this mode never fetches.
+        VStack(spacing: 20) {
+          Text(visit.shop.name ?? "PRiSM")
+            .font(.title2.bold())
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+          if model.state == .ready, model.summary?.activeSession == nil,
+             visit.shop.billingEnabled, visit.membership != nil, visit.shop.remoteEntryEnabled == true {
+            Button { Task { await model.enter() } } label: {
+              HStack(spacing: 10) { if model.deviceBusy { ProgressView() }; Text("自助入场") }
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+            }
+            .clipActionStyle(primary: true)
+            .disabled(model.deviceBusy)
+          }
+        }
       }
 
       VStack(spacing: 28) {

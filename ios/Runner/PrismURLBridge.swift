@@ -22,7 +22,10 @@ final class PrismURLBridge {
   }
 
   func handle(_ url: URL) {
-    guard InvocationParser.invocation(from: url) != nil else { return }
+    // Either a machine link (`/t/{shop}/{machine}`) or the shop-only link (`/t/{shop}`)
+    // that a Live Activity tap produces.
+    guard InvocationParser.invocation(from: url) != nil
+      || InvocationParser.shopInvocation(from: url) != nil else { return }
     pendingURL = url
     if ready { presentNative(url) }
   }

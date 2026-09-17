@@ -49,6 +49,8 @@
 		C1C000000000000000000012 /* PrismClipLiveActivityExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000012 /* PrismClipLiveActivityExtension.swift */; };
 		C1C000000000000000000013 /* StoreVisitAttributes.swift in PrismClip Extension */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000018 /* Extension StoreVisitAttributes.swift */; };
 		C1C000000000000000000014 /* StoreVisitActivityView.swift in PrismClip Extension */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000019 /* Extension StoreVisitActivityView.swift */; };
+		C1C000000000000000000017 /* Localizable.xcstrings in HINATA Extension */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000001A /* HINATA Extension Localizable.xcstrings */; };
+		C1C000000000000000000018 /* Localizable.xcstrings in PrismClip Extension */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000001B /* PrismClip Extension Localizable.xcstrings */; };
 		C1C000000000000000000015 /* HINATA Extension in Runner */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000016 /* HINATALiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1C000000000000000000016 /* PrismClip Extension in App Clip */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000017 /* PrismClipLiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -168,6 +170,8 @@
 		C2C000000000000000000017 /* PrismClipLiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PrismClipLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C2C000000000000000000018 /* Extension StoreVisitAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityShared/StoreVisitAttributes.swift; sourceTree = "<group>"; };
 		C2C000000000000000000019 /* Extension StoreVisitActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityShared/StoreVisitActivityView.swift; sourceTree = "<group>"; };
+		C2C00000000000000000001A /* HINATA Extension Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = ../LiveActivityShared/Localizable.xcstrings; sourceTree = "<group>"; };
+		C2C00000000000000000001B /* PrismClip Extension Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = ../LiveActivityShared/Localizable.xcstrings; sourceTree = "<group>"; };
 		FA100BF03C7C425DBFABB85A /* PRiSM Link.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PRiSM Link.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -253,6 +257,7 @@
 			children = (
 				C2C00000000000000000000F /* HINATALiveActivityExtension.swift */,
 				C2C000000000000000000010 /* HINATA Extension Info.plist */,
+				C2C00000000000000000001A /* HINATA Extension Localizable.xcstrings */,
 			);
 			path = HINATALiveActivityExtension;
 			sourceTree = "<group>";
@@ -262,6 +267,7 @@
 			children = (
 				C2C000000000000000000012 /* PrismClipLiveActivityExtension.swift */,
 				C2C000000000000000000013 /* PrismClip Extension Info.plist */,
+				C2C00000000000000000001B /* PrismClip Extension Localizable.xcstrings */,
 			
 				E1C000000000000000000001 /* PrismClipLiveActivity.entitlements */,);
 			path = PrismClipLiveActivityExtension;
@@ -509,6 +515,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C1C000000000000000000017 /* Localizable.xcstrings in HINATA Extension */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -516,6 +523,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C1C000000000000000000018 /* Localizable.xcstrings in PrismClip Extension */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
