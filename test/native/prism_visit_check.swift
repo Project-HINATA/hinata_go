@@ -383,6 +383,11 @@ enum PersistentCookieCheck {
       preconditionFailure("ClipShopHero must exist")
     }
     let heroBody = String(viewSource[heroStart.lowerBound...].prefix(6_000))
+    // The card must own its width. Left to size itself from its widest child, the cover's frame
+    // set the width while the bill was absent and the wider bill changed it on arrival, which
+    // resized the cover at the moment the bill appeared.
+    precondition(heroBody.contains(".frame(width: width)"),
+                 "The shop card must own its width rather than inherit it from its children")
     // Comments name the modifier being avoided, so only the code lines are checked.
     let heroCode = heroBody.split(separator: "\n")
       .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }

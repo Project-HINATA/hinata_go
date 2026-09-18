@@ -422,6 +422,10 @@ struct ClipShopHero: View {
       }
       .clipped()
     }
+    // The card owns its width rather than taking it from its widest child. Without this the
+    // cover's fixed frame set the width while the bill was absent, and the wider bill changed
+    // it on arrival — which resized the cover exactly as the bill appeared.
+    .frame(width: width)
     .background(Color(.secondarySystemGroupedBackground))
     .clipShape(RoundedRectangle(cornerRadius: 32))
     .overlay {
