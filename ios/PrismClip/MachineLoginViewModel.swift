@@ -6,9 +6,7 @@ final class MachineLoginViewModel: ObservableObject {
   enum State: Equatable {
     case idle
     case loadingMachine
-    /// The shop link's equivalent of `loadingMachine`: the page is not shown until the shop and
-    /// the player's state are in hand, so the card appears complete instead of growing into
-    /// place once the cover arrives.
+    /// Loads public shop information, just as loadingMachine loads the public machine.
     case loadingShop
     case unauthenticated
     case loadingCards
@@ -56,18 +54,30 @@ final class MachineLoginViewModel: ObservableObject {
   private var visitRevision = 0
   var canUseCards: Bool { machine?.has("card") == true && (machine?.capabilities == nil || deviceState?.gate == "ready") && deviceState?.power != "off" }
   /// True when this session came from a bare `/t/{shopCode}` link: the device-free shop
-  /// surface (bill, redeem, history, wallet, self check-in) with no machine behind it.
+  /// surface (bill, redeem, history, wallet) with no machine behind it.
   @Published private(set) var isShopOnly = false
   var showDeviceControls: Bool {
     guard machine?.capabilities != nil, machine?.empty != true else { return false }
     return deviceState == nil || deviceState?.gate != "ready" || deviceState?.power == "off" || machine?.has("door") == true || machine?.has("mahjong") == true
   }
+  var needsQQBinding: Bool {
+    isShopOnly ? user != nil && visit?.shop.billingEnabled == true && visit?.membership == nil : deviceState?.gate == "qq"
+  }
   var showVisit: Bool { visit?.shop.billingEnabled == true }
+  /// Whether the player's own state for this shop has been read. `summary == nil` also means
+  /// "not read yet", so the page needs this to tell an empty shop apart from an unread one.
+  @Published private(set) var playerStateLoaded = false
+
   /// Shop-link subtitle: the machine name on a device link, the billing state here.
   var shopBillingState: String {
     guard isShopOnly else { return "" }
     if summary?.activeSession != nil { return String(localized: "计费中") }
+    // A shop that does not bill has no session to wait for, so it is answered straight away.
     if visit?.shop.billingEnabled != true { return String(localized: "本店未启用计费") }
+    // "未入场" is only claimed once the player's own state has been read; reporting an unread
+    // state as "未入场" is what flashed the wrong subtitle before the bill arrived.
+    if state == .unauthenticated { return "" }
+    guard playerStateLoaded else { return String(localized: "正在加载") }
     return String(localized: "未入场")
   }
   /// A signed-in shop player who may read the bill and settle it. Admission is absent by
@@ -107,7 +117,7 @@ final class MachineLoginViewModel: ObservableObject {
       // in-progress sheet survive a replay of the link already on screen.
       if currentPageUnusable {
         await reloadCurrentOrigin()
-      } else {
+      } else if ![.loadingMachine, .loadingShop, .loadingCards].contains(state) {
         await refreshVisit(silent: true)
       }
       return
@@ -145,48 +155,10 @@ final class MachineLoginViewModel: ObservableObject {
   /// Device-free entry point for `/t/{shopCode}`: loads the shop and the signed-in player's
   /// state without ever asking for a machine or a ticket.
   func startShop(shopCode: String) async {
-    let api = self.api
-    invocationVersion += 1
-    polling?.cancel()
-    assets = []; history = []
-    // `visit` stays: clearing it removed the card from the tree, and re-inserting it reset the
-    // cover's state, which reloaded the image and made it shrink to the placeholder and back.
-    // refreshVisit replaces it in place, exactly as the machine flow keeps `machine`.
-    deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; user = nil; waitingPower = false
-    let version = invocationVersion
-    self.shopCode = shopCode
-    self.publicId = nil
-    machine = nil
-    ticket = nil
-    cards = []
-    activeCardId = nil
-    authenticating = nil
-    errorMessage = nil
-    isShopOnly = true
-    // Mirrors `start`: one loading state, one pass, one transition to ready. The page must not
-    // render the session view before the shop is loaded — that was what made the card appear
-    // without its cover and then grow once the image arrived.
-    state = .loadingShop
-    do {
-      await refreshVisit(silent: true, allowSignedOut: true)
-      guard version == invocationVersion else { return }
-      let me = try await api.me()
-      guard version == invocationVersion else { return }
-      user = me.user
-      guard me.user != nil else {
-        // The shop card stays on screen above the sign-in buttons.
-        state = .unauthenticated
-        return
-      }
-      userId = me.user!.id
-      await reloadCards()
-    } catch {
-      guard version == invocationVersion else { return }
-      fail(error)
-    }
+    await start(shopCode: shopCode, publicId: nil)
   }
 
-  func start(shopCode: String, publicId: String) async {
+  func start(shopCode: String, publicId: String?) async {
     let api = self.api
     invocationVersion += 1
     polling?.cancel()
@@ -195,9 +167,10 @@ final class MachineLoginViewModel: ObservableObject {
     let version = invocationVersion
     self.shopCode = shopCode
     self.publicId = publicId
-    state = .loadingMachine
-    // Opening a machine link after a shop-only link must leave shop-only mode behind.
-    isShopOnly = false
+    isShopOnly = publicId == nil
+    state = isShopOnly ? .loadingShop : .loadingMachine
+    playerStateLoaded = false
+    deviceBusy = false
     machine = nil
     cards = []
     activeCardId = nil
@@ -205,10 +178,16 @@ final class MachineLoginViewModel: ObservableObject {
     ticket = nil
     errorMessage = nil
     do {
-      let session = try await api.startMachineSession(shopCode: shopCode, publicId: publicId)
-      guard version == invocationVersion else { return }
-      ticket = session.ticket
-      machine = session.machine
+      if let publicId {
+        let session = try await api.startMachineSession(shopCode: shopCode, publicId: publicId)
+        guard version == invocationVersion else { return }
+        ticket = session.ticket
+        machine = session.machine
+      } else {
+        let shop: PrismShopResponse = try await api.request(shopPath())
+        guard version == invocationVersion else { return }
+        visit = shop
+      }
       let me = try await api.me()
       guard version == invocationVersion else { return }
       user = me.user
@@ -282,6 +261,9 @@ final class MachineLoginViewModel: ObservableObject {
         state = ticket == nil ? .expired : .unauthenticated
       }
       cards = []
+      user = nil; userId = ""; summary = nil; checkoutPreview = nil; billLoaded = false
+      playerStateLoaded = false; settlement = nil; binding = nil; doorPassword = nil
+      assets = []; history = []; deviceState = nil; notice = nil
       errorMessage = nil
     } catch { guard version == invocationVersion else { return }; errorMessage = String(localized: "退出账号失败，请重试") }
   }
@@ -292,12 +274,13 @@ final class MachineLoginViewModel: ObservableObject {
     state = .loadingCards
     errorMessage = nil
     do {
-      let response = try await api.cards()
-      guard version == invocationVersion else { return }
-      cards = response.cards.filter { $0.disabledAt == nil }
-      // Shop-only mode has no machine, so its visit would never refresh here and the page sat
-      // on `.loadingCards` for ever after signing in.
+      if !isShopOnly {
+        let response = try await api.cards()
+        guard version == invocationVersion else { return }
+        cards = response.cards.filter { $0.disabledAt == nil }
+      }
       if machine?.capabilities != nil || isShopOnly { await refreshVisit() }
+      guard version == invocationVersion else { return }
       if state == .loadingCards { state = .ready }
     } catch {
       guard version == invocationVersion else { return }
@@ -355,16 +338,18 @@ final class MachineLoginViewModel: ObservableObject {
     guard active != sceneActive else { return }
     sceneActive = active
     if !active {
-      visitRevision += 1
+      // Initial account loading owns the transition to ready, even if authentication or
+      // foreground activation briefly makes the scene inactive.
+      if state != .loadingCards { visitRevision += 1 }
       polling?.cancel()
       polling = nil
-    } else if !deviceBusy, ![.locating, .sending].contains(state) {
+    } else if !deviceBusy, ![.loadingMachine, .loadingShop, .loadingCards, .locating, .sending].contains(state) {
       await refreshVisit(silent: true)
     }
   }
 
   private func scheduleRefresh() {
-    guard sceneActive, ticket != nil else { return }
+    guard sceneActive, ticket != nil || needsQQBinding else { return }
     polling?.cancel()
     polling = Task { [weak self] in
       do { try await Task.sleep(nanoseconds: 3_000_000_000) } catch { return }
@@ -374,11 +359,11 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  func refreshVisit(silent: Bool = false, allowSignedOut: Bool = false) async {
+  func refreshVisit(silent: Bool = false) async {
     let api = self.api
     // Shop-only mode has no machine, so the machine gate cannot apply there.
-    guard sceneActive, machine?.capabilities != nil || isShopOnly,
-          allowSignedOut || state != .unauthenticated else { return }
+    guard sceneActive || state == .loadingCards, machine?.capabilities != nil || isShopOnly,
+          state != .unauthenticated else { return }
     visitRevision += 1
     polling?.cancel()
     let revision = visitRevision
@@ -391,8 +376,8 @@ final class MachineLoginViewModel: ObservableObject {
       // Clearing it here is what made a signed-out shop page lose its card entirely.
       visit = shop
       guard me.user != nil else {
-        if !allowSignedOut { state = .unauthenticated }
-        user = nil; summary = nil; checkoutPreview = nil; billLoaded = false; assets = []; history = []
+        state = .unauthenticated
+        user = nil; summary = nil; checkoutPreview = nil; billLoaded = false; playerStateLoaded = false; assets = []; history = []; settlement = nil
         return
       }
       var currentDevice = deviceState
@@ -407,7 +392,15 @@ final class MachineLoginViewModel: ObservableObject {
       if shop.shop.billingEnabled && shop.membership != nil {
         currentSummary = try await api.request(shopPath("player/me"))
       }
+      // Publish the shop player's summary and bill together. The inline view never starts
+      // another request when it appears or changes height.
+      var currentPreview: PrismCheckout?
+      if isShopOnly, currentSummary?.activeSession != nil {
+        currentPreview = try await api.request(shopPath("player/checkout/preview"), body: [:])
+      }
       guard version == invocationVersion, revision == visitRevision else { return }
+      playerStateLoaded = true
+      if isShopOnly { checkoutPreview = currentPreview; billLoaded = true }
       if userId != me.user!.id { assets = []; history = [] }
       userId = me.user!.id
       deviceState = currentDevice; summary = currentSummary; user = me.user
@@ -420,15 +413,16 @@ final class MachineLoginViewModel: ObservableObject {
           origin: api.baseURL.scheme?.lowercased() == "https" ? api.baseURL : nil
         )
       }
+      guard version == invocationVersion, revision == visitRevision else { return }
       if currentDevice?.power != "off" { waitingPower = false }
       if shop.membership != nil { binding = nil }
       polling?.cancel()
-      if ticket != nil, currentDevice?.gate == "qq", binding == nil || (binding.flatMap { value -> Date? in let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]; return formatter.date(from: value.expiresAt) ?? ISO8601DateFormatter().date(from: value.expiresAt) } ?? .distantPast) <= Date() {
+      if needsQQBinding, binding.flatMap({ prismParsedDate($0.expiresAt) }) ?? .distantPast <= Date() {
         let value: PrismBinding = try await api.request(shopPath("qq-binding"), body: [:])
         guard version == invocationVersion, revision == visitRevision else { return }
         binding = value
       }
-      if ticket != nil, currentDevice?.gate == "qq" || currentDevice?.power == "off" || machine?.has("mahjong") == true {
+      if needsQQBinding || (ticket != nil && (currentDevice?.power == "off" || machine?.has("mahjong") == true)) {
         scheduleRefresh()
       }
     } catch {
@@ -547,7 +541,7 @@ final class MachineLoginViewModel: ObservableObject {
     defer {
       if version == invocationVersion {
         deviceBusy = false
-        if deviceState?.gate == "qq" || deviceState?.power == "off" || machine?.has("mahjong") == true { scheduleRefresh() }
+        if needsQQBinding || deviceState?.power == "off" || machine?.has("mahjong") == true { scheduleRefresh() }
       }
     }
     if section == 0 {

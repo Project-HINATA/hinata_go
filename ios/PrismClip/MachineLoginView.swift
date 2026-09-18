@@ -61,7 +61,7 @@ struct MachineLoginView: View {
             // The card is the content width: the page's own 20-point margins, capped like the
             // stack above. Deriving it here means the cover knows its width on the first
             // layout pass, so it never renders at a provisional size.
-            ClipSessionPage(cardWidth: min(geometry.size.width - 40, 480))
+            ClipSessionPage(cardWidth: max(0, min(geometry.size.width - 40, 480)))
           }
         }
         .frame(maxWidth: 480)
@@ -71,6 +71,13 @@ struct MachineLoginView: View {
         // already reserves that space.
         .padding(.top, presentsAppClipNotice ? 140 : 12)
         .frame(maxWidth: .infinity)
+      }
+      .clipped()
+    }
+    .safeAreaInset(edge: .bottom, spacing: 0) {
+      if model.isShopOnly, model.state == .ready, model.settlement == nil, model.checkoutPreview != nil {
+        ClipCheckoutButton()
+          .padding(.horizontal, 24).frame(maxWidth: 520).frame(maxWidth: .infinity)
       }
     }
     .background(Color(.systemGroupedBackground).ignoresSafeArea())
@@ -99,7 +106,7 @@ struct MachineLoginView: View {
         if #available(iOS 26.0, *) { accountMenu(user).buttonStyle(.glass).buttonBorderShape(.capsule) }
         else { accountMenu(user).buttonStyle(.bordered).buttonBorderShape(.capsule) }
       }
-      .disabled(model.deviceBusy || [.locating, .sending].contains(model.state)).padding(.top, 8).padding(.trailing, 20)
+      .disabled(model.deviceBusy || [.loadingCards, .locating, .sending].contains(model.state)).padding(.top, 8).padding(.trailing, 20)
     }
   }
 
@@ -117,7 +124,7 @@ struct MachineLoginView: View {
 
   @ViewBuilder private var toolbarAccountMenu: some View {
     if let user = model.user {
-      accountMenu(user).disabled(model.deviceBusy || [.locating, .sending].contains(model.state))
+      accountMenu(user).disabled(model.deviceBusy || [.loadingCards, .locating, .sending].contains(model.state))
     }
   }
 
@@ -146,8 +153,8 @@ struct MachineLoginView: View {
   }
 
   private var retrySession: (() -> Void)? {
-    guard let shop = model.shopCode, let machine = model.publicId else { return nil }
-    return { Task { await model.start(shopCode: shop, publicId: machine) } }
+    guard let shop = model.shopCode else { return nil }
+    return { Task { await model.start(shopCode: shop, publicId: model.publicId) } }
   }
 }
 
@@ -187,82 +194,70 @@ private struct ClipSessionPage: View {
   let cardWidth: CGFloat
 
   var body: some View {
-    // The receipt takes over the page on both link types, so a settled bill cannot flash back
-    // to the admission view before the player has read the result.
-    if let settlement = model.settlement {
-      VStack(spacing: 28) {
-        if let machine = model.machine {
-          ClipShopHero(name: machine.shop.name, subtitle: machine.name, heroUrl: machine.shop.heroUrl, origin: model.api.baseURL, width: cardWidth).id(machine.shop.heroUrl)
-        } else if let visit = model.visit {
-          ClipShopHero(name: visit.shop.name ?? "PRiSM", subtitle: model.shopBillingState, heroUrl: visit.shop.heroUrl, origin: model.api.baseURL, width: cardWidth).id(visit.shop.heroUrl)
-        }
-        ClipSettlementPage(settlement: settlement)
+    VStack(spacing: 52) {
+      if model.machine != nil || model.visit != nil {
+        let name = model.machine?.shop.name ?? model.visit?.shop.name ?? "PRiSM"
+        let heroUrl = model.machine?.shop.heroUrl ?? model.visit?.shop.heroUrl
+        ClipShopHero(name: name, subtitle: model.machine?.name ?? model.shopBillingState,
+                     heroUrl: heroUrl, origin: model.api.baseURL, width: cardWidth)
+          .id(model.api.baseURL.absoluteString + (heroUrl ?? ""))
       }
-      .frame(maxWidth: 480)
-    } else {
-      sessionBody
+      if let settlement = model.settlement {
+        ClipSettlementPage(settlement: settlement)
+      } else {
+        sessionBody
+      }
     }
   }
 
   private var sessionBody: some View {
-    VStack(spacing: 52) {
-      if let machine = model.machine {
-        ClipShopHero(name: machine.shop.name, subtitle: machine.name, heroUrl: machine.shop.heroUrl, origin: model.api.baseURL, width: cardWidth).id(machine.shop.heroUrl)
-
-      } else if model.isShopOnly, let visit = model.visit {
-        // The shop link shows the same card as a device link; the line that carries the
-        // machine name there carries the billing state here.
-        ClipShopHero(name: visit.shop.name ?? "PRiSM", subtitle: model.shopBillingState, heroUrl: visit.shop.heroUrl, origin: model.api.baseURL, width: cardWidth).id(visit.shop.heroUrl)
+    VStack(spacing: 28) {
+      if model.isShopOnly {
+        if [.ready, .locating, .sending, .success].contains(model.state) { ClipShopControls() }
+      } else if model.showDeviceControls, [.ready, .locating, .sending, .success].contains(model.state) {
+        ClipDeviceControls()
+      }
+      if !model.isShopOnly, model.canUseCards, [.ready, .locating, .sending, .success].contains(model.state) {
+        Text("选择卡片").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.bottom, 2)
       }
 
-      VStack(spacing: 28) {
-        if model.isShopOnly {
-          if [.ready, .locating, .sending, .success].contains(model.state) { ClipShopControls() }
-        } else if model.showDeviceControls, [.ready, .locating, .sending, .success].contains(model.state) {
-          ClipDeviceControls()
-        }
-        if !model.isShopOnly, model.canUseCards, [.ready, .locating, .sending, .success].contains(model.state) {
-          Text("选择卡片").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.bottom, 2)
-        }
-
-        switch model.state {
-        case .unauthenticated:
-          VStack(spacing: 14) {
-            Button { Task { await model.authenticateWithMunet() } } label: {
-              actionLabel(model.authenticating == "munet" ? "正在连接 MuNET…" : "使用 MuNET 登录",
-                          icon: Image("MuNETLogo").renderingMode(.original),
-                          busy: model.authenticating == "munet")
-            }
-            .clipActionStyle(primary: true)
-            Button { Task { await model.authenticateWithPasskey() } } label: {
-              actionLabel(model.authenticating == "passkey" ? "正在验证 Passkey…" : "使用 Passkey 登录",
-                          icon: Image(systemName: "touchid"),
-                          busy: model.authenticating == "passkey")
-            }
-            .clipActionStyle()
+      switch model.state {
+      case .unauthenticated:
+        VStack(spacing: 14) {
+          Button { Task { await model.authenticateWithMunet() } } label: {
+            actionLabel(model.authenticating == "munet" ? "正在连接 MuNET…" : "使用 MuNET 登录",
+                        icon: Image("MuNETLogo").renderingMode(.original),
+                        busy: model.authenticating == "munet")
           }
-          .disabled(model.authenticating != nil)
-        case .ready, .locating, .sending, .success:
-          if !model.isShopOnly, model.canUseCards { cardsView.disabled(model.deviceBusy) }
-          if model.state == .ready, model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
-            Button { Task { await model.device("coin") } } label: {
-              HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
-                .frame(maxWidth: .infinity).padding(.vertical, 12)
-            }.clipActionStyle().disabled(model.deviceBusy)
+          .clipActionStyle(primary: true)
+          Button { Task { await model.authenticateWithPasskey() } } label: {
+            actionLabel(model.authenticating == "passkey" ? "正在验证 Passkey…" : "使用 Passkey 登录",
+                        icon: Image(systemName: "touchid"),
+                        busy: model.authenticating == "passkey")
           }
-        case .loadingCards:
-          ProgressView().accessibilityLabel("正在加载卡片")
-        case .cardsFailed(let message):
-          VStack(spacing: 20) {
-            ClipStatusMessage(title: "无法加载卡片", message: message, symbol: "exclamationmark.triangle")
-            Button { Task { await model.reloadCards() } } label: {
-              Text("重新加载卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
-            }
-            .clipActionStyle(primary: true)
-          }
-        case .idle, .loadingMachine, .loadingShop, .failed, .completed, .expired:
-          EmptyView()
+          .clipActionStyle()
         }
+        .disabled(model.authenticating != nil)
+      case .ready, .locating, .sending, .success:
+        if !model.isShopOnly, model.canUseCards { cardsView.disabled(model.deviceBusy) }
+        if model.state == .ready, model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
+          Button { Task { await model.device("coin") } } label: {
+            HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
+              .frame(maxWidth: .infinity).padding(.vertical, 12)
+          }.clipActionStyle().disabled(model.deviceBusy)
+        }
+      case .loadingCards:
+        ProgressView().accessibilityLabel(model.isShopOnly ? "正在加载" : "正在加载卡片")
+      case .cardsFailed(let message):
+        VStack(spacing: 20) {
+          ClipStatusMessage(title: "无法加载卡片", message: message, symbol: "exclamationmark.triangle")
+          Button { Task { await model.reloadCards() } } label: {
+            Text("重新加载卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
+          }
+          .clipActionStyle(primary: true)
+        }
+      case .idle, .loadingMachine, .loadingShop, .failed, .completed, .expired:
+        EmptyView()
       }
     }
   }
@@ -530,21 +525,16 @@ private struct ClipShopControls: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
       if let shop = model.visit {
-        if model.shopHasActiveSession {
-          // The page already applies a 20pt horizontal margin, so the bill only adds the
-          // remainder of the sheet's 24pt inset and the two surfaces line up.
-          ClipAccountContent(section: 0, horizontalPadding: 4)
-        } else if shop.membership == nil {
-          // The shop player row is created by the Bot, so this page can only explain it.
-          VStack(alignment: .leading, spacing: 12) {
-            Text("绑定 QQ").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
-            Text("本店的玩家档案与 QQ 绑定，请在店铺机器人中完成验证后再回到这里。")
-              .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
-            if !shop.shop.botContact.isEmpty {
-              Text(String(localized: "店铺联系方式") + " " + shop.shop.botContact)
-                .font(.subheadline).textSelection(.enabled)
-            }
-          }.frame(maxWidth: .infinity, alignment: .leading)
+        if model.shopHasActiveSession, let preview = model.checkoutPreview {
+          ClipBillContent(preview: preview).padding(.horizontal, 4)
+        } else if model.errorMessage != nil {
+          Button { Task { model.clearError(); await model.refreshVisit() } } label: {
+            Text("重试").frame(maxWidth: .infinity).padding(.vertical, 12)
+          }.clipActionStyle()
+        } else if !model.playerStateLoaded {
+          ProgressView().frame(maxWidth: .infinity).accessibilityLabel("正在加载")
+        } else if model.needsQQBinding {
+          ClipQQBinding()
         } else if shop.shop.billingEnabled {
           Text("请碰一下 NFC 或扫描机台上的二维码入场")
             .font(.subheadline).foregroundStyle(.secondary)
@@ -557,7 +547,7 @@ private struct ClipShopControls: View {
           Text("重试").frame(maxWidth: .infinity).padding(.vertical, 12)
         }.clipActionStyle()
       } else { ProgressView().accessibilityLabel("正在加载") }
-    }.disabled(model.deviceBusy || [.locating, .sending].contains(model.state))
+    }.disabled(model.deviceBusy || [.loadingCards, .locating, .sending].contains(model.state))
   }
 }
 
@@ -611,6 +601,23 @@ private struct ClipSettlementPage: View {
   }
 }
 
+private struct ClipQQBinding: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  var body: some View {
+    VStack(alignment: .leading, spacing: 24) {
+      Text("绑定 QQ").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
+      VStack(alignment: .leading, spacing: 18) {
+        Text("在 QQ 群中发送").font(.subheadline)
+        if let binding = model.binding {
+          Text("prism.bind \(binding.code)").font(.system(size: 21, design: .monospaced)).textSelection(.enabled)
+          Text(String(localized: "有效期至") + " " + prismTime(binding.expiresAt)).font(.caption).foregroundStyle(.secondary)
+        } else if model.errorMessage != nil { Button("重试") { Task { await model.bindQQ() } } }
+        else { ProgressView() }
+      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+    }
+  }
+}
+
 private struct ClipDeviceControls: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   @State private var consent = false
@@ -618,17 +625,7 @@ private struct ClipDeviceControls: View {
     VStack(alignment: .leading, spacing: 28) {
       if let device = model.deviceState, let shop = model.visit {
         if device.gate == "qq" {
-          VStack(alignment: .leading, spacing: 24) {
-            Text("绑定 QQ").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
-            VStack(alignment: .leading, spacing: 18) {
-              Text("在 QQ 群中发送").font(.subheadline)
-              if let binding = model.binding {
-                Text("prism.bind \(binding.code)").font(.system(size: 21, design: .monospaced)).textSelection(.enabled)
-                Text(String(localized: "有效期至") + " " + prismTime(binding.expiresAt)).font(.caption).foregroundStyle(.secondary)
-              } else if model.errorMessage != nil { Button("重试") { Task { await model.bindQQ() } } }
-              else { ProgressView() }
-            }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
-          }
+          ClipQQBinding()
         } else {
           if device.gate == "entry" {
             VStack(alignment: .leading, spacing: 24) {
@@ -715,7 +712,7 @@ private struct ClipDeviceControls: View {
           Text("重试").frame(maxWidth: .infinity).padding(.vertical, 12)
         }.clipActionStyle()
       } else { ProgressView().accessibilityLabel("正在加载") }
-    }.disabled(model.deviceBusy || [.locating, .sending].contains(model.state))
+    }.disabled(model.deviceBusy || [.loadingCards, .locating, .sending].contains(model.state))
   }
 }
 
@@ -812,50 +809,19 @@ private struct ClipAccountSheet: View {
   }
 }
 
-/// The account sections' body. Shared by the toolbar sheet and the shop page so the bill has
-/// one implementation; the shop page embeds section 0 without the sheet's navigation chrome.
+/// Account sheet owns scrolling and loading. Inline shop bills reuse only ClipBillContent.
 private struct ClipAccountContent: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   let section: Int
-  /// The toolbar sheet supplies its own inset. The shop page already carries the page's
-  /// horizontal margin, so it passes the remainder and both land on the same edge.
-  var horizontalPadding: CGFloat = 24
+  private let horizontalPadding: CGFloat = 24
   @State private var redeemCode = ""
   @State private var done = false
   @State private var loadError: String?
   @State private var attempt = 0
-  @ViewBuilder private func billTotals(_ timeline: PrismBillTimeline) -> some View {
-    ForEach(Array(timeline.totals.enumerated()), id: \.offset) { _, item in
-      (Text(item.name + " ").foregroundColor(.secondary) + Text(item.amount.formatted(.number.precision(.fractionLength(2)))).foregroundColor(item.amount < 0 ? .green : .secondary)).font(.caption)
-    }
-  }
-  private var checkoutButton: some View {
-    Button { Task { await model.checkout(); done = model.errorMessage == nil } } label: {
-      HStack { if model.deviceBusy { ProgressView() }; Text("结账") }.frame(maxWidth: .infinity).padding(.vertical, 12)
-    }
-    .clipActionStyle(primary: true)
-    .disabled(model.deviceBusy)
-  }
   var body: some View {
     VStack(spacing: 0) {
       ScrollView {
       VStack(alignment: .leading, spacing: 20) {
-      if section == 0, !done, let preview = model.checkoutPreview {
-        VStack(alignment: .leading, spacing: 4) {
-          Text("合计").font(.subheadline).foregroundStyle(.secondary)
-          Text(preview.settlementPreview.total.formatted(.number.precision(.fractionLength(2))))
-            .font(.largeTitle.bold()).monospacedDigit()
-          if let timeline = preview.timeline {
-            if #available(iOS 16.0, *) {
-              ViewThatFits(in: .horizontal) {
-                HStack(spacing: 12) { billTotals(timeline) }
-                VStack(alignment: .leading, spacing: 4) { billTotals(timeline) }
-              }.padding(.top, 6)
-            } else { VStack(alignment: .leading, spacing: 4) { billTotals(timeline) }.padding(.top, 6) }
-          }
-        }.frame(maxWidth: 480, alignment: .leading).padding(.bottom, 4)
-      }
-
         if let error = loadError ?? model.errorMessage {
           VStack(alignment: .leading, spacing: 8) {
             Text(error).font(.subheadline).foregroundStyle(.red)
@@ -866,11 +832,7 @@ private struct ClipAccountContent: View {
         if section == 0 {
           if done { Text("已结账") }
           else if let preview = model.checkoutPreview {
-            if let timeline = preview.timeline { ClipBillTimeline(timeline: timeline) }
-            else {
-              ForEach(preview.chargeItems) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
-              ForEach(preview.adjustments) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
-            }
+            ClipBillContent(preview: preview)
             // An empty bill is only claimed once a read has actually returned one: the page is
             // rebuilt during entry, so saying it from `checkoutPreview == nil` alone flashed
             // "暂无待结账单" between two reads.
@@ -900,7 +862,7 @@ private struct ClipAccountContent: View {
       }
       .overlay(alignment: .bottom) {
         if section == 0, !done, model.checkoutPreview != nil {
-          checkoutButton.padding(.horizontal, horizontalPadding)
+          ClipCheckoutButton { done = true }.padding(.horizontal, horizontalPadding)
             .frame(maxWidth: 480).frame(maxWidth: .infinity)
         }
       }
@@ -915,6 +877,56 @@ private struct ClipAccountContent: View {
     }
   }
 }
+/// Shared by the machine account sheet and the shop page; no scroll view or load task.
+private struct ClipBillContent: View {
+  let preview: PrismCheckout
+  @ViewBuilder private func billTotals(_ timeline: PrismBillTimeline) -> some View {
+    ForEach(Array(timeline.totals.enumerated()), id: \.offset) { _, item in
+      (Text(item.name + " ").foregroundColor(.secondary) + Text(item.amount.formatted(.number.precision(.fractionLength(2)))).foregroundColor(item.amount < 0 ? .green : .secondary)).font(.caption)
+    }
+  }
+  var body: some View {
+    VStack(alignment: .leading, spacing: 20) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("合计").font(.subheadline).foregroundStyle(.secondary)
+        Text(preview.settlementPreview.total.formatted(.number.precision(.fractionLength(2))))
+          .font(.largeTitle.bold()).monospacedDigit()
+        if let timeline = preview.timeline {
+          if #available(iOS 16.0, *) {
+            ViewThatFits(in: .horizontal) {
+              HStack(spacing: 12) { billTotals(timeline) }
+              VStack(alignment: .leading, spacing: 4) { billTotals(timeline) }
+            }.padding(.top, 6)
+          } else { VStack(alignment: .leading, spacing: 4) { billTotals(timeline) }.padding(.top, 6) }
+        }
+      }.frame(maxWidth: 480, alignment: .leading).padding(.bottom, 4)
+      if let timeline = preview.timeline { ClipBillTimeline(timeline: timeline) }
+      else {
+        ForEach(preview.chargeItems) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
+        ForEach(preview.adjustments) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
+      }
+    }
+  }
+}
+
+private struct ClipCheckoutButton: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  var onSuccess: () -> Void = {}
+  var body: some View {
+    Button {
+      Task {
+        await model.checkout()
+        if model.settlement != nil { onSuccess() }
+      }
+    } label: {
+      HStack { if model.deviceBusy { ProgressView() }; Text("结账") }
+        .frame(maxWidth: .infinity).padding(.vertical, 12)
+    }
+    .clipActionStyle(primary: true)
+    .disabled(model.deviceBusy)
+  }
+}
+
 private func prismDate(_ value: String) -> String { prismParsedDate(value)?.formatted(date: .numeric, time: .shortened) ?? value }
 private func prismTime(_ value: String) -> String { prismParsedDate(value)?.formatted(date: .omitted, time: .standard) ?? value }
 private struct PrismLabeledRow: View {

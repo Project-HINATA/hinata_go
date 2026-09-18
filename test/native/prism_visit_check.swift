@@ -1,6 +1,7 @@
 // Run with test/native/run-prism-visit-check.sh. Auth and location are local stubs;
 // Models, API decoding and the App Clip state machine are the production sources.
 import Foundation
+import Combine
 
 // ActivityKit is unavailable in this macOS check; record the shared call boundary.
 @MainActor final class StoreVisitLiveActivityManager {
@@ -95,6 +96,8 @@ enum PersistentCookieCheck {
     var capabilities = ["power":true,"coin":true,"card":true,"door":true]
     var historyReads = 0, assetReads = 0
     var failBillRead = true
+    var cardReads = 0, previewReads = 0
+    var shopStatus = 200, previewStatus = 200
     var statusReads = 0
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
@@ -123,9 +126,10 @@ enum PersistentCookieCheck {
         // Mirrors the server: signed-in state lives in the cookie store.
         return ok(["user": signedIn ? ["id":testUser,"username":"test","displayName":"Test"] : NSNull()])
       case "/api/v1/auth/logout": return ok(["ok": true])
-      case "/api/v1/cards": return ok(["cards":[["id":"card","label":"Aime","accessCode":"01234567890123456789"]]])
+      case "/api/v1/cards": cardReads += 1; return ok(["cards":[["id":"card","label":"Aime","accessCode":"01234567890123456789"]]])
       case "/api/v1/shops/store":
         statusReads += 1
+        if shopStatus != 200 { return (shopStatus, ["error": ["code": "SHOP_NOT_FOUND", "message": "没有找到店铺"]]) }
         if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
         return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"QQ Bot","timeZone":"Asia/Tokyo","heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p"] : NSNull(),"entryPricing":[]])
       case "/api/v1/devices/session/state": return ok(["gate":!billing ? "ready" : member ? (active ? "ready" : "entry") : "qq", "power":"unknown","mahjong":["capacity":4,"seats":mahjongSeats]])
@@ -149,6 +153,8 @@ enum PersistentCookieCheck {
         return ok(["temporaryPassword":"12345678","expiresAt":"2999-01-01T00:00:00Z"])
       case "/api/v1/machines/login": return ok(["ok":true,"coin":["status":"unknown"]])
       case "/api/v1/shops/store/player/checkout/preview":
+        previewReads += 1
+        if previewStatus != 200 { return (previewStatus, ["error": ["code": "PREVIEW_UNAVAILABLE", "message": "账单暂不可用"]]) }
         if failBillRead { failBillRead = false; throw URLError(.networkConnectionLost) }
         return ok(["settlementPreview":["total":12],"chargeItems":[],"adjustments":[]])
       case "/api/v1/shops/store/player/checkout/confirm":
@@ -223,6 +229,7 @@ enum PersistentCookieCheck {
     // A bare shop link opens the settle-only surface: no machine, no ticket, no admission.
     billing = true; member = true; active = false
     let shopOnly = MachineLoginViewModel(api: PrismAPI(configuration: config))
+    let machineCardReads = cardReads
     // Before any data is in hand the shop link must sit on its loading state, not render the
     // session page without a card: that is what made the cover appear small and then grow.
     let pendingShop = Task { await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store")) }
@@ -234,6 +241,7 @@ enum PersistentCookieCheck {
     await pendingShop.value
     precondition(shopOnly.isShopOnly && shopOnly.ticket == nil && shopOnly.machine == nil)
     precondition(shopOnly.state == .ready && shopOnly.summary?.activeSession == nil)
+    precondition(cardReads == machineCardReads, "A shop must never depend on the machine card endpoint")
     precondition(shopOnly.visit != nil, "The card data is present before the page is shown")
     // The card's subtitle carries the billing state where a device card shows the machine name.
     precondition(shopOnly.shopBillingState == "未入场")
@@ -244,6 +252,8 @@ enum PersistentCookieCheck {
     member = false
     await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
     precondition(shopOnly.visit?.membership == nil && !shopOnly.canUseShopSurface)
+    precondition(shopOnly.playerStateLoaded, "Missing membership is a completed read, not a spinner")
+    precondition(shopOnly.binding?.code == "ABC123" && shopOnly.needsQQBinding, "Shop QQ binding must reuse the machine flow")
     member = true
     // Admission comes from the machine flow, so the shop link reads the bill it opened.
     active = true
@@ -251,16 +261,11 @@ enum PersistentCookieCheck {
     precondition(shopOnly.shopHasActiveSession && shopOnly.shopBillingState == "计费中")
     precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
     precondition(StoreVisitLiveActivityManager.shared.origin?.absoluteString == "https://link-beta.neri.moe")
-    // Loading the bill section is what the embedded bill view does on appear.
-    try await shopOnly.loadAccountSection(0)
-    precondition(shopOnly.checkoutPreview != nil)
-    precondition(shopOnly.billLoaded)
-    // The page is rebuilt while entering, so this runs twice in a row. The second read must not
-    // blank the bill on the way: an empty preview is what the page shows as "暂无待结账单", and
-    // the clearing and the refill both sit inside one await chain, so the up-front clear that
-    // caused the flash is asserted against the source.
-    try await shopOnly.loadAccountSection(0)
-    precondition(shopOnly.checkoutPreview != nil)
+    precondition(shopOnly.checkoutPreview != nil && shopOnly.billLoaded,
+                 "A shop refresh must include the bill without a view-triggered second read")
+    let readsBeforeRefresh = previewReads
+    await shopOnly.refreshVisit()
+    precondition(previewReads == readsBeforeRefresh + 1 && shopOnly.checkoutPreview != nil)
     // Settling keeps a receipt on screen; without it the page snapped back to admission.
     await shopOnly.checkout()
     precondition(shopOnly.settlement?.playerSettlement.total == 12)
@@ -350,50 +355,47 @@ enum PersistentCookieCheck {
     await shopOnly.handleResolvedInvocation(shopB)
     precondition(shopOnly.settlement != nil, "A replayed link must not discard the settlement receipt")
 
-    // Re-entering the same shop link — what a Live Activity tap does — must keep the card in
-    // the tree: dropping it reset the cover's state, which reloaded the image and showed as the
-    // cover shrinking to its placeholder and growing back. `refreshVisit` replaces the shop in
-    // place, so `startShop` must not clear it. That invariant sits in the reset line, which no
-    // run-time observation can catch, so it is asserted against the source.
-    let viewModelSource = try String(
-      contentsOfFile: "ios/PrismClip/MachineLoginViewModel.swift", encoding: .utf8)
-    guard let startShopStart = viewModelSource.range(of: "func startShop(shopCode: String) async {") else {
-      preconditionFailure("startShop must exist")
-    }
-    let startShopBody = String(viewModelSource[startShopStart.lowerBound...].prefix(1_200))
-    precondition(!startShopBody.contains("visit = nil"),
-                 "startShop must keep the shop card across re-entry")
+    // Observe actual state transitions instead of asserting source-code snippets.
+    let freshShop = MachineLoginViewModel(api: PrismAPI(configuration: config))
+    active = true
+    var shopStates: [MachineLoginViewModel.State] = []
+    let observation = freshShop.$state.sink { shopStates.append($0) }
+    let previewsBeforeOpen = previewReads
+    await freshShop.handleResolvedInvocation(shopB)
+    precondition(shopStates == [.idle, .loadingShop, .loadingCards, .ready])
+    precondition(freshShop.playerStateLoaded && freshShop.billLoaded && freshShop.checkoutPreview != nil)
+    precondition(previewReads == previewsBeforeOpen + 1, "Opening a shop reads the bill once")
+    observation.cancel()
+    // A missing shop or a failed bill must be retryable, never a permanent loading state.
+    shopStatus = 404
+    let failedShop = MachineLoginViewModel(api: PrismAPI(configuration: config))
+    await failedShop.handleResolvedInvocation(shopB)
+    if case .failed = failedShop.state {} else { preconditionFailure("Public shop failure must be visible") }
+    shopStatus = 200
+    await failedShop.handleResolvedInvocation(shopB)
+    precondition(failedShop.state == .ready && failedShop.checkoutPreview != nil)
+    let billFailure = MachineLoginViewModel(api: PrismAPI(configuration: config))
+    previewStatus = 400
+    await billFailure.handleResolvedInvocation(shopB)
+    precondition(billFailure.state == .ready && billFailure.errorMessage != nil && !billFailure.playerStateLoaded)
+    previewStatus = 200
+    billFailure.clearError()
+    await billFailure.refreshVisit()
+    precondition(billFailure.billLoaded && billFailure.checkoutPreview != nil)
 
-    // Reading the bill must not clear the preview first: the page is rebuilt during entry, so
-    // the read runs twice in a row, and an emptied preview in between is what the page shows as
-    // "暂无待结账单".
-    guard let loadStart = viewModelSource.range(of: "func loadAccountSection(_ section: Int) async throws {") else {
-      preconditionFailure("loadAccountSection must exist")
-    }
-    let loadBody = String(viewModelSource[loadStart.lowerBound...].prefix(1_500))
-    precondition(!loadBody.contains("checkoutPreview = nil"),
-                 "Reading the bill must not blank it on the way")
-
-    // The cover is sized from the card width and the image's own ratio. It must never fit
-    // against the vertical proposal: the page sets a minHeight from the scroll view's height,
-    // so `scaledToFit` re-fitted the image to the smaller of the two and it shrank and centred
-    // while the layout settled.
-    let viewSource = try String(contentsOfFile: "ios/PrismClip/MachineLoginView.swift", encoding: .utf8)
-    guard let heroStart = viewSource.range(of: "struct ClipShopHero: View {") else {
-      preconditionFailure("ClipShopHero must exist")
-    }
-    let heroBody = String(viewSource[heroStart.lowerBound...].prefix(6_000))
-    // The card must own its width. Left to size itself from its widest child, the cover's frame
-    // set the width while the bill was absent and the wider bill changed it on arrival, which
-    // resized the cover at the moment the bill appeared.
-    precondition(heroBody.contains(".frame(width: width)"),
-                 "The shop card must own its width rather than inherit it from its children")
-    // Comments name the modifier being avoided, so only the code lines are checked.
-    let heroCode = heroBody.split(separator: "\n")
-      .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
-      .joined(separator: "\n")
-    precondition(!heroCode.contains("scaledToFit"),
-                 "The cover must not fit against the vertical proposal")
+    let activating = MachineLoginViewModel(api: PrismAPI(configuration: config))
+    let opening = Task { await activating.handleResolvedInvocation(shopB) }
+    while activating.state != .loadingCards { await Task.yield() }
+    await activating.setSceneActive(false)
+    await activating.setSceneActive(true)
+    await opening.value
+    precondition(activating.state == .ready && activating.checkoutPreview != nil,
+                 "An activation transition during account loading must not strand the page")
+    billing = false; member = false
+    await freshShop.refreshVisit()
+    precondition(freshShop.playerStateLoaded && freshShop.checkoutPreview == nil)
+    precondition(freshShop.shopBillingState == "本店未启用计费")
+    billing = true; member = true
 
     // Signing out on a shop page keeps the shop card: the shop is public data, and the
     // player must still see which shop they are dealing with above the sign-in buttons.
@@ -402,6 +404,7 @@ enum PersistentCookieCheck {
     signedIn = false
     await shopOnly.logout()
     precondition(shopOnly.state == .unauthenticated)
+    precondition(shopOnly.user == nil && shopOnly.summary == nil && shopOnly.checkoutPreview == nil && shopOnly.settlement == nil, "Logout must clear private account state")
     precondition(shopOnly.visit != nil, "Sign-out must not remove the shop card")
     precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
 
