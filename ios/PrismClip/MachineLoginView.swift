@@ -346,9 +346,6 @@ struct ClipShopHero: View {
   var heroUrl: String? = nil
   var origin: URL = PrismAPI.defaultOrigin
   @State private var image: UIImage?
-  /// Cover height, derived from the measured card width. Seeded with a usable banner height
-  /// so the first frame is never a collapsed box.
-  @State private var coverHeight: CGFloat = 200
 
   private var url: URL? {
     heroUrl.flatMap { URL(string: $0, relativeTo: origin)?.absoluteURL }
@@ -366,32 +363,22 @@ struct ClipShopHero: View {
   }()
 
   var body: some View {
-    // One decoded image supplies both the cover and the soft color underneath. The cover box is
-    // measured once and its height derived from that measured width, so the image keeps its
-    // aspect ratio and never pops between sizes the way an aspect-ratio modifier laid over a
-    // flexible view did: inside this scroll view that resolved to the view's small ideal size
-    // on the first pass and only reached its real width on the second.
+    // The cover is the uploaded image itself, sized to the container's width. Sizing by the
+    // image's own aspect ratio avoids both a fixed height that crops and an aspect-ratio box
+    // laid over a flexible view, which resolved to a small ideal size before growing.
     VStack(alignment: .leading, spacing: 0) {
-      if url != nil {
+      if let url, let image {
+        Image(uiImage: image)
+          .resizable()
+          .scaledToFit()
+          .frame(maxWidth: .infinity)
+          .accessibilityHidden(true)
+      } else if url != nil {
         Rectangle()
           .fill(Color.primary.opacity(0.04))
           .frame(maxWidth: .infinity)
-          .frame(height: coverHeight)
-          .overlay {
-            if let image {
-              Image(uiImage: image).resizable().scaledToFill()
-            }
-          }
-          .clipped()
+          .frame(height: 120)
           .accessibilityHidden(true)
-          .background {
-            // A background reader reports the final width without taking part in the height
-            // it feeds, so the measured value is stable from the second pass on.
-            GeometryReader { geo in
-              Color.clear.onAppear { coverHeight = geo.size.width / 1.5 }
-                .onChange(of: geo.size.width) { coverHeight = $0 / 1.5 }
-            }
-          }
       }
       VStack(alignment: .leading, spacing: 8) {
         Text(name)
