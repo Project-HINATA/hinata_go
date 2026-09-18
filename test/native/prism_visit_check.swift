@@ -420,6 +420,11 @@ enum PersistentCookieCheck {
     await shopOnly.handleResolvedInvocation(URL(string: "https://link-beta.neri.moe/not-a-link")!)
     precondition(!shopOnly.isShopOnly && shopOnly.shopCode == nil && shopOnly.ticket == nil)
     for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("prism.operation.\(origin.absoluteString).\(testUser).") { UserDefaults.standard.removeObject(forKey:key) }
+    let viewSource = try String(contentsOfFile: "ios/PrismClip/MachineLoginView.swift", encoding: .utf8)
+    precondition(!viewSource.contains("safeAreaInset(edge: .bottom"),
+                 "The shop checkout footer must not add an opaque safe-area strip")
+    precondition(viewSource.contains(".overlay(alignment: .bottom)"),
+                 "The shop checkout footer must remain a transparent overlay")
     print("App Clip native visit checks passed")
   }
 }

@@ -66,7 +66,10 @@ struct MachineLoginView: View {
         }
         .frame(maxWidth: 480)
         .frame(minHeight: max(0, geometry.size.height - 168), alignment: .top)
-        .padding(.horizontal, 20).padding(.bottom, 28)
+        .padding(.horizontal, 20)
+        // The checkout control is an overlay, so leave enough scrollable tail behind it
+        // without reserving an opaque safe-area strip.
+        .padding(.bottom, model.isShopOnly && model.state == .ready && model.settlement == nil && model.checkoutPreview != nil ? 120 : 28)
         // In the App Clip the content has to clear the provider notice; in a sheet the toolbar
         // already reserves that space.
         .padding(.top, presentsAppClipNotice ? 140 : 12)
@@ -74,10 +77,13 @@ struct MachineLoginView: View {
       }
       .clipped()
     }
-    .safeAreaInset(edge: .bottom, spacing: 0) {
+    .overlay(alignment: .bottom) {
       if model.isShopOnly, model.state == .ready, model.settlement == nil, model.checkoutPreview != nil {
         ClipCheckoutButton()
-          .padding(.horizontal, 24).frame(maxWidth: 520).frame(maxWidth: .infinity)
+          .padding(.horizontal, 24)
+          .padding(.bottom, 12)
+          .frame(maxWidth: 520)
+          .frame(maxWidth: .infinity)
       }
     }
     .background(Color(.systemGroupedBackground).ignoresSafeArea())

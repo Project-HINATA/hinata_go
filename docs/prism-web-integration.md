@@ -16,6 +16,8 @@ The card shows the same cover and shop name, with the billing state on the line 
 
 The shop page owns one vertical scroll view. `ClipBillContent` contains only the shared totals and timeline, without another scroll container or an appearance-triggered request. The existing machine account sheet supplies its own scrolling and loading around that same content. Shop bill reads belong to the view model's refresh, and summary/preview publish only after both reads complete. Missing membership and disabled billing are completed states, not indefinite loading. The shop checkout button uses the shared `ClipCheckoutButton` in the page's bottom safe area; bill content is inset 24 points from the phone edge, matching the account sheet. The shop menu omits only 账单 and retains 兑换, 记录, 钱包 and 退出登录. Admission remains on machine links.
 
+The checkout control is drawn as a transparent bottom overlay with scrollable tail padding. It does not use `safeAreaInset`, which would add an opaque system-background strip behind the button.
+
 Checkout keeps its result on screen. `player/checkout/confirm` returns the settled total, the charge items and the resulting balance, and the app renders them as a receipt until the player dismisses it. Without that the refresh which clears the active session would drop the player straight back to the admission view, with no confirmation that the bill was settled.
 
 ## Live Activity and Dynamic Island
