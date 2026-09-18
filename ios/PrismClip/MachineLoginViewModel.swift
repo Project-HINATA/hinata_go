@@ -146,7 +146,10 @@ final class MachineLoginViewModel: ObservableObject {
     invocationVersion += 1
     polling?.cancel()
     assets = []; history = []
-    visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; notice = nil; settlement = nil; user = nil; waitingPower = false
+    // `visit` stays: clearing it removed the card from the tree, and re-inserting it reset the
+    // cover's state, which reloaded the image and made it shrink to the placeholder and back.
+    // refreshVisit replaces it in place, exactly as the machine flow keeps `machine`.
+    deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; notice = nil; settlement = nil; user = nil; waitingPower = false
     let version = invocationVersion
     self.shopCode = shopCode
     self.publicId = nil

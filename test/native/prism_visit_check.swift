@@ -235,7 +235,6 @@ enum PersistentCookieCheck {
     precondition(shopOnly.isShopOnly && shopOnly.ticket == nil && shopOnly.machine == nil)
     precondition(shopOnly.state == .ready && shopOnly.summary?.activeSession == nil)
     precondition(shopOnly.visit != nil, "The card data is present before the page is shown")
-    precondition(shopOnly.visit != nil, "The card data is present before the page is shown")
     // The card's subtitle carries the billing state where a device card shows the machine name.
     precondition(shopOnly.shopBillingState == "未入场")
     precondition(shopOnly.canUseShopSurface && !shopOnly.shopHasActiveSession)
@@ -343,6 +342,20 @@ enum PersistentCookieCheck {
     precondition(shopOnly.settlement != nil)
     await shopOnly.handleResolvedInvocation(shopB)
     precondition(shopOnly.settlement != nil, "A replayed link must not discard the settlement receipt")
+
+    // Re-entering the same shop link — what a Live Activity tap does — must keep the card in
+    // the tree: dropping it reset the cover's state, which reloaded the image and showed as the
+    // cover shrinking to its placeholder and growing back. `refreshVisit` replaces the shop in
+    // place, so `startShop` must not clear it. That invariant sits in the reset line, which no
+    // run-time observation can catch, so it is asserted against the source.
+    let viewModelSource = try String(
+      contentsOfFile: "ios/PrismClip/MachineLoginViewModel.swift", encoding: .utf8)
+    guard let startShopStart = viewModelSource.range(of: "func startShop(shopCode: String) async {") else {
+      preconditionFailure("startShop must exist")
+    }
+    let startShopBody = String(viewModelSource[startShopStart.lowerBound...].prefix(1_200))
+    precondition(!startShopBody.contains("visit = nil"),
+                 "startShop must keep the shop card across re-entry")
 
     // Signing out on a shop page keeps the shop card: the shop is public data, and the
     // player must still see which shop they are dealing with above the sign-in buttons.

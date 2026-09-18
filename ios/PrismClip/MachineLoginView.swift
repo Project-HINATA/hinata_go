@@ -351,6 +351,17 @@ struct ClipShopHero: View {
     heroUrl.flatMap { URL(string: $0, relativeTo: origin)?.absoluteURL }
   }
 
+  /// Decoded covers, kept across view identities. `URLCache` only holds the bytes, and decoding
+  /// is still asynchronous, so without this the cover fell back to its placeholder whenever the
+  /// page was rebuilt — which read as the image shrinking and then growing back.
+  private static let decodedCovers = NSCache<NSURL, UIImage>()
+
+  /// The cover to draw: the freshly decoded one, or a previously decoded one for the same URL.
+  private var cover: UIImage? {
+    guard let url else { return nil }
+    return image ?? Self.decodedCovers.object(forKey: url as NSURL)
+  }
+
   // A separate public-image cache; authentication and machine sessions stay untouched.
   static let session: URLSession = {
     let configuration = URLSessionConfiguration.default
@@ -367,8 +378,8 @@ struct ClipShopHero: View {
     // image's own aspect ratio avoids both a fixed height that crops and an aspect-ratio box
     // laid over a flexible view, which resolved to a small ideal size before growing.
     VStack(alignment: .leading, spacing: 0) {
-      if let url, let image {
-        Image(uiImage: image)
+      if let cover {
+        Image(uiImage: cover)
           .resizable()
           .scaledToFit()
           .frame(maxWidth: .infinity)
@@ -411,8 +422,14 @@ struct ClipShopHero: View {
     }
     .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
     .task(id: url) {
-      image = nil
       guard let url else { return }
+      // Already decoded: this URL's cover is on screen, so there is nothing to reload. Clearing
+      // it here instead is what blanked the image for a frame on every rebuild.
+      if let cached = Self.decodedCovers.object(forKey: url as NSURL) {
+        image = cached
+        return
+      }
+      image = nil
       do {
         let (data, response) = try await Self.session.data(from: url)
         try Task.checkCancellation()
@@ -421,6 +438,7 @@ struct ClipShopHero: View {
           Self.session.configuration.urlCache?.removeCachedResponse(for: URLRequest(url: url))
           return
         }
+        Self.decodedCovers.setObject(decoded, forKey: url as NSURL)
         image = decoded
       } catch {
         // A missing cover does not prevent machine login; keep it hidden.
