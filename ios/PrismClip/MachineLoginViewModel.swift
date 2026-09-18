@@ -41,6 +41,9 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var user: PrismUser?
   @Published private(set) var waitingPower = false
   @Published private(set) var checkoutPreview: PrismCheckout?
+  /// Whether the bill for this invocation has been read at least once. The page shows "暂无待
+  /// 结账单" for an empty preview, so it needs to tell that apart from a bill not yet read.
+  @Published private(set) var billLoaded = false
   @Published private(set) var binding: PrismBinding?
   @Published private(set) var doorPassword: PrismDoorPassword?
   @Published private(set) var deviceBusy = false
@@ -149,7 +152,7 @@ final class MachineLoginViewModel: ObservableObject {
     // `visit` stays: clearing it removed the card from the tree, and re-inserting it reset the
     // cover's state, which reloaded the image and made it shrink to the placeholder and back.
     // refreshVisit replaces it in place, exactly as the machine flow keeps `machine`.
-    deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; notice = nil; settlement = nil; user = nil; waitingPower = false
+    deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; user = nil; waitingPower = false
     let version = invocationVersion
     self.shopCode = shopCode
     self.publicId = nil
@@ -188,7 +191,7 @@ final class MachineLoginViewModel: ObservableObject {
     invocationVersion += 1
     polling?.cancel()
     assets = []; history = []
-    visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; notice = nil; settlement = nil; user = nil; waitingPower = false
+    visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; user = nil; waitingPower = false
     let version = invocationVersion
     self.shopCode = shopCode
     self.publicId = publicId
@@ -389,7 +392,7 @@ final class MachineLoginViewModel: ObservableObject {
       visit = shop
       guard me.user != nil else {
         if !allowSignedOut { state = .unauthenticated }
-        user = nil; summary = nil; checkoutPreview = nil; assets = []; history = []
+        user = nil; summary = nil; checkoutPreview = nil; billLoaded = false; assets = []; history = []
         return
       }
       var currentDevice = deviceState
@@ -548,11 +551,14 @@ final class MachineLoginViewModel: ObservableObject {
       }
     }
     if section == 0 {
-      checkoutPreview = nil
+      // The preview is replaced once the read returns, never cleared up front: an empty value
+      // is what the page shows as "暂无待结账单", so clearing it first made the bill blank out
+      // and then reappear whenever this ran twice in a row.
       let current: PrismSummary = try await api.request(shopPath("player/me"))
       let preview: PrismCheckout? = current.activeSession == nil ? nil : try await api.request(shopPath("player/checkout/preview"), body: [:])
       guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }
       summary = current; checkoutPreview = preview
+      billLoaded = true
     } else if section == 2 {
       let records: PrismHistory = try await api.request(shopPath("player/sessions/history"))
       guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }

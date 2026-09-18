@@ -254,6 +254,13 @@ enum PersistentCookieCheck {
     // Loading the bill section is what the embedded bill view does on appear.
     try await shopOnly.loadAccountSection(0)
     precondition(shopOnly.checkoutPreview != nil)
+    precondition(shopOnly.billLoaded)
+    // The page is rebuilt while entering, so this runs twice in a row. The second read must not
+    // blank the bill on the way: an empty preview is what the page shows as "暂无待结账单", and
+    // the clearing and the refill both sit inside one await chain, so the up-front clear that
+    // caused the flash is asserted against the source.
+    try await shopOnly.loadAccountSection(0)
+    precondition(shopOnly.checkoutPreview != nil)
     // Settling keeps a receipt on screen; without it the page snapped back to admission.
     await shopOnly.checkout()
     precondition(shopOnly.settlement?.playerSettlement.total == 12)
@@ -356,6 +363,16 @@ enum PersistentCookieCheck {
     let startShopBody = String(viewModelSource[startShopStart.lowerBound...].prefix(1_200))
     precondition(!startShopBody.contains("visit = nil"),
                  "startShop must keep the shop card across re-entry")
+
+    // Reading the bill must not clear the preview first: the page is rebuilt during entry, so
+    // the read runs twice in a row, and an emptied preview in between is what the page shows as
+    // "暂无待结账单".
+    guard let loadStart = viewModelSource.range(of: "func loadAccountSection(_ section: Int) async throws {") else {
+      preconditionFailure("loadAccountSection must exist")
+    }
+    let loadBody = String(viewModelSource[loadStart.lowerBound...].prefix(1_500))
+    precondition(!loadBody.contains("checkoutPreview = nil"),
+                 "Reading the bill must not blank it on the way")
 
     // The cover is sized from the card width and the image's own ratio. It must never fit
     // against the vertical proposal: the page sets a minHeight from the scroll view's height,

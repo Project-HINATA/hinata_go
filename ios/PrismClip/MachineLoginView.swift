@@ -867,7 +867,12 @@ private struct ClipAccountContent: View {
               ForEach(preview.chargeItems) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
               ForEach(preview.adjustments) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
             }
-          } else if !model.deviceBusy && model.errorMessage == nil && loadError == nil { Text("暂无待结账单") }
+            // An empty bill is only claimed once a read has actually returned one: the page is
+            // rebuilt during entry, so saying it from `checkoutPreview == nil` alone flashed
+            // "暂无待结账单" between two reads.
+          } else if !model.deviceBusy && model.billLoaded && model.errorMessage == nil && loadError == nil {
+            Text("暂无待结账单")
+          }
         } else if section == 1 {
           if done { Text("兑换成功") } else {
             TextField("兑换码", text: $redeemCode).textInputAutocapitalization(.never).autocorrectionDisabled().padding(18).overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.15)))
