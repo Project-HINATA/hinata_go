@@ -58,7 +58,10 @@ struct MachineLoginView: View {
             ClipExpiredPage()
           case .completed: ClipExpiredPage()
           case .unauthenticated, .loadingCards, .cardsFailed, .ready, .locating, .sending, .success:
-            ClipSessionPage()
+            // The card is the content width: the page's own 20-point margins, capped like the
+            // stack above. Deriving it here means the cover knows its width on the first
+            // layout pass, so it never renders at a provisional size.
+            ClipSessionPage(cardWidth: min(geometry.size.width - 40, 480))
           }
         }
         .frame(maxWidth: 480)
@@ -180,6 +183,8 @@ private struct ClipExpiredPage: View {
 
 private struct ClipSessionPage: View {
   @EnvironmentObject private var model: MachineLoginViewModel
+  /// Width the shop card will occupy, known before the first layout pass.
+  let cardWidth: CGFloat
 
   var body: some View {
     // The receipt takes over the page on both link types, so a settled bill cannot flash back
@@ -187,9 +192,9 @@ private struct ClipSessionPage: View {
     if let settlement = model.settlement {
       VStack(spacing: 28) {
         if let machine = model.machine {
-          ClipShopHero(name: machine.shop.name, subtitle: machine.name, heroUrl: machine.shop.heroUrl, origin: model.api.baseURL).id(machine.shop.heroUrl)
+          ClipShopHero(name: machine.shop.name, subtitle: machine.name, heroUrl: machine.shop.heroUrl, origin: model.api.baseURL, width: cardWidth).id(machine.shop.heroUrl)
         } else if let visit = model.visit {
-          ClipShopHero(name: visit.shop.name ?? "PRiSM", subtitle: model.shopBillingState, heroUrl: visit.shop.heroUrl, origin: model.api.baseURL).id(visit.shop.heroUrl)
+          ClipShopHero(name: visit.shop.name ?? "PRiSM", subtitle: model.shopBillingState, heroUrl: visit.shop.heroUrl, origin: model.api.baseURL, width: cardWidth).id(visit.shop.heroUrl)
         }
         ClipSettlementPage(settlement: settlement)
       }
@@ -202,12 +207,12 @@ private struct ClipSessionPage: View {
   private var sessionBody: some View {
     VStack(spacing: 52) {
       if let machine = model.machine {
-        ClipShopHero(name: machine.shop.name, subtitle: machine.name, heroUrl: machine.shop.heroUrl, origin: model.api.baseURL).id(machine.shop.heroUrl)
+        ClipShopHero(name: machine.shop.name, subtitle: machine.name, heroUrl: machine.shop.heroUrl, origin: model.api.baseURL, width: cardWidth).id(machine.shop.heroUrl)
 
       } else if model.isShopOnly, let visit = model.visit {
         // The shop link shows the same card as a device link; the line that carries the
         // machine name there carries the billing state here.
-        ClipShopHero(name: visit.shop.name ?? "PRiSM", subtitle: model.shopBillingState, heroUrl: visit.shop.heroUrl, origin: model.api.baseURL).id(visit.shop.heroUrl)
+        ClipShopHero(name: visit.shop.name ?? "PRiSM", subtitle: model.shopBillingState, heroUrl: visit.shop.heroUrl, origin: model.api.baseURL, width: cardWidth).id(visit.shop.heroUrl)
       }
 
       VStack(spacing: 28) {
@@ -346,6 +351,9 @@ struct ClipShopHero: View {
   var heroUrl: String? = nil
   var origin: URL = PrismAPI.defaultOrigin
   @State private var image: UIImage?
+  /// Width the card occupies, passed in from the page so the cover is sized on the first pass.
+  let width: CGFloat
+  private var placeholderHeight: CGFloat { width / 1.5 }
 
   private var url: URL? {
     heroUrl.flatMap { URL(string: $0, relativeTo: origin)?.absoluteURL }
@@ -374,21 +382,20 @@ struct ClipShopHero: View {
   }()
 
   var body: some View {
-    // The cover is the uploaded image itself, sized to the container's width. Sizing by the
-    // image's own aspect ratio avoids both a fixed height that crops and an aspect-ratio box
-    // laid over a flexible view, which resolved to a small ideal size before growing.
+    // The cover is sized from the width the card actually has and the image's own aspect ratio.
+    // It must not be allowed to fit against the vertical proposal: the page sets a minHeight
+    // from the scroll view's height, so while the layout settles `scaledToFit` re-fitted the
+    // image to the smaller of the two proposals, shrinking it and centring it.
     VStack(alignment: .leading, spacing: 0) {
       if let cover {
         Image(uiImage: cover)
           .resizable()
-          .scaledToFit()
-          .frame(maxWidth: .infinity)
+          .frame(width: width, height: width / max(cover.size.width / cover.size.height, 0.01))
           .accessibilityHidden(true)
       } else if url != nil {
         Rectangle()
           .fill(Color.primary.opacity(0.04))
-          .frame(maxWidth: .infinity)
-          .frame(height: 120)
+          .frame(width: width, height: placeholderHeight)
           .accessibilityHidden(true)
       }
       VStack(alignment: .leading, spacing: 8) {

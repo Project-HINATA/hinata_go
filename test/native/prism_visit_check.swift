@@ -357,6 +357,22 @@ enum PersistentCookieCheck {
     precondition(!startShopBody.contains("visit = nil"),
                  "startShop must keep the shop card across re-entry")
 
+    // The cover is sized from the card width and the image's own ratio. It must never fit
+    // against the vertical proposal: the page sets a minHeight from the scroll view's height,
+    // so `scaledToFit` re-fitted the image to the smaller of the two and it shrank and centred
+    // while the layout settled.
+    let viewSource = try String(contentsOfFile: "ios/PrismClip/MachineLoginView.swift", encoding: .utf8)
+    guard let heroStart = viewSource.range(of: "struct ClipShopHero: View {") else {
+      preconditionFailure("ClipShopHero must exist")
+    }
+    let heroBody = String(viewSource[heroStart.lowerBound...].prefix(6_000))
+    // Comments name the modifier being avoided, so only the code lines are checked.
+    let heroCode = heroBody.split(separator: "\n")
+      .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+      .joined(separator: "\n")
+    precondition(!heroCode.contains("scaledToFit"),
+                 "The cover must not fit against the vertical proposal")
+
     // Signing out on a shop page keeps the shop card: the shop is public data, and the
     // player must still see which shop they are dealing with above the sign-in buttons.
     member = true
