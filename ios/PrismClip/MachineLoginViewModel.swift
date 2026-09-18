@@ -157,25 +157,23 @@ final class MachineLoginViewModel: ObservableObject {
     authenticating = nil
     errorMessage = nil
     isShopOnly = true
-    // Stay on the loading page until the shop is loaded, exactly as the machine link does with
-    // `.loadingMachine`. Rendering the session page before `visit` exists made the card appear
+    // Mirrors `start`: one loading state, one pass, one transition to ready. The page must not
+    // render the session view before the shop is loaded — that was what made the card appear
     // without its cover and then grow once the image arrived.
     state = .loadingShop
     do {
-      // The shop is public data: load it first so the card is on screen whatever the
-      // sign-in state turns out to be, then layer the player's own state on top.
       await refreshVisit(silent: true, allowSignedOut: true)
       guard version == invocationVersion else { return }
       let me = try await api.me()
       guard version == invocationVersion else { return }
       user = me.user
       guard me.user != nil else {
+        // The shop card stays on screen above the sign-in buttons.
         state = .unauthenticated
         return
       }
-      await refreshVisit()
-      guard version == invocationVersion else { return }
-      if state == .loadingShop { state = .ready }
+      userId = me.user!.id
+      await reloadCards()
     } catch {
       guard version == invocationVersion else { return }
       fail(error)
