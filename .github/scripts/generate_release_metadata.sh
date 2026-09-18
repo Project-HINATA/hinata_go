@@ -17,7 +17,10 @@ changelog="自动构建产物"
 is_prerelease=true
 
 if [[ "$pub_ver" == "$clean_latest" ]]; then
-  new_tag="pre-${pub_ver}-${commit_short}"
+  # Pre-releases always reuse the single rolling "pre" tag so the release
+  # list never accumulates one entry per build; the commit lives in the
+  # title and body instead.
+  new_tag="pre"
   title="Pre-release ${pub_ver} (${commit_short})"
 else
   new_tag="v${pub_ver}"

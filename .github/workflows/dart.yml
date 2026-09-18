@@ -67,6 +67,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.github/scripts/generate_release_metadata.sh
 
+      - name: Remove previous rolling pre-release
+        if: ${{ steps.meta.outputs.is_prerelease == 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Pre-releases always target the single "pre" tag; drop the
+          # previous release and its tag so this build can recreate them.
+          gh release delete pre --yes --cleanup-tag || true
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
