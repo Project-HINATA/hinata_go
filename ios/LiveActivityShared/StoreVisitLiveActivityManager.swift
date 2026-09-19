@@ -119,6 +119,11 @@ final class StoreVisitLiveActivityManager {
       "shopName": shopName,
     ]
     if let origin { attributes["origin"] = origin }
+    // Logged before the call so a silent failure and a never-attempted registration are
+    // distinguishable in Console: only one of them prints this line.
+    logger.notice(
+      "Registering Live Activity token for shop \(shopCode, privacy: .public) via \(PrismAPI.shared.baseURL.absoluteString, privacy: .public) (token \(token.count) chars)"
+    )
     do {
       try await PrismAPI.shared.registerLiveActivity(
         shopCode: shopCode,
