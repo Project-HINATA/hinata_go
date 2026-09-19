@@ -19,5 +19,11 @@
 	<array>
 		<string>TAG</string>
 	</array>
+	<!-- Required for remote Live Activity updates. Without this the app cannot obtain an
+	     APNs push token, so a visit billed from another channel could never reach the
+	     Dynamic Island while the app is suspended. TestFlight and App Store builds are
+	     signed against the production APNs environment regardless of this value. -->
+	<key>aps-environment</key>
+	<string>production</string>
 </dict>
 </plist>

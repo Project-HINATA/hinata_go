@@ -13,5 +13,10 @@
 	<array>
 		<string>$(AppIdentifierPrefix)moe.neri.hinatago</string>
 	</array>
+	<!-- The App Clip starts its own Live Activity, so it needs its own push token to let a
+	     session opened on another channel update it. TestFlight builds sign against the
+	     production APNs environment regardless of this value. -->
+	<key>aps-environment</key>
+	<string>production</string>
 </dict>
 </plist>

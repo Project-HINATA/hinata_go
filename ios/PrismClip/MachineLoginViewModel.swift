@@ -253,6 +253,10 @@ final class MachineLoginViewModel: ObservableObject {
       guard version == invocationVersion else { return }
       invocationVersion += 1
       polling?.cancel()
+      // Retire this device's push tokens before the session cookie is gone: once signed
+      // out the server could no longer match the device to a player, and a leftover
+      // activity would keep receiving pushes meant for the account that just left.
+      await StoreVisitLiveActivityManager.shared.unregisterAllPushTokens()
       // A shop link keeps its card across sign-out: the shop is public data, and the player
       // should still see which shop they are dealing with above the sign-in buttons.
       if isShopOnly {

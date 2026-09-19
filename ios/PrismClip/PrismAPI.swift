@@ -101,6 +101,56 @@ final class PrismAPI {
     URL(string: "\(baseURL.absoluteString)/m?ticket=\(ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ticket)")
   }
 
+  /// Ships a Live Activity push token to the server so a visit opened on *another*
+  /// channel (admin console, shop bot) can update this phone. The call is scoped to the
+  /// shop whose visit the activity shows.
+  func registerLiveActivity(
+    shopCode: String,
+    activityId: String,
+    token: String,
+    sessionId: String?,
+    attributes: [String: Any]
+  ) async throws {
+    var body: [String: Any] = [
+      "activityId": activityId,
+      "token": token,
+      "environment": Self.liveActivityEnvironment,
+      "bundleId": Bundle.main.bundleIdentifier ?? "",
+      "attributes": attributes,
+    ]
+    if let sessionId { body["sessionId"] = sessionId }
+    let _: EmptyResponse = try await requestSelfSigned(
+      path: "/api/v1/shops/\(shopCode)/player/live-activity/register",
+      body: body
+    )
+  }
+
+  /// Retires a token when the activity ends or the player signs out, so a dead activity is
+  /// never pushed to.
+  func unregisterLiveActivity(shopCode: String, activityId: String) async throws {
+    let _: EmptyResponse = try await requestSelfSigned(
+      path: "/api/v1/shops/\(shopCode)/player/live-activity/unregister",
+      body: ["activityId": activityId]
+    )
+  }
+
+  /// Debug builds talk to the APNs sandbox; everything else uses production.
+  private static var liveActivityEnvironment: String {
+    #if DEBUG
+    return "sandbox"
+    #else
+    return "production"
+    #endif
+  }
+
+  /// POSTs and discards the payload. The envelope is still decoded so a server-side
+  /// rejection surfaces as an error instead of a silent success.
+  private func requestSelfSigned(path: String, body: [String: Any]) async throws -> EmptyResponse {
+    var request = try makeRequest(path: path, method: "POST")
+    request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    return try await send(request)
+  }
+
   func requestJSON(path: String, body: [String: Any]? = nil) async throws -> Data {
     var request = try makeRequest(path: path, method: body == nil ? "GET" : "POST")
     if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }

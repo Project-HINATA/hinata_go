@@ -8,10 +8,13 @@ import Combine
   static let shared = StoreVisitLiveActivityManager()
   private(set) var session: PrismSummary.Session?
   private(set) var origin: URL?
+  /// Sign-out must retire every activity's push token, so the check records the sweep.
+  private(set) var unregisteredAll = false
   func reconcile(session: PrismSummary.Session?, shopCode: String, shopName: String, origin: URL?) async {
     self.session = session
     self.origin = origin
   }
+  func unregisterAllPushTokens() async { unregisteredAll = true }
 }
 
 @MainActor final class PasskeyAuthenticationService {
