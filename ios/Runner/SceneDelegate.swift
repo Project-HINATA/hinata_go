@@ -47,4 +47,10 @@ class SceneDelegate: FlutterSceneDelegate {
     PrismURLBridge.shared.sceneDidEnterBackground()
     super.sceneDidEnterBackground(scene)
   }
+
+  /// Recovers push token tracking for existing Live Activities when foregrounding.
+  override func sceneWillEnterForeground(_ scene: UIScene) {
+    PrismURLBridge.shared.sceneWillEnterForeground()
+    super.sceneWillEnterForeground(scene)
+  }
 }

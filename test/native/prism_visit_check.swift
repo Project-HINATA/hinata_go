@@ -8,13 +8,35 @@ import Combine
   static let shared = StoreVisitLiveActivityManager()
   private(set) var session: PrismSummary.Session?
   private(set) var origin: URL?
+  private(set) var lastApi: PrismAPI?
   /// Sign-out must retire every activity's push token, so the check records the sweep.
   private(set) var unregisteredAll = false
-  func reconcile(session: PrismSummary.Session?, shopCode: String, shopName: String, origin: URL?) async {
+  private(set) var trackingPushToStart = false
+  private(set) var recoveredActivities = false
+
+  func reconcile(
+    session: PrismSummary.Session?,
+    shopCode: String,
+    shopName: String,
+    origin: URL?,
+    api: PrismAPI
+  ) async {
     self.session = session
     self.origin = origin
+    self.lastApi = api
   }
-  func unregisterAllPushTokens() async { unregisteredAll = true }
+  func unregisterAllPushTokens(api: PrismAPI) async {
+    unregisteredAll = true
+    self.lastApi = api
+  }
+  func startPushToStartTracking(api: PrismAPI) {
+    trackingPushToStart = true
+    self.lastApi = api
+  }
+  func recoverExistingActivities(api: PrismAPI) {
+    recoveredActivities = true
+    self.lastApi = api
+  }
 }
 
 @MainActor final class PasskeyAuthenticationService {
@@ -264,6 +286,8 @@ enum PersistentCookieCheck {
     precondition(shopOnly.shopHasActiveSession && shopOnly.shopBillingState == "计费中")
     precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
     precondition(StoreVisitLiveActivityManager.shared.origin?.absoluteString == "https://link-beta.neri.moe")
+    precondition(StoreVisitLiveActivityManager.shared.lastApi?.baseURL == origin, "Manager must receive origin-scoped API instance")
+    precondition(StoreVisitLiveActivityManager.shared.trackingPushToStart, "Push-to-start tracking must be active for logged-in user")
     precondition(shopOnly.checkoutPreview != nil && shopOnly.billLoaded,
                  "A shop refresh must include the bill without a view-triggered second read")
     let readsBeforeRefresh = previewReads
@@ -406,6 +430,8 @@ enum PersistentCookieCheck {
     await shopOnly.handleResolvedInvocation(shopB)
     signedIn = false
     await shopOnly.logout()
+    precondition(StoreVisitLiveActivityManager.shared.unregisteredAll, "Logout must trigger unregisterAllPushTokens")
+    precondition(StoreVisitLiveActivityManager.shared.lastApi?.baseURL == origin, "Unregister must use origin-scoped API")
     precondition(shopOnly.state == .unauthenticated)
     precondition(shopOnly.user == nil && shopOnly.summary == nil && shopOnly.checkoutPreview == nil && shopOnly.settlement == nil, "Logout must clear private account state")
     precondition(shopOnly.visit != nil, "Sign-out must not remove the shop card")

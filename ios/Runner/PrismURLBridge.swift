@@ -24,6 +24,15 @@ final class PrismURLBridge {
     router.resetForNextActivation()
   }
 
+  /// Re-attaches push token tracking to any activities already active on the device.
+  func sceneWillEnterForeground() {
+    if let model = nativeModel {
+      StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: model.api)
+    } else {
+      StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: .shared)
+    }
+  }
+
   func handle(_ userActivity: NSUserActivity) {
     if let url = userActivity.webpageURL {
       // A universal link the system delivered. It may equally be a replay of the link that

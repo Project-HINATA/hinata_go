@@ -134,6 +134,46 @@ final class PrismAPI {
     )
   }
 
+  /// Registers a device-level push-to-start token so the backend can remotely launch
+  /// a Live Activity when a visit begins externally while the app is closed.
+  func registerStartToken(
+    clientId: String,
+    token: String,
+    environment: String = PrismAPI.liveActivityEnvironment,
+    bundleId: String = Bundle.main.bundleIdentifier ?? ""
+  ) async throws {
+    let body: [String: Any] = [
+      "clientId": clientId,
+      "token": token,
+      "environment": environment,
+      "bundleId": bundleId,
+    ]
+    let _: EmptyResponse = try await requestSelfSigned(
+      path: "/api/v1/me/live-activity/start-token",
+      body: body
+    )
+  }
+
+  /// Retires the device-level push-to-start token on sign-out.
+  func unregisterStartToken(clientId: String) async throws {
+    let _: EmptyResponse = try await requestSelfSigned(
+      path: "/api/v1/me/live-activity/start-token",
+      body: ["clientId": clientId]
+    )
+  }
+
+  /// Persistent anonymous client installation identifier, used to distinguish multiple
+  /// devices belonging to the same user and avoid self-push races on local checkout/checkin.
+  static var clientId: String {
+    let key = "prism.client-id"
+    if let existing = UserDefaults.standard.string(forKey: key) {
+      return existing
+    }
+    let newId = UUID().uuidString
+    UserDefaults.standard.set(newId, forKey: key)
+    return newId
+  }
+
   /// Debug builds talk to the APNs sandbox; everything else uses production.
   private static var liveActivityEnvironment: String {
     #if DEBUG
@@ -196,6 +236,7 @@ final class PrismAPI {
     var request = URLRequest(url: url)
     request.httpMethod = method
     request.setValue("application/json", forHTTPHeaderField: "Accept")
+    request.setValue(Self.clientId, forHTTPHeaderField: "x-prism-client-id")
     if method != "GET" {
       request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     }

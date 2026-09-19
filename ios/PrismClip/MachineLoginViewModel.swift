@@ -196,6 +196,7 @@ final class MachineLoginViewModel: ObservableObject {
         return
       }
       userId = me.user!.id
+      StoreVisitLiveActivityManager.shared.startPushToStartTracking(api: api)
       await reloadCards()
     } catch {
       guard version == invocationVersion else { return }
@@ -256,7 +257,7 @@ final class MachineLoginViewModel: ObservableObject {
       // Retire this device's push tokens before the session cookie is gone: once signed
       // out the server could no longer match the device to a player, and a leftover
       // activity would keep receiving pushes meant for the account that just left.
-      await StoreVisitLiveActivityManager.shared.unregisterAllPushTokens()
+      await StoreVisitLiveActivityManager.shared.unregisterAllPushTokens(api: api)
       // A shop link keeps its card across sign-out: the shop is public data, and the player
       // should still see which shop they are dealing with above the sign-in buttons.
       if isShopOnly {
@@ -348,6 +349,7 @@ final class MachineLoginViewModel: ObservableObject {
       polling?.cancel()
       polling = nil
     } else if !deviceBusy, ![.loadingMachine, .loadingShop, .loadingCards, .locating, .sending].contains(state) {
+      StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: self.api)
       await refreshVisit(silent: true)
     }
   }
@@ -408,13 +410,15 @@ final class MachineLoginViewModel: ObservableObject {
       if userId != me.user!.id { assets = []; history = [] }
       userId = me.user!.id
       deviceState = currentDevice; summary = currentSummary; user = me.user
+      StoreVisitLiveActivityManager.shared.startPushToStartTracking(api: api)
       if let shopCode = self.shopCode {
         await StoreVisitLiveActivityManager.shared.reconcile(
           session: currentSummary?.activeSession,
           shopCode: shopCode,
           shopName: shop.shop.name ?? machine?.shop.name ?? "PRiSM",
           // Only HTTPS origins can carry a universal link; debug loopback origins are skipped.
-          origin: api.baseURL.scheme?.lowercased() == "https" ? api.baseURL : nil
+          origin: api.baseURL.scheme?.lowercased() == "https" ? api.baseURL : nil,
+          api: api
         )
       }
       guard version == invocationVersion, revision == visitRevision else { return }
