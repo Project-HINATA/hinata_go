@@ -75,7 +75,6 @@ struct MachineLoginView: View {
         .padding(.top, presentsAppClipNotice ? 140 : 12)
         .frame(maxWidth: .infinity)
       }
-      .clipped()
     }
     .overlay(alignment: .bottom) {
       if model.isShopOnly, model.state == .ready, model.settlement == nil, model.checkoutPreview != nil {
