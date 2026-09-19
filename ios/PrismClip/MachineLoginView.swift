@@ -34,6 +34,13 @@ struct MachineLoginView: View {
         else { ClipAccountSheet(section: section).environmentObject(model) }
       }
     }
+    .overlay { if model.checkoutCelebrating && section == nil { ClipCheckoutSuccess() } }
+    .task(id: model.checkoutCelebrating) {
+      guard model.checkoutCelebrating else { return }
+      do { try await Task.sleep(nanoseconds: 1_700_000_000) } catch { return }
+      section = nil
+      await model.finishCheckout()
+    }
     .alert("PRiSM", isPresented: $showingError) {
       Button("知道了") { model.clearError() }
 
@@ -207,7 +214,7 @@ private struct ClipSessionPage: View {
                      heroUrl: heroUrl, origin: model.api.baseURL, width: cardWidth)
           .id(model.api.baseURL.absoluteString + (heroUrl ?? ""))
       }
-      if let settlement = model.settlement {
+      if model.isShopOnly, !model.shopHasActiveSession, let settlement = model.settlement {
         ClipSettlementPage(settlement: settlement)
       } else {
         sessionBody
@@ -556,53 +563,55 @@ private struct ClipShopControls: View {
   }
 }
 
-/// The checkout receipt. Rendering it here is what stops a settled bill from falling straight
-/// back to the admission view before the player can read the result.
+/// A settled bill uses exactly the same totals and timeline as the live preview.
 private struct ClipSettlementPage: View {
-  @EnvironmentObject private var model: MachineLoginViewModel
   let settlement: PrismCheckoutResult
-
-  private func amount(_ value: Double) -> String {
-    value.formatted(.number.precision(.fractionLength(2)))
-  }
-
   var body: some View {
-    VStack(alignment: .leading, spacing: 20) {
-      HStack(spacing: 10) {
-        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).font(.title2)
-        Text("结账成功").font(.title2.weight(.semibold))
-      }
-      VStack(alignment: .leading, spacing: 4) {
-        Text("本次消费").font(.subheadline).foregroundStyle(.secondary)
-        Text(amount(settlement.playerSettlement.total))
-          .font(.largeTitle.bold()).monospacedDigit()
-      }
-      if !settlement.chargeItems.isEmpty {
-        VStack(alignment: .leading, spacing: 0) {
-          ForEach(settlement.chargeItems) { item in
-            PrismLabeledRow(item.label, value: amount(item.amount))
-          }
+    VStack(alignment: .leading, spacing: 24) {
+      HStack(spacing: 12) {
+        Image(systemName: "checkmark.circle").foregroundStyle(.green).font(.largeTitle)
+        VStack(alignment: .leading, spacing: 4) {
+          Text("结账成功").font(.title2.weight(.semibold))
+          Text(prismDate(settlement.playerSettlement.settledAt)).font(.caption).foregroundStyle(.secondary)
         }
       }
-      if !settlement.adjustments.isEmpty {
-        VStack(alignment: .leading, spacing: 0) {
-          ForEach(settlement.adjustments) { item in
-            PrismLabeledRow(item.label, value: amount(item.amount))
-          }
-        }
-      }
-      if let wallet = settlement.wallet {
-        PrismLabeledRow(String(localized: "结账后余额"), value: amount(wallet.balanceAfter))
-      }
-      Text("计费已结束，离店前无需再做其他操作。")
-        .font(.subheadline).foregroundStyle(.secondary)
-      Button { model.clearSettlement() } label: {
-        Text("完成").frame(maxWidth: .infinity).padding(.vertical, 12)
-      }.clipActionStyle(primary: true)
+      ClipBillContent(preview: settlement.bill)
     }
-    .frame(maxWidth: 480, alignment: .leading)
-    .padding(20)
-    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
+  }
+}
+
+private struct ClipCheckoutSuccess: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var circle: CGFloat = 0
+  @State private var check: CGFloat = 0
+  var body: some View {
+    VStack(spacing: 24) {
+      ZStack {
+        Circle().trim(from: 0, to: circle).stroke(style: StrokeStyle(lineWidth: 5, lineCap: .round)).rotationEffect(.degrees(-90))
+        ClipCheckmark().trim(from: 0, to: check).stroke(style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+      }.foregroundStyle(.green).frame(width: 96, height: 96).accessibilityHidden(true)
+      Text("结账成功").font(.title2.weight(.semibold))
+      Text("计费已结束，离店前无需再做其他操作。").font(.subheadline).foregroundStyle(.secondary)
+    }
+    .multilineTextAlignment(.center).padding(32)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color(.systemGroupedBackground).ignoresSafeArea())
+    .accessibilityElement(children: .combine)
+    .task {
+      if reduceMotion { circle = 1; check = 1; return }
+      withAnimation(.easeOut(duration: 0.45)) { circle = 1 }
+      do { try await Task.sleep(nanoseconds: 400_000_000) } catch { return }
+      withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { check = 1 }
+    }
+  }
+}
+private struct ClipCheckmark: Shape {
+  func path(in rect: CGRect) -> Path {
+    Path { path in
+      path.move(to: CGPoint(x: rect.width * 0.27, y: rect.height * 0.51))
+      path.addLine(to: CGPoint(x: rect.width * 0.44, y: rect.height * 0.68))
+      path.addLine(to: CGPoint(x: rect.width * 0.75, y: rect.height * 0.34))
+    }
   }
 }
 
@@ -804,11 +813,13 @@ private struct ClipAccountSheet: View {
   }
   private var content: some View {
     ClipAccountContent(section: section)
+      .overlay { if model.checkoutCelebrating { ClipCheckoutSuccess() } }
+      .interactiveDismissDisabled(model.deviceBusy || model.checkoutCelebrating)
       .navigationTitle(title)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
-          closeButton
+          closeButton.disabled(model.deviceBusy || model.checkoutCelebrating)
         }
       }
   }
@@ -835,8 +846,7 @@ private struct ClipAccountContent: View {
         }
         if model.deviceBusy && model.checkoutPreview == nil { ProgressView().frame(maxWidth: .infinity) }
         if section == 0 {
-          if done { Text("已结账") }
-          else if let preview = model.checkoutPreview {
+          if let preview = model.checkoutPreview {
             ClipBillContent(preview: preview)
             // An empty bill is only claimed once a read has actually returned one: the page is
             // rebuilt during entry, so saying it from `checkoutPreview == nil` alone flashed
@@ -867,7 +877,7 @@ private struct ClipAccountContent: View {
       }
       .overlay(alignment: .bottom) {
         if section == 0, !done, model.checkoutPreview != nil {
-          ClipCheckoutButton { done = true }.padding(.horizontal, horizontalPadding)
+          ClipCheckoutButton().padding(.horizontal, horizontalPadding)
             .frame(maxWidth: 480).frame(maxWidth: .infinity)
         }
       }

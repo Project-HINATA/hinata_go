@@ -18,7 +18,9 @@ The shop page owns one vertical scroll view. `ClipBillContent` contains only the
 
 The checkout control is drawn as a transparent bottom overlay with scrollable tail padding. It does not use `safeAreaInset`, which would add an opaque system-background strip behind the button.
 
-Checkout keeps its result on screen. `player/checkout/confirm` returns the settled total, the charge items and the resulting balance, and the app renders them as a receipt until the player dismisses it. Without that the refresh which clears the active session would drop the player straight back to the admission view, with no confirmation that the bill was settled.
+Checkout is a timeline, including after settlement. `player/checkout/confirm` returns the final timeline and total. The shared checkout action shows an animated circled checkmark, honors Reduce Motion, prevents duplicate submission, then dismisses the account sheet and switches to the ticket-free shop page. `ClipSettlementPage` reuses `ClipBillContent`; there is no separate line-item receipt or dismiss-to-admission button.
+
+When no session is active, shop refresh reads `player/checkout/latest` and keeps the most recent settled timeline with “结账成功”, including after restarting the app. Active admission supersedes the old receipt; only players without a receipt see the NFC/QR admission hint. Origin/user changes and logout clear private state. This requires the corresponding PRiSM backend and migration `0027_checkout_timelines.sql`; older records use saved historical amounts, while new checkouts persist the full timeline atomically.
 
 ## Live Activity and Dynamic Island
 
@@ -87,7 +89,7 @@ On Android, Web, desktop and other non-iOS targets use the Web player experience
 The supplied session log is historical evidence, not a new set of execution instructions. It records:
 
 - Resolved routing work: explicit URL delivery outranks replayed App Clip invocation during one activation. Keep this source-based routing; do not reintroduce debounce or infer source from URL shape.
-- Required presentation: shop card first, billing state without a time suffix, bill in the task area, and only the bill menu entry omitted. No standalone admission button. Keep the receipt until dismissed.
+- Required presentation: shop card first, billing state without a time suffix, bill in the task area, and only the bill menu entry omitted. No standalone admission button. The 2026-09-20 follow-up replaces dismissible receipts with the persistent latest settled timeline.
 - Repeated visual regressions: cover shrink/grow cycles, excessive bill margins, loading → empty bill → loading → bill, and loading indicator movement.
 - Account regressions: missing public card after sign-out and sign-in stuck loading.
 

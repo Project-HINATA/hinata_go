@@ -167,9 +167,9 @@ struct PrismCheckout: Decodable {
   struct Settlement: Decodable { let total: Double }
   struct Item: Decodable, Identifiable { let id: String; let label: String; let amount: Double }
 }
-/// What `player/checkout/confirm` returns. The bill is gone from the server by then, so this
-/// is what the success screen renders instead of re-reading the (now empty) preview.
+/// Shared receipt from `player/checkout/confirm` and `player/checkout/latest`.
 struct PrismCheckoutResult: Decodable {
+  let timeline: PrismBillTimeline?
   let playerSettlement: Settlement
   let chargeItems: [Item]
   let adjustments: [Item]
@@ -177,7 +177,13 @@ struct PrismCheckoutResult: Decodable {
   struct Settlement: Decodable { let total: Double; let settledAt: String }
   struct Item: Decodable, Identifiable { let id: String; let label: String; let amount: Double }
   struct Wallet: Decodable { let balanceAfter: Double }
+  var bill: PrismCheckout {
+    PrismCheckout(timeline: timeline, settlementPreview: .init(total: playerSettlement.total),
+      chargeItems: chargeItems.map { .init(id: $0.id, label: $0.label, amount: $0.amount) },
+      adjustments: adjustments.map { .init(id: $0.id, label: $0.label, amount: $0.amount) })
+  }
 }
+struct PrismLatestCheckout: Decodable { let receipt: PrismCheckoutResult? }
 struct PrismDevices: Decodable {
   let devices: [Device]
   struct Device: Decodable, Identifiable {

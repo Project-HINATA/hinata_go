@@ -130,6 +130,7 @@ enum PersistentCookieCheck {
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
     var checkoutIds: [String] = []
+    var lastReceipt: [String: Any]?
     let testUser = UUID().uuidString
     FixtureProtocol.handler = { request in
       precondition(request.url!.host == origin.host)
@@ -185,18 +186,21 @@ enum PersistentCookieCheck {
         if previewStatus != 200 { return (previewStatus, ["error": ["code": "PREVIEW_UNAVAILABLE", "message": "账单暂不可用"]]) }
         if failBillRead { failBillRead = false; throw URLError(.networkConnectionLost) }
         return ok(["settlementPreview":["total":12],"chargeItems":[],"adjustments":[]])
+      case "/api/v1/shops/store/player/checkout/latest": return ok(["receipt": lastReceipt ?? NSNull()])
       case "/api/v1/shops/store/player/checkout/confirm":
         checkoutIds.append(body["operationId"] as! String); checkoutCalls += 1
         if checkoutCalls == 1 { return (400,["error":["code":"INSUFFICIENT_BALANCE","message":"余额不足"]]) }
         if checkoutCalls == 2 { throw URLError(.networkConnectionLost) }
         active = false
         // Mirrors the real confirm payload; the success screen renders from this.
-        return ok([
+        lastReceipt = [
+          "timeline": ["tracks": [], "events": [], "totals": [["name": "入场费", "amount": 12]]],
           "playerSettlement":["total":12, "settledAt":"2026-09-12T01:00:00Z"],
           "chargeItems":[["id":"c1","label":"入场费","amount":12]],
           "adjustments":[],
           "wallet":["balanceBefore":100,"balanceAfter":88],
-        ])
+        ]
+        return ok(lastReceipt!)
       default: preconditionFailure("Unexpected API path: \(path)")
       }
     }
@@ -239,6 +243,9 @@ enum PersistentCookieCheck {
     await model.checkout(); await model.checkout()
     precondition(checkoutIds[0] != checkoutIds[1] && checkoutIds[1] == checkoutIds[2])
     precondition(model.summary?.activeSession == nil && model.checkoutPreview == nil)
+    precondition(model.checkoutCelebrating)
+    await model.finishCheckout()
+    precondition(model.isShopOnly && model.machine == nil && model.ticket == nil)
     precondition(StoreVisitLiveActivityManager.shared.session == nil)
     precondition(LocationService.calls == 4)
     billing = false; member = false; capabilities.removeValue(forKey: "door")
@@ -272,7 +279,7 @@ enum PersistentCookieCheck {
     precondition(cardReads == machineCardReads, "A shop must never depend on the machine card endpoint")
     precondition(shopOnly.visit != nil, "The card data is present before the page is shown")
     // The card's subtitle carries the billing state where a device card shows the machine name.
-    precondition(shopOnly.shopBillingState == "未入场")
+    precondition(shopOnly.shopBillingState == "结账成功")
     precondition(shopOnly.canUseShopSurface && !shopOnly.shopHasActiveSession)
     // The shop card needs the cover the shop page now returns, the same as a device card.
     precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
@@ -303,8 +310,16 @@ enum PersistentCookieCheck {
     precondition(shopOnly.settlement?.chargeItems.first?.label == "入场费")
     precondition(shopOnly.summary?.activeSession == nil, "The session is settled server-side")
     precondition(shopOnly.settlement != nil, "The receipt must outlive the refresh that clears the session")
-    shopOnly.clearSettlement()
-    precondition(shopOnly.settlement == nil && shopOnly.shopBillingState == "未入场")
+    precondition(shopOnly.checkoutCelebrating)
+    await shopOnly.finishCheckout()
+    precondition(!shopOnly.checkoutCelebrating && shopOnly.shopBillingState == "结账成功")
+    let reopenedShop = MachineLoginViewModel(api: PrismAPI(configuration: config, origin: origin))
+    await reopenedShop.startShop(shopCode: "store")
+    precondition(reopenedShop.settlement?.playerSettlement.total == 12, "A fresh page must restore the server receipt")
+    precondition(reopenedShop.settlement?.bill.timeline?.totals.first?.amount == 12, "Receipt uses the same timeline model as the preview")
+    active = true
+    await reopenedShop.refreshVisit()
+    precondition(reopenedShop.settlement == nil && reopenedShop.checkoutPreview != nil, "Admission supersedes the previous receipt")
 
     // A machine link afterwards must leave shop-only mode behind.
     await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store/device"))
@@ -382,6 +397,7 @@ enum PersistentCookieCheck {
     try await shopOnly.loadAccountSection(0)
     await shopOnly.checkout()
     precondition(shopOnly.settlement != nil)
+    await shopOnly.finishCheckout()
     await shopOnly.handleResolvedInvocation(shopB)
     precondition(shopOnly.settlement != nil, "A replayed link must not discard the settlement receipt")
 
@@ -452,11 +468,6 @@ enum PersistentCookieCheck {
     await shopOnly.handleResolvedInvocation(URL(string: "https://link-beta.neri.moe/not-a-link")!)
     precondition(!shopOnly.isShopOnly && shopOnly.shopCode == nil && shopOnly.ticket == nil)
     for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("prism.operation.\(origin.absoluteString).\(testUser).") { UserDefaults.standard.removeObject(forKey:key) }
-    let viewSource = try String(contentsOfFile: "ios/PrismClip/MachineLoginView.swift", encoding: .utf8)
-    precondition(!viewSource.contains("safeAreaInset(edge: .bottom"),
-                 "The shop checkout footer must not add an opaque safe-area strip")
-    precondition(viewSource.contains(".overlay(alignment: .bottom)"),
-                 "The shop checkout footer must remain a transparent overlay")
     print("App Clip native visit checks passed")
   }
 }

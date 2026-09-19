@@ -46,8 +46,9 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var doorPassword: PrismDoorPassword?
   @Published private(set) var deviceBusy = false
   @Published private(set) var notice: String?
-  /// The receipt from the last successful checkout, shown until the player dismisses it.
+  /// The latest settled bill, retained until a new admission supersedes it.
   @Published private(set) var settlement: PrismCheckoutResult?
+  @Published private(set) var checkoutCelebrating = false
   private var userId = ""
   private var polling: Task<Void, Never>?
   private var sceneActive = true
@@ -72,6 +73,7 @@ final class MachineLoginViewModel: ObservableObject {
   var shopBillingState: String {
     guard isShopOnly else { return "" }
     if summary?.activeSession != nil { return String(localized: "计费中") }
+    if settlement != nil { return String(localized: "结账成功") }
     // A shop that does not bill has no session to wait for, so it is answered straight away.
     if visit?.shop.billingEnabled != true { return String(localized: "本店未启用计费") }
     // "未入场" is only claimed once the player's own state has been read; reporting an unread
@@ -138,6 +140,7 @@ final class MachineLoginViewModel: ObservableObject {
     }
     invocationVersion += 1
     shopCode = nil
+    checkoutCelebrating = false; settlement = nil
     publicId = nil
     ticket = nil
     isShopOnly = false
@@ -163,7 +166,7 @@ final class MachineLoginViewModel: ObservableObject {
     invocationVersion += 1
     polling?.cancel()
     assets = []; history = []
-    visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; user = nil; waitingPower = false
+    visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; checkoutCelebrating = false; user = nil; waitingPower = false
     let version = invocationVersion
     self.shopCode = shopCode
     self.publicId = publicId
@@ -267,7 +270,7 @@ final class MachineLoginViewModel: ObservableObject {
       }
       cards = []
       user = nil; userId = ""; summary = nil; checkoutPreview = nil; billLoaded = false
-      playerStateLoaded = false; settlement = nil; binding = nil; doorPassword = nil
+      playerStateLoaded = false; settlement = nil; checkoutCelebrating = false; binding = nil; doorPassword = nil
       assets = []; history = []; deviceState = nil; notice = nil
       errorMessage = nil
     } catch { guard version == invocationVersion else { return }; errorMessage = String(localized: "退出账号失败，请重试") }
@@ -366,6 +369,7 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func refreshVisit(silent: Bool = false) async {
+    guard !checkoutCelebrating else { return }
     let api = self.api
     // Shop-only mode has no machine, so the machine gate cannot apply there.
     guard sceneActive || state == .loadingCards, machine?.capabilities != nil || isShopOnly,
@@ -404,9 +408,14 @@ final class MachineLoginViewModel: ObservableObject {
       if isShopOnly, currentSummary?.activeSession != nil {
         currentPreview = try await api.request(shopPath("player/checkout/preview"), body: [:])
       }
+      var latest: PrismCheckoutResult?
+      if isShopOnly, shop.membership != nil, shop.shop.billingEnabled, currentSummary?.activeSession == nil {
+        let result: PrismLatestCheckout = try await api.request(shopPath("player/checkout/latest"))
+        latest = result.receipt
+      }
       guard version == invocationVersion, revision == visitRevision else { return }
       playerStateLoaded = true
-      if isShopOnly { checkoutPreview = currentPreview; billLoaded = true }
+      if isShopOnly { checkoutPreview = currentPreview; settlement = latest; billLoaded = true }
       if userId != me.user!.id { assets = []; history = [] }
       userId = me.user!.id
       deviceState = currentDevice; summary = currentSummary; user = me.user
@@ -582,17 +591,30 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
   func checkout() async {
+    guard !checkoutCelebrating else { return }
+    let version = invocationVersion
     await perform {
       let data = try await operation("checkout", path: shopPath("player/checkout/confirm"), body: [:], requiresLocation: (visit?.shop.locationEnabled ?? visit?.shop.checkoutGeo) == true)
       // Keep the receipt before refreshing: the active session disappears on refresh, which
       // is exactly what used to drop the player straight back to the admission view.
-      settlement = try? JSONDecoder().decode(PrismCheckoutResult.self, from: data)
+      guard version == invocationVersion else { return }
+      settlement = try JSONDecoder().decode(PrismCheckoutResult.self, from: data)
       checkoutPreview = nil; notice = String(localized: "结账成功，计费已结束")
-      await refreshVisit()
+      summary = nil
+      checkoutCelebrating = true
     }
   }
-  /// Dismisses the settlement receipt and returns to the normal page.
-  func clearSettlement() { settlement = nil }
+  /// Called after the shared success animation and sheet dismissal.
+  func finishCheckout() async {
+    guard checkoutCelebrating, let shopCode else { return }
+    checkoutCelebrating = false
+    invocationVersion += 1
+    polling?.cancel()
+    currentInvocation = api.baseURL.appendingPathComponent("t").appendingPathComponent(shopCode)
+    isShopOnly = true; machine = nil; ticket = nil; publicId = nil; deviceState = nil; cards = []
+    state = .ready
+    await refreshVisit()
+  }
   func redeem(_ code: String) async {
     await perform {
       _ = try await operation("redeem", path: shopPath("player/redeem"), body: ["code": code], requiresLocation: false)
