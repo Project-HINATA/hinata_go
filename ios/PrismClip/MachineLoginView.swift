@@ -15,6 +15,8 @@ struct MachineLoginView: View {
     Group {
       if presentsAppClipNotice {
         page
+          .overlay(alignment: .topLeading) { floatingDismissButton }
+          .overlay(alignment: .topTrailing) { floatingAccountMenu }
       } else {
         NavigationStack {
           page
@@ -41,7 +43,6 @@ struct MachineLoginView: View {
     .onChange(of: model.errorMessage) { value in
       showingError = value != nil && section == nil
     }
-    .ignoresSafeArea()
   }
 
   private var page: some View {
@@ -64,41 +65,28 @@ struct MachineLoginView: View {
           }
         }
         .frame(maxWidth: 480)
-        .frame(minHeight: max(0, geometry.size.height - geometry.safeAreaInsets.top - geometry.safeAreaInsets.bottom), alignment: .top)
+        .frame(minHeight: max(0, geometry.size.height - 168), alignment: .top)
         .padding(.horizontal, 20)
-        // Leave enough scrollable tail for the checkout control and home indicator
-        .padding(.bottom, model.isShopOnly && model.state == .ready && model.settlement == nil && model.checkoutPreview != nil ? (120 + geometry.safeAreaInsets.bottom) : (28 + geometry.safeAreaInsets.bottom))
-        // Content top spacing clears status bar / floating controls in clip, or navigation toolbar in sheet
-        .padding(.top, presentsAppClipNotice ? (geometry.safeAreaInsets.top + 54) : (geometry.safeAreaInsets.top + 12))
+        // The checkout control is an overlay, so leave enough scrollable tail behind it
+        // without reserving an opaque safe-area strip.
+        .padding(.bottom, model.isShopOnly && model.state == .ready && model.settlement == nil && model.checkoutPreview != nil ? 120 : 28)
+        // In the App Clip the content has to clear the provider notice; in a sheet the toolbar
+        // already reserves that space.
+        .padding(.top, presentsAppClipNotice ? 140 : 12)
         .frame(maxWidth: .infinity)
       }
-      .scrollClipDisabled()
-      .overlay(alignment: .topLeading) {
-        if presentsAppClipNotice {
-          floatingDismissButton
-            .padding(.top, geometry.safeAreaInsets.top + 8)
-            .padding(.leading, 20)
-        }
-      }
-      .overlay(alignment: .topTrailing) {
-        if presentsAppClipNotice {
-          floatingAccountMenu
-            .padding(.top, geometry.safeAreaInsets.top + 8)
-            .padding(.trailing, 20)
-        }
-      }
-      .overlay(alignment: .bottom) {
-        if model.isShopOnly, model.state == .ready, model.settlement == nil, model.checkoutPreview != nil {
-          ClipCheckoutButton()
-            .padding(.horizontal, 24)
-            .padding(.bottom, max(12, geometry.safeAreaInsets.bottom))
-            .frame(maxWidth: 520)
-            .frame(maxWidth: .infinity)
-        }
+      .clipped()
+    }
+    .overlay(alignment: .bottom) {
+      if model.isShopOnly, model.state == .ready, model.settlement == nil, model.checkoutPreview != nil {
+        ClipCheckoutButton()
+          .padding(.horizontal, 24)
+          .padding(.bottom, 12)
+          .frame(maxWidth: 520)
+          .frame(maxWidth: .infinity)
       }
     }
-    .background(Color(.systemGroupedBackground))
-    .ignoresSafeArea()
+    .background(Color(.systemGroupedBackground).ignoresSafeArea())
   }
 
   @ViewBuilder private var floatingDismissButton: some View {
@@ -114,6 +102,7 @@ struct MachineLoginView: View {
         }
       }
       .tint(.primary)
+      .padding(.top, 8).padding(.leading, 20)
     }
   }
 
@@ -123,7 +112,7 @@ struct MachineLoginView: View {
         if #available(iOS 26.0, *) { accountMenu(user).buttonStyle(.glass).buttonBorderShape(.capsule) }
         else { accountMenu(user).buttonStyle(.bordered).buttonBorderShape(.capsule) }
       }
-      .disabled(model.deviceBusy || [.loadingCards, .locating, .sending].contains(model.state))
+      .disabled(model.deviceBusy || [.loadingCards, .locating, .sending].contains(model.state)).padding(.top, 8).padding(.trailing, 20)
     }
   }
 
