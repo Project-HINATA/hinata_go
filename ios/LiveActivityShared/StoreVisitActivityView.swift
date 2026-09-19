@@ -102,11 +102,14 @@ struct StoreVisitActivityLiveConfiguration: Widget {
               Text(context.attributes.shopName)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
               Text(isActive ? "入店 \(startTimeString)" : "已结算")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             }
           }
+          .padding(.leading, 8)
+          .padding(.top, 4)
         }
 
         // Expanded: Trailing Header
@@ -116,53 +119,56 @@ struct StoreVisitActivityLiveConfiguration: Widget {
               .font(.caption2.weight(.medium))
               .foregroundStyle(.secondary)
 
-            StoreVisitTimer(context: context, size: 18)
+            StoreVisitTimer(context: context, size: 18, alignment: .trailing)
               .foregroundStyle(isActive ? Color.green : Color.primary)
           }
+          .padding(.trailing, 8)
+          .padding(.top, 4)
         }
 
         // Expanded: Bottom Action Button
         DynamicIslandExpandedRegion(.bottom) {
-          HStack {
-            HStack(spacing: 6) {
-              Image(systemName: isActive ? "creditcard.fill" : "receipt.fill")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(isActive ? Color.green : Color.blue)
+          HStack(spacing: 6) {
+            Image(systemName: isActive ? "creditcard.fill" : "receipt.fill")
+              .font(.caption.weight(.medium))
+              .foregroundStyle(isActive ? Color.green : Color.blue)
 
-              Text(isActive ? "查看实时账单" : "查看结算账单")
-                .font(.caption.weight(.semibold))
+            Text(isActive ? "查看实时账单" : "查看结算账单")
+              .font(.caption.weight(.semibold))
 
-              Spacer(minLength: 0)
+            Spacer(minLength: 0)
 
-              Image(systemName: "chevron.right")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(
-              Capsule()
-                .fill(Color.white.opacity(0.12))
-            )
+            Image(systemName: "chevron.right")
+              .font(.caption2.weight(.bold))
+              .foregroundStyle(.secondary)
           }
+          .padding(.horizontal, 14)
+          .padding(.vertical, 8)
+          .background(
+            Capsule()
+              .fill(Color.white.opacity(0.12))
+          )
+          .padding(.horizontal, 10)
           .padding(.top, 4)
+          .padding(.bottom, 6)
         }
       } compactLeading: {
-        // Compact Leading: Clear, elegant storefront/checkmark symbol, not a misleading privacy dot
+        // Compact Leading: Clear storefront/checkmark symbol
         Image(systemName: isActive ? "storefront.fill" : "checkmark.circle.fill")
           .font(.system(size: 13, weight: .semibold))
           .foregroundStyle(isActive ? Color.green : Color.blue)
+          .frame(alignment: .leading)
       } compactTrailing: {
-        // Compact Trailing: Clean monospaced timer with proper bounds
-        StoreVisitTimer(context: context, size: 13.5)
+        // Compact Trailing: Clean monospaced timer constrained to avoid full status bar stretch
+        StoreVisitTimer(context: context, size: 13, alignment: .trailing)
           .foregroundStyle(isActive ? Color.green : Color.secondary)
+          .frame(maxWidth: 56, alignment: .trailing)
       } minimal: {
         // Minimal: Clear brand/status symbol for the detached bubble
         Image(systemName: isActive ? "storefront.fill" : "checkmark.circle.fill")
           .font(.system(size: 12, weight: .semibold))
           .foregroundStyle(isActive ? Color.green : Color.blue)
       }
-      .keylineTint(isActive ? .green : .secondary)
       .widgetURL(context.attributes.shopURL)
     }
   }
@@ -173,20 +179,23 @@ struct StoreVisitActivityLiveConfiguration: Widget {
 private struct StoreVisitTimer: View {
   let context: ActivityViewContext<StoreVisitAttributes>
   var size: CGFloat
+  var alignment: Alignment = .trailing
 
   var body: some View {
-    let start = Date(timeIntervalSince1970: context.state.startedAtUnix)
+    let safeStart = Date(timeIntervalSince1970: context.state.startedAtUnix)
     let end = context.state.endedAtUnix.map { Date(timeIntervalSince1970: max($0, context.state.startedAtUnix)) }
 
     Group {
       if let end {
-        Text(timerInterval: start...end, countsDown: false)
+        Text(timerInterval: safeStart...end, countsDown: false)
       } else {
-        Text(timerInterval: start...Date.distantFuture, countsDown: false)
+        // Clamp to now in case device clock has micro-drift behind server clock
+        Text(min(Date.now, safeStart), style: .timer)
       }
     }
     .font(.system(size: size, weight: .semibold, design: .rounded))
     .monospacedDigit()
+    .multilineTextAlignment(alignment == .trailing ? .trailing : (alignment == .leading ? .leading : .center))
     .lineLimit(1)
     .minimumScaleFactor(0.7)
   }
