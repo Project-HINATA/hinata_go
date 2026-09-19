@@ -1,44 +1,78 @@
 import SwiftUI
 import WidgetKit
 
-// iOS-native minimal presentation. The previous version pinned a black background
-// (`.activityBackgroundTint(.black)`), which looked wrong in light mode and fought the
-// system lock-screen material; the system now supplies the background, so the activity
-// tracks light and dark automatically.
+// MARK: - Store Visit Activity View (Lock Screen & Banner)
+
 struct StoreVisitActivityView: View {
   let context: ActivityViewContext<StoreVisitAttributes>
 
   private var isActive: Bool { context.state.phase == "active" }
-  private var statusText: LocalizedStringKey { isActive ? "在店计费中" : "本次计费已结束" }
+  private var startTimeString: String {
+    let startDate = Date(timeIntervalSince1970: context.state.startedAtUnix)
+    return startDate.formatted(date: .omitted, time: .shortened)
+  }
 
   var body: some View {
     HStack(alignment: .center, spacing: 14) {
+      // Left Icon Container
+      ZStack {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+          .fill(isActive ? Color.green.opacity(0.16) : Color.blue.opacity(0.16))
+          .frame(width: 44, height: 44)
+
+        Image(systemName: isActive ? "storefront.fill" : "checkmark.circle.fill")
+          .font(.system(size: 20, weight: .semibold))
+          .foregroundStyle(isActive ? Color.green : Color.blue)
+      }
+
+      // Shop Information & Status Details
       VStack(alignment: .leading, spacing: 3) {
+        Text(context.attributes.shopName)
+          .font(.system(.headline, design: .rounded, weight: .semibold))
+          .lineLimit(1)
+          .minimumScaleFactor(0.85)
+
         HStack(spacing: 6) {
-          StatusDot(isActive: isActive)
-          Text(context.attributes.shopName)
-            .font(.headline)
+          Circle()
+            .fill(isActive ? Color.green : Color.secondary)
+            .frame(width: 6, height: 6)
+
+          Text(isActive ? "在店计费中 · \(startTimeString) 入店" : "本次计费已结束")
+            .font(.caption)
+            .foregroundStyle(.secondary)
             .lineLimit(1)
-            .minimumScaleFactor(0.8)
         }
-        Text(statusText)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-        Text("轻点查看账单")
-          .font(.caption2)
-          .foregroundStyle(.tertiary)
+
+        HStack(spacing: 3) {
+          Text(isActive ? "轻点查看实时账单" : "轻点查看消费明细")
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+          Image(systemName: "chevron.right")
+            .font(.system(size: 8, weight: .bold))
+            .foregroundStyle(.tertiary)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
 
-      StoreVisitTimer(context: context, size: 30)
+      // Duration / Timer Display
+      VStack(alignment: .trailing, spacing: 3) {
+        Text(isActive ? "已入场时长" : "总计游玩时长")
+          .font(.caption2.weight(.medium))
+          .foregroundStyle(.secondary)
+
+        StoreVisitTimer(context: context, size: 24)
+          .foregroundStyle(isActive ? Color.green : Color.primary)
+      }
     }
     .padding(.horizontal, 18)
     .padding(.vertical, 14)
     .widgetURL(context.attributes.shopURL)
     .accessibilityElement(children: .combine)
-    .accessibilityLabel(Text(context.attributes.shopName))
+    .accessibilityLabel(Text("\(context.attributes.shopName), \(isActive ? "在店计费中" : "计费已结束")"))
   }
 }
+
+// MARK: - Dynamic Island Configuration
 
 struct StoreVisitActivityLiveConfiguration: Widget {
   static let kind = "StoreVisitActivity"
@@ -47,52 +81,94 @@ struct StoreVisitActivityLiveConfiguration: Widget {
     ActivityConfiguration(for: StoreVisitAttributes.self) { context in
       StoreVisitActivityView(context: context)
     } dynamicIsland: { context in
-      DynamicIsland {
+      let isActive = context.state.phase == "active"
+      let startTimeString = Date(timeIntervalSince1970: context.state.startedAtUnix).formatted(date: .omitted, time: .shortened)
+
+      return DynamicIsland {
+        // Expanded: Leading Header
         DynamicIslandExpandedRegion(.leading) {
-          HStack(spacing: 6) {
-            StatusDot(isActive: context.state.phase == "active")
-            Text(context.attributes.shopName)
-              .font(.subheadline.weight(.semibold))
-              .lineLimit(1)
+          HStack(spacing: 8) {
+            ZStack {
+              Circle()
+                .fill((isActive ? Color.green : Color.blue).opacity(0.18))
+                .frame(width: 28, height: 28)
+
+              Image(systemName: isActive ? "storefront.fill" : "checkmark.circle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(isActive ? Color.green : Color.blue)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+              Text(context.attributes.shopName)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+              Text(isActive ? "入店 \(startTimeString)" : "已结算")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
           }
         }
+
+        // Expanded: Trailing Header
         DynamicIslandExpandedRegion(.trailing) {
-          StoreVisitTimer(context: context, size: 22)
-        }
-        DynamicIslandExpandedRegion(.bottom) {
-          HStack(spacing: 6) {
-            Text(context.state.phase == "active" ? "在店计费中" : "本次计费已结束")
-              .font(.caption)
+          VStack(alignment: .trailing, spacing: 2) {
+            Text(isActive ? "已入场" : "总时长")
+              .font(.caption2.weight(.medium))
               .foregroundStyle(.secondary)
-            Spacer(minLength: 0)
-            Text("轻点查看账单")
-              .font(.caption2)
-              .foregroundStyle(.tertiary)
+
+            StoreVisitTimer(context: context, size: 18)
+              .foregroundStyle(isActive ? Color.green : Color.primary)
           }
+        }
+
+        // Expanded: Bottom Action Button
+        DynamicIslandExpandedRegion(.bottom) {
+          HStack {
+            HStack(spacing: 6) {
+              Image(systemName: isActive ? "creditcard.fill" : "receipt.fill")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(isActive ? Color.green : Color.blue)
+
+              Text(isActive ? "查看实时账单" : "查看结算账单")
+                .font(.caption.weight(.semibold))
+
+              Spacer(minLength: 0)
+
+              Image(systemName: "chevron.right")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+              Capsule()
+                .fill(Color.white.opacity(0.12))
+            )
+          }
+          .padding(.top, 4)
         }
       } compactLeading: {
-        StatusDot(isActive: context.state.phase == "active")
+        // Compact Leading: Clear, elegant storefront/checkmark symbol, not a misleading privacy dot
+        Image(systemName: isActive ? "storefront.fill" : "checkmark.circle.fill")
+          .font(.system(size: 13, weight: .semibold))
+          .foregroundStyle(isActive ? Color.green : Color.blue)
       } compactTrailing: {
-        StoreVisitTimer(context: context, size: 15)
+        // Compact Trailing: Clean monospaced timer with proper bounds
+        StoreVisitTimer(context: context, size: 13.5)
+          .foregroundStyle(isActive ? Color.green : Color.secondary)
       } minimal: {
-        StatusDot(isActive: context.state.phase == "active")
+        // Minimal: Clear brand/status symbol for the detached bubble
+        Image(systemName: isActive ? "storefront.fill" : "checkmark.circle.fill")
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundStyle(isActive ? Color.green : Color.blue)
       }
-      .keylineTint(context.state.phase == "active" ? .green : .secondary)
+      .keylineTint(isActive ? .green : .secondary)
       .widgetURL(context.attributes.shopURL)
     }
   }
 }
 
-private struct StatusDot: View {
-  let isActive: Bool
-
-  var body: some View {
-    Circle()
-      .fill(isActive ? Color.green : Color.secondary)
-      .frame(width: 8, height: 8)
-      .accessibilityHidden(true)
-  }
-}
+// MARK: - Shared Timer Component
 
 private struct StoreVisitTimer: View {
   let context: ActivityViewContext<StoreVisitAttributes>
@@ -100,7 +176,8 @@ private struct StoreVisitTimer: View {
 
   var body: some View {
     let start = Date(timeIntervalSince1970: context.state.startedAtUnix)
-    let end = context.state.endedAtUnix.map { Date(timeIntervalSince1970: $0) }
+    let end = context.state.endedAtUnix.map { Date(timeIntervalSince1970: max($0, context.state.startedAtUnix)) }
+
     Group {
       if let end {
         Text(timerInterval: start...end, countsDown: false)
@@ -111,6 +188,6 @@ private struct StoreVisitTimer: View {
     .font(.system(size: size, weight: .semibold, design: .rounded))
     .monospacedDigit()
     .lineLimit(1)
-    .minimumScaleFactor(0.6)
+    .minimumScaleFactor(0.7)
   }
 }
