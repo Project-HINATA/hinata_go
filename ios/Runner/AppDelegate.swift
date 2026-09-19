@@ -13,6 +13,7 @@ import UIKit
     flutterEngine.run(withEntrypoint: "nativeMain")
     GeneratedPluginRegistrant.register(with: flutterEngine)
     PrismURLBridge.shared.attach()
+    StoreVisitLiveActivityManager.shared.startGlobalActivityTracking()
     _ = nativeShellBridge
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

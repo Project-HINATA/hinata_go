@@ -9,6 +9,10 @@ struct PrismClipApp: App {
   /// Not observable: it only ranks deliveries, and the page itself is driven by `model`.
   private let router = InvocationRouter()
 
+  init() {
+    StoreVisitLiveActivityManager.shared.startGlobalActivityTracking()
+  }
+
   var body: some Scene {
     WindowGroup {
       MachineLoginView(presentsAppClipNotice: true)

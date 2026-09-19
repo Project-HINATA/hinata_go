@@ -12,6 +12,10 @@ final class StoreVisitLiveActivityManager {
 
   private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "PRiSM", category: "LiveActivity")
 
+  /// Activity-level observers
+  private var activityUpdatesTask: Task<Void, Never>?
+  private var stateTasks: [String: Task<Void, Never>] = [:]
+
   /// Push-token observers, keyed by activity id, so a token rotation can be reported
   /// without stacking a second listener on the same activity.
   private var tokenTasks: [String: Task<Void, Never>] = [:]
@@ -24,6 +28,20 @@ final class StoreVisitLiveActivityManager {
   private var registeredStartOrigin: String?
 
   private init() {}
+
+  /// Starts global activity tracking across the app lifecycle.
+  /// Hooks activityUpdates and recovers existing activities.
+  func startGlobalActivityTracking(fallbackAPI: PrismAPI = .shared) {
+    recoverExistingActivities(api: fallbackAPI)
+
+    guard activityUpdatesTask == nil else { return }
+    activityUpdatesTask = Task { [weak self] in
+      for await activity in Activity<StoreVisitAttributes>.activityUpdates {
+        guard let self else { return }
+        self.ensureTokenTracking(for: activity, fallbackAPI: fallbackAPI)
+      }
+    }
+  }
 
   /// Starts or maintains push-to-start token tracking against the provided deployment API.
   /// Gracefully skips if iOS version is below 17.2 or Live Activities are disabled.
@@ -161,12 +179,44 @@ final class StoreVisitLiveActivityManager {
   /// Ensures an activity's push token is observed and reported idempotently to the server.
   func ensureTokenTracking(
     for activity: Activity<StoreVisitAttributes>,
+    fallbackAPI: PrismAPI = .shared
+  ) {
+    guard activity.activityState == .active else { return }
+    let attrs = activity.attributes
+    let api = attrs.origin.flatMap(URL.init(string:)).map { fallbackAPI.atOrigin($0) } ?? fallbackAPI
+    ensureTokenTracking(
+      for: activity,
+      shopCode: attrs.shopCode,
+      sessionId: attrs.sessionId,
+      shopName: attrs.shopName,
+      origin: attrs.origin,
+      api: api
+    )
+  }
+
+  /// Ensures an activity's push token is observed and reported idempotently to the server.
+  func ensureTokenTracking(
+    for activity: Activity<StoreVisitAttributes>,
     shopCode: String,
     sessionId: String,
     shopName: String,
     origin: String?,
     api: PrismAPI
   ) {
+    guard activity.activityState == .active else { return }
+
+    if stateTasks[activity.id] == nil {
+      stateTasks[activity.id] = Task { [weak self] in
+        for await state in activity.activityStateUpdates {
+          guard let self else { return }
+          if state == .dismissed || state == .ended {
+            self.cleanupTracking(for: activity.id)
+            break
+          }
+        }
+      }
+    }
+
     if tokenTasks[activity.id] == nil {
       tokenTasks[activity.id] = Task { [weak self] in
         for await tokenData in activity.pushTokenUpdates {
@@ -202,17 +252,9 @@ final class StoreVisitLiveActivityManager {
   }
 
   /// Re-attaches token tracking to any existing activities after app restart / foreground resume.
-  func recoverExistingActivities(api: PrismAPI) {
+  func recoverExistingActivities(api: PrismAPI = .shared) {
     for activity in Activity<StoreVisitAttributes>.activities {
-      let attrs = activity.attributes
-      ensureTokenTracking(
-        for: activity,
-        shopCode: attrs.shopCode,
-        sessionId: attrs.sessionId,
-        shopName: attrs.shopName,
-        origin: attrs.origin,
-        api: api
-      )
+      ensureTokenTracking(for: activity, fallbackAPI: api)
     }
   }
 
@@ -253,28 +295,42 @@ final class StoreVisitLiveActivityManager {
     logger.notice(
       "Registering Live Activity token for shop \(shopCode, privacy: .public) via \(api.baseURL.absoluteString, privacy: .public) (token \(token.count) chars)"
     )
-    do {
-      try await api.registerLiveActivity(
-        shopCode: shopCode,
-        activityId: activity.id,
-        token: token,
-        sessionId: sessionId,
-        attributes: attributes
-      )
-      registeredTokens[activity.id] = token
-      registeredTokenOrigins[activity.id] = api.baseURL.absoluteString
-    } catch {
-      registeredTokens.removeValue(forKey: activity.id)
-      registeredTokenOrigins.removeValue(forKey: activity.id)
-      logger.error("Failed to register Live Activity push token: \(String(describing: error), privacy: .public)")
+    var delay: UInt64 = 1_000_000_000
+    for attempt in 1...3 {
+      do {
+        try await api.registerLiveActivity(
+          shopCode: shopCode,
+          activityId: activity.id,
+          token: token,
+          sessionId: sessionId,
+          attributes: attributes
+        )
+        registeredTokens[activity.id] = token
+        registeredTokenOrigins[activity.id] = api.baseURL.absoluteString
+        return
+      } catch {
+        logger.error("Attempt \(attempt) failed to register Live Activity push token: \(String(describing: error), privacy: .public)")
+        if attempt < 3 {
+          try? await Task.sleep(nanoseconds: delay)
+          delay *= 2
+        }
+      }
     }
+    registeredTokens.removeValue(forKey: activity.id)
+    registeredTokenOrigins.removeValue(forKey: activity.id)
+  }
+
+  private func cleanupTracking(for activityId: String) {
+    tokenTasks[activityId]?.cancel()
+    tokenTasks.removeValue(forKey: activityId)
+    stateTasks[activityId]?.cancel()
+    stateTasks.removeValue(forKey: activityId)
+    registeredTokens.removeValue(forKey: activityId)
+    registeredTokenOrigins.removeValue(forKey: activityId)
   }
 
   private func reportUnregister(_ activity: Activity<StoreVisitAttributes>, api: PrismAPI) async {
-    tokenTasks[activity.id]?.cancel()
-    tokenTasks[activity.id] = nil
-    registeredTokens.removeValue(forKey: activity.id)
-    registeredTokenOrigins.removeValue(forKey: activity.id)
+    cleanupTracking(for: activity.id)
     do {
       try await api.unregisterLiveActivity(shopCode: activity.attributes.shopCode, activityId: activity.id)
     } catch {

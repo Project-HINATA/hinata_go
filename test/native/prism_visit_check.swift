@@ -33,9 +33,12 @@ import Combine
     trackingPushToStart = true
     self.lastApi = api
   }
-  func recoverExistingActivities(api: PrismAPI) {
+  func recoverExistingActivities(api: PrismAPI = .shared) {
     recoveredActivities = true
     self.lastApi = api
+  }
+  func startGlobalActivityTracking(fallbackAPI: PrismAPI = .shared) {
+    self.lastApi = fallbackAPI
   }
 }
 
