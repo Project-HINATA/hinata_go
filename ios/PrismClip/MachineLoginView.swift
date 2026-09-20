@@ -584,23 +584,17 @@ private struct ClipHistoryRow: View {
   let record: PrismHistory.Record
   var body: some View {
     HStack(spacing: 12) {
-      Image(systemName: "doc.text").font(.title3).foregroundStyle(.secondary)
-        .frame(width: 38, height: 44).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
       VStack(alignment: .leading, spacing: 7) {
-        Text(prismDate(record.settledAt)).font(.subheadline.weight(.medium))
-        HStack(spacing: 4) {
-          Text("已结账")
-          if record.sessionCount > 0 { Text("·"); Text("\(record.sessionCount) 项计费") }
-        }.font(.caption).foregroundStyle(.secondary)
+        Text(prismDate(record.startedAt ?? record.settledAt)).font(.subheadline.weight(.medium))
+        if record.startedAt != nil {
+          Text("→ " + prismDate(record.endedAt ?? record.settledAt)).font(.caption).foregroundStyle(.secondary)
+        }
       }
-      Spacer(minLength: 4)
-      VStack(alignment: .trailing, spacing: 4) {
-        Text("结账金额").font(.caption2).foregroundStyle(.secondary)
-        Text(record.total.formatted(.number.precision(.fractionLength(2)))).font(.title3.weight(.semibold)).monospacedDigit()
-      }
+      Spacer(minLength: 12)
+      Text(record.total.formatted(.number.precision(.fractionLength(2)))).font(.title3.weight(.semibold)).monospacedDigit().fixedSize()
       Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
     }.padding(.vertical, 12).contentShape(Rectangle())
-    .overlay(alignment: .bottom) { Divider() }
+    .overlay(alignment: .bottom) { Divider().frame(height: 1) }
   }
 }
 
