@@ -614,11 +614,6 @@ private struct ClipHistoryDetail: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 28) {
         if let receipt {
-          VStack(spacing: 0) {
-            if let start = record.startedAt { PrismLabeledRow(String(localized: "开始计费"), value: prismDate(start)) }
-            if let end = record.endedAt { PrismLabeledRow(String(localized: "结束计费"), value: prismDate(end)) }
-            if record.sessionCount > 1 { PrismLabeledRow(String(localized: "合并结账"), value: String(localized: "\(record.sessionCount) 项计费")) }
-          }.font(.caption).foregroundStyle(.secondary)
           ClipSettlementPage(settlement: receipt)
         } else if let error {
           Text(error).foregroundStyle(.red)
@@ -920,7 +915,6 @@ private struct ClipAccountContent: View {
             }.clipActionStyle(primary: true).disabled(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
           }
         } else if section == 2 {
-          Text("每次结账，一份完整账单").font(.subheadline).foregroundStyle(.secondary)
           if model.history.isEmpty && !model.deviceBusy && loadError == nil {
             VStack(spacing: 16) { Image(systemName: "doc.text").font(.largeTitle); Text("暂无结账记录") }
               .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 40)

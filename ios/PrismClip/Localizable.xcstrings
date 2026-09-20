@@ -3687,23 +3687,6 @@
         }
       }
     },
-    "每次结账，一份完整账单": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "One complete bill for each checkout"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每次结账，一份完整账单"
-          }
-        }
-      }
-    },
     "全部记录": {
       "extractionState": "manual",
       "localizations": {
@@ -3717,23 +3700,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "全部记录"
-          }
-        }
-      }
-    },
-    "合并结账": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Combined checkout"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "合并结账"
           }
         }
       }
