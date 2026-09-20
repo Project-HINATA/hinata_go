@@ -154,10 +154,10 @@ struct PrismAssets: Decodable {
   struct Holding: Decodable, Identifiable { let id: String; let assetCode: String; let assetName: String?; let quantity: Double }
 }
 struct PrismHistory: Decodable {
-  let sessions: [Session]
-  struct Session: Decodable, Identifiable {
-    let sessionId: String; let startedAt: String; let endedAt: String?; let total: Double?
-    var id: String { sessionId }
+  let records: [Record]
+  let nextOffset: Int?
+  struct Record: Decodable, Identifiable {
+    let id: String; let settledAt: String; let startedAt: String?; let endedAt: String?; let total: Double; let sessionCount: Int
   }
 }
 struct PrismCheckout: Decodable {

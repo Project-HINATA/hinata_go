@@ -165,7 +165,14 @@ enum PersistentCookieCheck {
       case "/api/v1/shops/store/qq-binding": return ok(["code":"ABC123","expiresAt":"2999-01-01T00:00:00Z"])
       case "/api/v1/shops/store/player/me": return ok(["wallet":[],"activeSession":active ? ["id":"entry","startedAt":"2026-09-12T00:00:00.123Z"] : NSNull()])
       case "/api/v1/shops/store/player/assets": assetReads += 1; return ok(["holdings":[]])
-      case "/api/v1/shops/store/player/sessions/history": historyReads += 1; return ok(["sessions":[]])
+      case "/api/v1/shops/store/player/checkouts/history":
+        historyReads += 1
+        let more = request.url!.query != nil
+        return ok(["records": [["id": more ? "bill:old" : "bill:new", "settledAt":"2026-09-12T01:00:00Z", "startedAt":"2026-09-12T00:00:00Z", "endedAt":"2026-09-12T01:00:00Z", "total":12, "sessionCount":2]], "nextOffset": more ? NSNull() : 30])
+      case "/api/v1/shops/store/player/checkouts/bill:new", "/api/v1/shops/store/player/checkouts/bill:old":
+        var receipt: [String: Any] = ["playerSettlement":["total":12,"settledAt":"2026-09-12T01:00:00Z"], "chargeItems":[], "adjustments":[]]
+        if path.hasSuffix("new") { receipt["wallet"] = ["balanceAfter":88]; receipt["timeline"] = ["tracks":[],"events":[],"totals":[]] }
+        return ok(["receipt":receipt])
       case "/api/v1/shops/store/devices": return ok(["devices":[]])
       case "/api/v1/devices/session/actions":
         if body["action"] as? String == "mahjong.join" {
@@ -238,6 +245,13 @@ enum PersistentCookieCheck {
     precondition(historyReads == 1 && assetReads == 0)
     try await model.loadAccountSection(3)
     precondition(historyReads == 1 && assetReads == 1)
+    precondition(model.history.first?.sessionCount == 2 && model.historyNextOffset == 30)
+    let historicalReceipt = try await model.loadCheckoutReceipt("bill:new")
+    precondition(historicalReceipt.wallet?.balanceAfter == 88 && historicalReceipt.timeline != nil)
+    await model.loadMoreHistory()
+    precondition(model.history.count == 2 && model.historyNextOffset == nil)
+    let oldReceipt = try await model.loadCheckoutReceipt("bill:old")
+    precondition(oldReceipt.wallet == nil && oldReceipt.timeline == nil && oldReceipt.playerSettlement.total == 12)
     await model.previewCheckout(); precondition(model.checkoutPreview?.settlementPreview.total == 12)
     await model.checkout(); precondition(model.summary?.activeSession != nil)
     await model.checkout(); await model.checkout()

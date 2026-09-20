@@ -35,7 +35,8 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var deviceState: PrismDeviceState?
   @Published private(set) var summary: PrismSummary?
   @Published private(set) var assets: [PrismAssets.Holding] = []
-  @Published private(set) var history: [PrismHistory.Session] = []
+  @Published private(set) var history: [PrismHistory.Record] = []
+  @Published private(set) var historyNextOffset: Int?
   @Published private(set) var user: PrismUser?
   @Published private(set) var waitingPower = false
   @Published private(set) var checkoutPreview: PrismCheckout?
@@ -165,7 +166,7 @@ final class MachineLoginViewModel: ObservableObject {
     let api = self.api
     invocationVersion += 1
     polling?.cancel()
-    assets = []; history = []
+    assets = []; history = []; historyNextOffset = nil
     visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; checkoutCelebrating = false; user = nil; waitingPower = false
     let version = invocationVersion
     self.shopCode = shopCode
@@ -271,7 +272,7 @@ final class MachineLoginViewModel: ObservableObject {
       cards = []
       user = nil; userId = ""; summary = nil; checkoutPreview = nil; billLoaded = false
       playerStateLoaded = false; settlement = nil; checkoutCelebrating = false; binding = nil; doorPassword = nil
-      assets = []; history = []; deviceState = nil; notice = nil
+      assets = []; history = []; historyNextOffset = nil; deviceState = nil; notice = nil
       errorMessage = nil
     } catch { guard version == invocationVersion else { return }; errorMessage = String(localized: "退出账号失败，请重试") }
   }
@@ -387,7 +388,7 @@ final class MachineLoginViewModel: ObservableObject {
       visit = shop
       guard me.user != nil else {
         state = .unauthenticated
-        user = nil; summary = nil; checkoutPreview = nil; billLoaded = false; playerStateLoaded = false; assets = []; history = []; settlement = nil
+        user = nil; summary = nil; checkoutPreview = nil; billLoaded = false; playerStateLoaded = false; assets = []; history = []; historyNextOffset = nil; settlement = nil
         return
       }
       var currentDevice = deviceState
@@ -416,7 +417,7 @@ final class MachineLoginViewModel: ObservableObject {
       guard version == invocationVersion, revision == visitRevision else { return }
       playerStateLoaded = true
       if isShopOnly { checkoutPreview = currentPreview; settlement = latest; billLoaded = true }
-      if userId != me.user!.id { assets = []; history = [] }
+      if userId != me.user!.id { assets = []; history = []; historyNextOffset = nil }
       userId = me.user!.id
       deviceState = currentDevice; summary = currentSummary; user = me.user
       StoreVisitLiveActivityManager.shared.startPushToStartTracking(api: api)
@@ -571,9 +572,9 @@ final class MachineLoginViewModel: ObservableObject {
       summary = current; checkoutPreview = preview
       billLoaded = true
     } else if section == 2 {
-      let records: PrismHistory = try await api.request(shopPath("player/sessions/history"))
+      let records: PrismHistory = try await api.request(shopPath("player/checkouts/history"))
       guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }
-      history = records.sessions
+      history = records.records; historyNextOffset = records.nextOffset
     } else if section == 3 {
       let holdings: PrismAssets = try await api.request(shopPath("player/assets"))
       guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }
@@ -589,6 +590,25 @@ final class MachineLoginViewModel: ObservableObject {
       guard version == invocationVersion else { return }
       checkoutPreview = value
     }
+  }
+  func loadMoreHistory() async {
+    guard let offset = historyNextOffset else { return }
+    let version = invocationVersion
+    await perform {
+      let records: PrismHistory = try await api.request(shopPath("player/checkouts/history?offset=\(offset)"))
+      guard version == invocationVersion, !Task.isCancelled else { return }
+      let existing = Set(history.map(\.id))
+      history.append(contentsOf: records.records.filter { !existing.contains($0.id) })
+      historyNextOffset = records.nextOffset
+    }
+  }
+  func loadCheckoutReceipt(_ id: String) async throws -> PrismCheckoutResult {
+    let version = invocationVersion
+    let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/?#%"))) ?? ""
+    let result: PrismLatestCheckout = try await api.request(shopPath("player/checkouts/\(encoded)"))
+    guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }
+    guard let receipt = result.receipt else { throw PrismAPIError.invalidResponse }
+    return receipt
   }
   func checkout() async {
     guard !checkoutCelebrating else { return }

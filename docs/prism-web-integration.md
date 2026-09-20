@@ -76,6 +76,8 @@ Only ticket expiry routes to the expired page. IO failures show the server devic
 
 ### Shared billing timeline
 
+History groups sessions by checkout and loads 30 receipts at a time from `/player/checkouts/history`. Each row shows settlement time, total and session count; native navigation opens `/player/checkouts/:checkoutId` and reuses the settled bill timeline. Both native and web display the saved post-checkout balance when present. Legacy records show only their saved facts, without missing-data notices or substituting the current wallet balance. Signing out or switching invocation clears history and pagination; stale detail responses are discarded.
+
 App Clip and Flutter render the server's checkout `timeline`: grouped timestamp events, parallel start/stop rails, signed stage amounts and independent cap adjustments. Rail identity survives pricing rule changes; boundary times are entirely engine-driven. Server-provided display times preserve the shop's pricing timezone. Totals and the timeline scroll together. App Clip uses a blue prominent Liquid Glass checkout button at the bottom safe area with no extra bottom gap; the scroll content has end padding so the last event remains reachable. Flutter uses its Material filled action. Older responses without timeline metadata retain the simple item list.
 
 ### Platform ownership

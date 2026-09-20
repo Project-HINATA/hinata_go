@@ -575,7 +575,65 @@ private struct ClipSettlementPage: View {
           Text(prismDate(settlement.playerSettlement.settledAt)).font(.caption).foregroundStyle(.secondary)
         }
       }
-      ClipBillContent(preview: settlement.bill)
+      ClipBillContent(preview: settlement.bill, balanceAfter: settlement.wallet?.balanceAfter)
+    }
+  }
+}
+
+private struct ClipHistoryRow: View {
+  let record: PrismHistory.Record
+  var body: some View {
+    HStack(spacing: 12) {
+      Image(systemName: "doc.text").font(.title3).foregroundStyle(.secondary)
+        .frame(width: 38, height: 44).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
+      VStack(alignment: .leading, spacing: 7) {
+        Text(prismDate(record.settledAt)).font(.subheadline.weight(.medium))
+        HStack(spacing: 4) {
+          Text("已结账")
+          if record.sessionCount > 0 { Text("·"); Text("\(record.sessionCount) 项计费") }
+        }.font(.caption).foregroundStyle(.secondary)
+      }
+      Spacer(minLength: 4)
+      VStack(alignment: .trailing, spacing: 4) {
+        Text("结账金额").font(.caption2).foregroundStyle(.secondary)
+        Text(record.total.formatted(.number.precision(.fractionLength(2)))).font(.title3.weight(.semibold)).monospacedDigit()
+      }
+      Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+    }.padding(.vertical, 12).contentShape(Rectangle())
+    .overlay(alignment: .bottom) { Divider() }
+  }
+}
+
+private struct ClipHistoryDetail: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  let record: PrismHistory.Record
+  @State private var receipt: PrismCheckoutResult?
+  @State private var error: String?
+  @State private var attempt = 0
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 28) {
+        if let receipt {
+          VStack(spacing: 0) {
+            if let start = record.startedAt { PrismLabeledRow(String(localized: "开始计费"), value: prismDate(start)) }
+            if let end = record.endedAt { PrismLabeledRow(String(localized: "结束计费"), value: prismDate(end)) }
+            if record.sessionCount > 1 { PrismLabeledRow(String(localized: "合并结账"), value: String(localized: "\(record.sessionCount) 项计费")) }
+          }.font(.caption).foregroundStyle(.secondary)
+          ClipSettlementPage(settlement: receipt)
+        } else if let error {
+          Text(error).foregroundStyle(.red)
+          Button("重试") { attempt += 1 }
+        } else { ProgressView().frame(maxWidth: .infinity).accessibilityLabel("正在加载") }
+      }.padding(24).frame(maxWidth: 528).frame(maxWidth: .infinity)
+    }
+    .navigationTitle("账单详情").navigationBarTitleDisplayMode(.inline)
+    .task(id: attempt) {
+      error = nil
+      do { receipt = try await model.loadCheckoutReceipt(record.id) }
+      catch {
+        guard !Task.isCancelled, !(error is CancellationError), (error as? URLError)?.code != .cancelled else { return }
+        self.error = error is URLError ? String(localized: "网络连接失败，请检查网络后重试") : error.localizedDescription
+      }
     }
   }
 }
@@ -862,13 +920,15 @@ private struct ClipAccountContent: View {
             }.clipActionStyle(primary: true).disabled(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
           }
         } else if section == 2 {
-          if model.history.isEmpty && !model.deviceBusy && loadError == nil { Text("暂无记录") }
-          ForEach(model.history) { item in
-            VStack(alignment: .leading, spacing: 6) {
-              PrismLabeledRow(prismDate(item.startedAt), value: item.total?.formatted(.number.precision(.fractionLength(2))) ?? "—")
-              Text(item.endedAt.map(prismDate) ?? String(localized: "计费中")).font(.caption).foregroundStyle(.secondary)
-            }
+          Text("每次结账，一份完整账单").font(.subheadline).foregroundStyle(.secondary)
+          if model.history.isEmpty && !model.deviceBusy && loadError == nil {
+            VStack(spacing: 16) { Image(systemName: "doc.text").font(.largeTitle); Text("暂无结账记录") }
+              .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.vertical, 40)
           }
+          ForEach(model.history) { item in
+            NavigationLink { ClipHistoryDetail(record: item) } label: { ClipHistoryRow(record: item) }.buttonStyle(.plain)
+          }
+          if model.historyNextOffset != nil { Button("加载更多") { Task { await model.loadMoreHistory() } }.frame(maxWidth: .infinity) }
         } else {
           if model.assets.isEmpty && !model.deviceBusy && loadError == nil { Text("暂无资产") }
           ForEach(model.assets) { item in PrismLabeledRow(item.assetName ?? item.assetCode, value: item.quantity.formatted()) }
@@ -895,6 +955,7 @@ private struct ClipAccountContent: View {
 /// Shared by the machine account sheet and the shop page; no scroll view or load task.
 private struct ClipBillContent: View {
   let preview: PrismCheckout
+  var balanceAfter: Double? = nil
   @ViewBuilder private func billTotals(_ timeline: PrismBillTimeline) -> some View {
     ForEach(Array(timeline.totals.enumerated()), id: \.offset) { _, item in
       (Text(item.name + " ").foregroundColor(.secondary) + Text(item.amount.formatted(.number.precision(.fractionLength(2)))).foregroundColor(item.amount < 0 ? .green : .secondary)).font(.caption)
@@ -915,6 +976,11 @@ private struct ClipBillContent: View {
           } else { VStack(alignment: .leading, spacing: 4) { billTotals(timeline) }.padding(.top, 6) }
         }
       }.frame(maxWidth: 480, alignment: .leading).padding(.bottom, 4)
+      if let balanceAfter {
+        PrismLabeledRow(String(localized: "结账后余额"), value: balanceAfter.formatted(.number.precision(.fractionLength(2))))
+          .font(.subheadline).padding(.horizontal, 16)
+          .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 16))
+      }
       if let timeline = preview.timeline { ClipBillTimeline(timeline: timeline) }
       else {
         ForEach(preview.chargeItems) { item in PrismLabeledRow(item.label, value: item.amount.formatted(.number.precision(.fractionLength(2)))) }
