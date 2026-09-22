@@ -112,7 +112,21 @@ final class StoreVisitLiveActivityManager {
     }
 
     if let session {
+      struct BillResponse: Decodable {
+        let bill: StoreVisitAttributes.Bill?
+        let nextCheckAtUnix: Double?
+        let endedAtUnix: Double?
+      }
+      let current = Activity<StoreVisitAttributes>.activities.first(where: { $0.attributes.sessionId == session.id })
+      // APNs owns background updates; ordinary screen refreshes must not poll billing.
+      let needsBill = current == nil || current?.content.state.bill == nil || current?.activityState == .stale
+      let billing: BillResponse? = needsBill ? try? await api.request("/api/v1/shops/\(shopCode)/player/live-activity/bill") : nil
+      let staleDate = billing?.nextCheckAtUnix.map { Date(timeIntervalSince1970: $0) }
       if let existing = Activity<StoreVisitAttributes>.activities.first(where: { $0.attributes.sessionId == session.id }) {
+        if let bill = billing?.bill, bill.asOfUnix >= (existing.content.state.bill?.asOfUnix ?? 0), existing.activityState == .active || existing.activityState == .stale {
+          let state = StoreVisitAttributes.ContentState(phase: existing.content.state.phase, startedAtUnix: existing.content.state.startedAtUnix, endedAtUnix: billing?.endedAtUnix, bill: bill)
+          await existing.update(ActivityContent(state: state, staleDate: staleDate))
+        }
         // Already showing this visit (either created locally or remotely started via push-to-start).
         // Ensure token observer is active and current token is reported to the current deployment.
         ensureTokenTracking(
@@ -142,8 +156,8 @@ final class StoreVisitLiveActivityManager {
         let activity = try Activity.request(
           attributes: StoreVisitAttributes(sessionId: session.id, shopCode: shopCode, shopName: shopName, origin: originValue),
           content: ActivityContent(
-            state: .init(phase: "active", startedAtUnix: startedAt.timeIntervalSince1970, endedAtUnix: nil),
-            staleDate: nil
+            state: .init(phase: "active", startedAtUnix: startedAt.timeIntervalSince1970, endedAtUnix: billing?.endedAtUnix, bill: billing?.bill),
+            staleDate: staleDate
           ),
           pushType: .token
         )
@@ -344,4 +358,3 @@ final class StoreVisitLiveActivityManager {
     await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .after(Date().addingTimeInterval(60)))
   }
 }
-
