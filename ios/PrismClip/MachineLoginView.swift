@@ -1084,7 +1084,7 @@ private struct ClipBillEntry: View {
       HStack(alignment: .firstTextBaseline) {
         HStack(spacing: 8) {
           if let trackColor { Circle().fill(trackColor).frame(width: 6, height: 6).accessibilityHidden(true) }
-          Text(entry.name).font(.subheadline.weight(.medium))
+          Text(entry.name + (entry.rule.map { "（" + $0 + "）" } ?? "")).font(.subheadline.weight(.medium))
         }
         Spacer(minLength: 8)
         if let amount = entry.amount {
@@ -1093,7 +1093,7 @@ private struct ClipBillEntry: View {
       }
       Group {
         if showKind, entry.trackId != nil { Text(billEventLabel(entry.kind)) }
-        if let rule = entry.rule { Text(rule + (entry.nextRule.map { " → " + $0 } ?? "")) }
+        if let next = entry.nextRule { Text((entry.rule ?? "") + " → " + next) }
         if let period { Text(period) }
         if let rate { Text(rate) }
         if let cap { Text(cap) }

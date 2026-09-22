@@ -76,6 +76,8 @@ Only ticket expiry routes to the expired page. IO failures show the server devic
 
 ### Shared billing timeline
 
+Timeline entry headings render `plan（rule）` for both start and charge/end events. The separate repeated rule subtitle is removed; rule-switch arrows and saved period/rate details remain. Global cap adjustments are identified by the server as `全局封顶（rule）` in both the timeline and totals.
+
 The history list has no explanatory slogan. Receipt details go directly to the settled bill without repeating start/end timestamps above the timeline. Plan names and day/night rule labels come from the server timeline, including reconstructed legacy receipts.
 
 History rows show the start and end date/time on two lines with only the amount on the right. Redundant settlement status, session count and amount captions are omitted. Row separators stay horizontal inside the navigation link.
