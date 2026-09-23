@@ -524,6 +524,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get firmwareUpdate => 'Firmware Update';
 
   @override
+  String get windowsFirmwareUpdateUnavailable =>
+      'Windows browsers cannot update HINATA reader firmware. Use HINATA Client, or use HINATA Go on macOS, Linux, or Android.';
+
+  @override
+  String get openHinataClient => 'Open HINATA Client';
+
+  @override
   String get ledSettings => 'LED Settings';
 
   @override

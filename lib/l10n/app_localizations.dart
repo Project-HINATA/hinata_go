@@ -1022,6 +1022,18 @@ abstract class AppLocalizations {
   /// **'Firmware Update'**
   String get firmwareUpdate;
 
+  /// Windows Web firmware update limitation
+  ///
+  /// In en, this message translates to:
+  /// **'Windows browsers cannot update HINATA reader firmware. Use HINATA Client, or use HINATA Go on macOS, Linux, or Android.'**
+  String get windowsFirmwareUpdateUnavailable;
+
+  /// Open HINATA Client download page
+  ///
+  /// In en, this message translates to:
+  /// **'Open HINATA Client'**
+  String get openHinataClient;
+
   /// Hardware lighting configuration
   ///
   /// In en, this message translates to:

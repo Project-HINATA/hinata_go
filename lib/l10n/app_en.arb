@@ -727,6 +727,14 @@
   "@firmwareUpdate": {
     "description": "OTA firmware feature"
   },
+  "windowsFirmwareUpdateUnavailable": "Windows browsers cannot update HINATA reader firmware. Use HINATA Client, or use HINATA Go on macOS, Linux, or Android.",
+  "@windowsFirmwareUpdateUnavailable": {
+    "description": "Windows Web firmware update limitation"
+  },
+  "openHinataClient": "Open HINATA Client",
+  "@openHinataClient": {
+    "description": "Open HINATA Client download page"
+  },
   "ledSettings": "LED Settings",
   "@ledSettings": {
     "description": "Hardware lighting configuration"

@@ -514,6 +514,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get firmwareUpdate => '固件更新';
 
   @override
+  String get windowsFirmwareUpdateUnavailable =>
+      'Windows 浏览器无法更新 HINATA 读卡器固件。请使用 HINATA Client，或改用 macOS、Linux、Android 平台的 HINATA Go 更新。';
+
+  @override
+  String get openHinataClient => '打开 HINATA Client';
+
+  @override
   String get ledSettings => 'LED 设置';
 
   @override

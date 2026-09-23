@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 
@@ -78,6 +79,8 @@ class FirmwareNotifier extends Notifier<FirmwareState> {
   }
 
   Future<void> startFlash(UsbHinataDeviceImpl device) async {
+    if (kIsWeb && defaultTargetPlatform == TargetPlatform.windows) return;
+
     final firmware = state.firmware;
     if (!firmwareFeatureEnabled || firmware == null || firmware.firm == null) {
       return;

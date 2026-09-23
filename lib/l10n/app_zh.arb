@@ -725,6 +725,14 @@
   "@firmwareUpdate": {
     "description": "OTA 功能"
   },
+  "windowsFirmwareUpdateUnavailable": "Windows 浏览器无法更新 HINATA 读卡器固件。请使用 HINATA Client，或改用 macOS、Linux、Android 平台的 HINATA Go 更新。",
+  "@windowsFirmwareUpdateUnavailable": {
+    "description": "Windows Web 固件更新限制"
+  },
+  "openHinataClient": "打开 HINATA Client",
+  "@openHinataClient": {
+    "description": "打开 HINATA Client 下载页面"
+  },
   "ledSettings": "LED 设置",
   "@ledSettings": {
     "description": "硬件灯光配置"

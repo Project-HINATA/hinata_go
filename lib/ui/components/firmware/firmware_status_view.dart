@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../providers/firmware_provider.dart';
 import '../../../providers/hardware_device_provider.dart';
@@ -25,6 +27,7 @@ class FirmwareStatusView extends ConsumerWidget {
     final firmware = firmState.firmware;
 
     final isFlashing = firmState.isFlashing;
+    final l10n = context.l10n;
 
     if (firmState.isRequesting) {
       return const CircularProgressIndicator();
@@ -64,7 +67,12 @@ class FirmwareStatusView extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 48),
-        if (isFlashing) ...[
+        if (kIsWeb &&
+            defaultTargetPlatform == TargetPlatform.windows &&
+            !isFlashing &&
+            !(firmware.isLatest ?? false))
+          _buildWindowsWebNotice(context, l10n)
+        else if (isFlashing) ...[
           Text(firmState.statusText),
           const SizedBox(height: 16),
           LinearProgressIndicator(value: firmState.progress),
@@ -96,6 +104,30 @@ class FirmwareStatusView extends ConsumerWidget {
             label: const Text('Start Update'),
             style: FilledButton.styleFrom(minimumSize: const Size(200, 50)),
           ),
+      ],
+    );
+  }
+
+  Widget _buildWindowsWebNotice(BuildContext context, AppLocalizations l10n) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          l10n.windowsFirmwareUpdateUnavailable,
+          style: context.textTheme.bodyLarge,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => launchUrl(
+            Uri.parse(
+              'https://github.com/Project-HINATA/hinata_client-pub/releases/latest',
+            ),
+            mode: LaunchMode.externalApplication,
+          ),
+          icon: const Icon(Icons.open_in_new),
+          label: Text(l10n.openHinataClient),
+        ),
       ],
     );
   }
