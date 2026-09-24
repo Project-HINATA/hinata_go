@@ -174,6 +174,11 @@ struct PrismCheckoutResult: Decodable {
   let chargeItems: [Item]
   let adjustments: [Item]
   let wallet: Wallet?
+  let settlements: [SessionSettlement]?
+  struct SessionSettlement: Decodable {
+    let settlement: Detail
+    struct Detail: Decodable { let sessionId: String; let startedAt: String?; let endedAt: String? }
+  }
   struct Settlement: Decodable { let total: Double; let settledAt: String }
   struct Item: Decodable, Identifiable { let id: String; let label: String; let amount: Double }
   struct Wallet: Decodable { let balanceAfter: Double }

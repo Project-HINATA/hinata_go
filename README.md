@@ -94,3 +94,13 @@ HINATA Go 是一款多平台 NFC 卡片工具，支持卡片信息查看与读�
 [QQ 1085979135](https://qun.qq.com/universal-share/share?ac=1&authKey=YzIhakJWJ7BmvG%2F1JJLr27LFwpC050aWFeatFIjOhQM0i5RgEOVVZHuDop7nvlV%2F&busi_data=eyJncm91cENvZGUiOiIxMDg1OTc5MTM1IiwidG9rZW4iOiJHOHEwYmlqYWNyakJaeDlGQ1B2Mm5TUUNCUTZESUo2cGtpWUZwZEkrSVAyOTJwUmNsWWFnckd5NmdvMDJhMWtGIiwidWluIjoiMTAxNTkyOTQ1MiJ9&data=Dp-q7I-pDdniotBs8a4b6u7WM2CuxwRxphBKcVkxtF_IB8A1xp4oKNytX9NglpUJcpD0wc2hjgP4dIF4-7xpkw&svctype=4&tempid=h5_group_info)
 
 PRiSM Mahjong devices reuse QR/NFC sessions in the Web player experience. Waiting is not billed; the backend starts table billing when full and includes it in checkout. No device-list entry is added.
+
+### iOS Live Activity recovery
+
+Store visits use backend APNs updates; reading the foreground checkout preview does not copy its amount into the Live Activity. The client fetches an activity bill only when creating/recovering missing or stale content, or when an existing activity no longer matches an active visit.
+
+Successful in-app checkout ends matching activities directly from its receipt. Foreground recovery also reuses the latest receipt when its explicit session ID matches the activity. Only without a matching, complete receipt does recovery request `player/live-activity/bill?sessionId=...` for the activity's own session. Only a confirmed paid response ends the activity, carrying the saved checkout amount and actual session end time. A failed request leaves it intact for another recovery attempt or APNs. Closed unpaid sessions stay visible if that workflow is introduced; payment-failure behavior is unchanged.
+
+Sign-out awaits token removal while authentication is valid, uses DELETE for the push-to-start token, and immediately removes local activities for that deployment. Network failures are logged; removing a local activity does not settle a bill. Recovery and deduplication are scoped to the deployment and shop.
+
+Native checks: `sh test/native/run-prism-activity-manager-check.sh`, `sh test/native/run-prism-activity-check.sh`, and `sh test/native/run-prism-visit-check.sh`. The manager check compiles production Swift with ActivityKit/network test doubles; device APNs delivery still needs iPhone validation.

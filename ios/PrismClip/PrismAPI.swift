@@ -156,10 +156,9 @@ final class PrismAPI {
 
   /// Retires the device-level push-to-start token on sign-out.
   func unregisterStartToken(clientId: String) async throws {
-    let _: EmptyResponse = try await requestSelfSigned(
-      path: "/api/v1/me/live-activity/start-token",
-      body: ["clientId": clientId]
-    )
+    var request = try makeRequest(path: "/api/v1/me/live-activity/start-token", method: "DELETE")
+    request.httpBody = try encoder.encode(["clientId": clientId])
+    let _: EmptyResponse = try await send(request)
   }
 
   /// Persistent anonymous client installation identifier, used to distinguish multiple

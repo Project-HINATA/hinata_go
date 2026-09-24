@@ -253,15 +253,17 @@ final class MachineLoginViewModel: ObservableObject {
     let api = self.api
     let version = invocationVersion
     guard !deviceBusy, ![.locating, .sending].contains(state) else { return }
+    deviceBusy = true
+    visitRevision += 1
+    polling?.cancel()
+    defer { deviceBusy = false }
     do {
+      // Unregister while authentication is still valid, and await the entire sweep.
+      await StoreVisitLiveActivityManager.shared.unregisterAllPushTokens(api: api)
       _ = try await api.requestJSON(path: "/api/v1/auth/logout", body: [:])
       guard version == invocationVersion else { return }
       invocationVersion += 1
       polling?.cancel()
-      // Retire this device's push tokens before the session cookie is gone: once signed
-      // out the server could no longer match the device to a player, and a leftover
-      // activity would keep receiving pushes meant for the account that just left.
-      await StoreVisitLiveActivityManager.shared.unregisterAllPushTokens(api: api)
       // A shop link keeps its card across sign-out: the shop is public data, and the player
       // should still see which shop they are dealing with above the sign-in buttons.
       if isShopOnly {
@@ -428,7 +430,8 @@ final class MachineLoginViewModel: ObservableObject {
           shopName: shop.shop.name ?? machine?.shop.name ?? "PRiSM",
           // Only HTTPS origins can carry a universal link; debug loopback origins are skipped.
           origin: api.baseURL.scheme?.lowercased() == "https" ? api.baseURL : nil,
-          api: api
+          api: api,
+          receipt: latest
         )
       }
       guard version == invocationVersion, revision == visitRevision else { return }
@@ -618,7 +621,12 @@ final class MachineLoginViewModel: ObservableObject {
       // Keep the receipt before refreshing: the active session disappears on refresh, which
       // is exactly what used to drop the player straight back to the admission view.
       guard version == invocationVersion else { return }
-      settlement = try JSONDecoder().decode(PrismCheckoutResult.self, from: data)
+      let receipt = try JSONDecoder().decode(PrismCheckoutResult.self, from: data)
+      settlement = receipt
+      if let shopCode {
+        await StoreVisitLiveActivityManager.shared.finishCheckout(receipt: receipt, shopCode: shopCode, api: api)
+      }
+      guard version == invocationVersion else { return }
       checkoutPreview = nil; notice = String(localized: "结账成功，计费已结束")
       summary = nil
       checkoutCelebrating = true

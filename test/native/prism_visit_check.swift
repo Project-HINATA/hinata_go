@@ -19,13 +19,20 @@ import Combine
     shopCode: String,
     shopName: String,
     origin: URL?,
-    api: PrismAPI
+    api: PrismAPI,
+    receipt: PrismCheckoutResult? = nil
   ) async {
     self.session = session
     self.origin = origin
     self.lastApi = api
   }
+  private(set) var finishedReceipt: PrismCheckoutResult?
+  func finishCheckout(receipt: PrismCheckoutResult, shopCode: String, api: PrismAPI) async {
+    finishedReceipt = receipt
+    session = nil
+  }
   func unregisterAllPushTokens(api: PrismAPI) async {
+    try! await api.unregisterStartToken(clientId: PrismAPI.clientId)
     unregisteredAll = true
     self.lastApi = api
   }
@@ -154,7 +161,15 @@ enum PersistentCookieCheck {
       case "/api/v1/me":
         // Mirrors the server: signed-in state lives in the cookie store.
         return ok(["user": signedIn ? ["id":testUser,"username":"test","displayName":"Test"] : NSNull()])
-      case "/api/v1/auth/logout": return ok(["ok": true])
+      case "/api/v1/me/live-activity/start-token":
+        precondition(signedIn, "Tokens must be removed before logout invalidates authentication")
+        precondition(request.httpMethod == "DELETE", "Start-token retirement must use DELETE")
+        precondition(body["clientId"] as? String == PrismAPI.clientId)
+        return ok(["ok": true])
+      case "/api/v1/auth/logout":
+        precondition(StoreVisitLiveActivityManager.shared.unregisteredAll)
+        signedIn = false
+        return ok(["ok": true])
       case "/api/v1/cards": cardReads += 1; return ok(["cards":[["id":"card","label":"Aime","accessCode":"01234567890123456789"]]])
       case "/api/v1/shops/store":
         statusReads += 1
@@ -205,6 +220,7 @@ enum PersistentCookieCheck {
           "playerSettlement":["total":12, "settledAt":"2026-09-12T01:00:00Z"],
           "chargeItems":[["id":"c1","label":"入场费","amount":12]],
           "adjustments":[],
+          "settlements": [["settlement": ["sessionId": "entry", "startedAt": "2026-09-12T00:00:00.123Z", "endedAt": "2026-09-12T01:00:00Z"]]],
           "wallet":["balanceBefore":100,"balanceAfter":88],
         ]
         return ok(lastReceipt!)
@@ -261,6 +277,7 @@ enum PersistentCookieCheck {
     await model.finishCheckout()
     precondition(model.isShopOnly && model.machine == nil && model.ticket == nil)
     precondition(StoreVisitLiveActivityManager.shared.session == nil)
+    precondition(StoreVisitLiveActivityManager.shared.finishedReceipt?.playerSettlement.total == 12)
     precondition(LocationService.calls == 4)
     billing = false; member = false; capabilities.removeValue(forKey: "door")
     await model.start(shopCode: "store", publicId: "device")
@@ -461,7 +478,6 @@ enum PersistentCookieCheck {
     // player must still see which shop they are dealing with above the sign-in buttons.
     member = true
     await shopOnly.handleResolvedInvocation(shopB)
-    signedIn = false
     await shopOnly.logout()
     precondition(StoreVisitLiveActivityManager.shared.unregisteredAll, "Logout must trigger unregisterAllPushTokens")
     precondition(StoreVisitLiveActivityManager.shared.lastApi?.baseURL == origin, "Unregister must use origin-scoped API")

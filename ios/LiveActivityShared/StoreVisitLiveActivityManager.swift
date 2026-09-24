@@ -27,6 +27,14 @@ final class StoreVisitLiveActivityManager {
   private var registeredStartToken: String?
   private var registeredStartOrigin: String?
 
+  private struct BillResponse: Decodable {
+    let phase: String?
+    let bill: StoreVisitAttributes.Bill?
+    let nextCheckAtUnix: Double?
+    let startedAtUnix: Double?
+    let endedAtUnix: Double?
+  }
+
   private init() {}
 
   /// Starts global activity tracking across the app lifecycle.
@@ -70,19 +78,16 @@ final class StoreVisitLiveActivityManager {
   }
 
   /// Cancels push-to-start listening and unregisters the start token on sign-out.
-  func stopPushToStartTracking(api: PrismAPI) {
+  func stopPushToStartTracking(api: PrismAPI) async {
     startTokenTask?.cancel()
     startTokenTask = nil
     registeredStartToken = nil
     registeredStartOrigin = nil
     let clientId = PrismAPI.clientId
-    Task { [weak self] in
-      guard let self else { return }
-      do {
-        try await api.unregisterStartToken(clientId: clientId)
-      } catch {
-        self.logger.error("Failed to unregister push-to-start token: \(String(describing: error), privacy: .public)")
-      }
+    do {
+      try await api.unregisterStartToken(clientId: clientId)
+    } catch {
+      logger.error("Failed to unregister push-to-start token: \(String(describing: error), privacy: .public)")
     }
   }
 
@@ -93,10 +98,14 @@ final class StoreVisitLiveActivityManager {
     shopCode: String,
     shopName: String,
     origin: URL?,
-    api: PrismAPI
+    api: PrismAPI,
+    receipt: PrismCheckoutResult? = nil
   ) async {
-    let activities = Activity<StoreVisitAttributes>.activities
     let originValue = origin?.absoluteString
+    let activities = Activity<StoreVisitAttributes>.activities.filter {
+      $0.attributes.shopCode == shopCode && ($0.attributes.origin == nil || $0.attributes.origin == originValue)
+        && ($0.activityState == .active || $0.activityState == .stale)
+    }
 
     // Strategy 3: Deduplicate any duplicate Live Activities with the same sessionId on device
     var seenSessions = Set<String>()
@@ -112,17 +121,12 @@ final class StoreVisitLiveActivityManager {
     }
 
     if let session {
-      struct BillResponse: Decodable {
-        let bill: StoreVisitAttributes.Bill?
-        let nextCheckAtUnix: Double?
-        let endedAtUnix: Double?
-      }
-      let current = Activity<StoreVisitAttributes>.activities.first(where: { $0.attributes.sessionId == session.id })
+      let current = activities.first(where: { $0.attributes.sessionId == session.id })
       // APNs owns background updates; ordinary screen refreshes must not poll billing.
       let needsBill = current == nil || current?.content.state.bill == nil || current?.activityState == .stale
       let billing: BillResponse? = needsBill ? try? await api.request("/api/v1/shops/\(shopCode)/player/live-activity/bill") : nil
       let staleDate = billing?.nextCheckAtUnix.map { Date(timeIntervalSince1970: $0) }
-      if let existing = Activity<StoreVisitAttributes>.activities.first(where: { $0.attributes.sessionId == session.id }) {
+      if let existing = activities.first(where: { $0.attributes.sessionId == session.id }) {
         if let bill = billing?.bill, bill.asOfUnix >= (existing.content.state.bill?.asOfUnix ?? 0), existing.activityState == .active || existing.activityState == .stale {
           let state = StoreVisitAttributes.ContentState(phase: existing.content.state.phase, startedAtUnix: existing.content.state.startedAtUnix, endedAtUnix: billing?.endedAtUnix, bill: bill)
           await existing.update(ActivityContent(state: state, staleDate: staleDate))
@@ -140,8 +144,8 @@ final class StoreVisitLiveActivityManager {
         return
       }
 
-      for activity in Activity<StoreVisitAttributes>.activities where activity.attributes.shopCode == shopCode {
-        await end(activity, startedAt: activity.content.state.startedAtUnix, endedAt: Date().timeIntervalSince1970, api: api)
+      for activity in activities {
+        await recover(activity, api: api, receipt: receipt)
       }
 
       guard let startedAt = prismParsedDate(session.startedAt) else {
@@ -176,18 +180,22 @@ final class StoreVisitLiveActivityManager {
         logger.error("Failed to start Live Activity: \(String(describing: error), privacy: .public)")
       }
     } else {
-      for activity in Activity<StoreVisitAttributes>.activities where activity.attributes.shopCode == shopCode {
-        await end(activity, startedAt: activity.content.state.startedAtUnix, endedAt: Date().timeIntervalSince1970, api: api)
+      for activity in activities {
+        await recover(activity, api: api, receipt: receipt)
       }
     }
   }
 
-  /// Retires every activity's token, across shops. Used on sign-out.
+  /// Retires this deployment's activities across shops before sign-out.
   func unregisterAllPushTokens(api: PrismAPI) async {
-    stopPushToStartTracking(api: api)
-    for activity in Activity<StoreVisitAttributes>.activities {
+    await stopPushToStartTracking(api: api)
+    for activity in Activity<StoreVisitAttributes>.activities
+      where activity.attributes.origin == nil || activity.attributes.origin == api.baseURL.absoluteString {
+      cleanupTracking(for: activity.id)
+      await activity.end(nil, dismissalPolicy: .immediate)
       await reportUnregister(activity, api: api)
     }
+    UserDefaults.standard.removeObject(forKey: Self.lastLinkKey)
   }
 
   /// Ensures an activity's push token is observed and reported idempotently to the server.
@@ -195,7 +203,7 @@ final class StoreVisitLiveActivityManager {
     for activity: Activity<StoreVisitAttributes>,
     fallbackAPI: PrismAPI = .shared
   ) {
-    guard activity.activityState == .active else { return }
+    guard activity.activityState == .active || activity.activityState == .stale else { return }
     let attrs = activity.attributes
     let api = attrs.origin.flatMap(URL.init(string:)).map { fallbackAPI.atOrigin($0) } ?? fallbackAPI
     ensureTokenTracking(
@@ -217,7 +225,7 @@ final class StoreVisitLiveActivityManager {
     origin: String?,
     api: PrismAPI
   ) {
-    guard activity.activityState == .active else { return }
+    guard activity.activityState == .active || activity.activityState == .stale else { return }
 
     if stateTasks[activity.id] == nil {
       stateTasks[activity.id] = Task { [weak self] in
@@ -273,6 +281,7 @@ final class StoreVisitLiveActivityManager {
   }
 
   private func reportStartToken(token: String, clientId: String, api: PrismAPI) async {
+    guard !Task.isCancelled else { return }
     if registeredStartToken == token && registeredStartOrigin == api.baseURL.absoluteString {
       return
     }
@@ -311,6 +320,7 @@ final class StoreVisitLiveActivityManager {
     )
     var delay: UInt64 = 1_000_000_000
     for attempt in 1...3 {
+      guard !Task.isCancelled, activity.activityState == .active || activity.activityState == .stale else { return }
       do {
         try await api.registerLiveActivity(
           shopCode: shopCode,
@@ -352,9 +362,56 @@ final class StoreVisitLiveActivityManager {
     }
   }
 
-  private func end(_ activity: Activity<StoreVisitAttributes>, startedAt: Double, endedAt: Double, api: PrismAPI) async {
-    let state = StoreVisitAttributes.ContentState(phase: "ended", startedAtUnix: startedAt, endedAtUnix: endedAt)
-    await reportUnregister(activity, api: api)
+  /// A successful checkout already carries authoritative data. Never refetch it.
+  func finishCheckout(receipt: PrismCheckoutResult, shopCode: String, api: PrismAPI) async {
+    for activity in Activity<StoreVisitAttributes>.activities
+      where activity.attributes.shopCode == shopCode &&
+        (activity.attributes.origin == nil || activity.attributes.origin == api.baseURL.absoluteString) {
+      _ = await finish(activity, receipt: receipt, api: api)
+    }
+  }
+
+  private func finish(_ activity: Activity<StoreVisitAttributes>, receipt: PrismCheckoutResult, api: PrismAPI) async -> Bool {
+    guard let detail = receipt.settlements?.first(where: { $0.settlement.sessionId == activity.attributes.sessionId })?.settlement,
+          let start = detail.startedAt.flatMap(prismParsedDate),
+          let end = detail.endedAt.flatMap(prismParsedDate),
+          let settled = prismParsedDate(receipt.playerSettlement.settledAt),
+          let amount = Int(exactly: (receipt.playerSettlement.total * 100).rounded()) else { return false }
+    guard activity.activityState == .active || activity.activityState == .stale else { return true }
+    let bill = StoreVisitAttributes.Bill(amountCents: amount, planLabel: "", nextChargeAtUnix: nil,
+      nextRuleAtUnix: nil, asOfUnix: settled.timeIntervalSince1970)
+    let state = StoreVisitAttributes.ContentState(phase: "ended", startedAtUnix: start.timeIntervalSince1970,
+      endedAtUnix: end.timeIntervalSince1970, bill: bill)
     await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .after(Date().addingTimeInterval(60)))
+    await reportUnregister(activity, api: api)
+    return true
+  }
+
+  /// Absence from activeSession is not proof of payment. Recover this exact visit;
+  /// a failed request leaves the activity intact for APNs or the next foreground retry.
+  private func recover(_ activity: Activity<StoreVisitAttributes>, api: PrismAPI, receipt: PrismCheckoutResult?) async {
+    if let receipt, await finish(activity, receipt: receipt, api: api) { return }
+    var components = URLComponents()
+    components.queryItems = [URLQueryItem(name: "sessionId", value: activity.attributes.sessionId)]
+    do {
+      let snapshot: BillResponse = try await api.request(
+        "/api/v1/shops/\(activity.attributes.shopCode)/player/live-activity/bill?\(components.percentEncodedQuery ?? "")"
+      )
+      guard activity.activityState == .active || activity.activityState == .stale,
+            let phase = snapshot.phase, let bill = snapshot.bill,
+            let startedAt = snapshot.startedAtUnix else { return }
+      let state = StoreVisitAttributes.ContentState(
+        phase: phase, startedAtUnix: startedAt, endedAtUnix: snapshot.endedAtUnix, bill: bill
+      )
+      if phase == "ended", snapshot.endedAtUnix != nil {
+        await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .after(Date().addingTimeInterval(60)))
+        await reportUnregister(activity, api: api)
+      } else if phase == "active", bill.asOfUnix >= (activity.content.state.bill?.asOfUnix ?? 0) {
+        await activity.update(ActivityContent(state: state, staleDate: snapshot.nextCheckAtUnix.map(Date.init(timeIntervalSince1970:))))
+        ensureTokenTracking(for: activity, fallbackAPI: api)
+      }
+    } catch {
+      logger.error("Failed to recover Live Activity: \(String(describing: error), privacy: .public)")
+    }
   }
 }
