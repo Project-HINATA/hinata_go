@@ -171,13 +171,19 @@ struct StoreVisitActivityLiveConfiguration: Widget {
       return DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
           StoreVisitHeading(model: model)
+            .padding(.leading, 8)
+            .padding(.top, 2)
         }
         DynamicIslandExpandedRegion(.trailing) {
           StoreVisitMetric(model: model)
+            .padding(.trailing, 8)
+            .padding(.top, 2)
         }
         DynamicIslandExpandedRegion(.bottom) {
           StoreVisitDetailRows(model: model)
             .padding(.top, 4)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 4)
         }
       } compactLeading: {
         Image(systemName: model.stateSymbolName)
@@ -185,16 +191,11 @@ struct StoreVisitActivityLiveConfiguration: Widget {
           .foregroundStyle(model.stateColor)
       } compactTrailing: {
         if let amountText = model.amountText {
-          HStack(alignment: .firstTextBaseline, spacing: 1) {
-            Text("¥")
-              .font(.caption2.weight(.semibold))
-              .foregroundStyle(.secondary)
-            Text(amountText)
-              .font(.footnote.weight(.semibold))
-              .monospacedDigit()
-          }
-          .lineLimit(1)
-          .minimumScaleFactor(0.6)
+          Text(amountText)
+            .font(.footnote.weight(.semibold))
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
         }
       } minimal: {
         Image(systemName: model.stateSymbolName)
@@ -276,16 +277,11 @@ private struct StoreVisitMetric: View {
         Text(amountLabel)
           .font(.caption2)
           .foregroundStyle(.secondary)
-        HStack(alignment: .firstTextBaseline, spacing: 2) {
-          Text("¥")
-            .font(.footnote.weight(.semibold))
-            .foregroundStyle(.secondary)
-          Text(amountText)
-            .font(.title2.weight(.semibold))
-            .monospacedDigit()
-        }
-        .lineLimit(1)
-        .minimumScaleFactor(0.6)
+        Text(amountText)
+          .font(.title2.weight(.semibold))
+          .monospacedDigit()
+          .lineLimit(1)
+          .minimumScaleFactor(0.6)
         capNotice
       }
     }
@@ -298,7 +294,7 @@ private struct StoreVisitMetric: View {
           .font(.caption2)
           .foregroundStyle(Color.green)
       } else if let remaining = model.remainingToCapCents, remaining > 0 {
-        Text("距封顶还差 \("¥" + StoreVisitDisplayModel.centsText(remaining))")
+        Text("距封顶还差 \(StoreVisitDisplayModel.centsText(remaining))")
           .font(.caption2)
           .monospacedDigit()
           .foregroundStyle(.secondary)
