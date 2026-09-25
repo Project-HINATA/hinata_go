@@ -66,8 +66,8 @@
     <rect x="352" y="20" width="24" height="11.5" rx="3.2" fill="none" stroke="#f5f5f7" stroke-opacity="0.5" stroke-width="1.2"/>
     <rect x="354" y="22" width="15" height="7.5" rx="1.8" fill="#f5f5f7"/>
     <rect x="70" y="10.5" width="280" height="36.5" rx="18.25" class="island"/>
-    <use href="#ic-clock-fill-b" x="86" y="18.7" width="20" height="20"/>
-    <text x="335" y="34" text-anchor="end"><tspan class="amt-sym" font-size="11">¥</tspan><tspan dx="2" class="label mono" font-size="17" font-weight="600">12.50</tspan></text>
+    <use href="#ic-clock-fill-b" x="76.3" y="16.8" width="24" height="24"/>
+    <text x="335" y="34" text-anchor="end" class="label mono" font-size="17" font-weight="600">12.50</text>
     <text x="196" y="126" text-anchor="middle" class="cap">compact · 计费中（蓝色时钟 | 金额）</text>
   </g>
   <g transform="translate(428,72)">
@@ -76,8 +76,8 @@
     <rect x="352" y="20" width="24" height="11.5" rx="3.2" fill="none" stroke="#f5f5f7" stroke-opacity="0.5" stroke-width="1.2"/>
     <rect x="354" y="22" width="15" height="7.5" rx="1.8" fill="#f5f5f7"/>
     <rect x="70" y="10.5" width="280" height="36.5" rx="18.25" class="island"/>
-    <use href="#ic-card-o" x="86" y="18.7" width="20" height="20"/>
-    <text x="335" y="34" text-anchor="end"><tspan class="amt-sym" font-size="11">¥</tspan><tspan dx="2" class="label mono" font-size="17" font-weight="600">45.00</tspan></text>
+    <use href="#ic-card-o" x="76.3" y="16.8" width="24" height="24"/>
+    <text x="335" y="34" text-anchor="end" class="label mono" font-size="17" font-weight="600">45</text>
     <text x="196" y="126" text-anchor="middle" class="cap">compact · 待结账（橙色信用卡 | 金额）</text>
   </g>
   <g transform="translate(836,72)">
@@ -86,8 +86,8 @@
     <rect x="352" y="20" width="24" height="11.5" rx="3.2" fill="none" stroke="#f5f5f7" stroke-opacity="0.5" stroke-width="1.2"/>
     <rect x="354" y="22" width="15" height="7.5" rx="1.8" fill="#f5f5f7"/>
     <rect x="70" y="10.5" width="280" height="36.5" rx="18.25" class="island"/>
-    <use href="#ic-pause-gy" x="86" y="18.7" width="20" height="20"/>
-    <text x="335" y="34" text-anchor="end"><tspan class="amt-sym" font-size="11">¥</tspan><tspan dx="2" class="label mono" font-size="17" font-weight="600">38.00</tspan></text>
+    <use href="#ic-pause-gy" x="76.3" y="16.8" width="24" height="24"/>
+    <text x="335" y="34" text-anchor="end" class="label mono" font-size="17" font-weight="600">38</text>
     <text x="196" y="126" text-anchor="middle" class="cap">compact · 暂停中（灰色暂停 | 金额）</text>
   </g>
 
@@ -98,8 +98,8 @@
     <rect x="352" y="20" width="24" height="11.5" rx="3.2" fill="none" stroke="#f5f5f7" stroke-opacity="0.5" stroke-width="1.2"/>
     <rect x="354" y="22" width="15" height="7.5" rx="1.8" fill="#f5f5f7"/>
     <rect x="70" y="10.5" width="280" height="36.5" rx="18.25" class="island"/>
-    <use href="#ic-check-g" x="86" y="18.7" width="20" height="20"/>
-    <text x="335" y="34" text-anchor="end"><tspan class="amt-sym" font-size="11">¥</tspan><tspan dx="2" class="label mono" font-size="17" font-weight="600">45.00</tspan></text>
+    <use href="#ic-check-g" x="76.3" y="16.8" width="24" height="24"/>
+    <text x="335" y="34" text-anchor="end" class="label mono" font-size="17" font-weight="600">45</text>
     <text x="196" y="126" text-anchor="middle" class="cap">compact · 结账成功（绿色对勾 | 金额）</text>
   </g>
   <g transform="translate(428,232)">

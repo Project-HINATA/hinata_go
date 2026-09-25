@@ -156,6 +156,14 @@ struct StoreVisitDisplayModel {
   var amountText: String? {
     bill.map { Self.centsText($0.amountCents) }
   }
+
+  /// Compact amount: decimals only when the amount has them.
+  var compactAmountText: String? {
+    guard let bill else { return nil }
+    let fractionLength = bill.amountCents % 100 == 0 ? 0 : 2
+    return (Decimal(bill.amountCents) / 100)
+      .formatted(.number.precision(.fractionLength(fractionLength)))
+  }
 }
 
 // MARK: - Widget configuration
@@ -186,11 +194,15 @@ struct StoreVisitActivityLiveConfiguration: Widget {
             .padding(.bottom, 4)
         }
       } compactLeading: {
+        // The compact pill's left cap is a semicircle of radius ≈ height/2;
+        // a 28pt frame centered in the region puts the symbol's center on the
+        // cap's circle center.
         Image(systemName: model.stateSymbolName)
-          .font(.footnote.weight(.semibold))
+          .font(.system(size: 20, weight: .semibold))
           .foregroundStyle(model.stateColor)
+          .frame(width: 28, height: 28)
       } compactTrailing: {
-        if let amountText = model.amountText {
+        if let amountText = model.compactAmountText {
           Text(amountText)
             .font(.footnote.weight(.semibold))
             .monospacedDigit()
