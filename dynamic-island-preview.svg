@@ -1,0 +1,232 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1250 1050" font-family="-apple-system, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#232641"/>
+      <stop offset="0.55" stop-color="#31234a"/>
+      <stop offset="1" stop-color="#1b2036"/>
+    </linearGradient>
+    <linearGradient id="wall2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2c48"/>
+      <stop offset="1" stop-color="#171a2c"/>
+    </linearGradient>
+    <!-- 状态图标：计费中 = 蓝色时钟 -->
+    <symbol id="ic-clock-fill-b" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10.4" fill="#0a84ff"/>
+      <path d="M12 6.6 v5.6 l3.6 2.2" fill="none" stroke="#060609" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <!-- 待结账 = 橙色信用卡（icon 待定，此处选 creditcard.circle） -->
+    <symbol id="ic-card-o" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10.4" fill="#ff9f0a"/>
+      <rect x="5.4" y="8" width="13.2" height="8.4" rx="1.6" fill="#060609"/>
+      <rect x="5.4" y="10.1" width="13.2" height="1.7" fill="#ff9f0a"/>
+    </symbol>
+    <!-- 暂停中 = 灰色暂停 -->
+    <symbol id="ic-pause-gy" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10.4" fill="#98989f"/>
+      <rect x="8.4" y="7.6" width="2.4" height="8.8" rx="1.1" fill="#060609"/>
+      <rect x="13.2" y="7.6" width="2.4" height="8.8" rx="1.1" fill="#060609"/>
+    </symbol>
+    <!-- 结账成功 = 绿色对勾 -->
+    <symbol id="ic-check-g" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10.4" fill="#30d158"/>
+      <path d="M7.4 12.4 l3.1 3.1 6.1 -6.6" fill="none" stroke="#060609" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <!-- 倒计时行小时钟 -->
+    <symbol id="ic-clock-g" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="#30d158" stroke-width="2.1"/>
+      <path d="M12 7.2 v5 l3.3 2" fill="none" stroke="#30d158" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-clock-b" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="#0a84ff" stroke-width="2.1"/>
+      <path d="M12 7.2 v5 l3.3 2" fill="none" stroke="#0a84ff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+
+  <style>
+    .mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+    .label { fill: #f5f5f7; }
+    .dim { fill: #98989f; }
+    .green { fill: #30d158; }
+    .orange { fill: #ff9f0a; }
+    .blue { fill: #0a84ff; }
+    .gray { fill: #98989f; }
+    .cap { fill: #85858e; font-size: 12.5px; }
+    .island { fill: #060609; }
+    .amt-sym { fill: #98989f; font-size: 12.5px; }
+  </style>
+
+  <rect x="0" y="0" width="1250" height="1050" fill="#0b0b10"/>
+  <text x="625" y="34" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">StoreVisit 灵动岛 · 实时活动预览（dummy 数据 · 状态图标版）</text>
+  <text x="625" y="55" text-anchor="middle" fill="#85858e" font-size="12">compact = 状态图标 | 金额 · expanded 头部左右对称小 label · 事件倒计时下挂具体时间点 · 店名加大 · 时间精确到分</text>
+
+  <!-- ============ Row 1: compact 四状态 ============ -->
+  <g transform="translate(20,72)">
+    <rect x="0" y="0" width="393" height="104" rx="14" fill="url(#wall)"/>
+    <text x="28" y="31" fill="#f5f5f7" font-size="15" font-weight="600">13:17</text>
+    <rect x="352" y="20" width="24" height="11.5" rx="3.2" fill="none" stroke="#f5f5f7" stroke-opacity="0.5" stroke-width="1.2"/>
+    <rect x="354" y="22" width="15" height="7.5" rx="1.8" fill="#f5f5f7"/>
+    <rect x="70" y="10.5" width="280" height="36.5" rx="18.25" class="island"/>
+    <use href="#ic-clock-fill-b" x="86" y="18.7" width="20" height="20"/>
+    <text x="335" y="34" text-anchor="end"><tspan class="amt-sym" font-size="11">¥</tspan><tspan dx="2" class="label mono" font-size="17" font-weight="600">12.50</tspan></text>
+    <text x="196" y="126" text-anchor="middle" class="cap">compact · 计费中（蓝色时钟 | 金额）</text>
+  </g>
+  <g transform="translate(428,72)">
+    <rect x="0" y="0" width="393" height="104" rx="14" fill="url(#wall)"/>
+    <text x="28" y="31" fill="#f5f5f7" font-size="15" font-weight="600">13:17</text>
+    <rect x="352" y="20" width="24" height="11.5" rx="3.2" fill="none" stroke="#f5f5f7" stroke-opacity="0.5" stroke-width="1.2"/>
+    <rect x="354" y="22" width="15" height="7.5" rx="1.8" fill="#f5f5f7"/>
+    <rect x="70" y="10.5" width="280" height="36.5" rx="18.25" class="island"/>
+    <use href="#ic-card-o" x="86" y="18.7" width="20" height="20"/>
+    <text x="335" y="34" text-anchor="end"><tspan class="amt-sym" font-size="11">¥</tspan><tspan dx="2" class="label mono" font-size="17" font-weight="600">45.00</tspan></text>
+    <text x="196" y="126" text-anchor="middle" class="cap">compact · 待结账（橙色信用卡 | 金额）</text>
+  </g>
+  <g transform="translate(836,72)">
+    <rect x="0" y="0" width="393" height="104" rx="14" fill="url(#wall)"/>
+    <text x="28" y="31" fill="#f5f5f7" font-size="15" font-weight="600">13:17</text>
+    <rect x="352" y="20" width="24" height="11.5" rx="3.2" fill="none" stroke="#f5f5f7" stroke-opacity="0.5" stroke-width="1.2"/>
+    <rect x="354" y="22" width="15" height="7.5" rx="1.8" fill="#f5f5f7"/>
+    <rect x="70" y="10.5" width="280" height="36.5" rx="18.25" class="island"/>
+    <use href="#ic-pause-gy" x="86" y="18.7" width="20" height="20"/>
+    <text x="335" y="34" text-anchor="end"><tspan class="amt-sym" font-size="11">¥</tspan><tspan dx="2" class="label mono" font-size="17" font-weight="600">38.00</tspan></text>
+    <text x="196" y="126" text-anchor="middle" class="cap">compact · 暂停中（灰色暂停 | 金额）</text>
+  </g>
+
+  <!-- ============ Row 2: compact 结账成功 / minimal / expanded 计费中 ============ -->
+  <g transform="translate(20,232)">
+    <rect x="0" y="0" width="393" height="104" rx="14" fill="url(#wall)"/>
+    <text x="28" y="31" fill="#f5f5f7" font-size="15" font-weight="600">13:17</text>
+    <rect x="352" y="20" width="24" height="11.5" rx="3.2" fill="none" stroke="#f5f5f7" stroke-opacity="0.5" stroke-width="1.2"/>
+    <rect x="354" y="22" width="15" height="7.5" rx="1.8" fill="#f5f5f7"/>
+    <rect x="70" y="10.5" width="280" height="36.5" rx="18.25" class="island"/>
+    <use href="#ic-check-g" x="86" y="18.7" width="20" height="20"/>
+    <text x="335" y="34" text-anchor="end"><tspan class="amt-sym" font-size="11">¥</tspan><tspan dx="2" class="label mono" font-size="17" font-weight="600">45.00</tspan></text>
+    <text x="196" y="126" text-anchor="middle" class="cap">compact · 结账成功（绿色对勾 | 金额）</text>
+  </g>
+  <g transform="translate(428,232)">
+    <rect x="0" y="0" width="393" height="104" rx="14" fill="url(#wall)"/>
+    <text x="28" y="31" fill="#f5f5f7" font-size="15" font-weight="600">13:17</text>
+    <rect x="352" y="20" width="24" height="11.5" rx="3.2" fill="none" stroke="#f5f5f7" stroke-opacity="0.5" stroke-width="1.2"/>
+    <rect x="354" y="22" width="15" height="7.5" rx="1.8" fill="#f5f5f7"/>
+    <circle cx="96" cy="28.7" r="21" class="island"/>
+    <use href="#ic-clock-fill-b" x="87" y="19.7" width="18" height="18"/>
+    <rect x="134" y="10.5" width="125" height="36.5" rx="18.25" class="island"/>
+    <text x="196" y="126" text-anchor="middle" class="cap">minimal · 计费中（状态图标）+ 空闲岛</text>
+  </g>
+  <g transform="translate(836,232)">
+    <rect x="0" y="0" width="393" height="192" rx="14" fill="url(#wall2)"/>
+    <rect x="10.5" y="11" width="372" height="170" rx="42" class="island"/>
+    <text x="34" y="38" class="dim" font-size="10.5">在场时间</text>
+    <text x="34" y="62" class="label" font-size="18" font-weight="600">1时23分</text>
+    <text x="34" y="80" class="dim" font-size="10.5">入店 14:02</text>
+    <text x="356" y="38" text-anchor="end" class="dim" font-size="10.5">账单金额</text>
+    <text x="356" y="62" text-anchor="end"><tspan class="amt-sym">¥</tspan><tspan dx="3" class="label mono" font-size="22" font-weight="600">12.50</tspan></text>
+    <text x="356" y="80" text-anchor="end" class="dim" font-size="10.5">距封顶还差 <tspan class="mono">¥27.50</tspan></text>
+    <use href="#ic-clock-g" x="34" y="94" width="14" height="14"/>
+    <text x="54" y="105.5" class="label" font-size="12">下次计费</text>
+    <text x="356" y="106" text-anchor="end" class="green" font-size="15" font-weight="600">7分钟后</text>
+    <text x="356" y="122" text-anchor="end" class="dim mono" font-size="10.5">13:24</text>
+    <text x="34" y="148" class="label" font-size="12.5" font-weight="600">晴日游戏厅</text>
+    <text x="356" y="148" text-anchor="end" class="dim" font-size="11">轻点查看账单</text>
+    <text x="196" y="214" text-anchor="middle" class="cap">expanded · 计费中（对称 label + 事件双行）</text>
+  </g>
+
+  <!-- ============ Row 3: expanded 合并 / 已封顶 / 非营业 ============ -->
+  <g transform="translate(20,492)">
+    <rect x="0" y="0" width="393" height="192" rx="14" fill="url(#wall2)"/>
+    <rect x="10.5" y="11" width="372" height="170" rx="42" class="island"/>
+    <text x="34" y="38" class="dim" font-size="10.5">在场时间</text>
+    <text x="34" y="62" class="label" font-size="18" font-weight="600">1时37分</text>
+    <text x="34" y="80" class="dim" font-size="10.5">入店 14:02</text>
+    <text x="356" y="38" text-anchor="end" class="dim" font-size="10.5">账单金额</text>
+    <text x="356" y="62" text-anchor="end"><tspan class="amt-sym">¥</tspan><tspan dx="3" class="label mono" font-size="22" font-weight="600">15.50</tspan></text>
+    <use href="#ic-clock-g" x="34" y="94" width="14" height="14"/>
+    <text x="54" y="105.5" class="label" font-size="12">计费与规则切换</text>
+    <text x="356" y="106" text-anchor="end" class="green" font-size="15" font-weight="600">12分钟后</text>
+    <text x="356" y="122" text-anchor="end" class="dim mono" font-size="10.5">13:29</text>
+    <text x="34" y="148" class="label" font-size="12.5" font-weight="600">晴日游戏厅</text>
+    <text x="356" y="148" text-anchor="end" class="dim" font-size="11">轻点查看账单</text>
+    <text x="196" y="214" text-anchor="middle" class="cap">expanded · 合并事件（计费点与规则切换同刻）</text>
+  </g>
+  <g transform="translate(428,492)">
+    <rect x="0" y="0" width="393" height="192" rx="14" fill="url(#wall2)"/>
+    <rect x="10.5" y="11" width="372" height="170" rx="42" class="island"/>
+    <text x="34" y="38" class="dim" font-size="10.5">在场时间</text>
+    <text x="34" y="62" class="label" font-size="18" font-weight="600">3时02分</text>
+    <text x="34" y="80" class="dim" font-size="10.5">入店 10:15</text>
+    <text x="356" y="38" text-anchor="end" class="dim" font-size="10.5">账单金额</text>
+    <text x="356" y="62" text-anchor="end"><tspan class="amt-sym">¥</tspan><tspan dx="3" class="label mono" font-size="22" font-weight="600">45.00</tspan></text>
+    <text x="356" y="80" text-anchor="end" class="green" font-size="10.5">本时段已封顶</text>
+    <use href="#ic-clock-g" x="34" y="94" width="14" height="14"/>
+    <text x="54" y="105.5" class="label" font-size="12">规则切换</text>
+    <text x="356" y="106" text-anchor="end" class="green" font-size="15" font-weight="600">58分钟后</text>
+    <text x="356" y="122" text-anchor="end" class="dim mono" font-size="10.5">14:15</text>
+    <text x="34" y="148" class="label" font-size="12.5" font-weight="600">晴日游戏厅</text>
+    <text x="356" y="148" text-anchor="end" class="dim" font-size="11">轻点查看账单</text>
+    <text x="196" y="214" text-anchor="middle" class="cap">expanded · 已封顶</text>
+  </g>
+  <g transform="translate(836,492)">
+    <rect x="0" y="0" width="393" height="192" rx="14" fill="url(#wall2)"/>
+    <rect x="10.5" y="11" width="372" height="170" rx="42" class="island"/>
+    <text x="34" y="38" class="dim" font-size="10.5">在场时间</text>
+    <text x="34" y="62" class="label" font-size="18" font-weight="600">5时03分</text>
+    <text x="34" y="80" class="dim" font-size="10.5">入店 16:40</text>
+    <text x="356" y="38" text-anchor="end" class="dim" font-size="10.5">账单金额</text>
+    <text x="356" y="62" text-anchor="end"><tspan class="amt-sym">¥</tspan><tspan dx="3" class="label mono" font-size="22" font-weight="600">38.00</tspan></text>
+    <use href="#ic-clock-b" x="34" y="94" width="14" height="14"/>
+    <text x="54" y="105.5" class="label" font-size="12">恢复计费</text>
+    <text x="356" y="106" text-anchor="end" class="blue" font-size="15" font-weight="600">11小时后</text>
+    <text x="356" y="122" text-anchor="end" class="dim mono" font-size="10.5">00:17</text>
+    <text x="34" y="148" class="label" font-size="12.5" font-weight="600">晴日游戏厅</text>
+    <text x="356" y="148" text-anchor="end" class="blue" font-size="11">暂不计费</text>
+    <text x="196" y="214" text-anchor="middle" class="cap">expanded · 非营业时段（金额冻结）</text>
+  </g>
+
+  <!-- ============ Row 4: expanded 待结账 / 锁屏两张 ============ -->
+  <g transform="translate(20,752)">
+    <rect x="0" y="0" width="393" height="192" rx="14" fill="url(#wall2)"/>
+    <rect x="10.5" y="11" width="372" height="170" rx="42" class="island"/>
+    <text x="34" y="38" class="dim" font-size="10.5">在场时间</text>
+    <text x="34" y="62" class="label" font-size="18" font-weight="600">2时23分</text>
+    <text x="34" y="80" class="dim" font-size="10.5">入店 11:54</text>
+    <text x="356" y="38" text-anchor="end" class="dim" font-size="10.5">本次消费</text>
+    <text x="356" y="62" text-anchor="end"><tspan class="amt-sym">¥</tspan><tspan dx="3" class="label mono" font-size="22" font-weight="600">45.00</tspan></text>
+    <text x="34" y="148" class="label" font-size="12.5" font-weight="600">晴日游戏厅</text>
+    <text x="356" y="148" text-anchor="end" class="orange" font-size="11">待结账</text>
+    <text x="196" y="214" text-anchor="middle" class="cap">expanded · 待结账（去付款）</text>
+  </g>
+  <g transform="translate(428,752)">
+    <rect x="0" y="0" width="393" height="240" rx="14" fill="url(#wall)"/>
+    <text x="32" y="70" fill="#f5f5f7" fill-opacity="0.92" font-size="44" font-weight="300">13:17</text>
+    <rect x="16" y="88" width="361" height="128" rx="24" fill="#14141c" fill-opacity="0.97" stroke="#f5f5f7" stroke-opacity="0.09"/>
+    <text x="32" y="102" class="dim" font-size="10.5">在场时间</text>
+    <text x="32" y="122" class="label" font-size="17" font-weight="600">1时23分</text>
+    <text x="32" y="138" class="dim" font-size="10.5">入店 14:02</text>
+    <text x="345" y="102" text-anchor="end" class="dim" font-size="10.5">账单金额</text>
+    <text x="345" y="122" text-anchor="end"><tspan class="amt-sym">¥</tspan><tspan dx="3" class="label mono" font-size="21" font-weight="600">12.50</tspan></text>
+    <text x="345" y="138" text-anchor="end" class="dim" font-size="10.5">距封顶还差 <tspan class="mono">¥27.50</tspan></text>
+    <line x1="32" y1="150" x2="361" y2="150" stroke="#f5f5f7" stroke-opacity="0.1"/>
+    <use href="#ic-clock-g" x="32" y="160" width="13" height="13"/>
+    <text x="51" y="171" class="label" font-size="12">下次计费</text>
+    <text x="345" y="172" text-anchor="end" class="green" font-size="14.5" font-weight="600">7分钟后</text>
+    <text x="345" y="186" text-anchor="end" class="dim mono" font-size="10.5">13:24</text>
+    <text x="32" y="206" class="label" font-size="12.5" font-weight="600">晴日游戏厅</text>
+    <text x="345" y="206" text-anchor="end" class="dim" font-size="11">轻点查看账单</text>
+    <text x="196" y="262" text-anchor="middle" class="cap">锁屏 · 计费中</text>
+  </g>
+  <g transform="translate(836,752)">
+    <rect x="0" y="0" width="393" height="240" rx="14" fill="url(#wall)"/>
+    <text x="32" y="70" fill="#f5f5f7" fill-opacity="0.92" font-size="44" font-weight="300">13:17</text>
+    <rect x="16" y="88" width="361" height="128" rx="24" fill="#14141c" fill-opacity="0.97" stroke="#f5f5f7" stroke-opacity="0.09"/>
+    <text x="32" y="102" class="dim" font-size="10.5">在场时间</text>
+    <text x="32" y="122" class="label" font-size="17" font-weight="600">2时23分</text>
+    <text x="32" y="138" class="dim" font-size="10.5">入店 11:54</text>
+    <text x="345" y="102" text-anchor="end" class="dim" font-size="10.5">本次消费</text>
+    <text x="345" y="122" text-anchor="end"><tspan class="amt-sym">¥</tspan><tspan dx="3" class="label mono" font-size="21" font-weight="600">45.00</tspan></text>
+    <line x1="32" y1="150" x2="361" y2="150" stroke="#f5f5f7" stroke-opacity="0.1"/>
+    <text x="32" y="176" class="label" font-size="12.5" font-weight="600">晴日游戏厅</text>
+    <text x="345" y="176" text-anchor="end" class="dim" font-size="11">轻点查看账单</text>
+    <text x="196" y="262" text-anchor="middle" class="cap">锁屏 · 已结算（60 秒后自动收起）</text>
+  </g>
+
+  <text x="625" y="1038" text-anchor="middle" fill="#6d6d76" font-size="11">数值为 dummy 数据 · 按 iPhone 17 Pro 几何比例绘制（393pt 宽）· 状态色：计费中 #0A84FF / 待结账 #FF9F0A / 暂停 #98989F / 结账成功 #30D158</text>
+</svg>

@@ -378,8 +378,7 @@ final class StoreVisitLiveActivityManager {
           let settled = prismParsedDate(receipt.playerSettlement.settledAt),
           let amount = Int(exactly: (receipt.playerSettlement.total * 100).rounded()) else { return false }
     guard activity.activityState == .active || activity.activityState == .stale else { return true }
-    let bill = StoreVisitAttributes.Bill(amountCents: amount, planLabel: "", nextChargeAtUnix: nil,
-      nextRuleAtUnix: nil, asOfUnix: settled.timeIntervalSince1970)
+    let bill = StoreVisitAttributes.Bill(amountCents: amount, planLabel: "", asOfUnix: settled.timeIntervalSince1970)
     let state = StoreVisitAttributes.ContentState(phase: "ended", startedAtUnix: start.timeIntervalSince1970,
       endedAtUnix: end.timeIntervalSince1970, bill: bill)
     await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .after(Date().addingTimeInterval(60)))

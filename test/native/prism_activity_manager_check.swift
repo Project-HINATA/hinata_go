@@ -59,7 +59,7 @@ final class PrismAPI {
   @MainActor static func main() async throws {
     let api = PrismAPI.shared
     let manager = StoreVisitLiveActivityManager.shared
-    let bill = StoreVisitAttributes.Bill(amountCents: 600, planLabel: "Plan", nextChargeAtUnix: 300, nextRuleAtUnix: nil, asOfUnix: 100)
+    let bill = StoreVisitAttributes.Bill(amountCents: 600, planLabel: "Plan", asOfUnix: 100)
     let activity = try Activity<StoreVisitAttributes>.request(
       attributes: .init(sessionId: "visit", shopCode: "shop", shopName: "Shop", origin: api.baseURL.absoluteString),
       content: .init(state: .init(phase: "active", startedAtUnix: 10, endedAtUnix: nil, bill: bill), staleDate: nil), pushType: .token)
