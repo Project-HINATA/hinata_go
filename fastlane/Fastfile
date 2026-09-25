@@ -25,7 +25,11 @@ platform :ios do
         output_path: ENV.fetch("RUNNER_TEMP"),
         filename: "#{bundle_id}.mobileprovision",
         force: true,
-        skip_certificate_verification: false
+        # Profiles come straight from the authenticated App Store Connect API;
+        # local WWDR verification is redundant and breaks when the runner
+        # cannot install the WWDR intermediate ("Could not install WWDR
+        # certificate").
+        skip_certificate_verification: true
       )
     end
   end
