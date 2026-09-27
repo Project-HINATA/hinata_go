@@ -138,6 +138,13 @@ struct StoreVisitDisplayModel {
       resolvedPhase = .settled
     }
     phase = resolvedPhase
+    // Dormant until the backend starts sending these two. `ActivityBill` on the
+    // server is `{ amountCents, planLabel, nextEvent, asOfUnix }` — it carries
+    // neither `billable` nor `remainingToCapCents`, so both decode as nil and
+    // every billing session currently resolves to `.metering`. The capped and
+    // paused states are drawn, tested against the sheet, and waiting on the
+    // payload rather than on this side. `nextEvent.label` is not a substitute:
+    // a rule switch happens for reasons other than a cap.
     if resolvedPhase == .billing, state.bill?.billable == false {
       billingState = .paused
     } else if resolvedPhase == .billing, state.bill?.remainingToCapCents == 0 {
