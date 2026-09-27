@@ -296,8 +296,8 @@ App 本身用 Material You（`dynamic_color`），没有固定品牌色，因此
 
 ### 与视觉稿的两处必要偏差
 
-1. **环心剩余分钟是单字号，不是「22pt 数字 + 13pt 单位」。**
-   Live Activity 里只有 `Text(_:style:)` / `ProgressView(timerInterval:)` 能自走时、不需要后端推送。多字号拼一个会跳动的倒计时做不到，因此改用 `Text(next.date, style: .relative)`（渲染为「6分钟」），并把环径按最宽情况（「58分钟」）定尺寸。无倒计时的状态（封顶 / 待付 / 已付）仍是静态两字词，可以自由排字号。
+1. **环心是 mm:ss 计时，不是「22pt 数字 + 13pt 单位」的「6分」。**
+   Live Activity 里只有 `Text(_:style:)` / `ProgressView(timerInterval:)` 能自走时、不需要后端推送，多字号拼一个会跳动的倒计时做不到；而 `style: .relative` 实际渲染成「24分钟 0秒」，比环内径宽得多（真机上被截断过）。因此改用 `Text(timerInterval:countsDown:)`，渲染为 `24:37` 这种计时器形式：18pt 单字号（比「6分」那版低一档，因为 mm:ss 更长），环内留有余量。无倒计时的状态（封顶 / 待付 / 已付）仍是静态两字词，排版不受此限。
 2. **`.bottom` 与上带之间的间距（`IslandLayout.bandGap`）以及环的上内边距，是按系统默认分区间距估的。**
    真机上第一次截图后校对这两个值即可，其余尺寸都来自本规范。
 

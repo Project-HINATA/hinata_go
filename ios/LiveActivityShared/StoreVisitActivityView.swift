@@ -48,9 +48,12 @@ private enum IslandLayout {
   static let ringSettled: CGFloat = 61
   static let ringLineWidth: CGFloat = 7
 
-  /// The distance between the upper band and the footer row. HIG likes the two
-  /// groups read separately: "what is happening now" above, "this visit" below.
-  static let bandGap: CGFloat = 30
+  /// Breathing room between the upper band and the footer row. HIG likes the
+  /// two groups read separately — "what is happening now" above, "this visit"
+  /// below — but the system adds its own spacing between regions on top of
+  /// this, and the expanded island is hard-capped at 160pt. Keep the sum
+  /// (margin + ring + gap + footer + margin) under that ceiling.
+  static let bandGap: CGFloat = 6
 
   // Type. Fixed points rather than semantic styles: the island is a fixed
   // canvas and the sheet is drawn in points.
@@ -68,8 +71,8 @@ private enum IslandLayout {
   static let eventTimeCompact: CGFloat = 22
   static let eventSpacing: CGFloat = 8
 
-  static let ringLabel: CGFloat = 20
-  static let ringLabelCompact: CGFloat = 18
+  static let ringLabel: CGFloat = 18
+  static let ringLabelCompact: CGFloat = 16
 
   static let cap: CGFloat = 17
   static let capBarWidth: CGFloat = 19
@@ -331,9 +334,8 @@ struct StoreVisitActivityLiveConfiguration: Widget {
         // columns because the band is exactly one ring tall.
         DynamicIslandExpandedRegion(.leading) {
           StoreVisitRing(model: model)
-            .padding(.leading, IslandLayout.margin)
             .padding(.top, IslandLayout.margin)
-            .frame(height: model.upperBandHeight, alignment: .top)
+            .padding(.leading, IslandLayout.margin)
         }
         // Upper band, centre: the event. Only the top edge is constrained — it
         // tucks under the camera so the housing stops reading as a hole. The
@@ -350,9 +352,10 @@ struct StoreVisitActivityLiveConfiguration: Widget {
             StoreVisitAmountLine(model: model)
             StoreVisitCapRow(model: model)
           }
-          .padding(.trailing, IslandLayout.margin)
-          .padding(.top, IslandLayout.margin)
+          .layoutPriority(1)
           .frame(height: model.upperBandHeight, alignment: .bottom)
+          .padding(.top, IslandLayout.margin)
+          .padding(.trailing, IslandLayout.margin)
         }
         // Lower band: the visit itself, on one line.
         DynamicIslandExpandedRegion(.bottom) {
@@ -454,14 +457,15 @@ private struct StoreVisitRing: View {
   @ViewBuilder private var centerLabel: some View {
     if !showsLabel {
       EmptyView()
-    } else if let next = model.nextEvent {
-      // Self-refreshing, so the minutes tick down with no backend push.
-      Text(next.date, style: .relative)
+    } else if let window = model.countdownWindow {
+      // Self-refreshing, so it ticks down with no backend push. The relative
+      // style is not usable here: it reads "24分钟 0秒", far wider than the ring.
+      Text(timerInterval: window, countsDown: true)
         .font(.system(size: model.ringLabelSize, weight: .semibold))
         .monospacedDigit()
         .foregroundStyle(model.accent)
         .lineLimit(1)
-        .minimumScaleFactor(0.7)
+        .minimumScaleFactor(0.6)
     } else if let word = model.ringStateWord {
       Text(word)
         .font(.system(size: model.ringLabelSize, weight: .semibold))
@@ -497,7 +501,7 @@ private struct StoreVisitEventBlock: View {
           .minimumScaleFactor(0.7)
       }
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .lineLimit(1)
   }
 
   private var eventName: String {
@@ -522,12 +526,17 @@ private struct StoreVisitAmountLine: View {
       Text(model.amountCaption)
         .font(.system(size: model.amountCaptionSize, weight: .regular))
         .foregroundStyle(.secondary)
+        .fixedSize(horizontal: true, vertical: false)
       Text(model.heroAmountText ?? "--")
         .font(.system(size: model.amountSize, weight: .semibold))
         .monospacedDigit()
         .foregroundStyle(.primary)
         .lineLimit(1)
+        // Shrinks rather than truncating: a four-figure bill at 40pt would
+        // otherwise push past the island's 371pt width.
+        .minimumScaleFactor(0.6)
     }
+    .layoutPriority(1)
   }
 }
 
@@ -546,6 +555,7 @@ private struct StoreVisitCapRow: View {
           .monospacedDigit()
           .foregroundStyle(IslandLayout.allowance)
           .lineLimit(1)
+          .fixedSize(horizontal: true, vertical: false)
       }
     } else {
       Text(model.trailingStatusText)

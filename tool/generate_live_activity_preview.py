@@ -394,7 +394,7 @@ STATES = [
     dict(
         h=160.0, accent=GREEN, ring_frac=0.72, ring_cx=62.5, ring_cy=62.5, ring_d=77.0,
         cam_top=6.0, align_guide=True, annotate=True, pad_dims=True, bar=0.28,
-        ring_label=[("6", 22), ("分", 13)],
+        ring_label=[("24:37", 18)],
         center=[
             dict(y=62, t="下次计费", s=18, c=SECONDARY),
             dict(y=98, t="13:24", s=24, c="accent", w=600),
@@ -410,7 +410,7 @@ STATES = [
     dict(
         h=160.0, accent=GREEN, ring_frac=1.0, ring_cx=62.5, ring_cy=62.5, ring_d=77.0,
         cam_top=6.0, bar=0.0,
-        ring_label=[("58", 22), ("分", 13)],
+        ring_label=[("58:12", 18)],
         center=[
             dict(y=62, t="规则切换", s=18, c=SECONDARY),
             dict(y=98, t="14:15", s=24, c="accent", w=600),
@@ -426,7 +426,7 @@ STATES = [
     dict(
         h=160.0, accent=BLUE, ring_frac=0.45, ring_cx=62.5, ring_cy=62.5, ring_d=77.0,
         cam_top=6.0, bar=0.45,
-        ring_label=[("11", 22), ("分", 13)],
+        ring_label=[("11:08", 18)],
         center=[
             dict(y=62, t="恢复计费", s=18, c=SECONDARY),
             dict(y=98, t="15:00", s=24, c="accent", w=600),
@@ -515,7 +515,7 @@ def lock_screen(x, y, accent, frac):
     g = [f'<g transform="translate({x},{y})">']
     g.append(rounded(0, 0, ISLAND_W, h, rx=38, fill=LOCK_CARD))
     g.append(ring(m + 38.5, 62.5, 77.0, frac, accent))
-    g.append(tline_center(m + 38.5, 62.5 + 22 * 0.36, [("6", 22), ("分", 13)], accent))
+    g.append(tline_center(m + 38.5, 62.5 + 18 * 0.36, [("24:37", 18)], accent))
     for line in [
         dict(y=62, t="下次计费", s=18, c=SECONDARY),
         dict(y=98, t="13:24", s=24, c=accent, w=600),
@@ -628,7 +628,7 @@ out.append(ctext(
 ))
 out.append(ctext(
     MARGIN, legend_y + 76,
-    "字号 · 金额 34–40pt / 事件时刻 22–24pt / 环心 22pt / 计价标签 17–20pt"
+    "字号 · 金额 34–40pt / 事件时刻 22–24pt / 环心计时 18pt / 计价标签 17–20pt"
     " / 事件名称 17–18pt / 在场与店名 17pt / 距封顶与入店 15–17pt",
     11, SECONDARY,
 ))
