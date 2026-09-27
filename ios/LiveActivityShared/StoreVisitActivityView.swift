@@ -43,12 +43,19 @@ private enum IslandLayout {
   /// and leading sides.
   static let margin: CGFloat = 24
 
-  /// SwiftUI already insets every expanded region before our own padding
+  /// SwiftUI insets every expanded region horizontally before our own padding
   /// applies. Measured off a device screenshot: with 24pt of our own padding the
   /// ring landed about 44pt from the edge, so the system supplies about 20pt.
   /// Our padding is the remainder — calibrate `margin` and the content follows.
   static let systemRegionInset: CGFloat = 20
   static var contentPadding: CGFloat { max(0, margin - systemRegionInset) }
+
+  /// Every region also starts below the camera, which the island reserves as a
+  /// band across the top. The ring and the amount sit *beside* the camera rather
+  /// than under it — neither overlaps it horizontally — so they climb back up by
+  /// the difference. The event column must not: it is directly under the camera.
+  static let cameraBand: CGFloat = 37
+  static var besideCameraTop: CGFloat { margin - cameraBand }
 
   /// One ring diameter per phase; the ring grows and shrinks with the island.
   static let ringBilling: CGFloat = 68
@@ -343,7 +350,7 @@ struct StoreVisitActivityLiveConfiguration: Widget {
         // columns because the band is exactly one ring tall.
         DynamicIslandExpandedRegion(.leading) {
           StoreVisitRing(model: model)
-            .padding(.top, IslandLayout.contentPadding)
+            .padding(.top, IslandLayout.besideCameraTop)
             .padding(.leading, IslandLayout.contentPadding)
         }
         // Upper band, centre: the event. Only the top edge is constrained — it
@@ -368,7 +375,7 @@ struct StoreVisitActivityLiveConfiguration: Widget {
           }
           .layoutPriority(1)
           .frame(height: model.upperBandHeight, alignment: .bottom)
-          .padding(.top, IslandLayout.contentPadding)
+          .padding(.top, IslandLayout.besideCameraTop)
           .padding(.trailing, IslandLayout.contentPadding)
         }
         // Lower band: the visit itself, on one line.
