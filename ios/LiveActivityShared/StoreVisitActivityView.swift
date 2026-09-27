@@ -67,14 +67,14 @@ private enum IslandLayout {
   /// spacing the system inserts between regions. HIG likes the two groups read
   /// separately — "what is happening now" above, "this visit" below — and the
   /// expanded island is hard-capped at 160pt, so this stays modest.
-  static let bandGap: CGFloat = 8
+  static let bandGap: CGFloat = 2
 
   // Type. Fixed points rather than semantic styles: the island is a fixed
   // canvas and the sheet is drawn in points.
   static let amount: CGFloat = 40
   static let amountCompact: CGFloat = 36
   static let amountSettled: CGFloat = 34
-  static let amountCaption: CGFloat = 20
+  static let amountCaption: CGFloat = 18
   static let amountCaptionCompact: CGFloat = 18
   static let amountCaptionSettled: CGFloat = 17
   static let amountGap: CGFloat = 9
@@ -394,14 +394,14 @@ struct StoreVisitActivityLiveConfiguration: Widget {
         // the island's trailing inset, so the block is inset the same amount on
         // two sides. Bottom-aligned to the band so all three columns agree.
         DynamicIslandExpandedRegion(.trailing) {
-          VStack(alignment: .trailing, spacing: 2) {
+          VStack(alignment: .trailing, spacing: 0) {
             StoreVisitAmountLine(model: model)
             Text(model.amountCaption)
               .font(.system(size: model.amountCaptionSize, weight: .regular))
               .foregroundStyle(.secondary)
               .lineLimit(1)
             StoreVisitCapRow(model: model)
-              .padding(.top, 6)
+              .padding(.top, 2)
           }
           .layoutPriority(1)
           .frame(maxHeight: .infinity, alignment: .top)
