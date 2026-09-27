@@ -471,6 +471,29 @@ struct StoreVisitActivityView: View {
 
 // MARK: - Upper band
 
+/// The ring style the sheet draws: a faint track under an accent sweep that
+/// starts at 12 o'clock, both at the sheet's stroke width. Used for the live
+/// countdown and the static fraction alike, so the two can never render
+/// differently -- the system's built-in circular style strokes thinner than the
+/// sheet and made the live ring look like a different component.
+private struct SweepRingStyle: ProgressViewStyle {
+  let lineWidth: CGFloat
+  let tint: Color
+
+  func makeBody(configuration: Configuration) -> some View {
+    let fraction = CGFloat(configuration.fractionCompleted ?? 1)
+    return ZStack {
+      Circle()
+        .stroke(Color.white.opacity(0.14), lineWidth: lineWidth)
+      Circle()
+        .trim(from: 0, to: min(max(fraction, 0.02), 1))
+        .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+        .rotationEffect(.degrees(-90))
+      configuration.currentValueLabel
+    }
+  }
+}
+
 /// The state ring, with the minutes left nested in its centre. A live countdown
 /// uses `ProgressView(timerInterval:)` so it keeps sweeping without a push; the
 /// states without a target draw a static ring at their own fraction.
@@ -489,9 +512,8 @@ private struct StoreVisitRing: View {
         } currentValueLabel: {
           centerLabel
         }
-        .progressViewStyle(.circular)
-        .controlSize(.large)
-        .tint(model.accent)
+        .progressViewStyle(SweepRingStyle(
+          lineWidth: IslandLayout.ringLineWidth, tint: model.accent))
       } else {
         Circle()
           .stroke(Color.white.opacity(0.14), lineWidth: IslandLayout.ringLineWidth)
