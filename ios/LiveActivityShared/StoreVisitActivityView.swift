@@ -396,10 +396,6 @@ struct StoreVisitActivityLiveConfiguration: Widget {
         DynamicIslandExpandedRegion(.trailing) {
           VStack(alignment: .trailing, spacing: 2) {
             StoreVisitAmountLine(model: model)
-            Text(model.amountCaption)
-              .font(.system(size: model.amountCaptionSize, weight: .regular))
-              .foregroundStyle(.secondary)
-              .lineLimit(1)
             StoreVisitCapRow(model: model)
               .padding(.top, 6)
           }
@@ -614,6 +610,10 @@ private struct StoreVisitAmountLine: View {
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: IslandLayout.amountGap) {
+      Text(model.amountCaption)
+        .font(.system(size: model.amountCaptionSize, weight: .regular))
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: true, vertical: false)
       Text(model.heroAmountText ?? "--")
         .font(.system(size: model.amountSize, weight: .semibold))
         .monospacedDigit()
