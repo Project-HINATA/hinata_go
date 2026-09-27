@@ -38,22 +38,29 @@ enum StoreVisitBillingState {
 /// screenshot drifts, calibrate here instead of scattering literals through the
 /// views.
 private enum IslandLayout {
-  /// Concentric inset shared by all four edges — and by the ring's top padding,
-  /// so the ring is inset the same amount on its top and leading sides.
+  /// The design's inset from the island's edges, shared by all four sides — and
+  /// by the ring's top padding, so the ring is inset the same amount on its top
+  /// and leading sides.
   static let margin: CGFloat = 24
 
-  /// One ring diameter per phase; the ring grows and shrinks with the island.
-  static let ringBilling: CGFloat = 77
-  static let ringAwaiting: CGFloat = 69
-  static let ringSettled: CGFloat = 61
-  static let ringLineWidth: CGFloat = 7
+  /// SwiftUI already insets every expanded region before our own padding
+  /// applies. Measured off a device screenshot: with 24pt of our own padding the
+  /// ring landed about 44pt from the edge, so the system supplies about 20pt.
+  /// Our padding is the remainder — calibrate `margin` and the content follows.
+  static let systemRegionInset: CGFloat = 20
+  static var contentPadding: CGFloat { max(0, margin - systemRegionInset) }
 
-  /// Breathing room between the upper band and the footer row. HIG likes the
-  /// two groups read separately — "what is happening now" above, "this visit"
-  /// below — but the system adds its own spacing between regions on top of
-  /// this, and the expanded island is hard-capped at 160pt. Keep the sum
-  /// (margin + ring + gap + footer + margin) under that ceiling.
-  static let bandGap: CGFloat = 6
+  /// One ring diameter per phase; the ring grows and shrinks with the island.
+  static let ringBilling: CGFloat = 68
+  static let ringAwaiting: CGFloat = 62
+  static let ringSettled: CGFloat = 56
+  static let ringLineWidth: CGFloat = 6.5
+
+  /// Breathing room between the upper band and the footer row, on top of the
+  /// spacing the system inserts between regions. HIG likes the two groups read
+  /// separately — "what is happening now" above, "this visit" below — and the
+  /// expanded island is hard-capped at 160pt, so this stays modest.
+  static let bandGap: CGFloat = 8
 
   // Type. Fixed points rather than semantic styles: the island is a fixed
   // canvas and the sheet is drawn in points.
@@ -69,10 +76,12 @@ private enum IslandLayout {
   static let eventNameSettled: CGFloat = 17
   static let eventTime: CGFloat = 24
   static let eventTimeCompact: CGFloat = 22
-  static let eventSpacing: CGFloat = 8
+  static let eventSpacing: CGFloat = 10
 
-  static let ringLabel: CGFloat = 18
-  static let ringLabelCompact: CGFloat = 16
+  /// Sized for the timer form ("24:37") the ring actually holds, not the word
+  /// form it was originally drawn with.
+  static let ringLabel: CGFloat = 17
+  static let ringLabelCompact: CGFloat = 15
 
   static let cap: CGFloat = 17
   static let capBarWidth: CGFloat = 19
@@ -334,15 +343,20 @@ struct StoreVisitActivityLiveConfiguration: Widget {
         // columns because the band is exactly one ring tall.
         DynamicIslandExpandedRegion(.leading) {
           StoreVisitRing(model: model)
-            .padding(.top, IslandLayout.margin)
-            .padding(.leading, IslandLayout.margin)
+            .padding(.top, IslandLayout.contentPadding)
+            .padding(.leading, IslandLayout.contentPadding)
         }
         // Upper band, centre: the event. Only the top edge is constrained — it
         // tucks under the camera so the housing stops reading as a hole. The
         // leading edge sits next to the ring rather than lining up with the
         // camera, which would strand it in the middle of the island.
         DynamicIslandExpandedRegion(.center) {
+          // Top-aligned on purpose: a region centres its content vertically by
+          // default, which left the event stranded mid-band with the ring
+          // dangling below it. Pinning it to the top tucks it under the camera,
+          // where it also lines its last line up with the ring's bottom.
           StoreVisitEventBlock(model: model)
+            .frame(maxHeight: .infinity, alignment: .top)
         }
         // Upper band, right: what it costs. The amount's own top inset matches
         // the island's trailing inset, so the block is inset the same amount on
@@ -354,14 +368,14 @@ struct StoreVisitActivityLiveConfiguration: Widget {
           }
           .layoutPriority(1)
           .frame(height: model.upperBandHeight, alignment: .bottom)
-          .padding(.top, IslandLayout.margin)
-          .padding(.trailing, IslandLayout.margin)
+          .padding(.top, IslandLayout.contentPadding)
+          .padding(.trailing, IslandLayout.contentPadding)
         }
         // Lower band: the visit itself, on one line.
         DynamicIslandExpandedRegion(.bottom) {
           StoreVisitVisitRow(model: model)
-            .padding(.horizontal, IslandLayout.margin)
-            .padding(.bottom, IslandLayout.margin)
+            .padding(.horizontal, IslandLayout.contentPadding)
+            .padding(.bottom, IslandLayout.contentPadding)
             .padding(.top, IslandLayout.bandGap)
         }
       } compactLeading: {
@@ -412,7 +426,7 @@ struct StoreVisitActivityView: View {
       }
       StoreVisitVisitRow(model: model)
     }
-    .padding(IslandLayout.margin)
+    .padding(IslandLayout.contentPadding)
     .widgetURL(context.attributes.shopURL)
   }
 }

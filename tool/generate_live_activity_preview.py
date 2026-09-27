@@ -392,80 +392,80 @@ STATES = [
     # Heights sit inside Apple's 84-160pt budget; the full billing state uses the
     # whole 160pt so the island keeps the standard 371x160 (2.3:1) proportion.
     dict(
-        h=160.0, accent=GREEN, ring_frac=0.72, ring_cx=62.5, ring_cy=62.5, ring_d=77.0,
+        h=160.0, accent=GREEN, ring_frac=0.72, ring_cx=58.0, ring_cy=58.0, ring_d=68.0,
         cam_top=6.0, align_guide=True, annotate=True, pad_dims=True, bar=0.28,
-        ring_label=[("24:37", 18)],
+        ring_label=[("24:37", 17)],
         center=[
-            dict(y=62, t="下次计费", s=18, c=SECONDARY),
-            dict(y=98, t="13:24", s=24, c="accent", w=600),
+            dict(y=55, t="下次计费", s=18, c=SECONDARY),
+            dict(y=89, t="13:24", s=24, c="accent", w=600),
         ],
         trail=[
             dict(y=52, parts=[("计价", 20, SECONDARY, 0), ("60", 40, PRIMARY, 9)]),
-            dict(y=98, glyph="bar", t="27.50", s=17, c=AMBER),
+            dict(y=89, glyph="bar", t="27.50", s=17, c=AMBER),
         ],
         low=(132.0, [("in", "11:55", 15), ("timer", "1小时23分", 17)]),
         shop=132,
         cap="扩展式 · 计费中（371×160pt，比例 2.3:1，用满 HIG 高度上限）",
     ),
     dict(
-        h=160.0, accent=GREEN, ring_frac=1.0, ring_cx=62.5, ring_cy=62.5, ring_d=77.0,
+        h=160.0, accent=GREEN, ring_frac=1.0, ring_cx=58.0, ring_cy=58.0, ring_d=68.0,
         cam_top=6.0, bar=0.0,
-        ring_label=[("58:12", 18)],
+        ring_label=[("58:12", 17)],
         center=[
-            dict(y=62, t="规则切换", s=18, c=SECONDARY),
-            dict(y=98, t="14:15", s=24, c="accent", w=600),
+            dict(y=55, t="规则切换", s=18, c=SECONDARY),
+            dict(y=89, t="14:15", s=24, c="accent", w=600),
         ],
         trail=[
             dict(y=52, parts=[("计价", 20, SECONDARY, 0), ("45", 40, PRIMARY, 9)]),
-            dict(y=98, glyph="bar", t="已达上限", s=17, c=AMBER),
+            dict(y=89, glyph="bar", t="已达上限", s=17, c=AMBER),
         ],
         low=(132.0, [("in", "10:15", 15), ("timer", "3小时02分", 17)]),
         shop=132,
         cap="扩展式 · 已封顶（环满且刻度条空，环心改显示距规则切换）",
     ),
     dict(
-        h=160.0, accent=BLUE, ring_frac=0.45, ring_cx=62.5, ring_cy=62.5, ring_d=77.0,
+        h=160.0, accent=BLUE, ring_frac=0.45, ring_cx=58.0, ring_cy=58.0, ring_d=68.0,
         cam_top=6.0, bar=0.45,
-        ring_label=[("11:08", 18)],
+        ring_label=[("11:08", 17)],
         center=[
-            dict(y=62, t="恢复计费", s=18, c=SECONDARY),
-            dict(y=98, t="15:00", s=24, c="accent", w=600),
+            dict(y=55, t="恢复计费", s=18, c=SECONDARY),
+            dict(y=89, t="15:00", s=24, c="accent", w=600),
         ],
         trail=[
             dict(y=52, parts=[("计价", 20, SECONDARY, 0), ("38", 40, PRIMARY, 9)]),
-            dict(y=98, glyph="bar", t="非营业时段", s=17, c=AMBER),
+            dict(y=89, glyph="bar", t="非营业时段", s=17, c=AMBER),
         ],
         low=(132.0, [("in", "09:46", 15), ("timer", "5小时03分", 17)]),
         shop=132,
         cap="扩展式 · 暂停中（非营业时段，金额冻结）",
     ),
     dict(
-        h=148.0, accent=ORANGE, ring_frac=1.0, ring_cx=58.5, ring_cy=58.5, ring_d=69.0,
+        h=148.0, accent=ORANGE, ring_frac=1.0, ring_cx=55.0, ring_cy=55.0, ring_d=62.0,
         cam_top=6.0, bar=0.0,
         ring_label=[("待付", 17)],
         center=[
-            dict(y=58, t="待支付", s=18, c=SECONDARY),
-            dict(y=90, t="已完成计费", s=22, c=PRIMARY, w=600),
+            dict(y=55, t="待支付", s=18, c=SECONDARY),
+            dict(y=83, t="已完成计费", s=22, c=PRIMARY, w=600),
         ],
         trail=[
             dict(y=49, parts=[("应付", 18, SECONDARY, 0), ("45", 36, PRIMARY, 9)]),
-            dict(y=90, t="已结束计费", s=17, c=SECONDARY),
+            dict(y=83, t="已结束计费", s=17, c=SECONDARY),
         ],
         low=(118.0, [("in", "11:54", 15), ("timer", "2小时23分", 17)]),
         shop=118,
         cap="扩展式 · 待结账（高度收缩到 148pt）",
     ),
     dict(
-        h=136.0, accent=GRAY, ring_frac=1.0, ring_cx=54.5, ring_cy=54.5, ring_d=61.0,
+        h=136.0, accent=GRAY, ring_frac=1.0, ring_cx=52.0, ring_cy=52.0, ring_d=56.0,
         cam_top=6.0, bar=0.0,
         ring_label=[("已付", 17)],
         center=[
-            dict(y=56, t="已结算", s=17, c=SECONDARY),
-            dict(y=82, t="已完成计费", s=22, c=PRIMARY, w=600),
+            dict(y=54, t="已结算", s=17, c=SECONDARY),
+            dict(y=77, t="已完成计费", s=22, c=PRIMARY, w=600),
         ],
         trail=[
             dict(y=48, parts=[("结算", 17, SECONDARY, 0), ("45", 34, PRIMARY, 9)]),
-            dict(y=82, t="已结束计费", s=17, c=SECONDARY),
+            dict(y=77, t="已结束计费", s=17, c=SECONDARY),
         ],
         low=(106.0, [("in", "11:54", 15), ("timer", "2小时23分", 17)]),
         shop=106,
@@ -514,16 +514,16 @@ def lock_screen(x, y, accent, frac):
     m = MARGIN
     g = [f'<g transform="translate({x},{y})">']
     g.append(rounded(0, 0, ISLAND_W, h, rx=38, fill=LOCK_CARD))
-    g.append(ring(m + 38.5, 62.5, 77.0, frac, accent))
-    g.append(tline_center(m + 38.5, 62.5 + 18 * 0.36, [("24:37", 18)], accent))
+    g.append(ring(m + 34.0, 58.0, 68.0, frac, accent))
+    g.append(tline_center(m + 34.0, 58.0 + 17 * 0.36, [("24:37", 17)], accent))
     for line in [
-        dict(y=62, t="下次计费", s=18, c=SECONDARY),
-        dict(y=98, t="13:24", s=24, c=accent, w=600),
+        dict(y=55, t="下次计费", s=18, c=SECONDARY),
+        dict(y=89, t="13:24", s=24, c=accent, w=600),
     ]:
         g.append(t(CTR_X, line["y"], line["t"], line["s"], line["c"], weight=line.get("w")))
     g.append(tline_right(ISLAND_W - m, 52,
                          [("计价", 20, SECONDARY, 0), ("60", 40, PRIMARY, 9)]))
-    for line in [dict(y=98, glyph="bar", t="27.50", s=17)]:
+    for line in [dict(y=89, glyph="bar", t="27.50", s=17)]:
         size = line["s"]
         gx = ISLAND_W - m - est_width(line["t"], size) - 5 - size / 2
         g.append(glyph(line["glyph"], gx, line["y"] - size * 0.32, size * 1.1, AMBER))
@@ -628,7 +628,7 @@ out.append(ctext(
 ))
 out.append(ctext(
     MARGIN, legend_y + 76,
-    "字号 · 金额 34–40pt / 事件时刻 22–24pt / 环心计时 18pt / 计价标签 17–20pt"
+    "字号 · 金额 34–40pt / 事件时刻 22–24pt / 环心计时 17pt / 计价标签 17–20pt"
     " / 事件名称 17–18pt / 在场与店名 17pt / 距封顶与入店 15–17pt",
     11, SECONDARY,
 ))
