@@ -1,23 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "在场时间": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Time in store"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在场时间"
-          }
-        }
-      }
-    },
     "下一事件": {
       "extractionState": "manual",
       "localizations": {
@@ -35,36 +18,138 @@
         }
       }
     },
-    "入店": {
+    "计价": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Check-in"
+            "value": "Billed"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "入店"
+            "value": "计价"
           }
         }
       }
     },
-    "暂不计费": {
+    "应付": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not billing now"
+            "value": "Due"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "暂不计费"
+            "value": "应付"
+          }
+        }
+      }
+    },
+    "结算": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结算"
+          }
+        }
+      }
+    },
+    "封顶": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capped"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "封顶"
+          }
+        }
+      }
+    },
+    "待付": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To pay"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "待付"
+          }
+        }
+      }
+    },
+    "已付": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已付"
+          }
+        }
+      }
+    },
+    "已达上限": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At cap"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已达上限"
+          }
+        }
+      }
+    },
+    "非营业时段": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Closed hours"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "非营业时段"
           }
         }
       }
@@ -75,7 +160,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cap reached for this segment"
+            "value": "Capped for now"
           }
         },
         "zh-Hans": {
@@ -86,70 +171,87 @@
         }
       }
     },
-    "距封顶还差 %@": {
+    "暂停计费": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ to the cap"
+            "value": "Billing paused"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "距封顶还差 %@"
+            "value": "暂停计费"
           }
         }
       }
     },
-    "待结账": {
+    "待支付": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Awaiting checkout"
+            "value": "Payment due"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "待结账"
+            "value": "待支付"
           }
         }
       }
     },
-    "账单金额": {
+    "已结算": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current bill"
+            "value": "Settled"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "账单金额"
+            "value": "已结算"
           }
         }
       }
     },
-    "本次消费": {
+    "已结束计费": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Total spent"
+            "value": "Billing ended"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "本次消费"
+            "value": "已结束计费"
+          }
+        }
+      }
+    },
+    "已完成计费": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billing complete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已完成计费"
           }
         }
       }
@@ -167,23 +269,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "数据更新于"
-          }
-        }
-      }
-    },
-    "轻点查看账单": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tap to view your bill"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "轻点查看账单"
           }
         }
       }
