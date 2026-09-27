@@ -50,12 +50,12 @@ private enum IslandLayout {
   static let systemRegionInset: CGFloat = 20
   static var contentPadding: CGFloat { max(0, margin - systemRegionInset) }
 
-  /// Every region also starts below the camera, which the island reserves as a
-  /// band across the top. The ring and the amount sit *beside* the camera rather
-  /// than under it — neither overlaps it horizontally — so they climb back up by
-  /// the difference. The event column must not: it is directly under the camera.
-  static let cameraBand: CGFloat = 37
-  static var besideCameraTop: CGFloat { margin - cameraBand }
+  /// The regions already start about this far below the island's top edge,
+  /// measured on device -- which happens to be exactly the inset the sheet asks
+  /// for, so the ring and the amount need **no** top padding of their own. The
+  /// earlier -13pt here pushed them into the top edge instead.
+  static let regionTopInset: CGFloat = 24
+  static var besideCameraTop: CGFloat { margin - regionTopInset }
 
   /// One ring diameter per phase; the ring grows and shrinks with the island.
   static let ringBilling: CGFloat = 68
@@ -276,10 +276,28 @@ struct StoreVisitDisplayModel {
   var ringStateWord: String? {
     guard nextEvent == nil else { return nil }
     switch phase {
-    case .billing: return billingState == .capped ? String(localized: "封顶") : nil
+    case .billing:
+      switch billingState {
+      case .capped: return String(localized: "封顶")
+      case .paused: return String(localized: "暂停")
+      // Metering with nothing to count: either a plan with no next boundary,
+      // or an update that has not landed yet. Saying "计费中" is the truth in
+      // both cases; a countdown stuck at zero would not be.
+      case .metering: return String(localized: "计费中")
+      }
     case .awaitingCheckout: return String(localized: "待付")
     case .settled: return String(localized: "已付")
     }
+  }
+
+  /// The event the backend last scheduled, whether or not its instant has
+  /// passed. `nextEvent` deliberately goes nil the moment a countdown would
+  /// reach zero, but the name and time it carried are still the most recent
+  /// thing the backend said — keeping them beats an empty row, and beats
+  /// inventing a state, while the next push is in flight.
+  var lastScheduledEvent: (date: Date, title: String)? {
+    guard let event = bill?.nextEvent, event.atUnix.isFinite else { return nil }
+    return (Date(timeIntervalSince1970: event.atUnix), event.title)
   }
 
   /// The window the ring sweeps: from the bill's push time to the next event,
@@ -529,7 +547,15 @@ private struct StoreVisitEventBlock: View {
           .monospacedDigit()
           .foregroundStyle(model.eventTimeColor)
           .lineLimit(1)
-      } else {
+      } else if let scheduled = model.lastScheduledEvent {
+        // Last known instant, held steady and left neutral until the update
+        // lands: it is no longer a target, so it must not wear the state colour.
+        Text(scheduled.date, style: .time)
+          .font(.system(size: model.eventTimeSize, weight: .semibold))
+          .monospacedDigit()
+          .foregroundStyle(.primary)
+          .lineLimit(1)
+      } else if !model.trailingStatusText.isEmpty {
         Text(model.trailingStatusText)
           .font(.system(size: model.eventTimeSize, weight: .semibold))
           .foregroundStyle(.primary)
@@ -542,10 +568,17 @@ private struct StoreVisitEventBlock: View {
 
   private var eventName: String {
     if let next = model.nextEvent { return next.title }
+    // The countdown expired but the push has not arrived: keep naming the event
+    // the backend last scheduled rather than promoting it to a state. Only an
+    // explicit `.paused` may say billing stopped.
+    if let scheduled = model.lastScheduledEvent { return scheduled.title }
     switch model.phase {
     case .billing:
-      return model.billingState == .capped
-        ? String(localized: "本时段已封顶") : String(localized: "暂停计费")
+      switch model.billingState {
+      case .capped: return String(localized: "本时段已封顶")
+      case .paused: return String(localized: "暂停计费")
+      case .metering: return String(localized: "计费中")
+      }
     case .awaitingCheckout: return String(localized: "待支付")
     case .settled: return String(localized: "已结算")
     }
