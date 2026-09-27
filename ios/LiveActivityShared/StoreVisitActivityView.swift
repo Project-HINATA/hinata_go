@@ -363,18 +363,23 @@ struct StoreVisitActivityLiveConfiguration: Widget {
           // dangling below it. Pinning it to the top tucks it under the camera,
           // where it also lines its last line up with the ring's bottom.
           StoreVisitEventBlock(model: model)
-            .frame(maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         // Upper band, right: what it costs. The amount's own top inset matches
         // the island's trailing inset, so the block is inset the same amount on
         // two sides. Bottom-aligned to the band so all three columns agree.
         DynamicIslandExpandedRegion(.trailing) {
-          VStack(alignment: .trailing, spacing: IslandLayout.eventSpacing) {
+          VStack(alignment: .trailing, spacing: 2) {
             StoreVisitAmountLine(model: model)
+            Text(model.amountCaption)
+              .font(.system(size: model.amountCaptionSize, weight: .regular))
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
             StoreVisitCapRow(model: model)
+              .padding(.top, 6)
           }
           .layoutPriority(1)
-          .frame(height: model.upperBandHeight, alignment: .bottom)
+          .frame(maxHeight: .infinity, alignment: .top)
           .padding(.top, IslandLayout.besideCameraTop)
           .padding(.trailing, IslandLayout.contentPadding)
         }
@@ -433,7 +438,8 @@ struct StoreVisitActivityView: View {
       }
       StoreVisitVisitRow(model: model)
     }
-    .padding(IslandLayout.contentPadding)
+    // Not a Dynamic Island region, so there is no system inset to subtract.
+    .padding(IslandLayout.margin)
     .widgetURL(context.attributes.shopURL)
   }
 }
@@ -481,12 +487,14 @@ private struct StoreVisitRing: View {
     } else if let window = model.countdownWindow {
       // Self-refreshing, so it ticks down with no backend push. The relative
       // style is not usable here: it reads "24分钟 0秒", far wider than the ring.
-      Text(timerInterval: window, countsDown: true)
+      // `showsHours: false` keeps it to mm:ss; with the hour field a five hour
+      // countdown renders "5:47:15", wider than the ring's inner circle.
+      Text(timerInterval: window, countsDown: true, showsHours: false)
         .font(.system(size: model.ringLabelSize, weight: .semibold))
         .monospacedDigit()
         .foregroundStyle(model.accent)
         .lineLimit(1)
-        .minimumScaleFactor(0.6)
+        .minimumScaleFactor(0.8)
     } else if let word = model.ringStateWord {
       Text(word)
         .font(.system(size: model.ringLabelSize, weight: .semibold))
@@ -544,10 +552,6 @@ private struct StoreVisitAmountLine: View {
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: IslandLayout.amountGap) {
-      Text(model.amountCaption)
-        .font(.system(size: model.amountCaptionSize, weight: .regular))
-        .foregroundStyle(.secondary)
-        .fixedSize(horizontal: true, vertical: false)
       Text(model.heroAmountText ?? "--")
         .font(.system(size: model.amountSize, weight: .semibold))
         .monospacedDigit()
@@ -578,7 +582,7 @@ private struct StoreVisitCapRow: View {
           .lineLimit(1)
           .fixedSize(horizontal: true, vertical: false)
       }
-    } else {
+    } else if !model.trailingStatusText.isEmpty {
       Text(model.trailingStatusText)
         .font(.system(size: IslandLayout.cap, weight: .regular))
         .foregroundStyle(.secondary)
