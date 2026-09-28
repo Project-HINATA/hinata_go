@@ -69,6 +69,19 @@ private enum IslandLayout {
   /// expanded island is hard-capped at 160pt, so this stays modest.
   static let bandGap: CGFloat = 8
 
+  /// How far the trailing column is lifted so the amount **caption's** baseline
+  /// lands on the same row as the event title's. The caption (20pt) then reads
+  /// as the title's right-hand peer, while the amount (40pt), sharing that
+  /// baseline via firstTextBaseline, rises past the camera band above it — the
+  /// move Apple's own timer activity makes with its digits. Negative because
+  /// the column starts at the region's top and must climb; calibrate on device.
+  static let captionRowLift: CGFloat = -16
+
+  /// Nudges the event column toward the ring. The system pads the gap between
+  /// the centre and leading regions; the sheet wants the event flush against
+  /// the ring's right edge instead. Negative, and calibrate on device.
+  static let eventHugRing: CGFloat = -8
+
   // Type. Fixed points rather than semantic styles: the island is a fixed
   // canvas and the sheet is drawn in points.
   static let amount: CGFloat = 40
@@ -388,6 +401,7 @@ struct StoreVisitActivityLiveConfiguration: Widget {
           // dangling below it. Pinning it to the top tucks it under the camera,
           // where it also lines its last line up with the ring's bottom.
           StoreVisitEventBlock(model: model)
+            .padding(.leading, IslandLayout.eventHugRing)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         // Upper band, right: what it costs. The amount's own top inset matches
@@ -396,6 +410,7 @@ struct StoreVisitActivityLiveConfiguration: Widget {
         DynamicIslandExpandedRegion(.trailing) {
           VStack(alignment: .trailing, spacing: 2) {
             StoreVisitAmountLine(model: model)
+              .padding(.top, IslandLayout.captionRowLift)
             StoreVisitCapRow(model: model)
               .padding(.top, 6)
           }

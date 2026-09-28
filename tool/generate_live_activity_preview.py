@@ -83,7 +83,7 @@ CAM_W, CAM_H, CAM_TOP = 125.0, 37.0, 6.0
 # corner curve. The ring's TOP inset is forced equal to its LEFT inset.
 MARGIN = 24.0
 REV = "rev 15 · 2026-09-27"
-CTR_X = 108.0
+CTR_X = 104.0
 TRAIL_X = ISLAND_W - MARGIN
 FOOT_X = MARGIN
 
@@ -400,7 +400,7 @@ STATES = [
             dict(y=89, t="13:24", s=24, c="accent", w=600),
         ],
         trail=[
-            dict(y=52, parts=[("计价", 20, SECONDARY, 0), ("60", 40, PRIMARY, 9)]),
+            dict(y=55, parts=[("计价", 20, SECONDARY, 0), ("60", 40, PRIMARY, 9)]),
             dict(y=100, glyph="bar", t="27.50", s=17, c=AMBER),
         ],
         low=(132.0, [("in", "11:55", 15), ("timer", "1小时23分", 17)]),
@@ -416,7 +416,7 @@ STATES = [
             dict(y=89, t="14:15", s=24, c="accent", w=600),
         ],
         trail=[
-            dict(y=52, parts=[("计价", 20, SECONDARY, 0), ("45", 40, PRIMARY, 9)]),
+            dict(y=55, parts=[("计价", 20, SECONDARY, 0), ("45", 40, PRIMARY, 9)]),
             dict(y=100, glyph="bar", t="已达上限", s=17, c=AMBER),
         ],
         low=(132.0, [("in", "10:15", 15), ("timer", "3小时02分", 17)]),
@@ -432,7 +432,7 @@ STATES = [
             dict(y=89, t="15:00", s=24, c="accent", w=600),
         ],
         trail=[
-            dict(y=52, parts=[("计价", 20, SECONDARY, 0), ("38", 40, PRIMARY, 9)]),
+            dict(y=55, parts=[("计价", 20, SECONDARY, 0), ("38", 40, PRIMARY, 9)]),
             dict(y=100, glyph="bar", t="非营业时段", s=17, c=AMBER),
         ],
         low=(132.0, [("in", "09:46", 15), ("timer", "5小时03分", 17)]),
@@ -521,7 +521,7 @@ def lock_screen(x, y, accent, frac):
         dict(y=89, t="13:24", s=24, c=accent, w=600),
     ]:
         g.append(t(CTR_X, line["y"], line["t"], line["s"], line["c"], weight=line.get("w")))
-    g.append(tline_right(ISLAND_W - m, 52,
+    g.append(tline_right(ISLAND_W - m, 55,
                          [("计价", 20, SECONDARY, 0), ("60", 40, PRIMARY, 9)]))
     for line in [dict(y=100, glyph="bar", t="27.50", s=17)]:
         size = line["s"]
