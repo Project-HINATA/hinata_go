@@ -394,7 +394,7 @@ STATES = [
     dict(
         h=160.0, accent=GREEN, ring_frac=0.72, ring_cx=58.0, ring_cy=58.0, ring_d=68.0,
         cam_top=6.0, align_guide=True, annotate=True, pad_dims=True, bar=0.28,
-        ring_label=[("25分", 17)],
+        ring_label=[("24:37", 17)],
         center=[
             dict(y=55, t="下次计费", s=18, c=SECONDARY),
             dict(y=89, t="13:24", s=24, c="accent", w=600),
@@ -410,7 +410,7 @@ STATES = [
     dict(
         h=160.0, accent=GREEN, ring_frac=1.0, ring_cx=58.0, ring_cy=58.0, ring_d=68.0,
         cam_top=6.0, bar=0.0,
-        ring_label=[("58分", 17)],
+        ring_label=[("58:12", 17)],
         center=[
             dict(y=55, t="规则切换", s=18, c=SECONDARY),
             dict(y=89, t="14:15", s=24, c="accent", w=600),
@@ -426,7 +426,7 @@ STATES = [
     dict(
         h=160.0, accent=BLUE, ring_frac=0.45, ring_cx=58.0, ring_cy=58.0, ring_d=68.0,
         cam_top=6.0, bar=0.45,
-        ring_label=[("11分", 17)],
+        ring_label=[("11:08", 17)],
         center=[
             dict(y=55, t="恢复计费", s=18, c=SECONDARY),
             dict(y=89, t="15:00", s=24, c="accent", w=600),
@@ -515,7 +515,7 @@ def lock_screen(x, y, accent, frac):
     g = [f'<g transform="translate({x},{y})">']
     g.append(rounded(0, 0, ISLAND_W, h, rx=38, fill=LOCK_CARD))
     g.append(ring(m + 34.0, 58.0, 68.0, frac, accent))
-    g.append(tline_center(m + 34.0, 58.0 + 17 * 0.36, [("25分", 17)], accent))
+    g.append(tline_center(m + 34.0, 58.0 + 17 * 0.36, [("24:37", 17)], accent))
     for line in [
         dict(y=55, t="下次计费", s=18, c=SECONDARY),
         dict(y=89, t="13:24", s=24, c=accent, w=600),
@@ -563,7 +563,7 @@ out.append(ctext(
 ))
 out.append(ctext(
     MARGIN, 106,
-    "环 上边距 = 左边距 · 金额 上边距 = 右边距 · 剩余时间嵌在环心（4分20秒→4分、4分40秒→5分） · 事件信息贴环"
+    "环 上边距 = 左边距 · 金额 上边距 = 右边距 · 剩余时间嵌在环心（mm:ss 计时器，实时自走） · 事件信息贴环"
     " · 色彩按信息分组（状态色 / 额度琥珀）",
     11, SECONDARY,
 ))
@@ -609,7 +609,7 @@ caption(COL1 + CW / 2, 2268, "锁屏 · 计费中（同一套 24pt 栅格，与�
 legend_y = 2315
 out.append(ctext(
     MARGIN, legend_y,
-    "色彩按信息分组（HIG：用醒目的颜色强调元素之间的关系）· 状态色 → 环 / 环心剩余时间 / 事件时刻 / 关键线"
+    "色彩按信息分组（HIG：用醒目的颜色强调元素之间的关系）· 状态色 → 环 / 环心计时 / 事件时刻 / 关键线"
     " · 琥珀 → 额度条与距封顶 · 其余一律 primary / secondary", 11, SECONDARY,
 ))
 for i, (color, name) in enumerate(
@@ -628,7 +628,7 @@ out.append(ctext(
 ))
 out.append(ctext(
     MARGIN, legend_y + 76,
-    "字号 · 金额 34–40pt / 事件时刻 22–24pt / 环心剩余 17pt / 计价标签 17–20pt"
+    "字号 · 金额 34–40pt / 事件时刻 22–24pt / 环心计时 17pt / 计价标签 17–20pt"
     " / 事件名称 17–18pt / 在场与店名 17pt / 距封顶与入店 15–17pt",
     11, SECONDARY,
 ))

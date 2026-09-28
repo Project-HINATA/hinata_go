@@ -334,23 +334,6 @@ struct StoreVisitDisplayModel {
     return (Date(timeIntervalSince1970: event.atUnix), event.title)
   }
 
-  /// Remaining time to the next event as a single coarse unit -- "2时", "4分",
-  /// "45秒" -- never two ("1时20分"). The next unit's own half-way point decides
-  /// the rounding, so 4分20秒 reads "4分" and 4分40秒 reads "5分".
-  ///
-  /// ActivityKit only self-updates `Text(_:style:)` and
-  /// `ProgressView(timerInterval:)`; neither renders a rounded single unit, so
-  /// this is as-of-the-last-push text. The ring's own sweep still carries the
-  /// sense of time passing. Worth revisiting if the backend can afford a push
-  /// per minute.
-  var coarseRemainingText: String? {
-    guard let next = nextEvent else { return nil }
-    let seconds = max(0, next.date.timeIntervalSince(.now))
-    if seconds >= 3600 { return String(localized: "\((seconds / 3600).rounded())时") }
-    if seconds >= 60 { return String(localized: "\((seconds / 60).rounded())分") }
-    return String(localized: "\(seconds.rounded())秒")
-  }
-
   /// The window the ring sweeps: from the bill's push time to the next event,
   /// so it depletes toward the next charge without needing a new push.
   var countdownWindow: ClosedRange<Date>? {
@@ -600,10 +583,16 @@ private struct StoreVisitRing: View {
   @ViewBuilder private var centerLabel: some View {
     if !showsLabel {
       EmptyView()
-    } else if let coarse = model.coarseRemainingText {
-      // One coarse unit, as the sheet asks ("4分", never "4:20" or "1时20分").
-      // See `coarseRemainingText` for why this is not the self-updating timer.
-      Text(coarse)
+    } else if let window = model.countdownWindow {
+      // Real time, and the only self-updating form that fits the ring: the
+      // timer counts down with no backend push. `showsHours: false` keeps it to
+      // mm:ss -- a five hour countdown would otherwise read "5:47:15", wider
+      // than the ring's inner circle, so it shows total minutes instead.
+      //
+      // The sheet asked for one rounded unit ("4分"), which no self-updating
+      // primitive can render; that version was a snapshot of the last push and
+      // was dropped in favour of this.
+      Text(timerInterval: window, countsDown: true, showsHours: false)
         .font(.system(size: model.ringLabelSize, weight: .semibold))
         .monospacedDigit()
         .foregroundStyle(model.accent)
