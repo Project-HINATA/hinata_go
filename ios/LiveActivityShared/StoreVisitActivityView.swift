@@ -26,17 +26,10 @@ enum StoreVisitBillingState {
 
 // MARK: - Layout metrics
 
-/// Geometry and type scale for the expanded island.
+/// Component geometry only.
 ///
-/// Mirrors `dynamic-island-preview.svg` (rev 15), which follows Apple's
-/// specification table for the expanded presentation: **371 × 84–160pt** with a
-/// **44pt** corner radius (408pt wide on Pro Max / Plus / Air). The billing
-/// states use the whole 160pt so the island keeps the standard 2.3:1 proportion
-/// rather than being squeezed flat.
-///
-/// Every value is a point measurement taken from that sheet. If a device
-/// screenshot drifts, calibrate here instead of scattering literals through the
-/// views.
+/// Positioning and camera clearance deliberately stay out of this namespace:
+/// WidgetKit's expanded regions own those relationships across device families.
 private enum IslandLayout {
   /// A component size, not a positioning offset. WidgetKit owns all spacing
   /// around the TrueDepth camera and the island edges.
@@ -279,11 +272,18 @@ struct StoreVisitActivityLiveConfiguration: Widget {
     } dynamicIsland: { context in
       let model = StoreVisitDisplayModel(context: context)
       return DynamicIsland {
-        // Keep expanded content in a compact cluster immediately below the
-        // camera. WidgetKit owns camera clearance and edge insets; the view
-        // deliberately contains no screenshot-derived positioning offsets.
+        // Use the system's four expanded regions exactly for what they are
+        // designed for: content beside the camera lives in leading/trailing,
+        // content directly under it lives in center, and the visit metadata is
+        // the bottom row. No measured camera-band offsets or explicit padding.
+        DynamicIslandExpandedRegion(.leading) {
+          StoreVisitRing(model: model)
+        }
         DynamicIslandExpandedRegion(.center) {
-          StoreVisitHeroRow(model: model)
+          StoreVisitEventBlock(model: model)
+        }
+        DynamicIslandExpandedRegion(.trailing) {
+          StoreVisitAmountStack(model: model)
         }
         DynamicIslandExpandedRegion(.bottom) {
           StoreVisitVisitRow(model: model)
