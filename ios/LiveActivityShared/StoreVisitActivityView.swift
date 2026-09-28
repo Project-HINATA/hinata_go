@@ -50,12 +50,28 @@ private enum IslandLayout {
   static let systemRegionInset: CGFloat = 20
   static var contentPadding: CGFloat { max(0, margin - systemRegionInset) }
 
-  /// The regions already start about this far below the island's top edge,
-  /// measured on device -- which happens to be exactly the inset the sheet asks
-  /// for, so the ring and the amount need **no** top padding of their own. The
-  /// earlier -13pt here pushed them into the top edge instead.
-  static let regionTopInset: CGFloat = 24
-  static var besideCameraTop: CGFloat { margin - regionTopInset }
+  /// A region's content already begins about this far below the island's top
+  /// edge; measured on device, and the datum every top offset below is
+  /// expressed against.
+  static let regionTopInset: CGFloat = 30
+
+  /// The camera's band across the top of the island. Content directly under the
+  /// camera must clear it; content beside it may rise into it.
+  static let cameraBand: CGFloat = 37
+
+  /// Ring: pinned to the top of the band so its position no longer depends on
+  /// how tall the tallest column happens to be (it used to be centred, which
+  /// made it ride up and down as the trailing column changed). Targets the
+  /// sheet's 24pt inset, which is also its leading inset.
+  static var ringTop: CGFloat { margin - regionTopInset }
+
+  /// Event column: its first line starts at the camera's bottom, not at the
+  /// band's top, so the title is never tucked behind the camera pill.
+  static var eventTop: CGFloat { cameraBand - regionTopInset }
+
+  /// Amount column: the same top as the event column, so that after
+  /// `captionRowLift` the caption's baseline lands on the event title's row.
+  static var amountTop: CGFloat { eventTop }
 
   /// One ring diameter per phase; the ring grows and shrinks with the island.
   static let ringBilling: CGFloat = 68
@@ -114,6 +130,9 @@ private enum IslandLayout {
   static let glyphGap: CGFloat = 5
 
   static let compactRing: CGFloat = 22
+  /// The compact ring is smaller, so the sheet strokes it thinner (22pt ring,
+  /// 3pt stroke) -- the expanded width would read as a solid disc.
+  static let compactRingLineWidth: CGFloat = 3
   static let compactAmount: CGFloat = 15
   static let minimalAmount: CGFloat = 15
 
@@ -388,8 +407,9 @@ struct StoreVisitActivityLiveConfiguration: Widget {
         // columns because the band is exactly one ring tall.
         DynamicIslandExpandedRegion(.leading) {
           StoreVisitRing(model: model)
-            .padding(.top, IslandLayout.besideCameraTop)
+            .padding(.top, IslandLayout.ringTop)
             .padding(.leading, IslandLayout.contentPadding)
+            .frame(maxHeight: .infinity, alignment: .top)
         }
         // Upper band, centre: the event. Only the top edge is constrained — it
         // tucks under the camera so the housing stops reading as a hole. The
@@ -401,6 +421,7 @@ struct StoreVisitActivityLiveConfiguration: Widget {
           // dangling below it. Pinning it to the top tucks it under the camera,
           // where it also lines its last line up with the ring's bottom.
           StoreVisitEventBlock(model: model)
+            .padding(.top, IslandLayout.eventTop)
             .padding(.leading, IslandLayout.eventHugRing)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
@@ -411,12 +432,16 @@ struct StoreVisitActivityLiveConfiguration: Widget {
           VStack(alignment: .trailing, spacing: 2) {
             StoreVisitAmountLine(model: model)
               .padding(.top, IslandLayout.captionRowLift)
+            // Pushes the allowance row to the band's bottom edge, so the three
+            // upper columns bottom out together the way the sheet draws them.
+            // Without it the row floated mid-band and left a void beneath.
+            Spacer(minLength: 4)
             StoreVisitCapRow(model: model)
-              .padding(.top, 6)
           }
+          .fixedSize(horizontal: true, vertical: false)
           .layoutPriority(1)
           .frame(maxHeight: .infinity, alignment: .top)
-          .padding(.top, IslandLayout.besideCameraTop)
+          .padding(.top, IslandLayout.amountTop)
           .padding(.trailing, IslandLayout.contentPadding)
         }
         // Lower band: the visit itself, on one line.
@@ -488,6 +513,7 @@ struct StoreVisitActivityView: View {
 /// differently -- the system's built-in circular style strokes thinner than the
 /// sheet and made the live ring look like a different component.
 private struct SweepRingStyle: ProgressViewStyle {
+  let diameter: CGFloat
   let lineWidth: CGFloat
   let tint: Color
 
@@ -502,6 +528,11 @@ private struct SweepRingStyle: ProgressViewStyle {
         .rotationEffect(.degrees(-90))
       configuration.currentValueLabel
     }
+    // Pins the ring to the size we asked for. The progress view proposes its
+    // own intrinsic size to the style, so without this the circles drew at that
+    // size and overflowed the frame -- the compact ring came out half again as
+    // large as designed.
+    .frame(width: diameter, height: diameter)
   }
 }
 
@@ -515,6 +546,12 @@ private struct StoreVisitRing: View {
 
   private var side: CGFloat { diameter ?? model.ringDiameter }
 
+  /// The compact slot draws the ring small, so it takes the sheet's thinner
+  /// stroke; every other call site is the expanded ring.
+  private var strokeWidth: CGFloat {
+    diameter == nil ? IslandLayout.ringLineWidth : IslandLayout.compactRingLineWidth
+  }
+
   var body: some View {
     ZStack {
       if let window = model.countdownWindow {
@@ -524,14 +561,14 @@ private struct StoreVisitRing: View {
           centerLabel
         }
         .progressViewStyle(SweepRingStyle(
-          lineWidth: IslandLayout.ringLineWidth, tint: model.accent))
+          diameter: side, lineWidth: strokeWidth, tint: model.accent))
       } else {
         Circle()
-          .stroke(Color.white.opacity(0.14), lineWidth: IslandLayout.ringLineWidth)
+          .stroke(Color.white.opacity(0.14), lineWidth: strokeWidth)
         Circle()
           .trim(from: 0, to: model.staticRingFraction)
           .stroke(model.accent, style: StrokeStyle(
-            lineWidth: IslandLayout.ringLineWidth, lineCap: .round))
+            lineWidth: strokeWidth, lineCap: .round))
           .rotationEffect(.degrees(-90))
         centerLabel
       }
