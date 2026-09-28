@@ -53,7 +53,7 @@ private enum IslandLayout {
   /// A region's content already begins about this far below the island's top
   /// edge; measured on device, and the datum every top offset below is
   /// expressed against.
-  static let regionTopInset: CGFloat = 30
+  static let regionTopInset: CGFloat = 20
 
   /// The camera's band across the top of the island. Content directly under the
   /// camera must clear it; content beside it may rise into it.
@@ -69,9 +69,11 @@ private enum IslandLayout {
   /// band's top, so the title is never tucked behind the camera pill.
   static var eventTop: CGFloat { cameraBand - regionTopInset }
 
-  /// Amount column: the same top as the event column, so that after
-  /// `captionRowLift` the caption's baseline lands on the event title's row.
-  static var amountTop: CGFloat { eventTop }
+  /// Amount column. The amount's cap top should land on the sheet's 24pt inset
+  /// like the ring's, and undoing `captionRowLift` is what gets it there: the
+  /// column's own top is the datum, the lift moves the whole row up, and the
+  /// 40pt line box hangs ~10pt of ascender above the cap.
+  static var amountTop: CGFloat { margin - regionTopInset - captionRowLift - 10 }
 
   /// One ring diameter per phase; the ring grows and shrinks with the island.
   static let ringBilling: CGFloat = 68
@@ -93,10 +95,10 @@ private enum IslandLayout {
   /// the column starts at the region's top and must climb; calibrate on device.
   static let captionRowLift: CGFloat = -16
 
-  /// Nudges the event column toward the ring. The system pads the gap between
-  /// the centre and leading regions; the sheet wants the event flush against
-  /// the ring's right edge instead. Negative, and calibrate on device.
-  static let eventHugRing: CGFloat = -8
+  /// Nudges the event column toward the ring. Measured on device: with -8 the
+  /// gap to the ring's stroke closed to about 10pt and read as no gap at all,
+  /// so the natural spacing stands and this only trims it. Calibrate here.
+  static let eventHugRing: CGFloat = 0
 
   // Type. Fixed points rather than semantic styles: the island is a fixed
   // canvas and the sheet is drawn in points.
@@ -332,6 +334,23 @@ struct StoreVisitDisplayModel {
     return (Date(timeIntervalSince1970: event.atUnix), event.title)
   }
 
+  /// Remaining time to the next event as a single coarse unit -- "2时", "4分",
+  /// "45秒" -- never two ("1时20分"). The next unit's own half-way point decides
+  /// the rounding, so 4分20秒 reads "4分" and 4分40秒 reads "5分".
+  ///
+  /// ActivityKit only self-updates `Text(_:style:)` and
+  /// `ProgressView(timerInterval:)`; neither renders a rounded single unit, so
+  /// this is as-of-the-last-push text. The ring's own sweep still carries the
+  /// sense of time passing. Worth revisiting if the backend can afford a push
+  /// per minute.
+  var coarseRemainingText: String? {
+    guard let next = nextEvent else { return nil }
+    let seconds = max(0, next.date.timeIntervalSince(.now))
+    if seconds >= 3600 { return String(localized: "\((seconds / 3600).rounded())时") }
+    if seconds >= 60 { return String(localized: "\((seconds / 60).rounded())分") }
+    return String(localized: "\(seconds.rounded())秒")
+  }
+
   /// The window the ring sweeps: from the bill's push time to the next event,
   /// so it depletes toward the next charge without needing a new push.
   var countdownWindow: ClosedRange<Date>? {
@@ -519,6 +538,12 @@ private struct SweepRingStyle: ProgressViewStyle {
 
   func makeBody(configuration: Configuration) -> some View {
     let fraction = CGFloat(configuration.fractionCompleted ?? 1)
+    // The ring is sized first and the label overlaid on it. Putting the label
+    // in the same ZStack let it widen the stack (it is wider than the track),
+    // which pushed the whole ring off-centre -- the countdown sat left of the
+    // ring's middle. The frame also pins the size: the progress view proposes
+    // its own intrinsic size to the style, and without it the circles drew at
+    // that size and overflowed the frame.
     return ZStack {
       Circle()
         .stroke(Color.white.opacity(0.14), lineWidth: lineWidth)
@@ -526,13 +551,9 @@ private struct SweepRingStyle: ProgressViewStyle {
         .trim(from: 0, to: min(max(fraction, 0.02), 1))
         .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
         .rotationEffect(.degrees(-90))
-      configuration.currentValueLabel
     }
-    // Pins the ring to the size we asked for. The progress view proposes its
-    // own intrinsic size to the style, so without this the circles drew at that
-    // size and overflowed the frame -- the compact ring came out half again as
-    // large as designed.
     .frame(width: diameter, height: diameter)
+    .overlay { configuration.currentValueLabel }
   }
 }
 
@@ -579,12 +600,10 @@ private struct StoreVisitRing: View {
   @ViewBuilder private var centerLabel: some View {
     if !showsLabel {
       EmptyView()
-    } else if let window = model.countdownWindow {
-      // Self-refreshing, so it ticks down with no backend push. The relative
-      // style is not usable here: it reads "24分钟 0秒", far wider than the ring.
-      // `showsHours: false` keeps it to mm:ss; with the hour field a five hour
-      // countdown renders "5:47:15", wider than the ring's inner circle.
-      Text(timerInterval: window, countsDown: true, showsHours: false)
+    } else if let coarse = model.coarseRemainingText {
+      // One coarse unit, as the sheet asks ("4分", never "4:20" or "1时20分").
+      // See `coarseRemainingText` for why this is not the self-updating timer.
+      Text(coarse)
         .font(.system(size: model.ringLabelSize, weight: .semibold))
         .monospacedDigit()
         .foregroundStyle(model.accent)
