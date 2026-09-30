@@ -1,6 +1,6 @@
 # 灵动岛 / 实时活动 UI 重构决策文档
 
-> 状态：**已在 Swift 侧实现**（`StoreVisitActivityView.swift`）
+> 状态：**历史方案**。展开态已由 [V19 时间轴实现](live-activity-timeline.md) 替代；本文保留旧圆环方案的设计背景。
 > 日期：2026-09-27
 > 范围：`ios/LiveActivityShared/`（三 target 共享），不含后端契约变更
 > 视觉规范：`dynamic-island-preview.svg` / `.png`（由 `tool/generate_live_activity_preview.py` 生成）

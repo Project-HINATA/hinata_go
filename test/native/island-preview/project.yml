@@ -1,0 +1,63 @@
+name: IslandPreview
+options:
+  deploymentTarget:
+    iOS: "18.0"
+  developmentLanguage: zh-Hans
+settings:
+  base:
+    CODE_SIGNING_ALLOWED: NO
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  IslandPreview:
+    type: application
+    platform: iOS
+    sources:
+      - App
+      - ../../../ios/LiveActivityShared/StoreVisitAttributes.swift
+      - ../../../ios/LiveActivityShared/Localizable.xcstrings
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: moe.neri.hinatago.timelinepreview
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: 灵动岛预览
+        NSSupportsLiveActivities: true
+        UILaunchScreen: {}
+    dependencies:
+      - target: IslandWidget
+  IslandWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Widget
+      - ../../../ios/LiveActivityShared/StoreVisitActivityView.swift
+      - ../../../ios/LiveActivityShared/StoreVisitAttributes.swift
+      - ../../../ios/LiveActivityShared/Localizable.xcstrings
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: moe.neri.hinatago.timelinepreview.widget
+        APPLICATION_EXTENSION_API_ONLY: YES
+    info:
+      path: Widget/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  IslandPreviewTests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: IslandPreview
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: moe.neri.hinatago.timelinepreview.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  IslandPreview:
+    build:
+      targets:
+        IslandPreview: all
+    test:
+      targets: [IslandPreviewTests]

@@ -41,9 +41,9 @@ class ApiService {
         return validationError;
       }
 
-      return _isSpiceApiInstance(instance)
+      return await (_isSpiceApiInstance(instance)
           ? _sendSpiceApiCardData(instance: instance, card: card)
-          : _sendHttpCardData(instance: instance, card: card);
+          : _sendHttpCardData(instance: instance, card: card));
     } on TimeoutException catch (_) {
       return _handleTimeout(instance);
     } on FormatException catch (e) {

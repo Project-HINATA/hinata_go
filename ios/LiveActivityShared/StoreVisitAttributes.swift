@@ -33,6 +33,24 @@ struct StoreVisitAttributes: ActivityAttributes {
     /// switches, billable transitions) after dedup. When present, the UI
     /// renders its countdown as THE next event.
     var nextEvent: NextEvent? = nil
+    /// Last confirmed billing/rule event, supplied by the server. Never use
+    /// asOfUnix here: refreshing a snapshot does not advance the timeline.
+    var previousEvent: NextEvent? = nil
+
+    func previousEventDate(startedAt: Date, now: Date) -> Date? {
+      guard let event = previousEvent, event.atUnix.isFinite else { return nil }
+      let date = Date(timeIntervalSince1970: event.atUnix)
+      guard date >= startedAt, date <= now else { return nil }
+      return date
+    }
+
+    func eventInterval(startedAt: Date, now: Date) -> ClosedRange<Date>? {
+      guard let start = previousEventDate(startedAt: startedAt, now: now),
+        let nextEvent, nextEvent.atUnix.isFinite else { return nil }
+      let end = Date(timeIntervalSince1970: nextEvent.atUnix)
+      guard end > start, end > now else { return nil }
+      return start...end
+    }
   }
 
   /// The single next event on the session's alarm timeline, pre-merged by the
