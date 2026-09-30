@@ -24,71 +24,6 @@ enum StoreVisitBillingState {
   case paused
 }
 
-// MARK: - Layout metrics
-
-/// Legacy lock-screen metrics; expanded island metrics are defined separately.
-private enum IslandLayout {
-  /// The design's inset from the island's edges, shared by all four sides — and
-  /// by the ring's top padding, so the ring is inset the same amount on its top
-  /// and leading sides.
-  static let margin: CGFloat = 24
-
-  /// One ring diameter per phase; the ring grows and shrinks with the island.
-  static let ringBilling: CGFloat = 68
-  static let ringAwaiting: CGFloat = 62
-  static let ringSettled: CGFloat = 56
-  static let ringLineWidth: CGFloat = 6.5
-
-  /// Breathing room between the upper band and the footer row, on top of the
-  /// spacing the system inserts between regions. HIG likes the two groups read
-  /// separately — "what is happening now" above, "this visit" below — and the
-  /// expanded island is hard-capped at 160pt, so this stays modest.
-  static let bandGap: CGFloat = 8
-
-  // Type. Fixed points rather than semantic styles: the island is a fixed
-  // canvas and the sheet is drawn in points.
-  static let amount: CGFloat = 40
-  static let amountCompact: CGFloat = 36
-  static let amountSettled: CGFloat = 34
-  static let amountCaption: CGFloat = 20
-  static let amountCaptionCompact: CGFloat = 18
-  static let amountCaptionSettled: CGFloat = 17
-  static let amountGap: CGFloat = 9
-
-  static let eventName: CGFloat = 18
-  static let eventNameSettled: CGFloat = 17
-  static let eventTime: CGFloat = 24
-  static let eventTimeCompact: CGFloat = 22
-  static let eventSpacing: CGFloat = 10
-
-  /// Sized for the timer form ("24:37") the ring actually holds, not the word
-  /// form it was originally drawn with.
-  static let ringLabel: CGFloat = 17
-  static let ringLabelCompact: CGFloat = 15
-
-  static let cap: CGFloat = 17
-  static let capBarWidth: CGFloat = 19
-  static let capBarHeight: CGFloat = 7
-  static let capGap: CGFloat = 5
-
-  static let shopName: CGFloat = 17
-  static let elapsed: CGFloat = 17
-  static let entry: CGFloat = 15
-  static let glyphGap: CGFloat = 5
-
-  static let compactRing: CGFloat = 22
-  /// The compact ring is smaller, so the sheet strokes it thinner (22pt ring,
-  /// 3pt stroke) -- the expanded width would read as a solid disc.
-  static let compactRingLineWidth: CGFloat = 3
-  static let compactAmount: CGFloat = 15
-  static let minimalAmount: CGFloat = 15
-
-  /// Fixed amber for anything about the remaining allowance. Deliberately not
-  /// the state colour, so the cap cluster reads as its own kind of fact instead
-  /// of competing with the state ring.
-  static let allowance = Color(red: 1.0, green: 0.69, blue: 0.13) // #FFB020
-}
-
 // MARK: - Display model
 
 /// Everything the UI renders, derived from the activity context. Views consume
@@ -151,9 +86,8 @@ struct StoreVisitDisplayModel {
 
   // MARK: Colour
 
-  /// The state colour. It covers the "now" cluster — ring, the minutes nested
-  /// inside it, the instant the ring is counting down to, and the keyline — so
-  /// those four read as one statement. Per state: green = metering, blue =
+  /// The state colour connects status, current progress, next event and keyline.
+  /// Per state: green = metering, blue =
   /// paused (non-billable segment), orange = awaiting checkout, gray = settled.
   var accent: Color {
     switch phase {
@@ -166,65 +100,7 @@ struct StoreVisitDisplayModel {
     }
   }
 
-  /// Only billing states count down to something, so only they tint the event
-  /// instant. Awaiting / settled have no target and stay neutral.
-  var eventTimeColor: Color {
-    phase == .billing ? accent : .primary
-  }
-
-  // MARK: Sized geometry
-
-  var ringDiameter: CGFloat {
-    switch phase {
-    case .billing: return IslandLayout.ringBilling
-    case .awaitingCheckout: return IslandLayout.ringAwaiting
-    case .settled: return IslandLayout.ringSettled
-    }
-  }
-
-  /// The upper band's columns all bottom out on one line, so the whole band is
-  /// exactly as tall as the ring.
-  var upperBandHeight: CGFloat { ringDiameter }
-
-  var amountSize: CGFloat {
-    switch phase {
-    case .billing: return IslandLayout.amount
-    case .awaitingCheckout: return IslandLayout.amountCompact
-    case .settled: return IslandLayout.amountSettled
-    }
-  }
-
-  var amountCaptionSize: CGFloat {
-    switch phase {
-    case .billing: return IslandLayout.amountCaption
-    case .awaitingCheckout: return IslandLayout.amountCaptionCompact
-    case .settled: return IslandLayout.amountCaptionSettled
-    }
-  }
-
-  var eventNameSize: CGFloat {
-    phase == .settled ? IslandLayout.eventNameSettled : IslandLayout.eventName
-  }
-
-  var eventTimeSize: CGFloat {
-    phase == .billing ? IslandLayout.eventTime : IslandLayout.eventTimeCompact
-  }
-
-  var ringLabelSize: CGFloat {
-    phase == .billing ? IslandLayout.ringLabel : IslandLayout.ringLabelCompact
-  }
-
   // MARK: Copy
-
-  /// "计价 / 应付 / 结算" — the one-word caption that says what the hero number
-  /// is, sitting on the amount's baseline to its left.
-  var amountCaption: String {
-    switch phase {
-    case .billing: return String(localized: "计价")
-    case .awaitingCheckout: return String(localized: "应付")
-    case .settled: return String(localized: "结算")
-    }
-  }
 
   /// Hero amount, or nil before the first bill arrives. Decimals are dropped
   /// when the value is whole, which keeps the largest element on the surface
@@ -238,31 +114,6 @@ struct StoreVisitDisplayModel {
 
   /// Compact amount: decimals only when the amount has them.
   var compactAmountText: String? { heroAmountText }
-
-  /// Exact decimal rendering of integer cents, shared by every amount shown.
-  static func centsText(_ cents: Int) -> String {
-    (Decimal(cents) / 100).formatted(.number.precision(.fractionLength(2)))
-  }
-
-  /// Ring centre while a countdown is running: the minutes left until the next
-  /// money-affecting instant. States without a countdown fall back to a two
-  /// character word instead.
-  var ringStateWord: String? {
-    guard nextEvent == nil else { return nil }
-    switch phase {
-    case .billing:
-      switch billingState {
-      case .capped: return String(localized: "封顶")
-      case .paused: return String(localized: "暂停")
-      // Metering with nothing to count: either a plan with no next boundary,
-      // or an update that has not landed yet. Saying "计费中" is the truth in
-      // both cases; a countdown stuck at zero would not be.
-      case .metering: return String(localized: "计费中")
-      }
-    case .awaitingCheckout: return String(localized: "待付")
-    case .settled: return String(localized: "已付")
-    }
-  }
 
   /// The event the backend last scheduled, whether or not its instant has
   /// passed. `nextEvent` deliberately goes nil the moment a countdown would
@@ -298,38 +149,6 @@ struct StoreVisitDisplayModel {
     }
   }
 
-  /// How full a static ring is drawn. Only used when there is no live
-  /// countdown; per state: metering is full, paused is a little under half,
-  /// capped and the terminal states are full.
-  var staticRingFraction: Double {
-    switch phase {
-    case .billing: return billingState == .paused ? 0.45 : 1.0
-    case .awaitingCheckout, .settled: return 1.0
-    }
-  }
-
-  /// Cap headroom line: the amber cluster. Nil when the visit is not billing,
-  /// in which case the trailing column carries a plain status line instead.
-  var capRow: (text: String, fraction: Double)? {
-    guard phase == .billing, !isStale else { return nil }
-    if billingState == .capped { return (String(localized: "已达上限"), 0) }
-    if billingState == .paused { return (String(localized: "非营业时段"), 0.45) }
-    guard let remaining = bill?.remainingToCapCents, remaining > 0 else { return nil }
-    // 100.00 of headroom is the fullest bar the sheet draws; below that the
-    // width tracks the value so the bar reads as a proportion.
-    let fraction = min(1.0, Double(remaining) / 10_000)
-    return (Self.centsText(remaining), fraction)
-  }
-
-  /// Status line for the trailing column when there is no cap headroom to show.
-  var trailingStatusText: String {
-    switch phase {
-    case .billing: return ""
-    case .awaitingCheckout: return String(localized: "已结束计费")
-    case .settled: return String(localized: "已完成计费")
-    }
-  }
-
   /// Minute-precision localized duration ("1小时23分" style, no seconds).
   static func minutesText(from: Date, to: Date) -> String {
     Duration.seconds(max(0, to.timeIntervalSince(from)))
@@ -339,11 +158,6 @@ struct StoreVisitDisplayModel {
   /// Time in store so far; frozen once the visit ends.
   var elapsedText: String {
     Self.minutesText(from: startedAt, to: phase == .billing ? .now : (endedAt ?? .now))
-  }
-
-  /// Where the visit began, as a wall-clock time.
-  var entryText: String {
-    startedAt.formatted(date: .omitted, time: .shortened)
   }
 }
 
@@ -359,13 +173,15 @@ struct StoreVisitActivityLiveConfiguration: Widget {
       let model = StoreVisitDisplayModel(context: context)
       return DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          StoreVisitIslandStatus(model: model)
-            .padding(.horizontal, TimelineIslandLayout.statusInset)
-            .frame(minWidth: TimelineIslandLayout.headerWidth, maxWidth: .infinity, alignment: .center)
+          StoreVisitCameraSideHeader {
+            StoreVisitIslandStatus(model: model)
+              .padding(.horizontal, TimelineIslandLayout.statusInset)
+          }
         }
         DynamicIslandExpandedRegion(.trailing) {
-          StoreVisitIslandAmount(model: model)
-            .frame(minWidth: TimelineIslandLayout.headerWidth, maxWidth: .infinity, alignment: .center)
+          StoreVisitCameraSideHeader {
+            StoreVisitIslandAmount(model: model)
+          }
         }
         // WidgetKit puts center content below the TrueDepth camera. No extra
         // top padding or offsets from the old ring layout are applied.
@@ -389,7 +205,7 @@ struct StoreVisitActivityLiveConfiguration: Widget {
       } compactTrailing: {
         if let amount = model.compactAmountText {
           Text(amount)
-            .font(.system(size: IslandLayout.compactAmount, weight: .semibold))
+            .font(.system(size: TimelineIslandLayout.compactAmount, weight: .semibold))
             .monospacedDigit()
             .foregroundStyle(model.accent)
             .lineLimit(1)
@@ -398,7 +214,7 @@ struct StoreVisitActivityLiveConfiguration: Widget {
         // HIG asks the minimal presentation to show updating information rather
         // than a static glyph, so the amount goes in.
         Text(model.compactAmountText ?? "--")
-          .font(.system(size: IslandLayout.minimalAmount, weight: .semibold))
+          .font(.system(size: TimelineIslandLayout.compactAmount, weight: .semibold))
           .monospacedDigit()
           .foregroundStyle(model.accent)
           .lineLimit(1)
@@ -415,8 +231,11 @@ struct StoreVisitActivityLiveConfiguration: Widget {
 private enum TimelineIslandLayout {
   // Center the header in WidgetKit's camera-side regions. Keep the system's
   // vertical margins, and inset the entire lower section equally on both sides.
+  static let compactAmount: CGFloat = 15
   static let horizontalInset: CGFloat = 12
-  static let headerWidth: CGFloat = 92
+  // Six cap-status characters at 14 pt, plus dot, gap and two 4 pt insets.
+  // Equal camera-side widths keep the full label and amount balanced.
+  static let headerWidth: CGFloat = 104
   static let statusInset: CGFloat = 4
   static let footerGap: CGFloat = 4
   static let railWidth: CGFloat = 7
@@ -431,15 +250,36 @@ private struct StoreVisitIslandStatus: View {
   let model: StoreVisitDisplayModel
 
   var body: some View {
+    ViewThatFits(in: .horizontal) {
+      status(size: 14)
+      status(size: 12)
+      status(size: 12, usesIdealWidth: false)
+    }
+  }
+
+  private func status(size: CGFloat, usesIdealWidth: Bool = true) -> some View {
     HStack(spacing: 6) {
       Circle().fill(model.accent).frame(width: 6, height: 6)
       Text(model.statusText)
-        .font(.system(size: 14, weight: .semibold))
+        .font(.system(size: size, weight: .semibold))
         .foregroundStyle(model.accent)
         .lineLimit(1)
-        .minimumScaleFactor(0.85)
     }
-    .fixedSize(horizontal: false, vertical: true)
+    // Center the dot and the actual fitted glyphs as one group. Scaling only
+    // the Text can leave a wider layout box with its visible text off-center.
+    .fixedSize(horizontal: usesIdealWidth, vertical: true)
+  }
+}
+
+private struct StoreVisitCameraSideHeader<Content: View>: View {
+  @ViewBuilder var content: Content
+
+  var body: some View {
+    GeometryReader { geometry in
+      content.frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+    }
+    .frame(minWidth: TimelineIslandLayout.headerWidth, maxWidth: .infinity)
+    .frame(height: 20)
   }
 }
 
@@ -692,264 +532,46 @@ private struct StoreVisitTimelineRail: View {
 
 // MARK: - Lock screen
 
+private enum TimelineLockScreenLayout {
+  static let margin: CGFloat = 14
+  static let sectionGap: CGFloat = 8
+  static let amountSize: CGFloat = 32
+}
+
 struct StoreVisitActivityView: View {
   let context: ActivityViewContext<StoreVisitAttributes>
 
   var body: some View {
     let model = StoreVisitDisplayModel(context: context)
-    VStack(spacing: IslandLayout.bandGap) {
-      HStack(alignment: .bottom, spacing: 16) {
-        StoreVisitRing(model: model)
-          .frame(height: model.upperBandHeight, alignment: .top)
-        StoreVisitEventBlock(model: model)
-        Spacer(minLength: 8)
-        VStack(alignment: .trailing, spacing: IslandLayout.eventSpacing) {
-          StoreVisitAmountLine(model: model)
-          StoreVisitCapRow(model: model)
+    VStack(spacing: TimelineLockScreenLayout.sectionGap) {
+      HStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .leading, spacing: 3) {
+          StoreVisitIslandStatus(model: model)
+          StoreVisitElapsedLabel(model: model)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(.gray)
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        Spacer(minLength: 0)
+        Text(model.heroAmountText.map { "¥" + $0 } ?? "—")
+          .font(.system(size: TimelineLockScreenLayout.amountSize, weight: .semibold))
+          .monospacedDigit()
+          .foregroundStyle(.white)
+          .lineLimit(1)
+          .minimumScaleFactor(0.6)
+          .frame(width: 140, alignment: .trailing)
+          .fixedSize(horizontal: false, vertical: true)
+          .layoutPriority(1)
       }
-      StoreVisitVisitRow(model: model)
+      StoreVisitTimelineContent(model: model)
     }
-    // Not a Dynamic Island region, so there is no system inset to subtract.
-    .padding(IslandLayout.margin)
+    .padding(TimelineLockScreenLayout.margin)
+    .activityBackgroundTint(.black)
+    .activitySystemActionForegroundColor(.white)
     .widgetURL(context.attributes.shopURL)
-  }
-}
-
-// MARK: - Upper band
-
-/// The state ring, with the minutes left nested in its centre. A live countdown
-/// uses `ProgressView(timerInterval:)` so it keeps sweeping without a push; the
-/// states without a target draw a static ring at their own fraction.
-private struct StoreVisitRing: View {
-  let model: StoreVisitDisplayModel
-  var diameter: CGFloat?
-  var showsLabel: Bool = true
-
-  private var side: CGFloat { diameter ?? model.ringDiameter }
-
-  /// The compact slot draws the ring small, so it takes the sheet's thinner
-  /// stroke; every other call site is the expanded ring.
-  private var strokeWidth: CGFloat {
-    diameter == nil ? IslandLayout.ringLineWidth : IslandLayout.compactRingLineWidth
-  }
-
-  var body: some View {
-    ZStack {
-      if let window = model.countdownWindow {
-        ProgressView(timerInterval: window, countsDown: true) {
-          EmptyView()
-        } currentValueLabel: {
-          centerLabel
-        }
-        .progressViewStyle(.circular)
-        .tint(model.accent)
-      } else {
-        Circle()
-          .stroke(Color.white.opacity(0.14), lineWidth: strokeWidth)
-        Circle()
-          .trim(from: 0, to: model.staticRingFraction)
-          .stroke(model.accent, style: StrokeStyle(
-            lineWidth: strokeWidth, lineCap: .round))
-          .rotationEffect(.degrees(-90))
-        centerLabel
-      }
-    }
-    .frame(width: side, height: side)
-  }
-
-  @ViewBuilder private var centerLabel: some View {
-    if !showsLabel {
-      EmptyView()
-    } else if let window = model.countdownWindow {
-      // Real time, and the only self-updating form that fits the ring: the
-      // timer counts down with no backend push. `showsHours: false` keeps it to
-      // mm:ss -- a five hour countdown would otherwise read "5:47:15", wider
-      // than the ring's inner circle, so it shows total minutes instead.
-      //
-      // The sheet asked for one rounded unit ("4分"), which no self-updating
-      // primitive can render; that version was a snapshot of the last push and
-      // was dropped in favour of this.
-      Text(timerInterval: window, countsDown: true, showsHours: false)
-        .font(.system(size: model.ringLabelSize, weight: .semibold))
-        .monospacedDigit()
-        .foregroundStyle(model.accent)
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
-    } else if let word = model.ringStateWord {
-      Text(word)
-        .font(.system(size: model.ringLabelSize, weight: .semibold))
-        .foregroundStyle(model.accent)
-        .lineLimit(1)
-    }
-  }
-}
-
-/// The event column: what happens next, and when. The name is supporting type
-/// above the instant, which carries the state colour while a countdown is live
-/// so it reads as the target the ring is sweeping toward.
-private struct StoreVisitEventBlock: View {
-  let model: StoreVisitDisplayModel
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: IslandLayout.eventSpacing) {
-      Text(eventName)
-        .font(.system(size: model.eventNameSize, weight: .regular))
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-      if let next = model.nextEvent {
-        Text(next.date, style: .time)
-          .font(.system(size: model.eventTimeSize, weight: .semibold))
-          .monospacedDigit()
-          .foregroundStyle(model.eventTimeColor)
-          .lineLimit(1)
-      } else if let scheduled = model.lastScheduledEvent {
-        // Last known instant, held steady and left neutral until the update
-        // lands: it is no longer a target, so it must not wear the state colour.
-        Text(scheduled.date, style: .time)
-          .font(.system(size: model.eventTimeSize, weight: .semibold))
-          .monospacedDigit()
-          .foregroundStyle(.primary)
-          .lineLimit(1)
-      } else if !model.trailingStatusText.isEmpty {
-        Text(model.trailingStatusText)
-          .font(.system(size: model.eventTimeSize, weight: .semibold))
-          .foregroundStyle(.primary)
-          .lineLimit(1)
-          .minimumScaleFactor(0.7)
-      }
-    }
-    .lineLimit(1)
-  }
-
-  private var eventName: String {
-    if let next = model.nextEvent { return next.title }
-    // The countdown expired but the push has not arrived: keep naming the event
-    // the backend last scheduled rather than promoting it to a state. Only an
-    // explicit `.paused` may say billing stopped.
-    if let scheduled = model.lastScheduledEvent { return scheduled.title }
-    switch model.phase {
-    case .billing:
-      switch model.billingState {
-      case .capped: return String(localized: "本时段已封顶")
-      case .paused: return String(localized: "暂停计费")
-      case .metering: return String(localized: "计费中")
-      }
-    case .awaitingCheckout: return String(localized: "待支付")
-    case .settled: return String(localized: "已结算")
-    }
-  }
-}
-
-/// The hero: a one-word caption and the amount on a shared baseline, so the
-/// caption sits to the left of the number rather than above or below it.
-private struct StoreVisitAmountLine: View {
-  let model: StoreVisitDisplayModel
-
-  var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: IslandLayout.amountGap) {
-      Text(model.amountCaption)
-        .font(.system(size: model.amountCaptionSize, weight: .regular))
-        .foregroundStyle(.secondary)
-        .fixedSize(horizontal: true, vertical: false)
-      Text(model.heroAmountText ?? "--")
-        .font(.system(size: model.amountSize, weight: .semibold))
-        .monospacedDigit()
-        .foregroundStyle(.primary)
-        .lineLimit(1)
-        // Shrinks rather than truncating: a four-figure bill at 40pt would
-        // otherwise push past the island's 371pt width.
-        .minimumScaleFactor(0.6)
-    }
-    .layoutPriority(1)
-  }
-}
-
-/// The allowance cluster: a proportion bar plus the exact headroom, both in the
-/// fixed amber so they read as their own kind of fact. A bar beats an icon here
-/// because it carries the quantity, not just the concept.
-private struct StoreVisitCapRow: View {
-  let model: StoreVisitDisplayModel
-
-  var body: some View {
-    if let cap = model.capRow {
-      HStack(alignment: .center, spacing: IslandLayout.capGap) {
-        allowanceBar(fraction: cap.fraction)
-        Text(cap.text)
-          .font(.system(size: IslandLayout.cap, weight: .regular))
-          .monospacedDigit()
-          .foregroundStyle(IslandLayout.allowance)
-          .lineLimit(1)
-          .fixedSize(horizontal: true, vertical: false)
-      }
-    } else if !model.trailingStatusText.isEmpty {
-      Text(model.trailingStatusText)
-        .font(.system(size: IslandLayout.cap, weight: .regular))
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-    }
-  }
-
-  private func allowanceBar(fraction: Double) -> some View {
-    Capsule(style: .continuous)
-      .fill(Color.white.opacity(0.18))
-      .frame(width: IslandLayout.capBarWidth, height: IslandLayout.capBarHeight)
-      .overlay(alignment: .leading) {
-        Capsule(style: .continuous)
-          .fill(IslandLayout.allowance)
-          .frame(
-            width: fraction <= 0
-              ? 0 : max(IslandLayout.capBarHeight, IslandLayout.capBarWidth * fraction),
-            height: IslandLayout.capBarHeight
-          )
-      }
-  }
-}
-
-// MARK: - Lower band
-
-/// One line for the visit: where, when it started, how long it has run. The
-/// three are peers, so they share a baseline and are separated by size alone —
-/// the shop name and the elapsed time at full weight, the entry time a step
-/// down. Both times carry a glyph because a bare `11:55` next to a duration
-/// gives no clue which is which.
-private struct StoreVisitVisitRow: View {
-  let model: StoreVisitDisplayModel
-
-  var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 12) {
-      Text(model.shopName)
-        .font(.system(size: IslandLayout.shopName, weight: .regular))
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-      Spacer(minLength: 8)
-      if model.isStale, let asOfUnix = model.bill?.asOfUnix {
-        Text("数据更新于")
-          .font(.system(size: IslandLayout.entry, weight: .regular))
-          .foregroundStyle(.secondary)
-        Text(Date(timeIntervalSince1970: asOfUnix), style: .time)
-          .font(.system(size: IslandLayout.entry, weight: .regular))
-          .monospacedDigit()
-          .foregroundStyle(.secondary)
-      } else {
-        glyphLine(systemName: "figure.walk.arrival", text: model.entryText,
-                  size: IslandLayout.entry)
-        glyphLine(systemName: "timer", text: model.elapsedText,
-                  size: IslandLayout.elapsed)
-      }
-    }
-  }
-
-  private func glyphLine(systemName: String, text: String, size: CGFloat) -> some View {
-    HStack(spacing: IslandLayout.glyphGap) {
-      Image(systemName: systemName)
-        .font(.system(size: size, weight: .regular))
-      Text(text)
-        .font(.system(size: size, weight: .regular))
-        .monospacedDigit()
-    }
-    .foregroundStyle(.secondary)
-    .lineLimit(1)
   }
 }
 
@@ -969,6 +591,15 @@ private enum StoreVisitTimelinePreview {
           label: !billable ? "恢复计费" : capped ? "规则切换" : "下次计费"),
         previousEvent: includesPrevious ? .init(atUnix: now - 18 * 60) : nil))
   }
+}
+
+#Preview("时间轴 · 锁屏", as: .content, using: StoreVisitTimelinePreview.attributes) {
+  StoreVisitActivityLiveConfiguration()
+} contentStates: {
+  StoreVisitTimelinePreview.state()
+  StoreVisitTimelinePreview.state(capped: true)
+  StoreVisitTimelinePreview.state(billable: false)
+  StoreVisitTimelinePreview.state(includesPrevious: false)
 }
 
 #Preview("时间轴 · 展开", as: .dynamicIsland(.expanded), using: StoreVisitTimelinePreview.attributes) {

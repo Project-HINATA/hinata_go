@@ -13,8 +13,15 @@ final class Screenshots: XCTestCase {
     let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
     for mode in modes {
       app.activate()
+      sleep(2) // Let app activation finish before tapping a new fixture.
+      let previousResult = app.staticTexts["result"].label
       app.buttons[mode].tap()
-      XCTAssertTrue(app.staticTexts["已启动"].waitForExistence(timeout: 10))
+      let started = app.staticTexts.matching(NSPredicate(format:
+        "label BEGINSWITH %@ AND label != %@", "已启动 \(mode) ", previousResult)).firstMatch
+      if !started.waitForExistence(timeout: 5) {
+        app.buttons[mode].tap()
+      }
+      XCTAssertTrue(started.waitForExistence(timeout: 30), app.debugDescription)
       XCUIDevice.shared.press(.home)
       sleep(10)
       springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.04))
