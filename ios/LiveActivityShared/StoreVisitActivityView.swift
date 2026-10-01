@@ -237,6 +237,7 @@ private enum TimelineIslandLayout {
   // Equal camera-side widths keep the full label and amount balanced.
   static let headerWidth: CGFloat = 104
   static let statusInset: CGFloat = 4
+  static let amountVerticalOffset: CGFloat = -3
   static let footerGap: CGFloat = 4
   static let railWidth: CGFloat = 7
   static let nodeDiameter: CGFloat = 12
@@ -296,6 +297,7 @@ private struct StoreVisitIslandAmount: View {
       .frame(width: TimelineIslandLayout.headerWidth, alignment: .center)
       .fixedSize(horizontal: false, vertical: true)
       .frame(height: 20, alignment: .top)
+      .offset(y: TimelineIslandLayout.amountVerticalOffset)
   }
 }
 

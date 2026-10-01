@@ -14,7 +14,7 @@ Swift 实现位于 `ios/LiveActivityShared/StoreVisitActivityView.swift`，由�
 - 底部一行：店名左对齐，允许尾部省略；右侧「距下次事件还有 N 分」，13 pt，优先保留。文字行使用自然高度，避免底部区域压缩字形；时间轴至页脚间隔保持 4 pt。页脚不再单独增加底部或水平 padding。
 - 封顶与暂停保留同一时间轴。只按服务端事件名称改变下一事件标签，不根据状态猜测恢复时间。
 
-展开态保留 WidgetKit 默认上下边距，不调用 `DynamicIsland.contentMargins`。时间轴和页脚作为同一个 bottom 区域，两侧统一额外内收 12 pt，页脚不单独加边距。上方状态及金额用 GeometryReader 读取 WidgetKit 为 leading / trailing 分配的实际宽度，在整个区域里居中，两侧均提供 104 pt 的最小宽度和 20 pt 的布局高度。状态组内部两侧各保留 4 pt 余量，使用 ViewThatFits 选择整组真实尺寸；金额自身的 104 pt 容器也居中，避免内部右对齐使字形偏离中点。摄像头避让和两侧区域可用宽度由 WidgetKit 负责，不使用固定机型的摄像头坐标；中间内容不增加摄像头下方 padding。内部时间轴至页脚的 4 pt 间隔保留，compact 布局保持原样。并未把 SVG 的固定 371×162 画布直接嵌入灵动岛。
+展开态保留 WidgetKit 默认上下边距，不调用 `DynamicIsland.contentMargins`。时间轴和页脚作为同一个 bottom 区域，两侧统一额外内收 12 pt，页脚不单独加边距。上方状态及金额用 GeometryReader 读取 WidgetKit 为 leading / trailing 分配的实际宽度，在整个区域里居中，两侧均提供 104 pt 的最小宽度和 20 pt 的布局高度。状态组内部两侧各保留 4 pt 余量，使用 ViewThatFits 选择整组真实尺寸；金额自身的 104 pt 容器也居中，避免内部右对齐使字形偏离中点；金额字形单独上移 3 pt，不改变顶部区域高度、横向居中或其余内容。摄像头避让和两侧区域可用宽度由 WidgetKit 负责，不使用固定机型的摄像头坐标；中间内容不增加摄像头下方 padding。内部时间轴至页脚的 4 pt 间隔保留，compact 布局保持原样。并未把 SVG 的固定 371×162 画布直接嵌入灵动岛。
 
 ## 锁屏
 
