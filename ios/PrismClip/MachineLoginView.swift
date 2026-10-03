@@ -787,7 +787,7 @@ private struct ClipEntryPricing: View {
         if let rules = plan.provider.rules {
           Text("时段重叠时，按下方从上到下的顺序采用规则。").font(.caption).foregroundStyle(.secondary)
           ForEach(rules.filter { $0.status != "archived" }) { rule in
-            ClipPricingRow(rule: rule)
+            ClipPricingRow(rule: rule, sourceZone: plan.provider.timeZone ?? "UTC", displayZone: shop.shop.timeZone, referenceDate: shop.pricingSchedule?.localDate ?? String(ISO8601DateFormatter().string(from: Date()).prefix(10)), segments: shop.pricingSchedule?.groups.first(where: { $0.id == plan.id })?.segments.filter { $0.ruleId == rule.id && $0.isClosed != true } ?? [])
             Divider()
           }
         }
@@ -801,10 +801,31 @@ private struct ClipEntryPricing: View {
 
 private struct ClipPricingRow: View {
   let rule: PrismShopResponse.Pricing.Rule
+  let sourceZone: String
+  let displayZone: String
+  let referenceDate: String
+  let segments: [PrismPricingSchedule.Segment]
+  private var projected: PrismRuleClock? {
+    guard let range = rule.timeRange else { return nil }
+    return prismRuleClock(start: range.start, end: range.end, sourceZone: sourceZone, displayZone: displayZone, referenceDate: referenceDate)
+  }
   private var period: String {
+    if !segments.isEmpty {
+      return segments.map { segment in
+        // Day previews already carry store-local labels and exact UTC-offset instants.
+        segment.startLabel + "–" + segment.endLabel
+      }.joined(separator: " / ")
+    }
     guard let time = rule.timeRange else { return String(localized: "连续时段") }
     if time.start == time.end { return String(localized: "全天") }
-    return time.start + "–" + (time.start > time.end ? String(localized: "次日") : "") + time.end
+    guard let projected else { return "—" }
+    return projected.start + "–" + (projected.start > projected.end ? String(localized: "次日") : "") + projected.end
+  }
+  private func prismRuleDateTime(_ value: String) -> String {
+    guard let date = prismParsedDate(value) else { return "—" }
+    let formatter = DateFormatter(); formatter.timeZone = TimeZone(identifier: displayZone) ?? TimeZone(secondsFromGMT: 0)
+    formatter.dateStyle = .short; formatter.timeStyle = .short
+    return formatter.string(from: date)
   }
   private var rateText: String {
     if let rate = rule.pricing { return "\(rate.unitPrice.formatted()) / \(rate.unitMinutes.formatted()) " + String(localized: "分钟") }
@@ -812,7 +833,7 @@ private struct ClipPricingRow: View {
   }
   private var weekdays: String {
     let formatter = DateFormatter()
-    return (rule.weekdays ?? []).filter { (0...6).contains($0) }.map { formatter.shortWeekdaySymbols[$0] }.joined(separator: " · ")
+    return (rule.weekdays ?? []).filter { (0...6).contains($0) }.map { formatter.shortWeekdaySymbols[($0 + (projected?.dayShift ?? 0) + 7) % 7] }.joined(separator: " · ")
   }
   var body: some View {
     HStack(alignment: .top, spacing: 16) {
@@ -820,8 +841,12 @@ private struct ClipPricingRow: View {
       VStack(alignment: .leading, spacing: 6) {
         Text(rule.label).font(.subheadline.bold())
         if !weekdays.isEmpty { Text(weekdays).font(.caption).foregroundStyle(.secondary) }
-        if let dates = rule.specificDates, !dates.isEmpty { Text(dates.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
-        if let dates = rule.displayDateTimeRange { Text(dates.start + " – " + dates.end).font(.caption).foregroundStyle(.secondary) }
+        if let dates = rule.specificDates, !dates.isEmpty { Text(dates.map { date in
+          guard let range = rule.timeRange, let clock = prismRuleClock(start: range.start, end: range.end, sourceZone: sourceZone, displayZone: displayZone, referenceDate: date) else { return date }
+          let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = TimeZone(identifier: displayZone); formatter.dateFormat = "yyyy-MM-dd"
+          return formatter.string(from: clock.startDate)
+        }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
+        if let dates = rule.dateTimeRange { Text(prismRuleDateTime(dates.start) + " – " + prismRuleDateTime(dates.end)).font(.caption).foregroundStyle(.secondary) }
         Text(rateText).font(.subheadline)
         if let pricing = rule.pricing {
           if pricing.priceCap < 9007199254740991 { Text(String(localized: "时段封顶") + " " + pricing.priceCap.formatted()).font(.caption).foregroundStyle(.secondary) }
@@ -996,15 +1021,14 @@ private struct ClipCheckoutButton: View {
   }
 }
 
-private func prismDate(_ value: String) -> String { prismParsedDate(value)?.formatted(date: .numeric, time: .shortened) ?? value }
-private func prismTime(_ value: String) -> String { prismParsedDate(value)?.formatted(date: .omitted, time: .standard) ?? value }
+private func prismDate(_ value: String) -> String { prismDisplayDate(value) }
+private func prismTime(_ value: String) -> String { prismDisplayClock(value, seconds: true) }
 private struct PrismLabeledRow: View {
   let title: String; let value: String
   init(_ title: String, value: String) { self.title = title; self.value = value }
   var body: some View { HStack(alignment: .firstTextBaseline) { Text(title); Spacer(); Text(value) }.padding(.vertical, 12) }
 }
 
-private func billClock(_ value: String) -> String { prismParsedDate(value)?.formatted(date: .omitted, time: .shortened) ?? value }
 private func billEventLabel(_ kind: String) -> String {
   switch kind {
   case "start": return String(localized: "开始计费")
@@ -1034,9 +1058,9 @@ private struct ClipBillEvent: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       HStack(alignment: .firstTextBaseline) {
-        Text(event.time + (kinds.count == 1 ? " · " + billEventLabel(kinds.first!) : "")).font(.subheadline.bold())
+        Text(prismDisplayClock(event.at) + (kinds.count == 1 ? " · " + billEventLabel(kinds.first!) : "")).font(.subheadline.bold())
         Spacer(minLength: 8)
-        Text(prismParsedDate(event.date + "T12:00:00Z")?.formatted(.dateTime.month().day()) ?? "").font(.caption).foregroundStyle(.secondary)
+        Text(prismDisplayDay(event.at)).font(.caption).foregroundStyle(.secondary)
       }
       ForEach(Array(event.entries.enumerated()), id: \.offset) { _, entry in
         ClipBillEntry(entry: entry, showKind: kinds.count > 1, trackColor: tracks.first(where: { $0.id == entry.trackId }).map { colors[$0.color % colors.count] })
@@ -1047,8 +1071,8 @@ private struct ClipBillEvent: View {
       GeometryReader { proxy in
         ForEach(tracks) { track in
           let point = event.entries.contains { $0.trackId == track.id }
-          let above = track.endedAt > event.at && track.startedAt <= event.at
-          let below = hasNext && track.startedAt < event.at && track.endedAt >= event.at
+          let above = (prismParsedDate(track.endedAt) ?? .distantPast) > (prismParsedDate(event.at) ?? .distantPast) && (prismParsedDate(track.startedAt) ?? .distantFuture) <= (prismParsedDate(event.at) ?? .distantPast)
+          let below = hasNext && (prismParsedDate(track.startedAt) ?? .distantFuture) < (prismParsedDate(event.at) ?? .distantPast) && (prismParsedDate(track.endedAt) ?? .distantPast) >= (prismParsedDate(event.at) ?? .distantPast)
           let x = CGFloat(track.lane * 14 + 5)
           Path { path in
             if above { path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x, y: 11)) }
@@ -1066,8 +1090,9 @@ private struct ClipBillEntry: View {
   let trackColor: Color?
   private var period: String? {
     guard let start = entry.startedAt, let end = entry.endedAt else { return nil }
-    let minutes = Int((prismParsedDate(end)?.timeIntervalSince(prismParsedDate(start) ?? Date()) ?? 0) / 60)
-    return (entry.periodLabel ?? (billClock(start) + " – " + billClock(end))) + " · " + minutes.formatted() + " " + String(localized: "分钟")
+    guard let startDate = prismParsedDate(start), let endDate = prismParsedDate(end), let label = prismDisplayPeriod(start, end) else { return nil }
+    let minutes = Int(endDate.timeIntervalSince(startDate) / 60)
+    return label + " · " + minutes.formatted() + " " + String(localized: "分钟")
   }
   private var rate: String? {
     guard let unit = entry.unitMinutes, let price = entry.unitPrice else { return nil }

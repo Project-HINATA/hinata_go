@@ -5,6 +5,74 @@ func prismParsedDate(_ value: String) -> Date? {
   return formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
 }
 
+/// API offsets locate absolute instants. Personal event labels use the phone's display zone.
+func prismDisplayDate(_ value: String, timeZone: TimeZone = .current) -> String {
+  guard let date = prismParsedDate(value) else { return "—" }
+  let formatter = DateFormatter()
+  formatter.timeZone = timeZone
+  formatter.dateStyle = .short; formatter.timeStyle = .short
+  return formatter.string(from: date)
+}
+func prismDisplayClock(_ value: String, seconds: Bool = false, timeZone: TimeZone = .current) -> String {
+  guard let date = prismParsedDate(value) else { return "—" }
+  let formatter = DateFormatter()
+  formatter.locale = Locale(identifier: "en_US_POSIX")
+  formatter.timeZone = timeZone
+  formatter.dateFormat = seconds ? "HH:mm:ss" : "HH:mm"
+  return formatter.string(from: date)
+}
+func prismDisplayDay(_ value: String, timeZone: TimeZone = .current) -> String {
+  guard let date = prismParsedDate(value) else { return "—" }
+  let formatter = DateFormatter()
+  formatter.timeZone = timeZone
+  formatter.setLocalizedDateFormatFromTemplate("MMMd")
+  return formatter.string(from: date)
+}
+func prismDisplayPeriod(_ start: String, _ end: String, timeZone: TimeZone = .current) -> String? {
+  guard let startDate = prismParsedDate(start), let endDate = prismParsedDate(end), endDate >= startDate else { return nil }
+  let formatter = DateFormatter()
+  formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = timeZone; formatter.dateFormat = "yyyy-MM-dd"
+  let startDay = formatter.string(from: startDate), endDay = formatter.string(from: endDate)
+  var startClock = prismDisplayClock(start, timeZone: timeZone), endClock = prismDisplayClock(end, timeZone: timeZone)
+  let startOffset = timeZone.secondsFromGMT(for: startDate), endOffset = timeZone.secondsFromGMT(for: endDate)
+  if startOffset != endOffset {
+    func offset(_ seconds: Int) -> String {
+      let minutes = abs(seconds) / 60
+      return String(format: "UTC%@%02d:%02d", seconds < 0 ? "-" : "+", minutes / 60, minutes % 60)
+    }
+    startClock += " " + offset(startOffset); endClock += " " + offset(endOffset)
+  }
+  if startDay == endDay { return startClock + " – " + endClock }
+  let sameYear = startDay.prefix(4) == endDay.prefix(4)
+  return (sameYear ? String(startDay.dropFirst(5)) : startDay) + " " + startClock + " – " + (sameYear ? String(endDay.dropFirst(5)) : endDay) + " " + endClock
+}
+
+/// Shop-rule editors still project UTC clocks using the shop's geographic IANA zone.
+struct PrismRuleClock {
+  let start: String; let end: String; let dayShift: Int
+  let startDate: Date; let endDate: Date
+}
+func prismRuleClock(start: String, end: String, sourceZone: String, displayZone: String, referenceDate: String) -> PrismRuleClock? {
+  let source = TimeZone(identifier: sourceZone) ?? TimeZone(secondsFromGMT: 0)!
+  let display = TimeZone(identifier: displayZone) ?? TimeZone(secondsFromGMT: 0)!
+  let formatter = DateFormatter()
+  formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.calendar = Calendar(identifier: .gregorian)
+  formatter.timeZone = source; formatter.dateFormat = "yyyy-MM-dd HH:mm"
+  guard let startDate = formatter.date(from: referenceDate + " " + start), let sameDayEnd = formatter.date(from: referenceDate + " " + end) else { return nil }
+  var sourceCalendar = Calendar(identifier: .gregorian); sourceCalendar.timeZone = source
+  let endDate = start >= end ? sourceCalendar.date(byAdding: .day, value: 1, to: sameDayEnd)! : sameDayEnd
+  formatter.timeZone = display; formatter.dateFormat = "HH:mm"
+  let startClock = formatter.string(from: startDate), endClock = formatter.string(from: endDate)
+  // Compare Gregorian civil dates, independent of either region's DST day length.
+  var displayCalendar = Calendar(identifier: .gregorian); displayCalendar.timeZone = display
+  var utcCalendar = Calendar(identifier: .gregorian); utcCalendar.timeZone = TimeZone(secondsFromGMT: 0)!
+  func civilDay(_ date: Date, _ calendar: Calendar) -> Date {
+    utcCalendar.date(from: calendar.dateComponents([.year, .month, .day], from: date))!
+  }
+  let shift = Int(civilDay(startDate, displayCalendar).timeIntervalSince(civilDay(startDate, sourceCalendar)) / 86400)
+  return PrismRuleClock(start: startClock, end: endClock, dayShift: shift, startDate: startDate, endDate: endDate)
+}
+
 struct PublicMachine: Decodable {
   let publicId: String
   let name: String
@@ -204,6 +272,9 @@ struct PrismPricingSchedule: Decodable {
   }
   struct Segment: Decodable {
     let startLabel: String; let endLabel: String; let label: String; let isClosed: Bool?; let priceCap: Double?
+    var ruleId: String? = nil
+    var startedAt: String? = nil
+    var endedAt: String? = nil
     let pricing: PrismShopResponse.Pricing.Rule.Rate?
   }
 }
