@@ -318,23 +318,6 @@
       }
     },
     "prism.bind %@": {},
-    "QQ Bot 联系方式": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "QQ bot contact"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "QQ Bot 联系方式"
-          }
-        }
-      }
-    },
     "上桌": {
       "localizations": {
         "en": {
@@ -846,35 +829,18 @@
         }
       }
     },
-    "在 QQ 中向本店 Bot 发送：": {
-      "extractionState": "stale",
+    "向店铺 Bot 发送": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Send this to the store bot in QQ:"
+            "value": "Send to the store bot"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在 QQ 中向本店 Bot 发送："
-          }
-        }
-      }
-    },
-    "在 QQ 群中发送": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send in the QQ group"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在 QQ 群中发送"
+            "value": "向店铺 Bot 发送"
           }
         }
       }
@@ -1815,23 +1781,6 @@
         }
       }
     },
-    "本店仅允许已有玩家使用，请使用在本店登记的 QQ。": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This store accepts existing players only. Use your registered QQ account."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本店仅允许已有玩家使用，请使用在本店登记的 QQ。"
-          }
-        }
-      }
-    },
     "本店资产": {
       "extractionState": "stale",
       "localizations": {
@@ -2505,35 +2454,18 @@
         }
       }
     },
-    "绑定 QQ": {
+    "绑定平台身份": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bind QQ"
+            "value": "Bind platform identity"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "绑定 QQ"
-          }
-        }
-      }
-    },
-    "绑定本店 QQ": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Link QQ for this store"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "绑定本店 QQ"
+            "value": "绑定平台身份"
           }
         }
       }
@@ -2817,6 +2749,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "设备尚未开机"
+          }
+        }
+      }
+    },
+    "请先绑定平台身份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bind a platform identity first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先绑定平台身份"
           }
         }
       }

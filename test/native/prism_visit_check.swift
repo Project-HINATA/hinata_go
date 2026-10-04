@@ -127,6 +127,9 @@ enum PersistentCookieCheck {
     var member = false, active = false
     var signedIn = true
     var billing = true
+    var identityBindingRequired = true, identityBound = true
+    var bindingRequests = 0, bindingStatus = 200
+    var bindingExpiry = "2999-01-01T00:00:00Z"
     let heroUrl: String? = "/api/v1/shops/store/hero?v=abc123"
     var capabilities = ["power":true,"coin":true,"card":true,"door":true]
     var historyReads = 0, assetReads = 0
@@ -175,9 +178,16 @@ enum PersistentCookieCheck {
         statusReads += 1
         if shopStatus != 200 { return (shopStatus, ["error": ["code": "SHOP_NOT_FOUND", "message": "没有找到店铺"]]) }
         if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
-        return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"QQ Bot","timeZone":"Asia/Tokyo","heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p"] : NSNull(),"entryPricing":[]])
-      case "/api/v1/devices/session/state": return ok(["gate":!billing ? "ready" : member ? (active ? "ready" : "entry") : "qq", "power":"unknown","mahjong":["capacity":4,"seats":mahjongSeats]])
-      case "/api/v1/shops/store/qq-binding": return ok(["code":"ABC123","expiresAt":"2999-01-01T00:00:00Z"])
+        return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"Store Bot","identityBindingRequired":identityBindingRequired,"timeZone":"Asia/Tokyo","heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p","identityBound":identityBound] : NSNull(),"entryPricing":[]])
+      case "/api/v1/devices/session/state":
+        let gated = billing || capabilities["door"] == true || capabilities["mahjong"] == true
+        let gate = !gated ? "ready" : identityBindingRequired && (!member || !identityBound) ? "binding" : !billing ? "ready" : member && active ? "ready" : "entry"
+        return ok(["gate":gate, "power":"unknown","mahjong":["capacity":4,"seats":mahjongSeats]])
+      case "/api/v1/shops/store/platform-binding":
+        precondition(request.httpMethod == "POST")
+        bindingRequests += 1
+        if bindingStatus != 200 { return (bindingStatus, ["error":["code":"BINDING_FAILED","message":"生成绑定码失败"]]) }
+        return ok(["code":"ABC12345","expiresAt":bindingExpiry,"botContact":"Store Bot"])
       case "/api/v1/shops/store/player/me": return ok(["wallet":[],"activeSession":active ? ["id":"entry","startedAt":"2026-09-12T00:00:00.123Z"] : NSNull()])
       case "/api/v1/shops/store/player/assets": assetReads += 1; return ok(["holdings":[]])
       case "/api/v1/shops/store/player/checkouts/history":
@@ -230,10 +240,13 @@ enum PersistentCookieCheck {
     let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [FixtureProtocol.self]
     let model = MachineLoginViewModel(api: PrismAPI(configuration: config))
     await model.handleResolvedInvocation(origin.appendingPathComponent("t/store/device"))
-    precondition(model.state == .ready && model.deviceState?.gate == "qq")
-    precondition(model.binding?.code == "ABC123")
+    precondition(model.state == .ready && model.deviceState?.gate == "binding")
+    precondition(model.binding?.code == "ABC12345" && model.needsPlatformBinding)
+    precondition(!model.canUseCards && model.showDeviceControls)
+    let initialBindingRequests = bindingRequests
     try await Task.sleep(nanoseconds: 3_300_000_000)
     precondition(statusReads >= 2 && model.errorMessage == nil, "Polling must not cancel its own requests")
+    precondition(bindingRequests == initialBindingRequests, "Polling must retain a valid binding code")
     await model.setSceneActive(false)
     let readsBeforeBackground = statusReads
     await model.refreshVisit()
@@ -242,8 +255,9 @@ enum PersistentCookieCheck {
     await model.setSceneActive(true)
     precondition(model.errorMessage == nil && model.ticket != nil, "Resume network errors must not show an alert")
     try await Task.sleep(nanoseconds: 3_300_000_000)
-    precondition(statusReads >= readsBeforeBackground + 2 && sessionStarts == 1 && model.binding?.code == "ABC123")
-    member = true; await model.refreshVisit(); precondition(model.deviceState?.gate == "entry")
+    precondition(statusReads >= readsBeforeBackground + 2 && sessionStarts == 1 && model.binding?.code == "ABC12345")
+    member = true; await model.refreshVisit()
+    precondition(model.deviceState?.gate == "entry" && !model.needsPlatformBinding && model.binding == nil)
     await model.device("door.open", consent:true)
     precondition(model.doorPassword?.temporaryPassword == "12345678" && model.summary?.activeSession != nil)
     precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
@@ -282,6 +296,7 @@ enum PersistentCookieCheck {
     billing = false; member = false; capabilities.removeValue(forKey: "door")
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.canUseCards && !model.showVisit && !model.showDeviceControls)
+    identityBindingRequired = false
     capabilities = ["mahjong":true]
     await model.start(shopCode:"store",publicId:"device")
     precondition(model.showDeviceControls)
@@ -293,7 +308,7 @@ enum PersistentCookieCheck {
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.state == .ready && model.machine?.empty == true && !model.canUseCards)
     // A bare shop link opens the settle-only surface: no machine, no ticket, no admission.
-    billing = true; member = true; active = false
+    billing = true; member = true; active = false; identityBindingRequired = true
     let shopOnly = MachineLoginViewModel(api: PrismAPI(configuration: config))
     let machineCardReads = cardReads
     // Before any data is in hand the shop link must sit on its loading state, not render the
@@ -319,12 +334,47 @@ enum PersistentCookieCheck {
     await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
     precondition(shopOnly.visit?.membership == nil && !shopOnly.canUseShopSurface)
     precondition(shopOnly.playerStateLoaded, "Missing membership is a completed read, not a spinner")
-    precondition(shopOnly.binding?.code == "ABC123" && shopOnly.needsQQBinding, "Shop QQ binding must reuse the machine flow")
-    member = true
+    precondition(shopOnly.binding?.code == "ABC12345" && shopOnly.needsPlatformBinding, "Shop platform binding must reuse the machine flow")
+    // A registered player may still be unbound after optional admission.
+    member = true; identityBound = false
+    let requestsBeforeMembership = bindingRequests
+    await shopOnly.refreshVisit()
+    precondition(shopOnly.visit?.membership?.identityBound == false && shopOnly.needsPlatformBinding)
+    precondition(shopOnly.binding?.code == "ABC12345" && bindingRequests == requestsBeforeMembership,
+                 "Existing unbound membership must retain the valid code")
+    identityBindingRequired = false
+    await shopOnly.refreshVisit()
+    precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil)
+    precondition(bindingRequests == requestsBeforeMembership, "Optional identity binding must not request a code")
+    identityBindingRequired = true
+    await shopOnly.refreshVisit()
+    precondition(shopOnly.needsPlatformBinding && bindingRequests == requestsBeforeMembership + 1)
+    // Expired codes are replaced, but repeated reads of a valid code never mint another.
+    bindingExpiry = "2000-01-01T00:00:00Z"
+    await shopOnly.bindPlatformIdentity()
+    bindingExpiry = "2999-01-01T00:00:00Z"
+    let requestsBeforeRenewal = bindingRequests
+    await shopOnly.refreshVisit()
+    precondition(bindingRequests == requestsBeforeRenewal + 1 && shopOnly.binding?.expiresAt == bindingExpiry)
+    await shopOnly.refreshVisit()
+    precondition(bindingRequests == requestsBeforeRenewal + 1)
+    identityBound = true
+    await shopOnly.refreshVisit()
+    precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil,
+                 "A verified identity on any platform completes binding")
+    identityBound = false; bindingStatus = 500
+    await shopOnly.refreshVisit()
+    precondition(shopOnly.needsPlatformBinding && shopOnly.binding == nil && shopOnly.errorMessage != nil)
+    bindingStatus = 200
+    await shopOnly.bindPlatformIdentity()
+    precondition(shopOnly.binding?.code == "ABC12345" && shopOnly.errorMessage == nil, "Failed generation must be retryable")
     // Admission comes from the machine flow, so the shop link reads the bill it opened.
     active = true
     await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
     precondition(shopOnly.shopHasActiveSession && shopOnly.shopBillingState == "计费中")
+    precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil,
+                 "An existing bill stays accessible when identity binding becomes required")
+    identityBound = true
     precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
     precondition(StoreVisitLiveActivityManager.shared.origin?.absoluteString == "https://link-beta.neri.moe")
     precondition(StoreVisitLiveActivityManager.shared.lastApi?.baseURL == origin, "Manager must receive origin-scoped API instance")

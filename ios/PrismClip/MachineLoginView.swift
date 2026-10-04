@@ -539,14 +539,14 @@ private struct ClipShopControls: View {
       if let shop = model.visit {
         if model.shopHasActiveSession, let preview = model.checkoutPreview {
           ClipBillContent(preview: preview).padding(.horizontal, 4)
+        } else if model.needsPlatformBinding {
+          ClipPlatformBinding()
         } else if model.errorMessage != nil {
           Button { Task { model.clearError(); await model.refreshVisit() } } label: {
             Text("重试").frame(maxWidth: .infinity).padding(.vertical, 12)
           }.clipActionStyle()
         } else if !model.playerStateLoaded {
           ProgressView().frame(maxWidth: .infinity).accessibilityLabel("正在加载")
-        } else if model.needsQQBinding {
-          ClipQQBinding()
         } else if shop.shop.billingEnabled {
           Text("请碰一下 NFC 或扫描机台上的二维码入场")
             .font(.subheadline).foregroundStyle(.secondary)
@@ -662,18 +662,20 @@ private struct ClipCheckmark: Shape {
   }
 }
 
-private struct ClipQQBinding: View {
+private struct ClipPlatformBinding: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
-      Text("绑定 QQ").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
+      Text("绑定平台身份").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
       VStack(alignment: .leading, spacing: 18) {
-        Text("在 QQ 群中发送").font(.subheadline)
+        Text("向店铺 Bot 发送").font(.subheadline)
         if let binding = model.binding {
           Text("prism.bind \(binding.code)").font(.system(size: 21, design: .monospaced)).textSelection(.enabled)
           Text(String(localized: "有效期至") + " " + prismTime(binding.expiresAt)).font(.caption).foregroundStyle(.secondary)
-        } else if model.errorMessage != nil { Button("重试") { Task { await model.bindQQ() } } }
-        else { ProgressView() }
+        }
+        if model.errorMessage != nil {
+          Button("重试") { Task { await model.bindPlatformIdentity() } }.disabled(model.deviceBusy)
+        } else if model.binding == nil { ProgressView() }
       }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
     }
   }
@@ -685,8 +687,8 @@ private struct ClipDeviceControls: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
       if let device = model.deviceState, let shop = model.visit {
-        if device.gate == "qq" {
-          ClipQQBinding()
+        if device.gate == "binding" {
+          ClipPlatformBinding()
         } else {
           if device.gate == "entry" {
             VStack(alignment: .leading, spacing: 24) {
