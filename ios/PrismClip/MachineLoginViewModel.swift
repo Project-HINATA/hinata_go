@@ -62,8 +62,10 @@ final class MachineLoginViewModel: ObservableObject {
     guard machine?.capabilities != nil, machine?.empty != true else { return false }
     return deviceState == nil || deviceState?.gate != "ready" || deviceState?.power == "off" || machine?.has("door") == true || machine?.has("mahjong") == true
   }
-  var needsQQBinding: Bool {
-    isShopOnly ? user != nil && visit?.shop.billingEnabled == true && visit?.membership == nil : deviceState?.gate == "qq"
+  var needsPlatformBinding: Bool {
+    isShopOnly
+      ? user != nil && visit?.requiresPlatformBinding(hasActiveSession: shopHasActiveSession) == true
+      : deviceState?.gate == "binding"
   }
   var showVisit: Bool { visit?.shop.billingEnabled == true }
   /// Whether the player's own state for this shop has been read. `summary == nil` also means
@@ -337,7 +339,7 @@ final class MachineLoginViewModel: ObservableObject {
       if (error as? PrismAPIError)?.isSessionExpired == true { state = .expired } else { state = .ready }
       activeCardId = nil
       errorMessage = state == .expired ? nil : message
-      if ["QQ_BINDING_REQUIRED", "CHECKIN_REQUIRED"].contains((error as? PrismAPIError)?.code ?? "") { await refreshVisit() }
+      if ["PLATFORM_BINDING_REQUIRED", "CHECKIN_REQUIRED"].contains((error as? PrismAPIError)?.code ?? "") { await refreshVisit() }
     }
   }
 
@@ -361,7 +363,7 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   private func scheduleRefresh() {
-    guard sceneActive, ticket != nil || needsQQBinding else { return }
+    guard sceneActive, ticket != nil || needsPlatformBinding else { return }
     polling?.cancel()
     polling = Task { [weak self] in
       do { try await Task.sleep(nanoseconds: 3_000_000_000) } catch { return }
@@ -436,14 +438,15 @@ final class MachineLoginViewModel: ObservableObject {
       }
       guard version == invocationVersion, revision == visitRevision else { return }
       if currentDevice?.power != "off" { waitingPower = false }
-      if shop.membership != nil { binding = nil }
+      if !needsPlatformBinding { binding = nil }
       polling?.cancel()
-      if needsQQBinding, binding.flatMap({ prismParsedDate($0.expiresAt) }) ?? .distantPast <= Date() {
-        let value: PrismBinding = try await api.request(shopPath("qq-binding"), body: [:])
+      if needsPlatformBinding, binding.flatMap({ prismParsedDate($0.expiresAt) }) ?? .distantPast <= Date() {
+        binding = nil
+        let value: PrismBinding = try await api.request(shopPath("platform-binding"), body: [:])
         guard version == invocationVersion, revision == visitRevision else { return }
         binding = value
       }
-      if needsQQBinding || (ticket != nil && (currentDevice?.power == "off" || machine?.has("mahjong") == true)) {
+      if needsPlatformBinding || (ticket != nil && (currentDevice?.power == "off" || machine?.has("mahjong") == true)) {
         scheduleRefresh()
       }
     } catch {
@@ -479,11 +482,11 @@ final class MachineLoginViewModel: ObservableObject {
   func expire() { ticket = nil; state = .expired; activeCardId = nil; polling?.cancel(); errorMessage = nil }
   func pricingDate(_ date: String) async throws -> PrismShopResponse { try await api.request(shopPath() + "?date=" + date) }
 
-  func bindQQ() async {
+  func bindPlatformIdentity() async {
     let api = self.api
     await perform {
       let version = invocationVersion
-      let value: PrismBinding = try await api.request(shopPath("qq-binding"), body: [:])
+      let value: PrismBinding = try await api.request(shopPath("platform-binding"), body: [:])
       guard version == invocationVersion else { return }
       binding = value
       await refreshVisit()
@@ -562,7 +565,7 @@ final class MachineLoginViewModel: ObservableObject {
     defer {
       if version == invocationVersion {
         deviceBusy = false
-        if needsQQBinding || deviceState?.power == "off" || machine?.has("mahjong") == true { scheduleRefresh() }
+        if needsPlatformBinding || deviceState?.power == "off" || machine?.has("mahjong") == true { scheduleRefresh() }
       }
     }
     if section == 0 {

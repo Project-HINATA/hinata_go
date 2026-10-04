@@ -176,10 +176,20 @@ struct PrismShopResponse: Decodable {
   let membership: Membership?
   let entryPricing: [Pricing]
   var pricingSchedule: PrismPricingSchedule? = nil
-  struct Membership: Decodable { let playerId: String }
+  struct Membership: Decodable {
+    let playerId: String
+    var identityBound: Bool? = nil
+    // Older APIs only created membership after verification; explicit false must win.
+    var hasPlatformIdentity: Bool { identityBound ?? true }
+  }
+  func requiresPlatformBinding(hasActiveSession: Bool) -> Bool {
+    shop.billingEnabled && shop.identityBindingRequired != false
+      && membership?.hasPlatformIdentity != true && !hasActiveSession
+  }
   struct Settings: Decodable {
     let name: String?
     var locationEnabled: Bool? = nil
+    var identityBindingRequired: Bool? = nil
     let billingEnabled: Bool; let checkinGeo: Bool; let checkoutGeo: Bool
     let autoRegister: Bool; let botContact: String; let timeZone: String
     /// Public cover art path, served from the shop page so a shop link can show the same
