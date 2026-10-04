@@ -1,6 +1,70 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "建议添加 Passkey": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a Passkey for next time"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "建议添加 Passkey"
+          }
+        }
+      }
+    },
+    "下次可用指纹或面容快速登录。此步骤可跳过，不影响继续游玩。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in faster next time with your fingerprint or face. You can skip this step and keep playing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次可用指纹或面容快速登录。此步骤可跳过，不影响继续游玩。"
+          }
+        }
+      }
+    },
+    "跳过，继续游玩": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip and keep playing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跳过，继续游玩"
+          }
+        }
+      }
+    },
+    "正在添加 Passkey…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adding Passkey…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在添加 Passkey…"
+          }
+        }
+      }
+    },
     "%@ / %@": {
       "localizations": {
         "en": {

@@ -7,9 +7,9 @@ final class MunetAuthenticationService: NSObject, ASWebAuthenticationPresentatio
   static let callbackScheme = "hinata-prism-auth"
 
   private var session: ASWebAuthenticationSession?
-  private var continuation: CheckedContinuation<String, Error>?
+  private var continuation: CheckedContinuation<PrismMunetAuthenticationResult, Error>?
 
-  func authenticate(origin: URL) async throws -> String {
+  func authenticate(origin: URL) async throws -> PrismMunetAuthenticationResult {
     guard continuation == nil else { throw PrismAPIError.server("登录正在进行") }
     guard let url = URL(string: "/api/v1/appclip/auth/start", relativeTo: origin)?.absoluteURL else {
       throw PrismAPIError.invalidURL
@@ -62,10 +62,10 @@ final class MunetAuthenticationService: NSObject, ASWebAuthenticationPresentatio
       finish(with: .failure(PrismAPIError.invalidResponse))
       return
     }
-    finish(with: .success(code))
+    finish(with: .success(PrismMunetAuthenticationResult(code: code, suggestPasskey: query.first(where: { $0.name == "setup" })?.value == "passkey")))
   }
 
-  private func finish(with result: Result<String, Error>) {
+  private func finish(with result: Result<PrismMunetAuthenticationResult, Error>) {
     let continuation = continuation
     self.continuation = nil
     session = nil

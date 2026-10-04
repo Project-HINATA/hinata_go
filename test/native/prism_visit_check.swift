@@ -50,10 +50,20 @@ import Combine
 }
 
 @MainActor final class PasskeyAuthenticationService {
+  static var cancelRegistration = false
   func authenticate(options: PasskeyRequestOptions) async throws -> PasskeyAssertion { throw CancellationError() }
+  func register(options: PasskeyRegistrationOptions) async throws -> PasskeyRegistration {
+    precondition(options.rp.id == "link-beta.neri.moe" && options.user.id == "dXNlcg")
+    if Self.cancelRegistration { throw CancellationError() }
+    return PasskeyRegistration(id: "credential", rawId: "credential", response: .init(clientDataJSON: "client", attestationObject: "attestation", transports: ["internal"]), type: "public-key", clientExtensionResults: [:], authenticatorAttachment: "platform")
+  }
 }
 @MainActor final class MunetAuthenticationService {
-  func authenticate(origin: URL) async throws -> String { throw CancellationError() }
+  static var result: PrismMunetAuthenticationResult?
+  func authenticate(origin: URL) async throws -> PrismMunetAuthenticationResult {
+    guard let result = Self.result else { throw CancellationError() }
+    return result
+  }
 }
 struct LocationSample { let latitude: Double; let longitude: Double; let accuracy: Double }
 @MainActor final class LocationService {
@@ -130,6 +140,7 @@ enum PersistentCookieCheck {
     var identityBindingRequired = true, identityBound = true
     var bindingRequests = 0, bindingStatus = 200
     var bindingExpiry = "2999-01-01T00:00:00Z"
+    var passkeyRequests = 0, passkeyStatus = 200
     let heroUrl: String? = "/api/v1/shops/store/hero?v=abc123"
     var capabilities = ["power":true,"coin":true,"card":true,"door":true]
     var historyReads = 0, assetReads = 0
@@ -161,6 +172,20 @@ enum PersistentCookieCheck {
         // Echo the requested machine so routing can be asserted per link.
         let requested = (body["publicId"] as? String) ?? "device"
         return ok(["ticket":"ticket-\(sessionStarts)", "expiresIn":300, "machine":["publicId":requested, "name":"Device", "webOnly":true, "coinAfterSwipe":true, "capabilities":capabilities, "shop":["name":"Store", "latitude":35,"longitude":139,"radiusMeters":80,"machineGeo":false,"billingEnabled":billing]]])
+      case "/api/v1/appclip/auth/exchange":
+        precondition(body["code"] as? String == "oauth-code")
+        signedIn = true
+        return ok(["ok":true])
+      case "/api/v1/auth/passkey/register/options":
+        return ok(["challenge":"AQID","rp":["id":"link-beta.neri.moe"],"user":["id":"dXNlcg","name":"test","displayName":"Test"]])
+      case "/api/v1/auth/passkey/register":
+        passkeyRequests += 1
+        let credential = body["credential"] as! [String:Any]
+        precondition(credential["type"] as? String == "public-key" && credential["id"] as? String == "credential")
+        precondition((credential["clientExtensionResults"] as? [String:String])?.isEmpty == true)
+        precondition((credential["response"] as? [String:Any])?["attestationObject"] as? String == "attestation")
+        if passkeyStatus != 200 { return (passkeyStatus,["error":["code":"PASSKEY_FAILED","message":"Passkey 验证失败"]]) }
+        return ok(["ok":true])
       case "/api/v1/me":
         // Mirrors the server: signed-in state lives in the cookie store.
         return ok(["user": signedIn ? ["id":testUser,"username":"test","displayName":"Test"] : NSNull()])
@@ -543,6 +568,43 @@ enum PersistentCookieCheck {
     await shopOnly.reloadCards()
     precondition(shopOnly.state == .ready && shopOnly.visit != nil, "Sign-in on a shop page must complete")
     precondition(shopOnly.summary != nil, "The signed-in shop page must have loaded the player's state")
+
+    // Registration stays on the invocation: no new machine ticket or physical operation.
+    capabilities = ["card":true]
+    signedIn = false
+    let onboarding = MachineLoginViewModel(api: PrismAPI(configuration: config, origin: origin))
+    await onboarding.handleResolvedInvocation(origin.appendingPathComponent("t/store/device"))
+    precondition(onboarding.state == .unauthenticated)
+    let onboardingTicket = onboarding.ticket
+    let startsBeforeAuth = sessionStarts, coinsBeforeAuth = coinCalls
+    MunetAuthenticationService.result = .init(code: "oauth-code", suggestPasskey: true)
+    await onboarding.authenticateWithMunet()
+    precondition(onboarding.suggestPasskey && onboarding.user != nil && onboarding.state == .ready)
+    precondition(passkeyRequests == 0, "The suggestion must not automatically register a credential")
+    PasskeyAuthenticationService.cancelRegistration = true
+    await onboarding.addSuggestedPasskey()
+    precondition(onboarding.suggestPasskey && onboarding.errorMessage == nil && !onboarding.addingPasskey)
+    precondition(passkeyRequests == 0, "System cancellation must not submit registration")
+    PasskeyAuthenticationService.cancelRegistration = false; passkeyStatus = 500
+    await onboarding.addSuggestedPasskey()
+    precondition(onboarding.suggestPasskey && onboarding.errorMessage != nil && !onboarding.addingPasskey)
+    onboarding.skipPasskeySetup()
+    precondition(!onboarding.suggestPasskey && onboarding.errorMessage == nil)
+    precondition(onboarding.ticket == onboardingTicket && onboarding.publicId == "device")
+    precondition(sessionStarts == startsBeforeAuth && coinCalls == coinsBeforeAuth)
+    // Successful registration also resumes this exact invocation.
+    await onboarding.logout()
+    await onboarding.authenticateWithMunet()
+    precondition(onboarding.suggestPasskey)
+    passkeyStatus = 200
+    await onboarding.addSuggestedPasskey()
+    precondition(!onboarding.suggestPasskey && onboarding.errorMessage == nil)
+    precondition(onboarding.ticket == onboardingTicket && sessionStarts == startsBeforeAuth)
+    // Returning users are not prompted, and logging out clears the suggestion.
+    await onboarding.logout()
+    MunetAuthenticationService.result = .init(code: "oauth-code", suggestPasskey: false)
+    await onboarding.authenticateWithMunet()
+    precondition(!onboarding.suggestPasskey && onboarding.state == .ready)
 
     // An unusable link clears the shop and fails without touching the previous session.
     await shopOnly.handleResolvedInvocation(URL(string: "https://link-beta.neri.moe/not-a-link")!)

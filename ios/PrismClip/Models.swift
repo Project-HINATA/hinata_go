@@ -128,6 +128,32 @@ struct PasskeyRequestOptions: Decodable {
   let rpId: String
 }
 
+struct PrismMunetAuthenticationResult {
+  let code: String
+  let suggestPasskey: Bool
+}
+
+struct PasskeyRegistrationOptions: Decodable {
+  let challenge: String
+  let rp: RelyingParty
+  let user: Account
+  struct RelyingParty: Decodable { let id: String }
+  struct Account: Decodable { let id: String; let name: String; let displayName: String }
+}
+struct PasskeyRegistration: Encodable {
+  let id: String
+  let rawId: String
+  let response: Response
+  let type: String
+  let clientExtensionResults: [String: String]
+  let authenticatorAttachment: String
+  struct Response: Encodable {
+    let clientDataJSON: String
+    let attestationObject: String
+    let transports: [String]
+  }
+}
+
 struct PasskeyAssertion: Encodable {
   let id: String
   let rawId: String

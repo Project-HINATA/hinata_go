@@ -44,6 +44,8 @@ final class MachineLoginViewModel: ObservableObject {
   /// 结账单" for an empty preview, so it needs to tell that apart from a bill not yet read.
   @Published private(set) var billLoaded = false
   @Published private(set) var binding: PrismBinding?
+  @Published private(set) var suggestPasskey = false
+  @Published private(set) var addingPasskey = false
   @Published private(set) var doorPassword: PrismDoorPassword?
   @Published private(set) var deviceBusy = false
   @Published private(set) var notice: String?
@@ -181,6 +183,7 @@ final class MachineLoginViewModel: ObservableObject {
     cards = []
     activeCardId = nil
     authenticating = nil
+    suggestPasskey = false; addingPasskey = false
     ticket = nil
     errorMessage = nil
     do {
@@ -239,15 +242,42 @@ final class MachineLoginViewModel: ObservableObject {
     errorMessage = nil
     defer { if version == invocationVersion { authenticating = nil } }
     do {
-      let code = try await munet.authenticate(origin: api.baseURL)
-      try await api.exchangeAppClipAuth(code: code)
+      let result = try await munet.authenticate(origin: api.baseURL)
+      try await api.exchangeAppClipAuth(code: result.code)
       guard version == invocationVersion else { return }
+      suggestPasskey = result.suggestPasskey
       await reloadCards()
     } catch {
       guard version == invocationVersion else { return }
       if !isAuthenticationCancellation(error) {
         errorMessage = friendlyMessage(error)
       }
+    }
+  }
+
+  func skipPasskeySetup() {
+    guard !addingPasskey else { return }
+    suggestPasskey = false
+    errorMessage = nil
+  }
+
+  func addSuggestedPasskey() async {
+    guard suggestPasskey, user != nil, !addingPasskey, !deviceBusy else { return }
+    let api = self.api
+    let version = invocationVersion
+    addingPasskey = true; errorMessage = nil
+    defer { if version == invocationVersion { addingPasskey = false } }
+    do {
+      let options = try await api.passkeyRegistrationOptions()
+      guard version == invocationVersion else { return }
+      let credential = try await passkey.register(options: options)
+      guard version == invocationVersion else { return }
+      try await api.registerPasskey(credential)
+      guard version == invocationVersion else { return }
+      suggestPasskey = false
+    } catch {
+      guard version == invocationVersion else { return }
+      if !isAuthenticationCancellation(error) { errorMessage = friendlyMessage(error) }
     }
   }
 
@@ -274,6 +304,7 @@ final class MachineLoginViewModel: ObservableObject {
         state = ticket == nil ? .expired : .unauthenticated
       }
       cards = []
+      suggestPasskey = false; addingPasskey = false
       user = nil; userId = ""; summary = nil; checkoutPreview = nil; billLoaded = false
       playerStateLoaded = false; settlement = nil; checkoutCelebrating = false; binding = nil; doorPassword = nil
       assets = []; history = []; historyNextOffset = nil; deviceState = nil; notice = nil

@@ -224,52 +224,56 @@ private struct ClipSessionPage: View {
 
   private var sessionBody: some View {
     VStack(spacing: 28) {
-      if model.isShopOnly {
-        if [.ready, .locating, .sending, .success].contains(model.state) { ClipShopControls() }
-      } else if model.showDeviceControls, [.ready, .locating, .sending, .success].contains(model.state) {
-        ClipDeviceControls()
-      }
-      if !model.isShopOnly, model.canUseCards, [.ready, .locating, .sending, .success].contains(model.state) {
-        Text("选择卡片").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.bottom, 2)
-      }
+      if model.suggestPasskey {
+        ClipPasskeySetup()
+      } else {
+        if model.isShopOnly {
+          if [.ready, .locating, .sending, .success].contains(model.state) { ClipShopControls() }
+        } else if model.showDeviceControls, [.ready, .locating, .sending, .success].contains(model.state) {
+          ClipDeviceControls()
+        }
+        if !model.isShopOnly, model.canUseCards, [.ready, .locating, .sending, .success].contains(model.state) {
+          Text("选择卡片").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.bottom, 2)
+        }
 
-      switch model.state {
-      case .unauthenticated:
-        VStack(spacing: 14) {
-          Button { Task { await model.authenticateWithMunet() } } label: {
-            actionLabel(model.authenticating == "munet" ? "正在连接 MuNET…" : "使用 MuNET 登录",
-                        icon: Image("MuNETLogo").renderingMode(.original),
-                        busy: model.authenticating == "munet")
+        switch model.state {
+        case .unauthenticated:
+          VStack(spacing: 14) {
+            Button { Task { await model.authenticateWithMunet() } } label: {
+              actionLabel(model.authenticating == "munet" ? "正在连接 MuNET…" : "使用 MuNET 登录",
+                          icon: Image("MuNETLogo").renderingMode(.original),
+                          busy: model.authenticating == "munet")
+            }
+            .clipActionStyle(primary: true)
+            Button { Task { await model.authenticateWithPasskey() } } label: {
+              actionLabel(model.authenticating == "passkey" ? "正在验证 Passkey…" : "使用 Passkey 登录",
+                          icon: Image(systemName: "touchid"),
+                          busy: model.authenticating == "passkey")
+            }
+            .clipActionStyle()
           }
-          .clipActionStyle(primary: true)
-          Button { Task { await model.authenticateWithPasskey() } } label: {
-            actionLabel(model.authenticating == "passkey" ? "正在验证 Passkey…" : "使用 Passkey 登录",
-                        icon: Image(systemName: "touchid"),
-                        busy: model.authenticating == "passkey")
+          .disabled(model.authenticating != nil)
+        case .ready, .locating, .sending, .success:
+          if !model.isShopOnly, model.canUseCards { cardsView.disabled(model.deviceBusy) }
+          if model.state == .ready, model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
+            Button { Task { await model.device("coin") } } label: {
+              HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+            }.clipActionStyle().disabled(model.deviceBusy)
           }
-          .clipActionStyle()
-        }
-        .disabled(model.authenticating != nil)
-      case .ready, .locating, .sending, .success:
-        if !model.isShopOnly, model.canUseCards { cardsView.disabled(model.deviceBusy) }
-        if model.state == .ready, model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
-          Button { Task { await model.device("coin") } } label: {
-            HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
-              .frame(maxWidth: .infinity).padding(.vertical, 12)
-          }.clipActionStyle().disabled(model.deviceBusy)
-        }
-      case .loadingCards:
-        ProgressView().accessibilityLabel(model.isShopOnly ? "正在加载" : "正在加载卡片")
-      case .cardsFailed(let message):
-        VStack(spacing: 20) {
-          ClipStatusMessage(title: "无法加载卡片", message: message, symbol: "exclamationmark.triangle")
-          Button { Task { await model.reloadCards() } } label: {
-            Text("重新加载卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
+        case .loadingCards:
+          ProgressView().accessibilityLabel(model.isShopOnly ? "正在加载" : "正在加载卡片")
+        case .cardsFailed(let message):
+          VStack(spacing: 20) {
+            ClipStatusMessage(title: "无法加载卡片", message: message, symbol: "exclamationmark.triangle")
+            Button { Task { await model.reloadCards() } } label: {
+              Text("重新加载卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
+            }
+            .clipActionStyle(primary: true)
           }
-          .clipActionStyle(primary: true)
+        case .idle, .loadingMachine, .loadingShop, .failed, .completed, .expired:
+          EmptyView()
         }
-      case .idle, .loadingMachine, .loadingShop, .failed, .completed, .expired:
-        EmptyView()
       }
     }
   }
@@ -658,6 +662,26 @@ private struct ClipCheckmark: Shape {
       path.move(to: CGPoint(x: rect.width * 0.27, y: rect.height * 0.51))
       path.addLine(to: CGPoint(x: rect.width * 0.44, y: rect.height * 0.68))
       path.addLine(to: CGPoint(x: rect.width * 0.75, y: rect.height * 0.34))
+    }
+  }
+}
+
+private struct ClipPasskeySetup: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  var body: some View {
+    VStack(spacing: 24) {
+      Text("建议添加 Passkey").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
+      Text("下次可用指纹或面容快速登录。此步骤可跳过，不影响继续游玩。")
+        .font(.subheadline).foregroundStyle(.secondary)
+      Button { Task { await model.addSuggestedPasskey() } } label: {
+        HStack(spacing: 10) {
+          if model.addingPasskey { ProgressView() } else { Image(systemName: "touchid") }
+          Text(model.addingPasskey ? String(localized: "正在添加 Passkey…") : String(localized: "添加 Passkey"))
+        }.frame(maxWidth: .infinity).padding(.vertical, 12)
+      }.clipActionStyle(primary: true).disabled(model.addingPasskey || model.user == nil)
+      Button { model.skipPasskeySetup() } label: {
+        Text("跳过，继续游玩").frame(maxWidth: .infinity).padding(.vertical, 12)
+      }.clipActionStyle().disabled(model.addingPasskey)
     }
   }
 }

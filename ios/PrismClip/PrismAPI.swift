@@ -85,6 +85,17 @@ final class PrismAPI {
     try await send(makeRequest(path: "/api/v1/auth/passkey/options"))
   }
 
+  func passkeyRegistrationOptions() async throws -> PasskeyRegistrationOptions {
+    try await send(makeRequest(path: "/api/v1/auth/passkey/register/options"))
+  }
+
+  func registerPasskey(_ credential: PasskeyRegistration) async throws {
+    struct Body: Encodable { let credential: PasskeyRegistration }
+    var request = try makeRequest(path: "/api/v1/auth/passkey/register", method: "POST")
+    request.httpBody = try encoder.encode(Body(credential: credential))
+    let _: EmptyResponse = try await send(request)
+  }
+
   func loginWithPasskey(_ assertion: PasskeyAssertion) async throws {
     var request = try makeRequest(path: "/api/v1/auth/passkey", method: "POST")
     request.httpBody = try encoder.encode(assertion)
