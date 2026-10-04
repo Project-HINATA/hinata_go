@@ -261,6 +261,10 @@ private struct ClipSessionPage: View {
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
             }.clipActionStyle().disabled(model.deviceBusy)
           }
+          if model.showNoDeviceActions {
+            Text("当前设备没有可操作项").font(.subheadline).foregroundStyle(.secondary)
+              .frame(maxWidth: .infinity).multilineTextAlignment(.center)
+          }
         case .loadingCards:
           ProgressView().accessibilityLabel(model.isShopOnly ? "正在加载" : "正在加载卡片")
         case .cardsFailed(let message):

@@ -136,6 +136,7 @@ enum PersistentCookieCheck {
     var mahjongSeats: [[String:Any]] = []
     var member = false, active = false
     var signedIn = true
+    var power = "unknown"
     var billing = true
     var identityBindingRequired = true, identityBound = true
     var bindingRequests = 0, bindingStatus = 200
@@ -207,7 +208,7 @@ enum PersistentCookieCheck {
       case "/api/v1/devices/session/state":
         let gated = billing || capabilities["door"] == true || capabilities["mahjong"] == true
         let gate = !gated ? "ready" : identityBindingRequired && (!member || !identityBound) ? "binding" : !billing ? "ready" : member && active ? "ready" : "entry"
-        return ok(["gate":gate, "power":"unknown","mahjong":["capacity":4,"seats":mahjongSeats]])
+        return ok(["gate":gate, "power":power,"mahjong":["capacity":4,"seats":mahjongSeats]])
       case "/api/v1/shops/store/platform-binding":
         precondition(request.httpMethod == "POST")
         bindingRequests += 1
@@ -225,6 +226,11 @@ enum PersistentCookieCheck {
         return ok(["receipt":receipt])
       case "/api/v1/shops/store/devices": return ok(["devices":[]])
       case "/api/v1/devices/session/actions":
+        if body["action"] as? String == "power.on" {
+          precondition(body["ticket"] != nil && body["operationId"] != nil)
+          power = "on"
+          return ok([:])
+        }
         if body["action"] as? String == "mahjong.join" {
           precondition(body["ticket"] != nil && body["operationId"] != nil)
           mahjongSeats = [["name":"Player","mine":true,"playing":false]]
@@ -329,9 +335,21 @@ enum PersistentCookieCheck {
     precondition(model.deviceState?.mahjong?.seats.first?.mine == true && !model.waitingPower)
     await model.device("mahjong.leave")
     precondition(model.deviceState?.mahjong?.seats.isEmpty == true)
+    // A power-only device has an action while off, then explains why no controls remain.
+    capabilities = ["power":true]; power = "off"
+    await model.start(shopCode: "store", publicId: "device")
+    precondition(!model.showNoDeviceActions && model.showDeviceControls)
+    await model.device("power.on")
+    precondition(model.deviceState?.power == "on" && !model.waitingPower && model.showNoDeviceActions)
+    power = "unknown"
+    await model.refreshVisit()
+    precondition(model.showNoDeviceActions)
+    capabilities = ["card":true,"power":true]
+    await model.start(shopCode: "store", publicId: "device")
+    precondition(model.canUseCards && !model.showNoDeviceActions)
     capabilities = [:]
     await model.start(shopCode: "store", publicId: "device")
-    precondition(model.state == .ready && model.machine?.empty == true && !model.canUseCards)
+    precondition(model.state == .ready && model.machine?.empty == true && !model.canUseCards && model.showNoDeviceActions)
     // A bare shop link opens the settle-only surface: no machine, no ticket, no admission.
     billing = true; member = true; active = false; identityBindingRequired = true
     let shopOnly = MachineLoginViewModel(api: PrismAPI(configuration: config))

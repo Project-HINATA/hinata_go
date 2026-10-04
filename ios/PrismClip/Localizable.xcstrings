@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "当前设备没有可操作项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No actions are available for this device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前设备没有可操作项"
+          }
+        }
+      }
+    },
     "建议添加 Passkey": {
       "localizations": {
         "en": {

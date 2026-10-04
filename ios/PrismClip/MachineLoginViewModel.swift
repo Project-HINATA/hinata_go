@@ -64,6 +64,16 @@ final class MachineLoginViewModel: ObservableObject {
     guard machine?.capabilities != nil, machine?.empty != true else { return false }
     return deviceState == nil || deviceState?.gate != "ready" || deviceState?.power == "off" || machine?.has("door") == true || machine?.has("mahjong") == true
   }
+  var showNoDeviceActions: Bool {
+    guard !isShopOnly, let machine else { return false }
+    if machine.empty { return true }
+    guard let device = deviceState, device.gate == "ready" else { return false }
+    if machine.has("door") || (machine.has("power") && device.power == "off") { return false }
+    if canUseCards || (device.power != "off" && machine.has("coin") && machine.coinAfterSwipe != true) { return false }
+    if machine.has("mahjong"), device.power != "off", let table = device.mahjong,
+       table.seats.contains(where: { $0.mine }) || table.seats.count < table.capacity { return false }
+    return true
+  }
   var needsPlatformBinding: Bool {
     isShopOnly
       ? user != nil && visit?.requiresPlatformBinding(hasActiveSession: shopHasActiveSession) == true
