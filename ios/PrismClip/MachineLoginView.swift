@@ -47,6 +47,8 @@ struct MachineLoginView: View {
     } message: {
       Text(model.errorMessage ?? "")
     }
+    .onAppear { Task { await model.setSceneActive(true) } }
+    .onDisappear { Task { await model.setSceneActive(false) } }
     .onChange(of: model.errorMessage) { value in
       showingError = value != nil && section == nil
     }

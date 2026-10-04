@@ -75,14 +75,23 @@ func isAuthenticationCancellation(_ error: Error) -> Bool { error is Cancellatio
 
 final class FixtureProtocol: URLProtocol {
   static var handler: ((URLRequest) throws -> (Int, [String: Any]))!
+  static var holdNextShopResponse = false
+  static var heldReply: (() -> Void)?
   override class func canInit(with request: URLRequest) -> Bool { true }
   override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
   override func startLoading() {
     do {
       let (status, body) = try Self.handler(request)
-      client?.urlProtocol(self, didReceive: HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["content-type": "application/json"])!, cacheStoragePolicy: .notAllowed)
-      client?.urlProtocol(self, didLoad: try JSONSerialization.data(withJSONObject: body))
-      client?.urlProtocolDidFinishLoading(self)
+      let data = try body["rawHTML"].map { Data(($0 as! String).utf8) } ?? JSONSerialization.data(withJSONObject: body)
+      let reply = { [self] in
+        client?.urlProtocol(self, didReceive: HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["content-type": "application/json"])!, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: data)
+        client?.urlProtocolDidFinishLoading(self)
+      }
+      if Self.holdNextShopResponse && request.url?.path == "/api/v1/shops/store" {
+        Self.holdNextShopResponse = false
+        Self.heldReply = reply
+      } else { reply() }
     } catch { client?.urlProtocol(self, didFailWithError: error) }
   }
   override func stopLoading() {}
@@ -148,6 +157,7 @@ enum PersistentCookieCheck {
     var failBillRead = true
     var cardReads = 0, previewReads = 0
     var shopStatus = 200, previewStatus = 200
+    var htmlOutage = false
     var statusReads = 0
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
@@ -202,6 +212,7 @@ enum PersistentCookieCheck {
       case "/api/v1/cards": cardReads += 1; return ok(["cards":[["id":"card","label":"Aime","accessCode":"01234567890123456789"]]])
       case "/api/v1/shops/store":
         statusReads += 1
+        if htmlOutage { return (503, ["rawHTML": "<html>Service temporarily unavailable</html>"]) }
         if shopStatus != 200 { return (shopStatus, ["error": ["code": "SHOP_NOT_FOUND", "message": "没有找到店铺"]]) }
         if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
         return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"Store Bot","identityBindingRequired":identityBindingRequired,"timeZone":"Asia/Tokyo","heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p","identityBound":identityBound] : NSNull(),"entryPricing":[]])
@@ -287,6 +298,10 @@ enum PersistentCookieCheck {
     precondition(model.errorMessage == nil && model.ticket != nil, "Resume network errors must not show an alert")
     try await Task.sleep(nanoseconds: 3_300_000_000)
     precondition(statusReads >= readsBeforeBackground + 2 && sessionStarts == 1 && model.binding?.code == "ABC12345")
+    htmlOutage = true
+    await model.refreshVisit(silent: true)
+    precondition(model.errorMessage == nil, "HTML 503 responses must remain retryable without alerts")
+    htmlOutage = false
     member = true; await model.refreshVisit()
     precondition(model.deviceState?.gate == "entry" && !model.needsPlatformBinding && model.binding == nil)
     await model.device("door.open", consent:true)
@@ -350,6 +365,7 @@ enum PersistentCookieCheck {
     capabilities = [:]
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.state == .ready && model.machine?.empty == true && !model.canUseCards && model.showNoDeviceActions)
+    await model.setSceneActive(false)
     // A bare shop link opens the settle-only surface: no machine, no ticket, no admission.
     billing = true; member = true; active = false; identityBindingRequired = true
     let shopOnly = MachineLoginViewModel(api: PrismAPI(configuration: config))
@@ -392,19 +408,53 @@ enum PersistentCookieCheck {
     identityBindingRequired = true
     await shopOnly.refreshVisit()
     precondition(shopOnly.needsPlatformBinding && bindingRequests == requestsBeforeMembership + 1)
-    // Expired codes are replaced, but repeated reads of a valid code never mint another.
-    bindingExpiry = "2000-01-01T00:00:00Z"
+    // Foreground/manual events must queue one follow-up behind an outstanding read.
+    FixtureProtocol.holdNextShopResponse = true
+    let outstandingRead = Task { await shopOnly.refreshVisit(silent: true) }
+    for _ in 0..<10000 where FixtureProtocol.heldReply == nil { await Task.yield() }
+    precondition(FixtureProtocol.heldReply != nil)
+    let beforeConcurrentEvents = statusReads
+    await shopOnly.refreshVisit(silent: true)
+    await shopOnly.refreshVisit(silent: true)
+    precondition(statusReads == beforeConcurrentEvents, "An outstanding read must not overlap foreground reads")
+    let reply = FixtureProtocol.heldReply!; FixtureProtocol.heldReply = nil; reply()
+    await outstandingRead.value
+    try await Task.sleep(nanoseconds: 100_000_000)
+    precondition(statusReads == beforeConcurrentEvents + 1, "Concurrent refreshes must coalesce into one follow-up")
+    // Manual foreground refresh must also retain the valid command.
+    let requestsBeforeManualRefresh = bindingRequests
     await shopOnly.bindPlatformIdentity()
+    precondition(bindingRequests == requestsBeforeManualRefresh)
+    // Exercise actual expiration instead of replacing a still-valid command manually.
+    identityBindingRequired = false; await shopOnly.refreshVisit()
+    bindingExpiry = ISO8601DateFormatter().string(from: Date().addingTimeInterval(2))
+    identityBindingRequired = true; await shopOnly.refreshVisit()
     bindingExpiry = "2999-01-01T00:00:00Z"
+    try await Task.sleep(nanoseconds: 2_100_000_000)
     let requestsBeforeRenewal = bindingRequests
     await shopOnly.refreshVisit()
     precondition(bindingRequests == requestsBeforeRenewal + 1 && shopOnly.binding?.expiresAt == bindingExpiry)
     await shopOnly.refreshVisit()
     precondition(bindingRequests == requestsBeforeRenewal + 1)
-    identityBound = true
-    await shopOnly.refreshVisit()
+    // Existing unbound members are polled, and an HTTP outage cannot break the loop.
+    let beforeOutage = statusReads
+    shopStatus = 503
+    await shopOnly.refreshVisit(silent: true)
+    precondition(shopOnly.errorMessage == nil && shopOnly.binding != nil)
+    shopStatus = 200; identityBound = true
+    try await Task.sleep(nanoseconds: 3_300_000_000)
+    precondition(statusReads >= beforeOutage + 2)
     precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil,
                  "A verified identity on any platform completes binding")
+    let afterBinding = statusReads
+    try await Task.sleep(nanoseconds: 3_300_000_000)
+    precondition(statusReads == afterBinding, "Binding completion must stop binding polling")
+    await shopOnly.setSceneActive(false)
+    let beforeShopBackground = statusReads
+    try await Task.sleep(nanoseconds: 3_300_000_000)
+    precondition(statusReads == beforeShopBackground)
+    await shopOnly.setSceneActive(true)
+    precondition(statusReads > beforeShopBackground, "Foreground must read immediately")
     identityBound = false; bindingStatus = 500
     await shopOnly.refreshVisit()
     precondition(shopOnly.needsPlatformBinding && shopOnly.binding == nil && shopOnly.errorMessage != nil)

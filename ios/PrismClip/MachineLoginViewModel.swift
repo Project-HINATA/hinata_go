@@ -54,6 +54,9 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var checkoutCelebrating = false
   private var userId = ""
   private var polling: Task<Void, Never>?
+  private var refreshRunning = false
+  private var refreshPending = false
+  private var refreshError: String?
   private var sceneActive = true
   private var visitRevision = 0
   var canUseCards: Bool { machine?.has("card") == true && (machine?.capabilities == nil || deviceState?.gate == "ready") && deviceState?.power != "off" }
@@ -397,19 +400,26 @@ final class MachineLoginViewModel: ObservableObject {
       if state != .loadingCards { visitRevision += 1 }
       polling?.cancel()
       polling = nil
-    } else if !deviceBusy, ![.loadingMachine, .loadingShop, .loadingCards, .locating, .sending].contains(state) {
+    } else if ![.loadingMachine, .loadingShop, .loadingCards].contains(state) {
       StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: self.api)
-      await refreshVisit(silent: true)
+      if deviceBusy { refreshPending = true; scheduleRefresh() }
+      else { await refreshVisit(silent: true) }
     }
   }
 
   private func scheduleRefresh() {
-    guard sceneActive, ticket != nil || needsPlatformBinding else { return }
+    // Binding completion ends binding polling; ordinary bill pages do not poll.
+    let needsRead = needsPlatformBinding
+      || (ticket != nil && (deviceState == nil || deviceState?.power == "off" || machine?.has("mahjong") == true))
+      || (isShopOnly && !playerStateLoaded)
+    guard sceneActive, !checkoutCelebrating, needsRead,
+          ![.unauthenticated, .expired, .completed].contains(state) else { return }
     polling?.cancel()
     polling = Task { [weak self] in
       do { try await Task.sleep(nanoseconds: 3_000_000_000) } catch { return }
-      guard let self, self.sceneActive, !self.deviceBusy, !Task.isCancelled else { return }
+      guard let self, self.sceneActive, !Task.isCancelled else { return }
       self.polling = nil
+      if self.deviceBusy { self.scheduleRefresh(); return }
       await self.refreshVisit(silent: true)
     }
   }
@@ -420,8 +430,19 @@ final class MachineLoginViewModel: ObservableObject {
     // Shop-only mode has no machine, so the machine gate cannot apply there.
     guard sceneActive || state == .loadingCards, machine?.capabilities != nil || isShopOnly,
           state != .unauthenticated else { return }
+    // Foreground events and manual refreshes share the same serial read loop.
+    guard !refreshRunning else { refreshPending = true; return }
+    refreshRunning = true
+    defer {
+      refreshRunning = false
+      if refreshPending && sceneActive && !deviceBusy {
+        refreshPending = false
+        Task { [weak self] in await self?.refreshVisit(silent: true) }
+      } else { scheduleRefresh() }
+    }
     visitRevision += 1
     polling?.cancel()
+    polling = nil
     let revision = visitRevision
     let version = invocationVersion
     do {
@@ -487,18 +508,15 @@ final class MachineLoginViewModel: ObservableObject {
         guard version == invocationVersion, revision == visitRevision else { return }
         binding = value
       }
-      if needsPlatformBinding || (ticket != nil && (currentDevice?.power == "off" || machine?.has("mahjong") == true)) {
-        scheduleRefresh()
-      }
+      if errorMessage == refreshError { errorMessage = nil }
+      refreshError = nil
     } catch {
       if version == invocationVersion, revision == visitRevision {
         if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled { return }
-        if silent, error is URLError {
-          scheduleRefresh()
-          return
-        }
+        if silent, error is URLError || (error as? PrismAPIError)?.isTransientReadFailure == true { return }
         if (error as? PrismAPIError)?.code == "AUTHENTICATION_REQUIRED" { state = .unauthenticated }
-        errorMessage = friendlyMessage(error)
+        refreshError = friendlyMessage(error)
+        errorMessage = refreshError
       }
     }
   }
@@ -509,7 +527,15 @@ final class MachineLoginViewModel: ObservableObject {
     visitRevision += 1
     polling?.cancel()
     deviceBusy = true; errorMessage = nil
-    defer { if version == invocationVersion { deviceBusy = false } }
+    defer {
+      if version == invocationVersion {
+        deviceBusy = false
+        if refreshPending && sceneActive {
+          refreshPending = false
+          Task { [weak self] in await self?.refreshVisit(silent: true) }
+        } else { scheduleRefresh() }
+      }
+    }
     do { try await action() }
     catch {
       if version == invocationVersion {
@@ -527,9 +553,11 @@ final class MachineLoginViewModel: ObservableObject {
     let api = self.api
     await perform {
       let version = invocationVersion
-      let value: PrismBinding = try await api.request(shopPath("platform-binding"), body: [:])
-      guard version == invocationVersion else { return }
-      binding = value
+      if binding.flatMap({ prismParsedDate($0.expiresAt) }) ?? .distantPast <= Date() {
+        let value: PrismBinding = try await api.request(shopPath("platform-binding"), body: [:])
+        guard version == invocationVersion else { return }
+        binding = value
+      }
       await refreshVisit()
     }
   }
@@ -606,7 +634,7 @@ final class MachineLoginViewModel: ObservableObject {
     defer {
       if version == invocationVersion {
         deviceBusy = false
-        if needsPlatformBinding || deviceState?.power == "off" || machine?.has("mahjong") == true { scheduleRefresh() }
+        scheduleRefresh()
       }
     }
     if section == 0 {

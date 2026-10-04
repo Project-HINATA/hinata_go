@@ -10,6 +10,10 @@ enum PrismAPIError: LocalizedError {
   var code: String? {
     switch self { case .http(_, let code, _), .api(let code, _): return code; default: return nil }
   }
+  var isTransientReadFailure: Bool {
+    guard case .http(let status, _, _) = self else { return false }
+    return status == 408 || status == 429 || status >= 500
+  }
   var isSessionExpired: Bool {
     if case .http(_, let code, _) = self { return code == "TICKET_EXPIRED" }
     if case .api(let code, _) = self { return code == "TICKET_EXPIRED" }
@@ -210,7 +214,7 @@ final class PrismAPI {
       if let error = try? decoder.decode(ServerError.self, from: data).error {
         throw PrismAPIError.http(status: http.statusCode, code: error.code, message: error.message)
       }
-      throw PrismAPIError.server("请求失败（\(http.statusCode)）")
+      throw PrismAPIError.http(status: http.statusCode, code: "", message: "请求失败（\(http.statusCode)）")
     }
     guard let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any], let payload = envelope["data"] else { throw PrismAPIError.invalidResponse }
     return try JSONSerialization.data(withJSONObject: payload)
@@ -262,7 +266,7 @@ final class PrismAPI {
       if let error = try? decoder.decode(ServerError.self, from: data).error {
         throw PrismAPIError.api(code: error.code, message: error.message)
       }
-      throw PrismAPIError.server("请求失败（\(httpResponse.statusCode)）")
+      throw PrismAPIError.http(status: httpResponse.statusCode, code: "", message: "请求失败（\(httpResponse.statusCode)）")
     }
     do {
       return try decoder.decode(APIEnvelope<Response>.self, from: data).data

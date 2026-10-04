@@ -22,12 +22,15 @@ final class PrismURLBridge {
   /// Ends the current activation so a later one accepts a system-delivered activity again.
   func sceneDidEnterBackground() {
     router.resetForNextActivation()
+    if let model = nativeModel { Task { await model.setSceneActive(false) } }
   }
 
   /// Re-attaches push token tracking to any activities already active on the device.
   func sceneWillEnterForeground() {
     if let model = nativeModel {
-      StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: model.api)
+      if nativeController?.presentingViewController != nil {
+        Task { await model.setSceneActive(true) }
+      }
     } else {
       StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: .shared)
     }
