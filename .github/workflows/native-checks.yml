@@ -9,6 +9,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
       - run: swift --version
       - run: sh test/native/run-prism-time-check.sh
       - run: sh test/native/run-prism-activity-check.sh

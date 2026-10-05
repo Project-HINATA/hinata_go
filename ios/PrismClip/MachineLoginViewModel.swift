@@ -511,6 +511,15 @@ final class MachineLoginViewModel: ObservableObject {
         await api.invalidateReads()
         shop = try await api.request(shopPath())
         guard version == invocationVersion, revision == visitRevision else { return }
+        if !userId.isEmpty {
+          cards = []; assets = []; history = []; historyNextOffset = nil; checkoutPreview = nil
+          billLoaded = false; binding = nil; doorPassword = nil; settlement = nil
+          if !isShopOnly && me.user != nil {
+            let currentCards = try await api.cards()
+            guard version == invocationVersion, revision == visitRevision else { return }
+            cards = currentCards.cards.filter { $0.disabledAt == nil }
+          }
+        }
       }
       // The shop is public data, so the card is settled before the signed-in state is judged.
       // Clearing it here is what made a signed-out shop page lose its card entirely.
@@ -692,7 +701,7 @@ final class MachineLoginViewModel: ObservableObject {
       guard version == invocationVersion else { throw CancellationError() }
       return data
     } catch {
-      if let error = error as? PrismAPIError, case .http(let status, let code, _) = error, status < 500, code != "OPERATION_PENDING", code != "DEVICE_RESULT_UNKNOWN" {
+      if let error = error as? PrismAPIError, let status = error.status, status < 500, error.code != "OPERATION_PENDING", error.code != "DEVICE_RESULT_UNKNOWN" {
         UserDefaults.standard.removeObject(forKey: storageKey)
       }
       if key.hasPrefix("device."), error is URLError { throw PrismAPIError.api(code: "DEVICE_RESULT_UNKNOWN", message: "设备连接失败，请重新扫码后重试") }

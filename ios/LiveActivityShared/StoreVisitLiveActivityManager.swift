@@ -339,7 +339,7 @@ final class StoreVisitLiveActivityManager {
           let deadline = Date().addingTimeInterval(max(Double(delay) / 1_000_000_000, retryAfter))
           do {
             while deadline > Date() {
-              try await Task.sleep(nanoseconds: UInt64(min(deadline.timeIntervalSinceNow, 3600) * 1_000_000_000))
+              try await Task.sleep(nanoseconds: UInt64(max(0, min(deadline.timeIntervalSinceNow, 3600)) * 1_000_000_000))
             }
           } catch { return }
           delay *= 2

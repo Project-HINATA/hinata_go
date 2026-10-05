@@ -102,7 +102,8 @@ final class ScanCounts {
     precondition(model.state == .ready && model.canUseCards && model.cards.count == 1)
     try await Task.sleep(nanoseconds: 6_500_000_000)
     precondition(counts.read("/api/v1/devices/session/state") >= 2)
-    precondition(counts.read("/api/v1/shops/store") == 1 && counts.read("/api/v1/me") == 1)
+    precondition(counts.read("/api/v1/shops/store") == 1, "Shop reads: \(counts.read("/api/v1/shops/store"))")
+    precondition(counts.read("/api/v1/me") == 1, "Identity reads: \(counts.read("/api/v1/me"))")
     precondition(counts.read("/api/v1/devices/session/power") == 1, "Slow HA must not overlap or block cards")
     let powerReply = FixtureProtocol.heldPowerReply!; FixtureProtocol.heldPowerReply = nil; powerReply()
     try await waitUntil { model.deviceState?.power == "on" }

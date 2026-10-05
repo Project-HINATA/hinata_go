@@ -12,9 +12,11 @@ enum PrismAPIError: LocalizedError, PrismRetryAfterProviding {
     switch self { case .http(_, let code, _), .limited(_, let code, _, _), .api(let code, _): return code; default: return nil }
   }
   var isTransientReadFailure: Bool {
-    let status: Int
-    switch self { case .http(let value, _, _), .limited(let value, _, _, _): status = value; default: return false }
+    guard let status else { return false }
     return status == 408 || status == 429 || status >= 500
+  }
+  var status: Int? {
+    switch self { case .http(let value, _, _), .limited(let value, _, _, _): return value; default: return nil }
   }
   var retryAfter: TimeInterval? {
     if case .limited(_, _, _, let delay) = self { return delay }
