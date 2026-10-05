@@ -481,7 +481,10 @@ final class MachineLoginViewModel: ObservableObject {
           var value: PrismDeviceState = try await api.request("/api/v1/devices/session/state?ticket=\(ticket)&includePower=0")
           guard version == invocationVersion, revision == visitRevision else { return }
           if value.gate != deviceState?.gate {
-            fullRead = true; await api.invalidateReads(); powerObserved = false; cancelPowerRead()
+            fullRead = true
+            if deviceState != nil { await api.invalidateReads() }
+            guard version == invocationVersion, revision == visitRevision else { return }
+            powerObserved = false; cancelPowerRead()
           }
           if machine?.has("power") == true { value.power = deviceState?.gate == value.gate ? (deviceState?.power ?? "unknown") : "unknown" }
           currentDevice = value

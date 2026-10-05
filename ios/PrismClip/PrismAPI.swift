@@ -248,7 +248,7 @@ final class PrismAPI {
       return try await reads.read(key: key, ttl: ttl) { [self] in try await uncachedResponseData(for: request) }
     }
     let result = try await uncachedResponseData(for: request)
-    if request.httpMethod != "GET", !path.hasSuffix("/checkout/preview"),
+    if request.httpMethod != "GET", !path.hasSuffix("/checkout/preview"), !path.hasSuffix("/machines/session/start"),
        let http = result.1 as? HTTPURLResponse, 200..<300 ~= http.statusCode { await invalidateReads() }
     return result
   }

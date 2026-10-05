@@ -15,6 +15,29 @@ jobs:
       - run: sh test/native/run-prism-activity-manager-check.sh
       - run: sh test/native/run-prism-scan-check.sh
       - run: sh test/native/run-prism-visit-check.sh
+        if: always()
+  simulator:
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - name: Compile native view and capture scan screenshots
+        shell: bash
+        run: |
+          xcodegen generate --spec test/native/scan-preview/project.yml
+          simulator=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for group in json.load(sys.stdin)["devices"].values() for d in group if d["name"].startswith("iPhone") and d["isAvailable"]))')
+          xcrun simctl boot "$simulator" || true
+          xcrun simctl bootstatus "$simulator" -b
+          xcodebuild -project test/native/scan-preview/ScanPreview.xcodeproj -scheme ScanPreview -destination "platform=iOS Simulator,id=$simulator" -parallel-testing-enabled NO -derivedDataPath "$RUNNER_TEMP/scan-derived" -resultBundlePath "$RUNNER_TEMP/scan.xcresult" CODE_SIGNING_ALLOWED=NO test > "$RUNNER_TEMP/scan-build.log" 2>&1 || { tail -100 "$RUNNER_TEMP/scan-build.log"; exit 1; }
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/scan.xcresult" --output-path "$RUNNER_TEMP/scan-screenshots"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-scan-preview
+          path: |
+            ${{ runner.temp }}/scan-screenshots
+            ${{ runner.temp }}/scan-build.log
   flutter:
     runs-on: ubuntu-latest
     timeout-minutes: 20
