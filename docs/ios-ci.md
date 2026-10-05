@@ -11,3 +11,7 @@
 迁移前的失败运行已完成 archive，但在 exportArchive 写入 `.symbols` 文件时失败，并出现 Apple 接口 401；迁移后的导出及上传结果以新的 GitHub Actions 运行记录为准。
 
 Runner 镜像参考：[GitHub macOS 26 软件清单](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md)。更新 Xcode 固定版本前，应确认它仍包含在该镜像中。
+
+## PR 原生回归
+
+`native-checks.yml` 在 pull_request 上执行 macOS Swift 原生检查和 Flutter 格式/静态分析，独立于 iOS 发布流程。扫码用例使用模拟 HTTP 与认证/定位边界，编译真实共享 Swift 模型、API 与 view model；不读取发布签名密钥，不上传 TestFlight。请求退避与接口配合见 [原生 PRiSM 接口文档](prism-web-integration.md#native-scan-performance-and-prism-request-budgets)。

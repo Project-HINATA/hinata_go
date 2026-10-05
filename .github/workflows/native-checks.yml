@@ -1,0 +1,30 @@
+name: Native PRiSM checks
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  swift:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - run: sh test/native/run-prism-time-check.sh
+      - run: sh test/native/run-prism-activity-check.sh
+      - run: sh test/native/run-prism-activity-manager-check.sh
+      - run: sh test/native/run-prism-scan-check.sh
+      - run: sh test/native/run-prism-visit-check.sh
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format .
+      - run: flutter analyze
