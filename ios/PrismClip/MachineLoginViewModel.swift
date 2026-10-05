@@ -517,7 +517,8 @@ final class MachineLoginViewModel: ObservableObject {
         guard version == invocationVersion, revision == visitRevision else { return }
         if !userId.isEmpty {
           cards = []; assets = []; history = []; historyNextOffset = nil; checkoutPreview = nil
-          billLoaded = false; binding = nil; doorPassword = nil; settlement = nil
+          billLoaded = false; binding = nil; doorPassword = nil; settlement = nil; summary = nil
+          user = me.user; userId = me.user?.id ?? ""
           if !isShopOnly && me.user != nil {
             let currentCards = try await api.cards()
             guard version == invocationVersion, revision == visitRevision else { return }
@@ -530,7 +531,8 @@ final class MachineLoginViewModel: ObservableObject {
       visit = shop
       guard me.user != nil else {
         state = .unauthenticated
-        user = nil; summary = nil; checkoutPreview = nil; billLoaded = false; playerStateLoaded = false; assets = []; history = []; historyNextOffset = nil; settlement = nil
+        user = nil; userId = ""; cards = []; summary = nil; checkoutPreview = nil; billLoaded = false; playerStateLoaded = false; assets = []; history = []; historyNextOffset = nil; settlement = nil
+        binding = nil; doorPassword = nil; deviceState = nil; cancelPowerRead()
         return
       }
       var currentSummary: PrismSummary? = fullRead ? nil : summary
