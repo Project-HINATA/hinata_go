@@ -343,7 +343,7 @@ final class MachineLoginViewModel: ObservableObject {
   func reloadCards(initialIdentity: PrismUser? = nil) async {
     let api = self.api
     let version = invocationVersion
-    state = .loadingCards
+    if state != .loadingCards { state = .loadingCards }
     errorMessage = nil
     do {
       readBackoff.succeed()
