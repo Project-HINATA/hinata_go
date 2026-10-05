@@ -3,100 +3,6 @@
 import Foundation
 import Combine
 
-// ActivityKit is unavailable in this macOS check; record the shared call boundary.
-@MainActor final class StoreVisitLiveActivityManager {
-  static let shared = StoreVisitLiveActivityManager()
-  private(set) var session: PrismSummary.Session?
-  private(set) var origin: URL?
-  private(set) var lastApi: PrismAPI?
-  /// Sign-out must retire every activity's push token, so the check records the sweep.
-  private(set) var unregisteredAll = false
-  private(set) var trackingPushToStart = false
-  private(set) var recoveredActivities = false
-
-  func reconcile(
-    session: PrismSummary.Session?,
-    shopCode: String,
-    shopName: String,
-    origin: URL?,
-    api: PrismAPI,
-    receipt: PrismCheckoutResult? = nil
-  ) async {
-    self.session = session
-    self.origin = origin
-    self.lastApi = api
-  }
-  private(set) var finishedReceipt: PrismCheckoutResult?
-  func finishCheckout(receipt: PrismCheckoutResult, shopCode: String, api: PrismAPI) async {
-    finishedReceipt = receipt
-    session = nil
-  }
-  func unregisterAllPushTokens(api: PrismAPI) async {
-    try! await api.unregisterStartToken(clientId: PrismAPI.clientId)
-    unregisteredAll = true
-    self.lastApi = api
-  }
-  func startPushToStartTracking(api: PrismAPI) {
-    trackingPushToStart = true
-    self.lastApi = api
-  }
-  func recoverExistingActivities(api: PrismAPI = .shared) {
-    recoveredActivities = true
-    self.lastApi = api
-  }
-  func startGlobalActivityTracking(fallbackAPI: PrismAPI = .shared) {
-    self.lastApi = fallbackAPI
-  }
-}
-
-@MainActor final class PasskeyAuthenticationService {
-  static var cancelRegistration = false
-  func authenticate(options: PasskeyRequestOptions) async throws -> PasskeyAssertion { throw CancellationError() }
-  func register(options: PasskeyRegistrationOptions) async throws -> PasskeyRegistration {
-    precondition(options.rp.id == "link-beta.neri.moe" && options.user.id == "dXNlcg")
-    if Self.cancelRegistration { throw CancellationError() }
-    return PasskeyRegistration(id: "credential", rawId: "credential", response: .init(clientDataJSON: "client", attestationObject: "attestation", transports: ["internal"]), type: "public-key", clientExtensionResults: [:], authenticatorAttachment: "platform")
-  }
-}
-@MainActor final class MunetAuthenticationService {
-  static var result: PrismMunetAuthenticationResult?
-  func authenticate(origin: URL) async throws -> PrismMunetAuthenticationResult {
-    guard let result = Self.result else { throw CancellationError() }
-    return result
-  }
-}
-struct LocationSample { let latitude: Double; let longitude: Double; let accuracy: Double }
-@MainActor final class LocationService {
-  static var calls = 0
-  func currentLocation() async throws -> LocationSample { Self.calls += 1; return LocationSample(latitude: 35, longitude: 139, accuracy: 5) }
-}
-enum LocationError: LocalizedError { case unavailable }
-func isAuthenticationCancellation(_ error: Error) -> Bool { error is CancellationError }
-
-final class FixtureProtocol: URLProtocol {
-  static var handler: ((URLRequest) throws -> (Int, [String: Any]))!
-  static var holdNextShopResponse = false
-  static var heldReply: (() -> Void)?
-  override class func canInit(with request: URLRequest) -> Bool { true }
-  override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-  override func startLoading() {
-    do {
-      let (status, body) = try Self.handler(request)
-      let data = try body["rawHTML"].map { Data(($0 as! String).utf8) } ?? JSONSerialization.data(withJSONObject: body)
-      let reply = { [self] in
-        client?.urlProtocol(self, didReceive: HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["content-type": "application/json"])!, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: data)
-        client?.urlProtocolDidFinishLoading(self)
-      }
-      if Self.holdNextShopResponse && request.url?.path == "/api/v1/shops/store" {
-        Self.holdNextShopResponse = false
-        Self.heldReply = reply
-      } else { reply() }
-    } catch { client?.urlProtocol(self, didFailWithError: error) }
-  }
-  override func stopLoading() {}
-}
-
 enum PersistentCookieCheck {
   static func check() async throws {
     let port = ProcessInfo.processInfo.environment["PRISM_COOKIE_TEST_PORT"]!
@@ -158,7 +64,7 @@ enum PersistentCookieCheck {
     var cardReads = 0, previewReads = 0
     var shopStatus = 200, previewStatus = 200
     var htmlOutage = false
-    var statusReads = 0
+    var statusReads = 0, deviceReads = 0, identityReads = 0, bindingStatusReads = 0
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
     var checkoutIds: [String] = []
@@ -198,6 +104,7 @@ enum PersistentCookieCheck {
         if passkeyStatus != 200 { return (passkeyStatus,["error":["code":"PASSKEY_FAILED","message":"Passkey 验证失败"]]) }
         return ok(["ok":true])
       case "/api/v1/me":
+        identityReads += 1
         // Mirrors the server: signed-in state lives in the cookie store.
         return ok(["user": signedIn ? ["id":testUser,"username":"test","displayName":"Test"] : NSNull()])
       case "/api/v1/me/live-activity/start-token":
@@ -216,11 +123,19 @@ enum PersistentCookieCheck {
         if shopStatus != 200 { return (shopStatus, ["error": ["code": "SHOP_NOT_FOUND", "message": "没有找到店铺"]]) }
         if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
         return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"Store Bot","identityBindingRequired":identityBindingRequired,"timeZone":"Asia/Tokyo","heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p","identityBound":identityBound] : NSNull(),"entryPricing":[]])
+      case "/api/v1/devices/session/power": return ok(["power":power])
       case "/api/v1/devices/session/state":
+        deviceReads += 1
+        precondition(request.url!.query!.contains("includePower=0"))
         let gated = billing || capabilities["door"] == true || capabilities["mahjong"] == true
         let gate = !gated ? "ready" : identityBindingRequired && (!member || !identityBound) ? "binding" : !billing ? "ready" : member && active ? "ready" : "entry"
         return ok(["gate":gate, "power":power,"mahjong":["capacity":4,"seats":mahjongSeats]])
       case "/api/v1/shops/store/platform-binding":
+        if request.httpMethod == "GET" {
+          bindingStatusReads += 1
+          if shopStatus != 200 { return (shopStatus,["error":["code":"UNAVAILABLE","message":"暂不可用"]]) }
+          return ok(["bindings": identityBound && member ? [["playerId":"p"]] : []])
+        }
         precondition(request.httpMethod == "POST")
         bindingRequests += 1
         if bindingStatus != 200 { return (bindingStatus, ["error":["code":"BINDING_FAILED","message":"生成绑定码失败"]]) }
@@ -287,17 +202,17 @@ enum PersistentCookieCheck {
     precondition(!model.canUseCards && model.showDeviceControls)
     let initialBindingRequests = bindingRequests
     try await Task.sleep(nanoseconds: 3_300_000_000)
-    precondition(statusReads >= 2 && model.errorMessage == nil, "Polling must not cancel its own requests")
+    precondition(deviceReads >= 2 && model.errorMessage == nil, "Polling must not cancel its own requests")
     precondition(bindingRequests == initialBindingRequests, "Polling must retain a valid binding code")
     await model.setSceneActive(false)
-    let readsBeforeBackground = statusReads
+    let readsBeforeBackground = deviceReads
     await model.refreshVisit()
-    precondition(statusReads == readsBeforeBackground)
+    precondition(deviceReads == readsBeforeBackground)
     failNextStatusRead = true
     await model.setSceneActive(true)
     precondition(model.errorMessage == nil && model.ticket != nil, "Resume network errors must not show an alert")
     try await Task.sleep(nanoseconds: 3_300_000_000)
-    precondition(statusReads >= readsBeforeBackground + 2 && sessionStarts == 1 && model.binding?.code == "ABC12345")
+    precondition(deviceReads >= readsBeforeBackground + 2 && sessionStarts == 1 && model.binding?.code == "ABC12345")
     htmlOutage = true
     await model.refreshVisit(silent: true)
     precondition(model.errorMessage == nil, "HTML 503 responses must remain retryable without alerts")
@@ -353,8 +268,10 @@ enum PersistentCookieCheck {
     // A power-only device has an action while off, then explains why no controls remain.
     capabilities = ["power":true]; power = "off"
     await model.start(shopCode: "store", publicId: "device")
+    for _ in 0..<10000 where model.deviceState?.power != "off" { await Task.yield() }
     precondition(!model.showNoDeviceActions && model.showDeviceControls)
     await model.device("power.on")
+    for _ in 0..<10000 where model.deviceState?.power != "on" { await Task.yield() }
     precondition(model.deviceState?.power == "on" && !model.waitingPower && model.showNoDeviceActions)
     power = "unknown"
     await model.refreshVisit()
@@ -390,7 +307,10 @@ enum PersistentCookieCheck {
     precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
     // A player who has not verified with the Bot gets the binding explanation.
     member = false
+    let readsBeforeReplay = statusReads
     await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
+    precondition(statusReads == readsBeforeReplay, "A repeated link reuses fresh metadata")
+    await shopOnly.refreshVisit()
     precondition(shopOnly.visit?.membership == nil && !shopOnly.canUseShopSurface)
     precondition(shopOnly.playerStateLoaded, "Missing membership is a completed read, not a spinner")
     precondition(shopOnly.binding?.code == "ABC12345" && shopOnly.needsPlatformBinding, "Shop platform binding must reuse the machine flow")
@@ -409,6 +329,7 @@ enum PersistentCookieCheck {
     await shopOnly.refreshVisit()
     precondition(shopOnly.needsPlatformBinding && bindingRequests == requestsBeforeMembership + 1)
     // Foreground/manual events must queue one follow-up behind an outstanding read.
+    await shopOnly.api.invalidateReads()
     FixtureProtocol.holdNextShopResponse = true
     let outstandingRead = Task { await shopOnly.refreshVisit(silent: true) }
     for _ in 0..<10000 where FixtureProtocol.heldReply == nil { await Task.yield() }
@@ -420,7 +341,7 @@ enum PersistentCookieCheck {
     let reply = FixtureProtocol.heldReply!; FixtureProtocol.heldReply = nil; reply()
     await outstandingRead.value
     try await Task.sleep(nanoseconds: 100_000_000)
-    precondition(statusReads == beforeConcurrentEvents + 1, "Concurrent refreshes must coalesce into one follow-up")
+    precondition(statusReads == beforeConcurrentEvents, "Coalesced follow-up must reuse the completed shop read")
     // Manual foreground refresh must also retain the valid command.
     let requestsBeforeManualRefresh = bindingRequests
     await shopOnly.bindPlatformIdentity()
@@ -437,24 +358,25 @@ enum PersistentCookieCheck {
     await shopOnly.refreshVisit()
     precondition(bindingRequests == requestsBeforeRenewal + 1)
     // Existing unbound members are polled, and an HTTP outage cannot break the loop.
-    let beforeOutage = statusReads
+    let beforeOutage = bindingStatusReads
+    await shopOnly.api.invalidateReads()
     shopStatus = 503
     await shopOnly.refreshVisit(silent: true)
     precondition(shopOnly.errorMessage == nil && shopOnly.binding != nil)
     shopStatus = 200; identityBound = true
-    try await Task.sleep(nanoseconds: 3_300_000_000)
-    precondition(statusReads >= beforeOutage + 2)
+    try await Task.sleep(nanoseconds: 6_300_000_000)
+    precondition(bindingStatusReads > beforeOutage)
     precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil,
                  "A verified identity on any platform completes binding")
     let afterBinding = statusReads
     try await Task.sleep(nanoseconds: 3_300_000_000)
     precondition(statusReads == afterBinding, "Binding completion must stop binding polling")
     await shopOnly.setSceneActive(false)
-    let beforeShopBackground = statusReads
+    let beforeShopBackground = identityReads
     try await Task.sleep(nanoseconds: 3_300_000_000)
-    precondition(statusReads == beforeShopBackground)
+    precondition(identityReads == beforeShopBackground)
     await shopOnly.setSceneActive(true)
-    precondition(statusReads > beforeShopBackground, "Foreground must read immediately")
+    precondition(identityReads > beforeShopBackground, "Foreground must refresh identity while retaining cached shop metadata")
     identityBound = false; bindingStatus = 500
     await shopOnly.refreshVisit()
     precondition(shopOnly.needsPlatformBinding && shopOnly.binding == nil && shopOnly.errorMessage != nil)
@@ -463,7 +385,7 @@ enum PersistentCookieCheck {
     precondition(shopOnly.binding?.code == "ABC12345" && shopOnly.errorMessage == nil, "Failed generation must be retryable")
     // Admission comes from the machine flow, so the shop link reads the bill it opened.
     active = true
-    await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
+    await shopOnly.refreshVisit()
     precondition(shopOnly.shopHasActiveSession && shopOnly.shopBillingState == "计费中")
     precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil,
                  "An existing bill stays accessible when identity binding becomes required")
@@ -604,10 +526,16 @@ enum PersistentCookieCheck {
     precondition(billFailure.billLoaded && billFailure.checkoutPreview != nil)
 
     let activating = MachineLoginViewModel(api: PrismAPI(configuration: config))
+    FixtureProtocol.holdNextIdentityResponse = true
     let opening = Task { await activating.handleResolvedInvocation(shopB) }
-    while activating.state != .loadingCards { await Task.yield() }
+    let activationDeadline = Date().addingTimeInterval(10)
+    while (activating.state != .loadingCards || FixtureProtocol.heldIdentityReply == nil) && Date() < activationDeadline {
+      try await Task.sleep(nanoseconds: 1_000_000)
+    }
+    precondition(activating.state == .loadingCards && FixtureProtocol.heldIdentityReply != nil, "Identity must still be loading")
     await activating.setSceneActive(false)
     await activating.setSceneActive(true)
+    let activationReply = FixtureProtocol.heldIdentityReply!; FixtureProtocol.heldIdentityReply = nil; activationReply()
     await opening.value
     precondition(activating.state == .ready && activating.checkoutPreview != nil,
                  "An activation transition during account loading must not strand the page")

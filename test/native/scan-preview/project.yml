@@ -1,0 +1,46 @@
+name: ScanPreview
+options:
+  deploymentTarget:
+    iOS: "18.0"
+  developmentLanguage: zh-Hans
+settings:
+  base:
+    CODE_SIGNING_ALLOWED: NO
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  ScanPreview:
+    type: application
+    platform: iOS
+    sources:
+      - App
+      - ../prism_visit_fixtures.swift
+      - ../../../ios/PrismClip/InvocationParser.swift
+      - ../../../ios/PrismClip/InvocationRouter.swift
+      - ../../../ios/PrismClip/Models.swift
+      - ../../../ios/PrismClip/PrismAPI.swift
+      - ../../../ios/PrismClip/MachineLoginViewModel.swift
+      - ../../../ios/PrismClip/MachineLoginView.swift
+      - ../../../ios/PrismClip/Localizable.xcstrings
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: moe.neri.hinatago.scanpreview
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+  ScanPreviewTests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: ScanPreview
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: moe.neri.hinatago.scanpreview.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ScanPreview:
+    build:
+      targets:
+        ScanPreview: all
+    test:
+      targets: [ScanPreviewTests]

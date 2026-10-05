@@ -335,7 +335,13 @@ final class StoreVisitLiveActivityManager {
       } catch {
         logger.error("Attempt \(attempt) failed to register Live Activity push token: \(String(describing: error), privacy: .public)")
         if attempt < 3 {
-          try? await Task.sleep(nanoseconds: delay)
+          let retryAfter = (error as? PrismRetryAfterProviding)?.retryAfter ?? 0
+          let deadline = Date().addingTimeInterval(max(Double(delay) / 1_000_000_000, retryAfter))
+          do {
+            while deadline > Date() {
+              try await Task.sleep(nanoseconds: UInt64(max(0, min(deadline.timeIntervalSinceNow, 3600)) * 1_000_000_000))
+            }
+          } catch { return }
           delay *= 2
         }
       }

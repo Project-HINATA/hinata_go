@@ -1,5 +1,7 @@
 import Foundation
 
+protocol PrismRetryAfterProviding: Error { var retryAfter: TimeInterval? { get } }
+
 func prismParsedDate(_ value: String) -> Date? {
   let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
   return formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
@@ -194,7 +196,7 @@ struct SwipeResult: Codable {
     }
   }
 }
-struct PrismDeviceState: Decodable { let gate: String; let power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil }
+struct PrismDeviceState: Decodable { let gate: String; var power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil }
 struct PrismBinding: Decodable { let code: String; let expiresAt: String }
 struct PrismDoorPassword: Decodable { let temporaryPassword: String; let expiresAt: String }
 struct PrismShopResponse: Decodable {

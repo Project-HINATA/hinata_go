@@ -1,22 +1,29 @@
 import Foundation
 
-enum PrismAPIError: LocalizedError {
+enum PrismAPIError: LocalizedError, PrismRetryAfterProviding {
   case invalidURL
   case invalidResponse
   case server(String)
   case api(code: String, message: String)
   case http(status: Int, code: String, message: String)
+  case limited(status: Int, code: String, message: String, retryAfter: TimeInterval)
 
   var code: String? {
-    switch self { case .http(_, let code, _), .api(let code, _): return code; default: return nil }
+    switch self { case .http(_, let code, _), .limited(_, let code, _, _), .api(let code, _): return code; default: return nil }
   }
   var isTransientReadFailure: Bool {
-    guard case .http(let status, _, _) = self else { return false }
+    guard let status else { return false }
     return status == 408 || status == 429 || status >= 500
   }
+  var status: Int? {
+    switch self { case .http(let value, _, _), .limited(let value, _, _, _): return value; default: return nil }
+  }
+  var retryAfter: TimeInterval? {
+    if case .limited(_, _, _, let delay) = self { return delay }
+    return nil
+  }
   var isSessionExpired: Bool {
-    if case .http(_, let code, _) = self { return code == "TICKET_EXPIRED" }
-    if case .api(let code, _) = self { return code == "TICKET_EXPIRED" }
+    if code == "TICKET_EXPIRED" { return true }
     guard case .server(let message) = self else { return false }
     return message == "本次会话已失效" || message == "缺少会话凭证"
   }
@@ -27,7 +34,7 @@ enum PrismAPIError: LocalizedError {
       return String(localized: "PRiSM 地址无效")
     case .invalidResponse:
       return String(localized: "PRiSM 返回的数据无效")
-    case .server(let message), .api(_, let message), .http(_, _, let message):
+    case .server(let message), .api(_, let message), .http(_, _, let message), .limited(_, _, let message, _):
       return NSLocalizedString(message, value: message, comment: "Server error")
     }
   }
@@ -46,6 +53,9 @@ final class PrismAPI {
   private let session: URLSession
   private let decoder = JSONDecoder()
   private let encoder = JSONEncoder()
+  private let reads = PrismReadCache()
+
+  func invalidateReads() async { await reads.clear() }
 
   init(configuration: URLSessionConfiguration = .default, origin: URL = PrismAPI.defaultOrigin) {
     self.baseURL = origin
@@ -113,7 +123,12 @@ final class PrismAPI {
   }
 
   func webFallbackURL(ticket: String) -> URL? {
-    URL(string: "\(baseURL.absoluteString)/m?ticket=\(ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ticket)")
+    guard var parts = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else { return nil }
+    parts.path = "/m"; parts.query = nil
+    var fragment = URLComponents()
+    fragment.queryItems = [URLQueryItem(name: "ticket", value: ticket)]
+    parts.percentEncodedFragment = fragment.percentEncodedQuery
+    return parts.url
   }
 
   /// Ships a Live Activity push token to the server so a visit opened on *another*
@@ -211,10 +226,7 @@ final class PrismAPI {
     let (data, response) = try await responseData(for: request)
     guard let http = response as? HTTPURLResponse else { throw PrismAPIError.invalidResponse }
     guard 200..<300 ~= http.statusCode else {
-      if let error = try? decoder.decode(ServerError.self, from: data).error {
-        throw PrismAPIError.http(status: http.statusCode, code: error.code, message: error.message)
-      }
-      throw PrismAPIError.http(status: http.statusCode, code: "", message: "请求失败（\(http.statusCode)）")
+      throw responseError(data: data, http: http)
     }
     guard let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any], let payload = envelope["data"] else { throw PrismAPIError.invalidResponse }
     return try JSONSerialization.data(withJSONObject: payload)
@@ -225,6 +237,25 @@ final class PrismAPI {
   }
 
   private func responseData(for request: URLRequest) async throws -> (Data, URLResponse) {
+    let path = request.url?.path ?? ""
+    let parts = path.split(separator: "/")
+    let ttl: TimeInterval?
+    if request.httpMethod == "GET", request.url?.query == nil {
+      if path == "/api/v1/me" { ttl = 1 }
+      else if parts.count >= 4 && parts.prefix(3).map(String.init) == ["api", "v1", "shops"] {
+        ttl = parts.count == 4 ? 30 : (parts.count == 6 && parts.suffix(2).map(String.init) == ["player", "me"] ? 1 : nil)
+      } else { ttl = nil }
+    } else { ttl = nil }
+    if let ttl, let key = request.url?.absoluteString {
+      return try await reads.read(key: key, ttl: ttl) { [self] in try await uncachedResponseData(for: request) }
+    }
+    let result = try await uncachedResponseData(for: request)
+    if request.httpMethod != "GET", !path.hasSuffix("/checkout/preview"), !path.hasSuffix("/machines/session/start"),
+       let http = result.1 as? HTTPURLResponse, 200..<300 ~= http.statusCode { await invalidateReads() }
+    return result
+  }
+
+  private func uncachedResponseData(for request: URLRequest) async throws -> (Data, URLResponse) {
     do { return try await session.data(for: request) }
     catch let error as URLError {
       guard Self.isRetryable(request), [.networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost].contains(error.code) else { throw error }
@@ -235,8 +266,7 @@ final class PrismAPI {
 
   /// Reads are always safe to repeat. `machines/session/start` is included because a cold
   /// launch regularly loses its first request while the radio is still coming up; that call
-  /// only mints a ticket, so a repeated attempt leaves an unused row that expires rather than
-  /// a charge. Billing and device actions stay out so they are never sent twice.
+  /// only mints an opaque ticket. Billing and device actions stay out so they are never sent twice.
   private static func isRetryable(_ request: URLRequest) -> Bool {
     if request.httpMethod == "GET" { return true }
     let path = request.url?.path ?? ""
@@ -263,16 +293,74 @@ final class PrismAPI {
       throw PrismAPIError.invalidResponse
     }
     guard 200..<300 ~= httpResponse.statusCode else {
-      if let error = try? decoder.decode(ServerError.self, from: data).error {
-        throw PrismAPIError.api(code: error.code, message: error.message)
-      }
-      throw PrismAPIError.http(status: httpResponse.statusCode, code: "", message: "请求失败（\(httpResponse.statusCode)）")
+      throw responseError(data: data, http: httpResponse)
     }
     do {
       return try decoder.decode(APIEnvelope<Response>.self, from: data).data
     } catch {
       throw PrismAPIError.invalidResponse
     }
+  }
+
+  private func responseError(data: Data, http: HTTPURLResponse) -> PrismAPIError {
+    let detail = try? decoder.decode(ServerError.self, from: data).error
+    let message = detail?.message ?? "请求失败（\(http.statusCode)）"
+    if let delay = Self.retryAfter(http.value(forHTTPHeaderField: "Retry-After")) {
+      return .limited(status: http.statusCode, code: detail?.code ?? "", message: message, retryAfter: delay)
+    }
+    return .http(status: http.statusCode, code: detail?.code ?? "", message: message)
+  }
+
+  static func retryAfter(_ value: String?, now: Date = Date()) -> TimeInterval? {
+    guard let value else { return nil }
+    if let seconds = Double(value), seconds.isFinite, seconds >= 0 { return seconds }
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+    guard let date = formatter.date(from: value) else { return nil }
+    return max(0, date.timeIntervalSince(now))
+  }
+}
+
+/// Shared subscribers never cancel another subscriber's transport. Failed responses are not cached.
+private actor PrismReadCache {
+  struct Entry { let id: UUID; let task: Task<(Data, URLResponse), Error>; var expires: Date? }
+  private var entries: [String: Entry] = [:]
+  func clear() { entries.removeAll() }
+  func read(key: String, ttl: TimeInterval, load: @escaping @Sendable () async throws -> (Data, URLResponse)) async throws -> (Data, URLResponse) {
+    let entry: Entry
+    if let existing = entries[key], existing.expires == nil || existing.expires! > Date() { entry = existing }
+    else {
+      if entries.count >= 100, let oldest = entries.keys.first { entries.removeValue(forKey: oldest) }
+      entry = Entry(id: UUID(), task: Task { try await load() }, expires: nil)
+      entries[key] = entry
+    }
+    do {
+      let result = try await entry.task.value
+      if entries[key]?.id == entry.id {
+        if let http = result.1 as? HTTPURLResponse, 200..<300 ~= http.statusCode {
+          if entries[key]?.expires == nil { entries[key]?.expires = Date().addingTimeInterval(ttl) }
+        } else { entries.removeValue(forKey: key) }
+      }
+      try Task.checkCancellation()
+      return result
+    } catch {
+      if !(error is CancellationError), entries[key]?.id == entry.id { entries.removeValue(forKey: key) }
+      throw error
+    }
+  }
+}
+
+struct PrismReadBackoff {
+  private(set) var failures = 0
+  private(set) var nextReadAt = Date.distantPast
+  func remaining(now: Date = Date()) -> TimeInterval { max(0, nextReadAt.timeIntervalSince(now)) }
+  mutating func succeed() { failures = 0; nextReadAt = .distantPast }
+  mutating func fail(retryAfter: TimeInterval? = nil, now: Date = Date(), random: Double = Double.random(in: 0...1)) {
+    failures = min(5, failures + 1)
+    let base: [TimeInterval] = [5, 10, 20, 30, 60]
+    let delay = max(retryAfter ?? 0, min(60, base[failures - 1] * (0.85 + random * 0.3)))
+    nextReadAt = now.addingTimeInterval(delay)
   }
 }
 
