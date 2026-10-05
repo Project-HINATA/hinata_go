@@ -526,10 +526,16 @@ enum PersistentCookieCheck {
     precondition(billFailure.billLoaded && billFailure.checkoutPreview != nil)
 
     let activating = MachineLoginViewModel(api: PrismAPI(configuration: config))
+    FixtureProtocol.holdNextIdentityResponse = true
     let opening = Task { await activating.handleResolvedInvocation(shopB) }
-    while activating.state != .loadingCards { await Task.yield() }
+    let activationDeadline = Date().addingTimeInterval(10)
+    while (activating.state != .loadingCards || FixtureProtocol.heldIdentityReply == nil) && Date() < activationDeadline {
+      try await Task.sleep(nanoseconds: 1_000_000)
+    }
+    precondition(activating.state == .loadingCards && FixtureProtocol.heldIdentityReply != nil, "Identity must still be loading")
     await activating.setSceneActive(false)
     await activating.setSceneActive(true)
+    let activationReply = FixtureProtocol.heldIdentityReply!; FixtureProtocol.heldIdentityReply = nil; activationReply()
     await opening.value
     precondition(activating.state == .ready && activating.checkoutPreview != nil,
                  "An activation transition during account loading must not strand the page")
