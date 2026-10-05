@@ -50,7 +50,7 @@ final class ScanCounts {
         precondition(request.url!.query!.contains("includePower=0"))
         return ok(["gate": "ready", "power": "unmanaged", "mahjong": ["capacity": 4, "seats": []]])
       case "/api/v1/devices/session/power": return ok(["power": "on"])
-      case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": false], "membership": NSNull(), "entryPricing": []])
+      case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": false, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": NSNull(), "entryPricing": []])
       case "/api/v1/auth/passkey": return ok(["ok": true])
       default: preconditionFailure("Unexpected path: \(path)")
       }
@@ -100,6 +100,7 @@ final class ScanCounts {
     await launch.value
     try await waitUntil { FixtureProtocol.heldPowerReply != nil }
     precondition(model.state == .ready && model.canUseCards && model.cards.count == 1)
+    precondition(model.playerStateLoaded && model.errorMessage == nil, "Initial context must decode and settle")
     try await Task.sleep(nanoseconds: 6_500_000_000)
     precondition(counts.read("/api/v1/devices/session/state") >= 2)
     precondition(counts.read("/api/v1/shops/store") == 1, "Shop reads: \(counts.read("/api/v1/shops/store"))")

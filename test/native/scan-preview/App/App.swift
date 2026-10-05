@@ -15,7 +15,7 @@ import SwiftUI
       case "/api/v1/cards": return ok(["cards": [["id": "card", "label": "测试 Aime", "accessCode": "01234567890123456789"]]])
       case "/api/v1/devices/session/state": return ok(["gate": "ready", "power": "unmanaged", "mahjong": ["capacity": 4, "seats": []]])
       case "/api/v1/devices/session/power": return ok(["power": "on"])
-      case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": false], "membership": NSNull(), "entryPricing": []])
+      case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": false, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": NSNull(), "entryPricing": []])
       default: return (404, ["error": ["code": "UNEXPECTED", "message": "Unexpected preview request"]])
       }
     }
