@@ -233,7 +233,7 @@ final class MachineLoginViewModel: ObservableObject {
       }
       userId = me.user!.id
       StoreVisitLiveActivityManager.shared.startPushToStartTracking(api: api)
-      await reloadCards()
+      await reloadCards(initialIdentity: me.user)
     } catch {
       guard version == invocationVersion else { return }
       fail(error)
@@ -340,14 +340,14 @@ final class MachineLoginViewModel: ObservableObject {
     } catch { guard version == invocationVersion else { return }; errorMessage = String(localized: "退出账号失败，请重试") }
   }
 
-  func reloadCards() async {
+  func reloadCards(initialIdentity: PrismUser? = nil) async {
     let api = self.api
     let version = invocationVersion
     state = .loadingCards
     errorMessage = nil
     do {
       readBackoff.succeed()
-      async let context: Void = refreshVisit(silent: true)
+      async let context: Void = refreshVisit(silent: true, initialIdentity: initialIdentity)
       if !isShopOnly {
         let response = try await api.cards()
         guard version == invocationVersion else { return }
@@ -444,7 +444,7 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  func refreshVisit(silent: Bool = false, dynamicOnly: Bool = false) async {
+  func refreshVisit(silent: Bool = false, dynamicOnly: Bool = false, initialIdentity: PrismUser? = nil) async {
     guard !checkoutCelebrating else { return }
     let api = self.api
     // Shop-only mode has no machine, so the machine gate cannot apply there.
@@ -498,9 +498,13 @@ final class MachineLoginViewModel: ObservableObject {
       var shop: PrismShopResponse
       let me: MeResponse
       if fullRead {
-        async let shopRead: PrismShopResponse = api.request(shopPath())
-        async let identityRead = api.me()
-        (shop, me) = try await (shopRead, identityRead)
+        if let initialIdentity {
+          shop = try await api.request(shopPath()); me = MeResponse(user: initialIdentity)
+        } else {
+          async let shopRead: PrismShopResponse = api.request(shopPath())
+          async let identityRead = api.me()
+          (shop, me) = try await (shopRead, identityRead)
+        }
         metadataReadAt = Date()
       } else {
         guard let currentShop = visit else { return }
