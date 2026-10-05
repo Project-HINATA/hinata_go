@@ -307,7 +307,10 @@ enum PersistentCookieCheck {
     precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
     // A player who has not verified with the Bot gets the binding explanation.
     member = false
+    let readsBeforeReplay = statusReads
     await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
+    precondition(statusReads == readsBeforeReplay, "A repeated link reuses fresh metadata")
+    await shopOnly.refreshVisit()
     precondition(shopOnly.visit?.membership == nil && !shopOnly.canUseShopSurface)
     precondition(shopOnly.playerStateLoaded, "Missing membership is a completed read, not a spinner")
     precondition(shopOnly.binding?.code == "ABC12345" && shopOnly.needsPlatformBinding, "Shop platform binding must reuse the machine flow")
@@ -382,7 +385,7 @@ enum PersistentCookieCheck {
     precondition(shopOnly.binding?.code == "ABC12345" && shopOnly.errorMessage == nil, "Failed generation must be retryable")
     // Admission comes from the machine flow, so the shop link reads the bill it opened.
     active = true
-    await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
+    await shopOnly.refreshVisit()
     precondition(shopOnly.shopHasActiveSession && shopOnly.shopBillingState == "计费中")
     precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil,
                  "An existing bill stays accessible when identity binding becomes required")
