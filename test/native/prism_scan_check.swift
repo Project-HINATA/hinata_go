@@ -16,6 +16,16 @@ final class ScanCounts {
   }
 
   @MainActor static func main() async throws {
+    for failure in [
+      PrismAPIError.api(code: "INSUFFICIENT_BALANCE", message: "legacy diagnostic"),
+      .http(status: 409, code: "INSUFFICIENT_BALANCE", message: "Insufficient currency holdings for this operation."),
+      .limited(status: 409, code: "INSUFFICIENT_BALANCE", message: "changed diagnostic", retryAfter: 60),
+    ] {
+      precondition(failure.errorDescription == "余额不足，请充值后重试")
+      precondition(failure.code == "INSUFFICIENT_BALANCE" && !failure.isSessionExpired && !failure.isTransientReadFailure)
+    }
+    let limited = PrismAPIError.limited(status: 409, code: "INSUFFICIENT_BALANCE", message: "internal", retryAfter: 60)
+    precondition(limited.status == 409 && limited.retryAfter == 60)
     let now = Date(timeIntervalSince1970: 1_700_000_000)
     var budget = PrismReadBackoff()
     for delay in [5.0, 10.0, 20.0, 30.0, 60.0, 60.0] {
