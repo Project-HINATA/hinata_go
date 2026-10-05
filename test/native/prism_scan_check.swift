@@ -35,6 +35,7 @@ final class ScanCounts {
     let origin = URL(string: "https://link-beta.neri.moe")!
     let api = PrismAPI(configuration: config, origin: origin)
     var unavailable = false
+    var stateLimited = false
     FixtureProtocol.handler = { request in
       let path = request.url!.path
       counts.increment(path)
@@ -47,6 +48,7 @@ final class ScanCounts {
         return ok(["ticket": "v1.opaque-ticket", "expiresIn": 300, "machine": ["publicId": "device", "name": "测试机台", "capabilities": ["card": true, "power": true, "mahjong": true], "shop": ["name": "测试店铺", "latitude": 35, "longitude": 139, "radiusMeters": 80, "machineGeo": false, "billingEnabled": false]]])
       case "/api/v1/cards": return ok(["cards": [["id": "card", "label": "测试 Aime", "accessCode": "01234567890123456789"]]])
       case "/api/v1/devices/session/state":
+        if stateLimited { return (429, ["error": ["code": "RATE_LIMITED", "message": "稍后重试"], "headers": ["Retry-After": "60"]]) }
         precondition(request.url!.query!.contains("includePower=0"))
         return ok(["gate": "ready", "power": "unmanaged", "mahjong": ["capacity": 4, "seats": []]])
       case "/api/v1/devices/session/power": return ok(["power": "on"])
@@ -112,6 +114,18 @@ final class ScanCounts {
     let beforeBackground = counts.read("/api/v1/devices/session/state")
     try await Task.sleep(nanoseconds: 3_300_000_000)
     precondition(counts.read("/api/v1/devices/session/state") == beforeBackground)
+    // Returning to the app or replaying the link must preserve the server cooldown.
+    await model.setSceneActive(true)
+    stateLimited = true
+    await model.refreshVisit(silent: true, dynamicOnly: true)
+    let limitedReads = counts.read("/api/v1/devices/session/state")
+    precondition(model.state == .ready && model.errorMessage == nil)
+    await model.setSceneActive(false)
+    await model.setSceneActive(true)
+    await model.handleResolvedInvocation(origin.appendingPathComponent("t/store/device"))
+    precondition(counts.read("/api/v1/devices/session/state") == limitedReads,
+                 "Foreground and link replay must respect Retry-After")
+    await model.setSceneActive(false)
     print("PRiSM scan checks passed: opaque fallback, error status, cache, first paint and isolated polling")
   }
 }
