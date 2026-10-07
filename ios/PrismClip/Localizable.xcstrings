@@ -3816,6 +3816,22 @@
           }
         }
       }
+    },
+    "余额不足，请充值后重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insufficient balance. Please top up and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "余额不足，请充值后重试"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

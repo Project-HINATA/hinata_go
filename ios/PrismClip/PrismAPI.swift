@@ -29,6 +29,9 @@ enum PrismAPIError: LocalizedError, PrismRetryAfterProviding {
   }
 
   var errorDescription: String? {
+    if code == "INSUFFICIENT_BALANCE" {
+      return String(localized: "余额不足，请充值后重试")
+    }
     switch self {
     case .invalidURL:
       return String(localized: "PRiSM 地址无效")

@@ -145,3 +145,7 @@ Typed and JSON error paths both retain HTTP status, structured code and `Retry-A
 The unsigned `test/native/scan-preview` simulator host compiles the production SwiftUI view with the same shared model/API and mocked OS/HTTP boundaries. Its UI tests hold /me or HA indefinitely and attach Chinese mobile screenshots to the `native-scan-preview` CI artifact. It uses only synthetic data and neither real NFC nor production requests.
 
 The persistent-cookie regression starts its real loopback HTTP fixture and waits for its port before running Swift; CI selects Python 3.13 to avoid relying on a runner’s developer-tool Python. Binding uses the loopback IP without a reverse-DNS lookup.
+
+### 余额不足提示
+
+Web 与 Swift（主 App / App Clip 共用 API 层）按 `INSUFFICIENT_BALANCE` 错误码显示本地化提示：中文“余额不足，请充值后重试”，英文“Insufficient balance. Please top up and try again.”。内部诊断文本变化不影响提示；HTTP 状态与错误码保留，余额不足不视为会话失效。结账被拒绝后保留当前账单和计费状态，不自动重发结账；充值后可手动重试，并使用新的操作 ID。

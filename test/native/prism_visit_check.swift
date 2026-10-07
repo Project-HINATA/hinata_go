@@ -178,7 +178,7 @@ enum PersistentCookieCheck {
       case "/api/v1/shops/store/player/checkout/latest": return ok(["receipt": lastReceipt ?? NSNull()])
       case "/api/v1/shops/store/player/checkout/confirm":
         checkoutIds.append(body["operationId"] as! String); checkoutCalls += 1
-        if checkoutCalls == 1 { return (400,["error":["code":"INSUFFICIENT_BALANCE","message":"余额不足"]]) }
+        if checkoutCalls == 1 { return (409,["error":["code":"INSUFFICIENT_BALANCE","message":"Insufficient currency holdings for this operation."]]) }
         if checkoutCalls == 2 { throw URLError(.networkConnectionLost) }
         active = false
         // Mirrors the real confirm payload; the success screen renders from this.
@@ -244,7 +244,10 @@ enum PersistentCookieCheck {
     let oldReceipt = try await model.loadCheckoutReceipt("bill:old")
     precondition(oldReceipt.wallet == nil && oldReceipt.timeline == nil && oldReceipt.playerSettlement.total == 12)
     await model.previewCheckout(); precondition(model.checkoutPreview?.settlementPreview.total == 12)
-    await model.checkout(); precondition(model.summary?.activeSession != nil)
+    await model.checkout()
+    precondition(model.errorMessage == "余额不足，请充值后重试")
+    precondition(model.summary?.activeSession != nil && model.checkoutPreview?.settlementPreview.total == 12)
+    precondition(model.state == .ready && model.ticket != nil && checkoutCalls == 1, "Balance rejection must retain the session without retrying checkout")
     await model.checkout(); await model.checkout()
     precondition(checkoutIds[0] != checkoutIds[1] && checkoutIds[1] == checkoutIds[2])
     precondition(model.summary?.activeSession == nil && model.checkoutPreview == nil)

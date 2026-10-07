@@ -3,11 +3,22 @@ import SwiftUI
 @main @MainActor struct ScanPreviewApp: App {
   @StateObject private var model: MachineLoginViewModel
   init() {
+    let checkout = ProcessInfo.processInfo.arguments.contains("checkout-insufficient")
     let authHeld = ProcessInfo.processInfo.arguments.contains("auth-held")
     FixtureProtocol.holdNextIdentityResponse = authHeld
-    FixtureProtocol.holdNextPowerResponse = !authHeld
+    FixtureProtocol.holdNextPowerResponse = !authHeld && !checkout
     FixtureProtocol.handler = { request in
       func ok(_ data: [String: Any]) -> (Int, [String: Any]) { (200, ["data": data]) }
+      if checkout {
+        switch request.url!.path {
+        case "/api/v1/me": return ok(["user": ["id": "u", "username": "test", "displayName": "测试玩家"]])
+        case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": true, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": ["playerId": "p", "identityBound": true], "entryPricing": []])
+        case "/api/v1/shops/store/player/me": return ok(["wallet": [], "activeSession": ["id": "visit", "startedAt": "2026-10-05T06:00:00Z"]])
+        case "/api/v1/shops/store/player/checkout/preview": return ok(["settlementPreview": ["total": 12], "chargeItems": [], "adjustments": []])
+        case "/api/v1/shops/store/player/checkout/confirm": return (409, ["error": ["code": "INSUFFICIENT_BALANCE", "message": "Insufficient currency holdings for this operation."]])
+        default: return ok([:])
+        }
+      }
       switch request.url!.path {
       case "/api/v1/me": return ok(["user": ["id": "u", "username": "test", "displayName": "测试玩家"]])
       case "/api/v1/machines/session/start":
@@ -26,7 +37,10 @@ import SwiftUI
   var body: some Scene {
     WindowGroup {
       MachineLoginView(presentsAppClipNotice: true).environmentObject(model)
-        .task { await model.handleResolvedInvocation(URL(string: "https://link.neri.moe/t/store/device")!) }
+        .task {
+          let path = ProcessInfo.processInfo.arguments.contains("checkout-insufficient") ? "store" : "store/device"
+          await model.handleResolvedInvocation(URL(string: "https://link.neri.moe/t/\(path)")!)
+        }
     }
   }
 }
