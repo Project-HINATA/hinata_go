@@ -54,3 +54,5 @@ jobs:
       - run: flutter pub get
       - run: dart format .
       - run: flutter analyze
+      - name: Test native shell platform-channel navigation
+        run: flutter test test/ui/app_action_real_router_test.dart --reporter expanded
