@@ -6,6 +6,8 @@
 
 推送到 `main` 仍只上传 TestFlight。手动运行可选择 `beta` 或 `production`；后者沿用现有 App Store 审核与发布流程。主 App、App Clip 和两个 Live Activity 扩展的签名及版本校验保持原流程。
 
+TestFlight 的版本为 `pubspec.yaml` 基础版本的补丁号加一，生产发布使用基础版本。基础版本现为 `2.7.1`，下一测试版为 `2.7.2`。App Store 审核通过后不能继续上传同版本测试包；如出现 `90186` / `90062`，应推进基础版本，再重新构建上传。再次发布生产版前也须先将基础版本提高到已获批版本之上。
+
 签名沿用仓库 Secrets：`IOS_ASC_KEY_ID`、`IOS_ASC_ISSUER_ID`、`IOS_ASC_KEY_P8_BASE64`、`IOS_SIGNING_P12_BASE64`、`IOS_SIGNING_P12_PASSWORD`。证书导入临时 keychain，API 私钥仅写入临时文件，结束时清理。私有插件仍使用 `LOCAL_PLUGINS_*` 与 `CARDCIPHER_*` Secrets 拉取。无需自托管 runner 的登录凭据、已有 provisioning profile 或本地 Flutter 安装。
 
 迁移前的失败运行已完成 archive，但在 exportArchive 写入 `.symbols` 文件时失败，并出现 Apple 接口 401；迁移后的导出及上传结果以新的 GitHub Actions 运行记录为准。
