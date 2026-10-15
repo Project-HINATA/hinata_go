@@ -45,6 +45,8 @@ struct StoreVisitDisplayModel {
 
   init(context: ActivityViewContext<StoreVisitAttributes>) {
     let state = context.state
+    let projected = state.projectedBill(isStale: context.isStale, now: .now)
+    let displayedBill = projected ?? state.bill
     let resolvedPhase: StoreVisitPhase
     if state.phase == "active" {
       resolvedPhase = state.endedAtUnix == nil ? .billing : .awaitingCheckout
@@ -54,20 +56,20 @@ struct StoreVisitDisplayModel {
     phase = resolvedPhase
     // Only explicit server state determines billing status; event labels are
     // presentation text and must not be used to infer pricing rules.
-    if resolvedPhase == .billing, state.bill?.billable == false {
+    if resolvedPhase == .billing, displayedBill?.billable == false {
       billingState = .paused
-    } else if resolvedPhase == .billing, state.bill?.remainingToCapCents == 0 {
+    } else if resolvedPhase == .billing, displayedBill?.remainingToCapCents == 0 {
       billingState = .capped
     } else {
       billingState = .metering
     }
-    isStale = context.isStale
+    isStale = context.isStale && projected == nil
     shopName = context.attributes.shopName
-    bill = state.bill
+    bill = displayedBill
     startedAt = Date(timeIntervalSince1970: state.startedAtUnix)
     endedAt = state.endedAtUnix.map(Date.init(timeIntervalSince1970:))
     nextEvent = Self.resolveNextEvent(
-      bill: state.bill, phase: resolvedPhase, isStale: context.isStale
+      bill: displayedBill, phase: resolvedPhase, isStale: isStale
     )
   }
 

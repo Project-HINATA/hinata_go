@@ -106,6 +106,18 @@ final class PrismAPI {
     await manager.unregisterAllPushTokens(api: api)
     precondition(api.startUnregistered && current.activityState == .ended)
     precondition(other.activityState == .active && !api.unregistered.contains(other.id))
+    api.snapshot = ["phase": "active", "startedAtUnix": 10, "nextCheckAtUnix": 160.25,
+      "bill": ["amountCents": 600, "planLabel": "", "asOfUnix": 110,
+        "nextEvent": ["atUnix": 160.25]],
+      "nextBill": ["amountCents": 800, "planLabel": "", "asOfUnix": 160.25]]
+    let preloaded = try Activity<StoreVisitAttributes>.request(attributes: activity.attributes,
+      content: .init(state: .init(phase: "active", startedAtUnix: 10, endedAtUnix: nil), staleDate: nil), pushType: .token)
+    await manager.reconcile(session: .init(id: "visit", startedAt: "2026-01-01T00:00:00Z"),
+      shopCode: "shop", shopName: "Shop", origin: api.baseURL, api: api)
+    precondition(preloaded.content.state.nextBill?.amountCents == 800)
+    precondition(preloaded.content.staleDate == Date(timeIntervalSince1970: 161))
+    await manager.finishCheckout(receipt: receipt, shopCode: "shop", api: api)
+    precondition(preloaded.content.state.nextBill == nil && preloaded.content.state.bill?.amountCents == 1234)
     print("Live Activity recovery, final receipt, and logout checks passed")
   }
 }

@@ -30,6 +30,7 @@ final class StoreVisitLiveActivityManager {
   private struct BillResponse: Decodable {
     let phase: String?
     let bill: StoreVisitAttributes.Bill?
+    let nextBill: StoreVisitAttributes.Bill?
     let nextCheckAtUnix: Double?
     let startedAtUnix: Double?
     let endedAtUnix: Double?
@@ -125,10 +126,10 @@ final class StoreVisitLiveActivityManager {
       // APNs owns background updates; ordinary screen refreshes must not poll billing.
       let needsBill = current == nil || current?.content.state.bill == nil || current?.activityState == .stale
       let billing: BillResponse? = needsBill ? try? await api.request("/api/v1/shops/\(shopCode)/player/live-activity/bill") : nil
-      let staleDate = billing?.nextCheckAtUnix.map { Date(timeIntervalSince1970: $0) }
+      let staleDate = billing?.nextCheckAtUnix.map { Date(timeIntervalSince1970: ceil($0)) }
       if let existing = activities.first(where: { $0.attributes.sessionId == session.id }) {
         if let bill = billing?.bill, bill.asOfUnix >= (existing.content.state.bill?.asOfUnix ?? 0), existing.activityState == .active || existing.activityState == .stale {
-          let state = StoreVisitAttributes.ContentState(phase: existing.content.state.phase, startedAtUnix: existing.content.state.startedAtUnix, endedAtUnix: billing?.endedAtUnix, bill: bill)
+          let state = StoreVisitAttributes.ContentState(phase: existing.content.state.phase, startedAtUnix: existing.content.state.startedAtUnix, endedAtUnix: billing?.endedAtUnix, bill: bill, nextBill: billing?.nextBill)
           await existing.update(ActivityContent(state: state, staleDate: staleDate))
         }
         // Already showing this visit (either created locally or remotely started via push-to-start).
@@ -160,7 +161,7 @@ final class StoreVisitLiveActivityManager {
         let activity = try Activity.request(
           attributes: StoreVisitAttributes(sessionId: session.id, shopCode: shopCode, shopName: shopName, origin: originValue),
           content: ActivityContent(
-            state: .init(phase: "active", startedAtUnix: startedAt.timeIntervalSince1970, endedAtUnix: billing?.endedAtUnix, bill: billing?.bill),
+            state: .init(phase: "active", startedAtUnix: startedAt.timeIntervalSince1970, endedAtUnix: billing?.endedAtUnix, bill: billing?.bill, nextBill: billing?.nextBill),
             staleDate: staleDate
           ),
           pushType: .token
@@ -406,13 +407,14 @@ final class StoreVisitLiveActivityManager {
             let phase = snapshot.phase, let bill = snapshot.bill,
             let startedAt = snapshot.startedAtUnix else { return }
       let state = StoreVisitAttributes.ContentState(
-        phase: phase, startedAtUnix: startedAt, endedAtUnix: snapshot.endedAtUnix, bill: bill
+        phase: phase, startedAtUnix: startedAt, endedAtUnix: snapshot.endedAtUnix, bill: bill,
+        nextBill: phase == "active" ? snapshot.nextBill : nil
       )
       if phase == "ended", snapshot.endedAtUnix != nil {
         await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .after(Date().addingTimeInterval(60)))
         await reportUnregister(activity, api: api)
       } else if phase == "active", bill.asOfUnix >= (activity.content.state.bill?.asOfUnix ?? 0) {
-        await activity.update(ActivityContent(state: state, staleDate: snapshot.nextCheckAtUnix.map(Date.init(timeIntervalSince1970:))))
+        await activity.update(ActivityContent(state: state, staleDate: snapshot.nextCheckAtUnix.map { Date(timeIntervalSince1970: ceil($0)) }))
         ensureTokenTracking(for: activity, fallbackAPI: api)
       }
     } catch {

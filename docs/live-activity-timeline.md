@@ -28,6 +28,14 @@ Swift 实现位于 `ios/LiveActivityShared/StoreVisitActivityView.swift`，由�
 
 在 `Bill` 上增加可选 `previousEvent`，复用 `{ atUnix, label? }` 结构。旧 push 和 REST 响应缺少该字段仍可解码。管理器直接解码共享 Bill，不需要另一套转换。
 
+### 下一节点预载
+
+`ContentState` 和账单 REST 响应新增可选 `nextBill`，复用 `Bill`。后端在当前节点之前计算并发送下一节点账单；`nextBill.asOfUnix` 必须精确匹配当前 `bill.nextEvent.atUnix`。客户端不复刻定价、不外推金额。系统到 `staleDate` 切换 `isStale` 后，仍在计费中的活动可改为显示这个预载快照，状态与普通账单一致，不添加“预计”或近似符号，并以预载的上一／下一事件继续显示时间轴和系统倒计时。App 不需要运行，也不在到点时调用本地更新。
+
+每份数据最多预载一个节点；后台低优先级推送继续补充下一份。若补充没有到达，保留最后一个预载金额，倒计时最多归零，不自动计算更多费用。资产、优惠、子会话或人工调整等业务变更通过高优先级推送覆盖预载内容。结束计费／已付款状态优先，不论旧数据中是否仍残留 `nextBill`，均不能启用预测。旧响应无此字段时保留原有 stale 行为。本地创建、REST 恢复与远端推送的过期时间均向上取整，不能先于带毫秒的真实节点触发。
+
+`PreloadedBilling` XCUITest 使用生产共享视图和真实 ActivityKit 活动：后台静置两分钟、不调用 update、不发送新推送，验证锁屏从 ¥24 切到 ¥26，并验证 compact／expanded 与结账覆盖。运行 `ISLAND_PREVIEW_TEST=IslandPreviewTests/PreloadedBilling`；原生 Codable 与 manager 检查覆盖旧载荷、提前过期、错配节点和最终账单覆盖。模拟器验证不代表真实 APNs 网络投递时延。
+
 ```json
 {
   "amountCents": 6000,
@@ -41,7 +49,7 @@ Swift 实现位于 `ios/LiveActivityShared/StoreVisitActivityView.swift`，由�
 
 同级 `PRiSM/packages/platform/src/live-activity-billing.ts` 已为快照接口和 APNs content-state 增加 **previousEvent**，通过共享计费引擎恢复最近收费、规则或会话节点，覆盖宽限、暂停与单方案/全局封顶；刷新时间不参与事件计算。需要发布后端修改才能在远端环境生效。旧后端或旧载荷缺少该字段时，上一事件时间显示「待更新」，右半轴不绘制比例，compact 显示时钟图标。禁止将 `asOfUnix`、本机刷新时间或未确认的过期 nextEvent 当成上一事件。
 
-只有 `入场 <= 上一事件 <= 当前 < 下一事件` 且数据未 stale 时才显示时间进度。过期数据不继续倒计时；金额只随服务端确认更新，不根据本机计时自行增加。
+只有 `入场 <= 上一事件 <= 当前 < 下一事件` 且数据未 stale 时才显示时间进度。没有匹配预载快照的过期数据不继续倒计时；金额只使用服务端快照（包括到点启用的 nextBill），不根据本机计时自行计算。
 
 ## 系统计时与设计差异
 

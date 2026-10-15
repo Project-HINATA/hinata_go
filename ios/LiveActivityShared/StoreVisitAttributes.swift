@@ -7,6 +7,16 @@ struct StoreVisitAttributes: ActivityAttributes {
     let startedAtUnix: Double
     let endedAtUnix: Double?
     var bill: Bill? = nil
+    /// One server-calculated forecast, activated by the system's stale-date.
+    var nextBill: Bill? = nil
+
+    func projectedBill(isStale: Bool, now: Date) -> Bill? {
+      guard phase == "active", endedAtUnix == nil, isStale,
+        let bill, let nextBill, let boundary = bill.nextEvent?.atUnix,
+        boundary.isFinite, boundary > bill.asOfUnix,
+        nextBill.asOfUnix == boundary, now.timeIntervalSince1970 >= boundary else { return nil }
+      return nextBill
+    }
   }
 
   struct Bill: Codable, Hashable {
@@ -20,9 +30,8 @@ struct StoreVisitAttributes: ActivityAttributes {
     // payloads simply lack these keys (decoded as nil), and older extensions
     // ignore them, so both directions stay wire compatible. The server owns
     // the pricing rules; Swift only renders what it is told. Every value is
-    // "as of the last push" — the backend re-pushes at every boundary that
-    // changes them (rule switches, cap-window switches, anchor rollovers,
-    // charge points), so no horizon bookkeeping lives on this side.
+    // "as of the last push" or the single preloaded forecast. The server owns
+    // every calculation; the extension never extrapolates a rate.
     /// Amount still chargeable before the effective cap, min over the caps in
     /// force at push time; 0 means capped.
     var remainingToCapCents: Int? = nil

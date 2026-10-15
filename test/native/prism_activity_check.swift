@@ -6,6 +6,7 @@ import SwiftUI
     let legacy = Data(#"{"phase":"active","startedAtUnix":100,"endedAtUnix":null}"#.utf8)
     let oldState = try JSONDecoder().decode(StoreVisitAttributes.ContentState.self, from: legacy)
     precondition(oldState.bill == nil)
+    precondition(oldState.nextBill == nil)
     // Legacy payloads without the aggregate keys decode with nils.
     let legacyBill = try JSONDecoder().decode(StoreVisitAttributes.Bill.self, from: Data(
       #"{"amountCents":600,"planLabel":"","asOfUnix":100}"#.utf8))
@@ -64,6 +65,26 @@ import SwiftUI
     precondition(data.count < 4096)
     let decoded = try JSONDecoder().decode(StoreVisitAttributes.ContentState.self, from: data)
     precondition(decoded == state)
+    let forecast = StoreVisitAttributes.Bill(amountCents: 800, planLabel: "", asOfUnix: 160,
+      nextEvent: .init(atUnix: 280), previousEvent: .init(atUnix: 160))
+    var preloaded = state
+    preloaded.bill = richBill
+    preloaded.nextBill = forecast
+    precondition(preloaded.projectedBill(isStale: false, now: Date(timeIntervalSince1970: 160)) == nil)
+    precondition(preloaded.projectedBill(isStale: true, now: Date(timeIntervalSince1970: 159)) == nil)
+    precondition(preloaded.projectedBill(isStale: true, now: Date(timeIntervalSince1970: 160)) == forecast)
+    // A forecast is one fixed server snapshot, never an extrapolated rate.
+    precondition(preloaded.projectedBill(isStale: true, now: Date(timeIntervalSince1970: 500)) == forecast)
+    let roundTrip = try JSONDecoder().decode(StoreVisitAttributes.ContentState.self,
+      from: JSONEncoder().encode(preloaded))
+    precondition(roundTrip.nextBill == forecast)
+    preloaded = .init(phase: "active", startedAtUnix: 100, endedAtUnix: 150, bill: richBill, nextBill: forecast)
+    precondition(preloaded.projectedBill(isStale: true, now: Date(timeIntervalSince1970: 160)) == nil)
+    preloaded = .init(phase: "ended", startedAtUnix: 100, endedAtUnix: 150, bill: richBill, nextBill: forecast)
+    precondition(preloaded.projectedBill(isStale: true, now: Date(timeIntervalSince1970: 160)) == nil)
+    preloaded = .init(phase: "active", startedAtUnix: 100, endedAtUnix: nil, bill: richBill,
+      nextBill: .init(amountCents: 800, planLabel: "", asOfUnix: 161))
+    precondition(preloaded.projectedBill(isStale: true, now: Date(timeIntervalSince1970: 160)) == nil)
     print("Live Activity countdown and compatibility checks passed")
   }
 }
