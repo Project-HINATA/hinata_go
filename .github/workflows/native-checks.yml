@@ -41,6 +41,34 @@ jobs:
           path: |
             ${{ runner.temp }}/scan-screenshots
             ${{ runner.temp }}/scan-build.log
+  ipad-runner:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26.5
+        run: sudo xcode-select --switch /Applications/Xcode_26.5.app/Contents/Developer
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build and test actual Runner on an iPad simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build ios --simulator --debug --no-codesign
+          simulator=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for group in json.load(sys.stdin)["devices"].values() for d in group if d["name"].startswith("iPad") and d["isAvailable"]))')
+          xcrun simctl boot "$simulator" || true
+          xcrun simctl bootstatus "$simulator" -b
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -destination "platform=iOS Simulator,id=$simulator" -parallel-testing-enabled NO -derivedDataPath "$RUNNER_TEMP/ipad-runner-derived" -resultBundlePath "$RUNNER_TEMP/ipad-runner.xcresult" CODE_SIGNING_ALLOWED=NO test > "$RUNNER_TEMP/ipad-runner-build.log" 2>&1 || { tail -160 "$RUNNER_TEMP/ipad-runner-build.log"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ipad-runner-tests
+          path: ${{ runner.temp }}/ipad-runner-build.log
+
   flutter:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -54,3 +82,5 @@ jobs:
       - run: flutter pub get
       - run: dart format .
       - run: flutter analyze
+      - name: Test native shell platform-channel navigation
+        run: flutter test test/ui/app_action_real_router_test.dart --reporter expanded
