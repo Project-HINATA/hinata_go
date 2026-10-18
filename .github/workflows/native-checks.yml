@@ -3,9 +3,11 @@ on:
   pull_request:
 permissions:
   contents: read
+env:
+  DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
 jobs:
   swift:
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +22,7 @@ jobs:
       - run: sh test/native/run-prism-visit-check.sh
         if: always()
   simulator:
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4

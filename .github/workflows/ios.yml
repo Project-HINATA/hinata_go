@@ -24,10 +24,10 @@ concurrency:
 jobs:
   publish:
     name: Build and publish iOS
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 60
     env:
-      DEVELOPER_DIR: /Applications/Xcode_26.5.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
       IOS_BUNDLE_ID: moe.neri.hinatago
       IOS_ASC_KEY_ID: ${{ secrets.IOS_ASC_KEY_ID }}
       IOS_ASC_ISSUER_ID: ${{ secrets.IOS_ASC_ISSUER_ID }}
