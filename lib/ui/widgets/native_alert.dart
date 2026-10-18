@@ -1,5 +1,7 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+
+import 'app_scaffold.dart';
 
 import '../../l10n/l10n.dart';
 
@@ -99,4 +101,140 @@ Future<String?> showNativeTextInput(
       ),
     ],
   );
+}
+
+/// A labelled choice in a [NativeChoiceField].
+class NativeChoice<T> {
+  const NativeChoice({required this.label, required this.value});
+
+  final String label;
+  final T value;
+}
+
+/// A form field that picks one value from the native iOS menu, or a Material
+/// dropdown elsewhere.
+///
+/// Dropdowns from the Material library open a Flutter overlay that can end up
+/// under the fixed iOS toolbar; a native menu is presented by UIKit above
+/// everything, so it never collides with the bar.
+class NativeChoiceField<T> extends StatelessWidget {
+  const NativeChoiceField({
+    super.key,
+    required this.label,
+    required this.options,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final String label;
+  final List<NativeChoice<T>> options;
+  final T selected;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!useCupertinoChrome) {
+      return DropdownButtonFormField<T>(
+        isExpanded: true,
+        initialValue: selected,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        items: [
+          for (final option in options)
+            DropdownMenuItem(value: option.value, child: Text(option.label)),
+        ],
+        onChanged: (value) {
+          if (value != null) onChanged(value);
+        },
+      );
+    }
+
+    return _NativeChoiceRow<T>(
+      label: label,
+      options: options,
+      selected: selected,
+      onChanged: onChanged,
+    );
+  }
+}
+
+/// The iOS rendering of [NativeChoiceField]: the field's label above a row
+/// that opens the native menu and shows the current choice. The whole row is
+/// the menu button, so it is as easy to hit as the Material dropdown it
+/// replaces.
+class _NativeChoiceRow<T> extends StatelessWidget {
+  const _NativeChoiceRow({
+    required this.label,
+    required this.options,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final String label;
+  final List<NativeChoice<T>> options;
+  final T selected;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final current = options
+        .where((option) => option.value == selected)
+        .firstOrNull;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ),
+        AdaptivePopupMenuButton.widget<T>(
+          items: [
+            for (final option in options)
+              AdaptivePopupMenuItem<T>(
+                label: option.label,
+                value: option.value,
+                selected: option.value == selected,
+              ),
+          ],
+          onSelected: (index, item) {
+            final value = item.value;
+            if (value is T) onChanged(value);
+          },
+          child: Container(
+            height: 48,
+            padding: const EdgeInsets.only(left: 12, right: 8),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    current?.label ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+                Icon(
+                  Icons.unfold_more,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

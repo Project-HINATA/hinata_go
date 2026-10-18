@@ -16,18 +16,26 @@ import '../ui/pages/scan_logs_page.dart';
 import '../ui/pages/scan_page.dart';
 import '../ui/pages/settings_page.dart';
 import '../ui/adaptive_tab_shell.dart';
+import '../ui/native_hosted_scaffold.dart';
 import '../ui/scaffold_with_navbar.dart';
+import '../ui/shell_state_sync.dart';
 import '../ui/widgets/animated_branch_container.dart';
 import '../ui/widgets/app_scaffold.dart';
+import '../core/app_host_mode.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
 );
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final hostMode = ref.watch(appHostModeProvider);
+  final usesNativeShell = hostMode == AppHostMode.nativeIOS;
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/scan',
+    observers: usesNativeShell
+        ? [ref.watch(nativeShellNavigatorObserverProvider)]
+        : null,
     routes: [
       GoRoute(
         path: '/camera',
@@ -58,18 +66,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ScanLogsPage(),
       ),
       StatefulShellRoute(
+        // Branch navigators must not forward their events to the root
+        // observer: the native shell tracks the root navigator's stack.
+        notifyRootObserver: false,
         navigatorContainerBuilder: (context, navigationShell, children) {
           return AnimatedBranchContainer(
             currentIndex: navigationShell.currentIndex,
-            axis: useCupertinoChrome
-                ? Axis.horizontal
-                : context.appLayout.useRailNavigation
-                ? Axis.vertical
-                : Axis.horizontal,
+            axis: navigationTransitionAxis(
+              context,
+              useRail: context.appLayout.useRailNavigation,
+            ),
             children: children,
           );
         },
         builder: (context, state, navigationShell) {
+          if (usesNativeShell) {
+            return NativeHostedScaffold(navigationShell: navigationShell);
+          }
           return useCupertinoChrome
               ? AdaptiveTabShell(navigationShell: navigationShell)
               : ScaffoldWithNavBar(navigationShell: navigationShell);

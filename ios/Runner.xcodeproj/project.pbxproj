@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,9 +13,11 @@
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		40A355512C794E78A542B262 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E4FBE53FF24A51BEABF086 /* Models.swift */; };
 		4EFBD8768DB3455FB7560F91 /* InvocationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE5A12DC74545CC94497385 /* InvocationParser.swift */; };
-		B1C00000000000000000000B /* InvocationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C00000000000000000000C /* InvocationRouter.swift */; };
+		73B2D78D30849B6300249196 /* ../LiveActivityShared/StoreVisitAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000B /* ../LiveActivityShared/StoreVisitAttributes.swift */; };
+		73B2D78E30849B6300249196 /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000C /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift */; };
+		73B2D78F30849B6300249196 /* MachineLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6B19610946F463EA0AA012F /* MachineLoginView.swift */; };
+		73B2D79030849B6300249196 /* MachineLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF6F6518A13450E81934F3B /* MachineLoginViewModel.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
-		C1C000000000000000000009 /* NativeShellBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C000000000000000000009 /* NativeShellBridge.swift */; };
 		74DE941C77D94C35809D93CD /* MachineLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF6F6518A13450E81934F3B /* MachineLoginViewModel.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
@@ -37,23 +39,25 @@
 		B1C000000000000000000006 /* MunetAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000002 /* MunetAuthenticationService.swift */; };
 		B1C000000000000000000007 /* PasskeyAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */; };
 		B1C000000000000000000008 /* InvocationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE5A12DC74545CC94497385 /* InvocationParser.swift */; };
+		B1C00000000000000000000B /* InvocationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C00000000000000000000C /* InvocationRouter.swift */; };
 		B1C00000000000000000000D /* InvocationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C00000000000000000000C /* InvocationRouter.swift */; };
+		C1C000000000000000000009 /* NativeShellBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C000000000000000000009 /* NativeShellBridge.swift */; };
+		C1C00000000000000000000A /* NativeShellViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C00000000000000000000A /* NativeShellViewController.swift */; };
+		C1C00000000000000000000B /* ../LiveActivityShared/StoreVisitAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000B /* ../LiveActivityShared/StoreVisitAttributes.swift */; };
+		C1C00000000000000000000C /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000C /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift */; };
+		C1C00000000000000000000F /* LiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000F /* LiveActivityBundle.swift */; };
+		C1C000000000000000000010 /* LiveActivityShared/StoreVisitAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000018 /* LiveActivityShared/StoreVisitAttributes.swift */; };
+		C1C000000000000000000011 /* LiveActivityShared/StoreVisitActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000019 /* LiveActivityShared/StoreVisitActivityView.swift */; };
+		C1C000000000000000000012 /* LiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000012 /* LiveActivityBundle.swift */; };
+		C1C000000000000000000013 /* LiveActivityShared/StoreVisitAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000018 /* LiveActivityShared/StoreVisitAttributes.swift */; };
+		C1C000000000000000000014 /* LiveActivityShared/StoreVisitActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000019 /* LiveActivityShared/StoreVisitActivityView.swift */; };
+		C1C000000000000000000015 /* HINATALiveActivityExtension.appex in Embed HINATA Live Activity */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000016 /* HINATALiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1C000000000000000000016 /* PrismClipLiveActivityExtension.appex in Embed PrismClip Live Activity */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000017 /* PrismClipLiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1C000000000000000000017 /* ../LiveActivityShared/Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000001A /* ../LiveActivityShared/Localizable.xcstrings */; };
+		C1C000000000000000000018 /* ../LiveActivityShared/Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000001B /* ../LiveActivityShared/Localizable.xcstrings */; };
 		CDC41510304F0F2B000BCB4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		E0C7EC6A900846209454DF9E /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF425FBD0BA44528796FEA8 /* LocationService.swift */; };
 		E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */; };
-		C1C00000000000000000000B /* StoreVisitAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000B /* StoreVisitAttributes.swift */; };
-		C1C00000000000000000000C /* StoreVisitLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000C /* StoreVisitLiveActivityManager.swift */; };
-		C1C00000000000000000000E /* StoreVisitActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000E /* StoreVisitActivityView.swift */; };
-		C1C00000000000000000000F /* HINATALiveActivityExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000000F /* HINATALiveActivityExtension.swift */; };
-		C1C000000000000000000010 /* StoreVisitAttributes.swift in HINATA Extension */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000018 /* Extension StoreVisitAttributes.swift */; };
-		C1C000000000000000000011 /* StoreVisitActivityView.swift in HINATA Extension */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000019 /* Extension StoreVisitActivityView.swift */; };
-		C1C000000000000000000012 /* PrismClipLiveActivityExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000012 /* PrismClipLiveActivityExtension.swift */; };
-		C1C000000000000000000013 /* StoreVisitAttributes.swift in PrismClip Extension */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000018 /* Extension StoreVisitAttributes.swift */; };
-		C1C000000000000000000014 /* StoreVisitActivityView.swift in PrismClip Extension */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000019 /* Extension StoreVisitActivityView.swift */; };
-		C1C000000000000000000017 /* Localizable.xcstrings in HINATA Extension */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000001A /* HINATA Extension Localizable.xcstrings */; };
-		C1C000000000000000000018 /* Localizable.xcstrings in PrismClip Extension */ = {isa = PBXBuildFile; fileRef = C2C00000000000000000001B /* PrismClip Extension Localizable.xcstrings */; };
-		C1C000000000000000000015 /* HINATA Extension in Runner */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000016 /* HINATALiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C1C000000000000000000016 /* PrismClip Extension in App Clip */ = {isa = PBXBuildFile; fileRef = C2C000000000000000000017 /* PrismClipLiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,7 +105,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				C1C000000000000000000015 /* HINATA Extension in Runner */,
+				C1C000000000000000000015 /* HINATALiveActivityExtension.appex in Embed HINATA Live Activity */,
 			);
 			name = "Embed HINATA Live Activity";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -112,7 +116,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				C1C000000000000000000016 /* PrismClip Extension in App Clip */,
+				C1C000000000000000000016 /* PrismClipLiveActivityExtension.appex in Embed PrismClip Live Activity */,
 			);
 			name = "Embed PrismClip Live Activity";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -123,14 +127,12 @@
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		1CE5A12DC74545CC94497385 /* InvocationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationParser.swift; sourceTree = "<group>"; };
-		B1C00000000000000000000C /* InvocationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationRouter.swift; sourceTree = "<group>"; };
 		29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismURLBridge.swift; sourceTree = "<group>"; };
 		2A1C00000000000000000002 /* MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MunetAuthenticationService.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		3B3967171E833CAA004F5970 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
-		E1C000000000000000000001 /* PrismClipLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrismClipLiveActivity.entitlements; sourceTree = "<group>"; };
 		528A9C250BB7499AA1C86919 /* PrismClip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrismClip.entitlements; sourceTree = "<group>"; };
 		5FF425FBD0BA44528796FEA8 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		5FF6F6518A13450E81934F3B /* MachineLoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineLoginViewModel.swift; sourceTree = "<group>"; };
@@ -138,7 +140,6 @@
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		B1C000000000000000000009 /* NativeShellBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeShellBridge.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		95064489658D45939E5DA68D /* PrismClipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismClipApp.swift; sourceTree = "<group>"; };
@@ -156,23 +157,26 @@
 		AA1100000000000000000011 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		AA1100000000000000000012 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		AA1100000000000000000013 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		B1C000000000000000000009 /* NativeShellBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeShellBridge.swift; sourceTree = "<group>"; };
+		B1C00000000000000000000A /* NativeShellViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeShellViewController.swift; sourceTree = "<group>"; };
+		B1C00000000000000000000C /* InvocationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationRouter.swift; sourceTree = "<group>"; };
+		C2C00000000000000000000B /* ../LiveActivityShared/StoreVisitAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LiveActivityShared/StoreVisitAttributes.swift; sourceTree = "<group>"; };
+		C2C00000000000000000000C /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LiveActivityShared/StoreVisitLiveActivityManager.swift; sourceTree = "<group>"; };
+		C2C00000000000000000000F /* LiveActivityBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityBundle.swift; sourceTree = "<group>"; };
+		C2C000000000000000000010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C2C000000000000000000012 /* LiveActivityBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityBundle.swift; sourceTree = "<group>"; };
+		C2C000000000000000000013 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C2C000000000000000000016 /* HINATALiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HINATALiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C2C000000000000000000017 /* PrismClipLiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PrismClipLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C2C000000000000000000018 /* LiveActivityShared/StoreVisitAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityShared/StoreVisitAttributes.swift; sourceTree = "<group>"; };
+		C2C000000000000000000019 /* LiveActivityShared/StoreVisitActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityShared/StoreVisitActivityView.swift; sourceTree = "<group>"; };
+		C2C00000000000000000001A /* ../LiveActivityShared/Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = ../LiveActivityShared/Localizable.xcstrings; sourceTree = "<group>"; };
+		C2C00000000000000000001B /* ../LiveActivityShared/Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = ../LiveActivityShared/Localizable.xcstrings; sourceTree = "<group>"; };
 		D1C000000000000000000001 /* ../PrismClip/PrismAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/PrismAPI.swift; sourceTree = "<group>"; };
 		D1C000000000000000000002 /* ../PrismClip/LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/LocationService.swift; sourceTree = "<group>"; };
 		D1C000000000000000000003 /* ../PrismClip/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/Models.swift; sourceTree = "<group>"; };
 		D1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/MunetAuthenticationService.swift; sourceTree = "<group>"; };
-		C2C00000000000000000000B /* StoreVisitAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LiveActivityShared/StoreVisitAttributes.swift; sourceTree = "<group>"; };
-		C2C00000000000000000000C /* StoreVisitLiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LiveActivityShared/StoreVisitLiveActivityManager.swift; sourceTree = "<group>"; };
-		C2C00000000000000000000E /* StoreVisitActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LiveActivityShared/StoreVisitActivityView.swift; sourceTree = "<group>"; };
-		C2C00000000000000000000F /* HINATALiveActivityExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityBundle.swift; sourceTree = "<group>"; };
-		C2C000000000000000000010 /* HINATA Extension Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C2C000000000000000000012 /* PrismClipLiveActivityExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityBundle.swift; sourceTree = "<group>"; };
-		C2C000000000000000000013 /* PrismClip Extension Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C2C000000000000000000016 /* HINATALiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HINATALiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		C2C000000000000000000017 /* PrismClipLiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PrismClipLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		C2C000000000000000000018 /* Extension StoreVisitAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityShared/StoreVisitAttributes.swift; sourceTree = "<group>"; };
-		C2C000000000000000000019 /* Extension StoreVisitActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityShared/StoreVisitActivityView.swift; sourceTree = "<group>"; };
-		C2C00000000000000000001A /* HINATA Extension Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = ../LiveActivityShared/Localizable.xcstrings; sourceTree = "<group>"; };
-		C2C00000000000000000001B /* PrismClip Extension Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = ../LiveActivityShared/Localizable.xcstrings; sourceTree = "<group>"; };
+		E1C000000000000000000001 /* PrismClipLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrismClipLiveActivity.entitlements; sourceTree = "<group>"; };
 		FA100BF03C7C425DBFABB85A /* PRiSM Link.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PRiSM Link.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -192,21 +196,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C4C00000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C4C00000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E46BFC5D0B96D337E7816673 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C4C00000000000000000001 /* HINATA Extension Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C4C00000000000000000002 /* PrismClip Extension Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -227,8 +231,8 @@
 		5E2F2F514F92411DB9A621D6 /* PrismClip */ = {
 			isa = PBXGroup;
 			children = (
-				C2C00000000000000000000B /* StoreVisitAttributes.swift */,
-				C2C00000000000000000000C /* StoreVisitLiveActivityManager.swift */,
+				C2C00000000000000000000B /* ../LiveActivityShared/StoreVisitAttributes.swift */,
+				C2C00000000000000000000C /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift */,
 				95064489658D45939E5DA68D /* PrismClipApp.swift */,
 				AA1100000000000000000011 /* Localizable.xcstrings */,
 				AA1100000000000000000012 /* InfoPlist.xcstrings */,
@@ -247,32 +251,20 @@
 			path = PrismClip;
 			sourceTree = "<group>";
 		};
+		73B2D79130849B6300249196 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				C2C000000000000000000018 /* LiveActivityShared/StoreVisitAttributes.swift */,
+				C2C000000000000000000019 /* LiveActivityShared/StoreVisitActivityView.swift */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		77720948BB04B7975B2E6226 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
 			);
 			path = Pods;
-			sourceTree = "<group>";
-		};
-		C3C00000000000000000001 /* HINATALiveActivityExtension */ = {
-			isa = PBXGroup;
-			children = (
-				C2C00000000000000000000F /* HINATALiveActivityExtension.swift */,
-				C2C000000000000000000010 /* HINATA Extension Info.plist */,
-				C2C00000000000000000001A /* HINATA Extension Localizable.xcstrings */,
-			);
-			path = HINATALiveActivityExtension;
-			sourceTree = "<group>";
-		};
-		C3C00000000000000000002 /* PrismClipLiveActivityExtension */ = {
-			isa = PBXGroup;
-			children = (
-				C2C000000000000000000012 /* PrismClipLiveActivityExtension.swift */,
-				C2C000000000000000000013 /* PrismClip Extension Info.plist */,
-				C2C00000000000000000001B /* PrismClip Extension Localizable.xcstrings */,
-			
-				E1C000000000000000000001 /* PrismClipLiveActivity.entitlements */,);
-			path = PrismClipLiveActivityExtension;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -298,6 +290,7 @@
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				77720948BB04B7975B2E6226 /* Pods */,
+				73B2D79130849B6300249196 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -326,6 +319,7 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				B1C000000000000000000009 /* NativeShellBridge.swift */,
+				B1C00000000000000000000A /* NativeShellViewController.swift */,
 				29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */,
 				AA1100000000000000000013 /* InfoPlist.xcstrings */,
 				D1C000000000000000000001 /* ../PrismClip/PrismAPI.swift */,
@@ -335,6 +329,27 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		C3C00000000000000000001 /* HINATALiveActivityExtension */ = {
+			isa = PBXGroup;
+			children = (
+				C2C00000000000000000000F /* LiveActivityBundle.swift */,
+				C2C000000000000000000010 /* Info.plist */,
+				C2C00000000000000000001A /* ../LiveActivityShared/Localizable.xcstrings */,
+			);
+			path = HINATALiveActivityExtension;
+			sourceTree = "<group>";
+		};
+		C3C00000000000000000002 /* PrismClipLiveActivityExtension */ = {
+			isa = PBXGroup;
+			children = (
+				C2C000000000000000000012 /* LiveActivityBundle.swift */,
+				C2C000000000000000000013 /* Info.plist */,
+				C2C00000000000000000001B /* ../LiveActivityShared/Localizable.xcstrings */,
+				E1C000000000000000000001 /* PrismClipLiveActivity.entitlements */,
+			);
+			path = PrismClipLiveActivityExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -404,14 +419,16 @@
 		};
 		C8C00000000000000000001 /* HINATALiveActivityExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C9C00000000000000000001 /* HINATA Extension Configurations */;
+			buildConfigurationList = C9C00000000000000000001 /* Build configuration list for PBXNativeTarget "HINATALiveActivityExtension" */;
 			buildPhases = (
-				C6C00000000000000000001 /* HINATA Extension Sources */,
-				C4C00000000000000000001 /* HINATA Extension Frameworks */,
-				C5C00000000000000000001 /* HINATA Extension Resources */,
+				C6C00000000000000000001 /* Sources */,
+				C4C00000000000000000001 /* Frameworks */,
+				C5C00000000000000000001 /* Resources */,
 			);
-			buildRules = ();
-			dependencies = ();
+			buildRules = (
+			);
+			dependencies = (
+			);
 			name = HINATALiveActivityExtension;
 			productName = HINATALiveActivityExtension;
 			productReference = C2C000000000000000000016 /* HINATALiveActivityExtension.appex */;
@@ -419,14 +436,16 @@
 		};
 		C8C00000000000000000002 /* PrismClipLiveActivityExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C9C00000000000000000002 /* PrismClip Extension Configurations */;
+			buildConfigurationList = C9C00000000000000000002 /* Build configuration list for PBXNativeTarget "PrismClipLiveActivityExtension" */;
 			buildPhases = (
-				C6C00000000000000000002 /* PrismClip Extension Sources */,
-				C4C00000000000000000002 /* PrismClip Extension Frameworks */,
-				C5C00000000000000000002 /* PrismClip Extension Resources */,
+				C6C00000000000000000002 /* Sources */,
+				C4C00000000000000000002 /* Frameworks */,
+				C5C00000000000000000002 /* Resources */,
 			);
-			buildRules = ();
-			dependencies = ();
+			buildRules = (
+			);
+			dependencies = (
+			);
 			name = PrismClipLiveActivityExtension;
 			productName = PrismClipLiveActivityExtension;
 			productReference = C2C000000000000000000017 /* PrismClipLiveActivityExtension.appex */;
@@ -512,19 +531,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C5C00000000000000000001 /* HINATA Extension Resources */ = {
+		C5C00000000000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1C000000000000000000017 /* Localizable.xcstrings in HINATA Extension */,
+				C1C000000000000000000017 /* ../LiveActivityShared/Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C5C00000000000000000002 /* PrismClip Extension Resources */ = {
+		C5C00000000000000000002 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1C000000000000000000018 /* Localizable.xcstrings in PrismClip Extension */,
+				C1C000000000000000000018 /* ../LiveActivityShared/Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -577,8 +596,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1C00000000000000000000B /* StoreVisitAttributes.swift in Sources */,
-				C1C00000000000000000000C /* StoreVisitLiveActivityManager.swift in Sources */,
+				C1C00000000000000000000B /* ../LiveActivityShared/StoreVisitAttributes.swift in Sources */,
+				C1C00000000000000000000C /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift in Sources */,
 				8DDEA6470F304D2E85B819AD /* PrismClipApp.swift in Sources */,
 				7B07656CE2BE43CFBB961A0B /* PrismAPI.swift in Sources */,
 				4EFBD8768DB3455FB7560F91 /* InvocationParser.swift in Sources */,
@@ -596,17 +615,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1C00000000000000000000B /* StoreVisitAttributes.swift in Sources */,
-				C1C00000000000000000000C /* StoreVisitLiveActivityManager.swift in Sources */,
+				73B2D78D30849B6300249196 /* ../LiveActivityShared/StoreVisitAttributes.swift in Sources */,
+				73B2D78E30849B6300249196 /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift in Sources */,
 				B1C000000000000000000008 /* InvocationParser.swift in Sources */,
 				B1C00000000000000000000D /* InvocationRouter.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				C1C000000000000000000009 /* NativeShellBridge.swift in Sources */,
+				C1C00000000000000000000A /* NativeShellViewController.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */,
-				85CE8E4C908F471AA82371C9 /* MachineLoginView.swift in Sources */,
-				74DE941C77D94C35809D93CD /* MachineLoginViewModel.swift in Sources */,
+				73B2D78F30849B6300249196 /* MachineLoginView.swift in Sources */,
+				73B2D79030849B6300249196 /* MachineLoginViewModel.swift in Sources */,
 				B1C000000000000000000001 /* ../PrismClip/PrismAPI.swift in Sources */,
 				B1C000000000000000000002 /* ../PrismClip/LocationService.swift in Sources */,
 				B1C000000000000000000003 /* ../PrismClip/Models.swift in Sources */,
@@ -615,23 +635,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C6C00000000000000000001 /* HINATA Extension Sources */ = {
+		C6C00000000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1C000000000000000000010 /* StoreVisitAttributes.swift in HINATA Extension */,
-				C1C000000000000000000011 /* StoreVisitActivityView.swift in HINATA Extension */,
-				C1C00000000000000000000F /* HINATALiveActivityExtension.swift in Sources */,
+				C1C000000000000000000010 /* LiveActivityShared/StoreVisitAttributes.swift in Sources */,
+				C1C000000000000000000011 /* LiveActivityShared/StoreVisitActivityView.swift in Sources */,
+				C1C00000000000000000000F /* LiveActivityBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C6C00000000000000000002 /* PrismClip Extension Sources */ = {
+		C6C00000000000000000002 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1C000000000000000000013 /* StoreVisitAttributes.swift in PrismClip Extension */,
-				C1C000000000000000000014 /* StoreVisitActivityView.swift in PrismClip Extension */,
-				C1C000000000000000000012 /* PrismClipLiveActivityExtension.swift in Sources */,
+				C1C000000000000000000013 /* LiveActivityShared/StoreVisitAttributes.swift in Sources */,
+				C1C000000000000000000014 /* LiveActivityShared/StoreVisitActivityView.swift in Sources */,
+				C1C000000000000000000012 /* LiveActivityBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1075,12 +1095,129 @@
 			};
 			name = Release;
 		};
-		C9C0000000000000000011 /* HINATA Extension Debug */ = { isa = XCBuildConfiguration; baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */; buildSettings = { CODE_SIGN_IDENTITY = "Apple Development"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)"; DEVELOPMENT_TEAM = XKKMJBTHX5; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = HINATALiveActivityExtension/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.liveactivity; PRODUCT_NAME = HINATALiveActivityExtension; SKIP_INSTALL = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
-		C9C0000000000000000012 /* HINATA Extension Release */ = { isa = XCBuildConfiguration; baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */; buildSettings = { CODE_SIGN_IDENTITY = "Apple Development"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)"; DEVELOPMENT_TEAM = XKKMJBTHX5; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = HINATALiveActivityExtension/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.liveactivity; PRODUCT_NAME = HINATALiveActivityExtension; SKIP_INSTALL = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
-		C9C0000000000000000013 /* HINATA Extension Profile */ = { isa = XCBuildConfiguration; baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */; buildSettings = { CODE_SIGN_IDENTITY = "Apple Development"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)"; DEVELOPMENT_TEAM = XKKMJBTHX5; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = HINATALiveActivityExtension/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.liveactivity; PRODUCT_NAME = HINATALiveActivityExtension; SKIP_INSTALL = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Profile; };
-		C9C0000000000000000021 /* PrismClip Extension Debug */ = { isa = XCBuildConfiguration; baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */; buildSettings = { CODE_SIGN_ENTITLEMENTS = PrismClipLiveActivityExtension/PrismClipLiveActivity.entitlements; CODE_SIGN_IDENTITY = "Apple Development"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)"; DEVELOPMENT_TEAM = XKKMJBTHX5; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = PrismClipLiveActivityExtension/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.prism.liveactivity; PRODUCT_NAME = PrismClipLiveActivityExtension; SKIP_INSTALL = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
-		C9C0000000000000000022 /* PrismClip Extension Release */ = { isa = XCBuildConfiguration; baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */; buildSettings = { CODE_SIGN_ENTITLEMENTS = PrismClipLiveActivityExtension/PrismClipLiveActivity.entitlements; CODE_SIGN_IDENTITY = "Apple Development"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)"; DEVELOPMENT_TEAM = XKKMJBTHX5; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = PrismClipLiveActivityExtension/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.prism.liveactivity; PRODUCT_NAME = PrismClipLiveActivityExtension; SKIP_INSTALL = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
-		C9C0000000000000000023 /* PrismClip Extension Profile */ = { isa = XCBuildConfiguration; baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */; buildSettings = { CODE_SIGN_ENTITLEMENTS = PrismClipLiveActivityExtension/PrismClipLiveActivity.entitlements; CODE_SIGN_IDENTITY = "Apple Development"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)"; DEVELOPMENT_TEAM = XKKMJBTHX5; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = PrismClipLiveActivityExtension/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.prism.liveactivity; PRODUCT_NAME = PrismClipLiveActivityExtension; SKIP_INSTALL = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Profile; };
+		C9C0000000000000000011 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = XKKMJBTHX5;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HINATALiveActivityExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.liveactivity;
+				PRODUCT_NAME = HINATALiveActivityExtension;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9C0000000000000000012 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = XKKMJBTHX5;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HINATALiveActivityExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.liveactivity;
+				PRODUCT_NAME = HINATALiveActivityExtension;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C9C0000000000000000013 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = XKKMJBTHX5;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HINATALiveActivityExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.liveactivity;
+				PRODUCT_NAME = HINATALiveActivityExtension;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Profile;
+		};
+		C9C0000000000000000021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PrismClipLiveActivityExtension/PrismClipLiveActivity.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = XKKMJBTHX5;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PrismClipLiveActivityExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.prism.liveactivity;
+				PRODUCT_NAME = PrismClipLiveActivityExtension;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9C0000000000000000022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PrismClipLiveActivityExtension/PrismClipLiveActivity.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = XKKMJBTHX5;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PrismClipLiveActivityExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.prism.liveactivity;
+				PRODUCT_NAME = PrismClipLiveActivityExtension;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C9C0000000000000000023 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PrismClipLiveActivityExtension/PrismClipLiveActivity.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = XKKMJBTHX5;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PrismClipLiveActivityExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.prism.liveactivity;
+				PRODUCT_NAME = PrismClipLiveActivityExtension;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Profile;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1114,6 +1251,26 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		C9C00000000000000000001 /* Build configuration list for PBXNativeTarget "HINATALiveActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9C0000000000000000011 /* Debug */,
+				C9C0000000000000000012 /* Release */,
+				C9C0000000000000000013 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9C00000000000000000002 /* Build configuration list for PBXNativeTarget "PrismClipLiveActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9C0000000000000000021 /* Debug */,
+				C9C0000000000000000022 /* Release */,
+				C9C0000000000000000023 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "PRiSM Link" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1124,8 +1281,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C9C00000000000000000001 /* HINATA Extension Configurations */ = { isa = XCConfigurationList; buildConfigurations = ( C9C0000000000000000011 /* HINATA Extension Debug */, C9C0000000000000000012 /* HINATA Extension Release */, C9C0000000000000000013 /* HINATA Extension Profile */ ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		C9C00000000000000000002 /* PrismClip Extension Configurations */ = { isa = XCConfigurationList; buildConfigurations = ( C9C0000000000000000021 /* PrismClip Extension Debug */, C9C0000000000000000022 /* PrismClip Extension Release */, C9C0000000000000000023 /* PrismClip Extension Profile */ ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */

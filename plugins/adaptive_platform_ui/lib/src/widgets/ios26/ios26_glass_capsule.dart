@@ -164,10 +164,16 @@ class IOS26GlassCapsule extends StatefulWidget {
     this.selectedIndex,
     this.inset = 0,
     this.tint,
+    this.interactive = true,
   });
 
   final List<GlassCapsuleItem> items;
   final ValueChanged<int> onTap;
+
+  /// Whether the native buttons react to touches. Native buttons keep taking
+  /// taps under a Flutter [IgnorePointer], so a covered bar has to be
+  /// disarmed on the UIKit side as well.
+  final bool interactive;
 
   /// Called with the [GlassCapsuleMenuEntry.id] chosen from an item's menu.
   final ValueChanged<int>? onMenuTap;
@@ -209,6 +215,7 @@ class _IOS26GlassCapsuleState extends State<IOS26GlassCapsule> {
       'items': widget.items.map((i) => i.toNativeMap()).toList(),
       if (widget.selectedIndex != null) 'selectedIndex': widget.selectedIndex,
       'inset': widget.inset,
+      'enabled': widget.interactive,
       'isDark': _isDark,
       if (tint != null) 'tint': tint.toARGB32(),
     };

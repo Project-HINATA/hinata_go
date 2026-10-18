@@ -7,6 +7,21 @@ import '../app_action_button.dart';
 /// Material app bars. Web renders exactly like Android.
 bool get useCupertinoChrome => PlatformInfo.isIOS;
 
+/// Whether the iOS chrome is the iPhone Duo vertical bar, where the top-level
+/// tabs and the page controls run down the side of the screen. `null` before
+/// the toolbar host has resolved the pose.
+bool? isDuoVerticalBar(BuildContext context) {
+  if (!useCupertinoChrome) return false;
+  return ToolbarChromeScope.maybeOf(context)?.hostsDuoControls;
+}
+
+/// The axis a tab change slides along: sideways on a bottom tab bar, down the
+/// screen when the tabs sit in the iPhone Duo vertical bar.
+Axis navigationTransitionAxis(BuildContext context, {required bool useRail}) {
+  if (isDuoVerticalBar(context) ?? false) return Axis.vertical;
+  return useRail ? Axis.vertical : Axis.horizontal;
+}
+
 /// A page: a native Liquid Glass toolbar on iOS (laid out in the vertical bar on
 /// iPhone Duo), a Material app bar with a floating action button elsewhere.
 ///

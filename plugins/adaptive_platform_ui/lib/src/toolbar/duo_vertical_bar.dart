@@ -1,4 +1,3 @@
-import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/cupertino.dart';
 import 'package:foldable/foldable.dart';
@@ -264,25 +263,27 @@ class DuoTitleBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A plain gradient rather than a BackdropFilter: a blur here runs over
+    // everything painted below it, including native platform views, so a
+    // menu button that scrolls under the band would come out blurred while
+    // the Flutter-drawn UI around it stayed sharp.
     final base = CupertinoColors.systemBackground.resolveFrom(context);
     return IgnorePointer(
       child: OverflowBox(
         alignment: Alignment.topCenter,
         maxHeight: kDuoTitleBandHeight + 24,
         minHeight: kDuoTitleBandHeight + 24,
-        child: ShaderMask(
-          blendMode: BlendMode.dstIn,
-          // Solid behind the title, gone just below the band.
-          shaderCallback: (rect) => const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            stops: [0.0, 0.62, 1.0],
-            colors: [Color(0xFFFFFFFF), Color(0xFFFFFFFF), Color(0x00FFFFFF)],
-          ).createShader(rect),
-          child: ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-              child: ColoredBox(color: base.withValues(alpha: 0.82)),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: const [0.0, 0.62, 1.0],
+              colors: [
+                base.withValues(alpha: 0.82),
+                base.withValues(alpha: 0.82),
+                base.withValues(alpha: 0.0),
+              ],
             ),
           ),
         ),
@@ -358,6 +359,7 @@ class DuoVerticalBar extends StatelessWidget {
     this.tint,
     this.regions = const <ReservedRegion>[],
     this.navigator,
+    this.interactive = true,
   });
 
   /// Primary navigation control (back, close), placed first.
@@ -384,6 +386,10 @@ class DuoVerticalBar extends StatelessWidget {
 
   /// Reserved regions reported by the system, used to clear the camera.
   final List<ReservedRegion> regions;
+
+  /// Whether the native controls react to touches. They keep taking taps
+  /// under a Flutter [IgnorePointer], so a covered bar is disarmed natively.
+  final bool interactive;
 
   /// [actions] split into the groups that each get a capsule.
   static List<List<AdaptiveAppBarAction>> groupsOf(
@@ -433,6 +439,7 @@ class DuoVerticalBar extends StatelessWidget {
                   width: IOS26GlassCapsule.width,
                   height: IOS26GlassCapsule.tabsHeight(tabs.length),
                   child: IOS26GlassCapsule(
+                    interactive: interactive,
                     items: [
                       for (final tab in tabs)
                         GlassCapsuleItem.fromDestination(tab),
@@ -502,10 +509,20 @@ class DuoVerticalBar extends StatelessWidget {
 
     if (leading != null) add(leading!);
     for (final group in shown) {
-      if (group.isNotEmpty) add(_ActionCapsule(actions: group, tint: tint));
+      if (group.isNotEmpty) {
+        add(
+          _ActionCapsule(actions: group, tint: tint, interactive: interactive),
+        );
+      }
     }
     if (overflow.isNotEmpty) {
-      add(_OverflowCapsule(actions: overflow, navigator: navigator));
+      add(
+        _OverflowCapsule(
+          actions: overflow,
+          navigator: navigator,
+          interactive: interactive,
+        ),
+      );
     }
     return children;
   }
@@ -513,10 +530,15 @@ class DuoVerticalBar extends StatelessWidget {
 
 /// The items that did not fit, behind the system's ellipsis menu.
 class _OverflowCapsule extends StatelessWidget {
-  const _OverflowCapsule({required this.actions, this.navigator});
+  const _OverflowCapsule({
+    required this.actions,
+    this.navigator,
+    this.interactive = true,
+  });
 
   final List<AdaptiveAppBarAction> actions;
   final NavigatorState? navigator;
+  final bool interactive;
 
   @override
   Widget build(BuildContext context) {
@@ -524,6 +546,7 @@ class _OverflowCapsule extends StatelessWidget {
       width: IOS26GlassCapsule.width,
       height: IOS26GlassCapsule.actionsHeight(1),
       child: IOS26GlassCapsule(
+        interactive: interactive,
         items: [
           GlassCapsuleItem(
             symbol: 'ellipsis',
@@ -555,13 +578,18 @@ class _OverflowCapsule extends StatelessWidget {
 
 /// One group of toolbar items in one capsule.
 class _ActionCapsule extends StatelessWidget {
-  const _ActionCapsule({required this.actions, this.tint});
+  const _ActionCapsule({
+    required this.actions,
+    this.tint,
+    this.interactive = true,
+  });
 
   /// Menu entry id offset per action, as a capsule has one onMenuTap
   static const int _menuIdStride = 1000;
 
   final List<AdaptiveAppBarAction> actions;
   final Color? tint;
+  final bool interactive;
 
   @override
   Widget build(BuildContext context) {
@@ -569,6 +597,7 @@ class _ActionCapsule extends StatelessWidget {
       width: IOS26GlassCapsule.width,
       height: IOS26GlassCapsule.actionsHeight(actions.length),
       child: IOS26GlassCapsule(
+        interactive: interactive,
         items: [
           for (var i = 0; i < actions.length; i++)
             GlassCapsuleItem.fromAction(
@@ -591,9 +620,14 @@ class _ActionCapsule extends StatelessWidget {
 
 /// The back button of the trailing bar: one round glass control.
 class DuoBarBackButton extends StatelessWidget {
-  const DuoBarBackButton({super.key, required this.onPressed});
+  const DuoBarBackButton({
+    super.key,
+    required this.onPressed,
+    this.interactive = true,
+  });
 
   final VoidCallback onPressed;
+  final bool interactive;
 
   @override
   Widget build(BuildContext context) {
@@ -601,6 +635,7 @@ class DuoBarBackButton extends StatelessWidget {
       width: IOS26GlassCapsule.width,
       height: IOS26GlassCapsule.width,
       child: IOS26GlassCapsule(
+        interactive: interactive,
         items: const [
           GlassCapsuleItem(
             symbol: 'chevron.left',

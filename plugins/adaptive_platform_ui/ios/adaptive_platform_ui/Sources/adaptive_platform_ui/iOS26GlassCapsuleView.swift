@@ -79,6 +79,11 @@ class iOS26GlassCapsuleView: NSObject, FlutterPlatformView {
             let glass = UIGlassEffect()
             glass.isInteractive = true
             effectView.effect = glass
+            // The glass shapes itself from these, not from the layer's corner
+            // radius: without them a view resized while the device folds shows
+            // the default rounded rectangle before the clipped capsule returns.
+            effectView.cornerConfiguration = .capsule()
+            container.cornerConfiguration = .capsule()
         } else {
             effectView.effect = UIBlurEffect(style: .systemThinMaterial)
         }
@@ -137,6 +142,10 @@ class iOS26GlassCapsuleView: NSObject, FlutterPlatformView {
     // MARK: Content
 
     private func apply(_ params: [String: Any]) {
+        if let enabled = params["enabled"] as? Bool {
+            container.isUserInteractionEnabled = enabled
+            for button in buttons { button.isUserInteractionEnabled = enabled }
+        }
         if let dark = params["isDark"] as? Bool {
             container.overrideUserInterfaceStyle = dark ? .dark : .light
         }
@@ -198,6 +207,7 @@ class iOS26GlassCapsuleView: NSObject, FlutterPlatformView {
             if let label = item["label"] as? String {
                 button.accessibilityLabel = label
             }
+            button.isUserInteractionEnabled = container.isUserInteractionEnabled
             stack.addArrangedSubview(button)
             buttons.append(button)
 
@@ -316,11 +326,19 @@ class iOS26GlassCapsuleView: NSObject, FlutterPlatformView {
 
     private func layoutChrome(animated: Bool) {
         let width = container.bounds.width
-        if width > 0 {
-            effectView.layer.cornerRadius = width / 2
+        let height = container.bounds.height
+        if width > 0, height > 0 {
+            // The bar is resized while the device folds; a layer property
+            // changed outside a transaction would animate its corner radius
+            // from the old value, leaving a square edge for a moment.
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            let radius = min(width, height) / 2
+            effectView.layer.cornerRadius = radius
             effectView.layer.cornerCurve = .continuous
-            selectionView.layer.cornerRadius = (width - 6) / 2
+            selectionView.layer.cornerRadius = max(0, radius - 3)
             selectionView.layer.cornerCurve = .continuous
+            CATransaction.commit()
         }
 
         guard let selected = selectedIndex, selected < buttons.count else {

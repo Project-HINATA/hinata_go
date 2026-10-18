@@ -55,6 +55,7 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
     private var channel: FlutterMethodChannel
 
     private var isDark: Bool = false
+    private var isEnabled: Bool = true
     private var perActionTintTags: Set<Int> = []
 
     init(
@@ -73,6 +74,7 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
 
         if let params = args as? [String: Any] {
             isDark = params["isDark"] as? Bool ?? false
+            isEnabled = params["enabled"] as? Bool ?? true
         }
 
         super.init()
@@ -92,6 +94,11 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
 
         if let params = args as? [String: Any] {
             configureItems(params)
+            applyEnabled(isEnabled)
+            if let enabled = params["enabled"] as? Bool {
+                navigationBar.isUserInteractionEnabled = enabled
+                containerView.isUserInteractionEnabled = enabled
+            }
             // Apply global tint color after configuring items
             if let n = params["tint"] as? NSNumber {
                 let color = Self.colorFromARGB(n.intValue)
@@ -106,6 +113,11 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
             }
         }
 
+        if let params = args as? [String: Any],
+           let enabled = params["enabled"] as? Bool {
+            applyEnabled(enabled)
+        }
+
         channel.setMethodCallHandler { [weak self] call, result in
             self?.handleMethodCall(call, result: result)
         }
@@ -113,6 +125,16 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
 
     func view() -> UIView {
         return containerView
+    }
+
+    /// `navigationBar.isUserInteractionEnabled` alone does not always stop a
+    /// bar button item from firing, so the items are disarmed individually.
+    private func applyEnabled(_ enabled: Bool) {
+        navigationBar.isUserInteractionEnabled = enabled
+        containerView.isUserInteractionEnabled = enabled
+        for item in (navigationItem.leftBarButtonItems ?? []) + (navigationItem.rightBarButtonItems ?? []) {
+            item.isEnabled = enabled
+        }
     }
 
     private func setupGradient() {
@@ -383,8 +405,19 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
                         }
                     }
                 }
+                // New items default to enabled; keep the covered bar inert.
+                if !isEnabled { applyEnabled(false) }
             }
             result(nil)
+        case "setEnabled":
+            if let args = call.arguments as? [String: Any],
+               let enabled = args["enabled"] as? Bool {
+                self.isEnabled = enabled
+                self.applyEnabled(enabled)
+                result(nil)
+            } else {
+                result(FlutterError(code: "bad_args", message: "Missing enabled", details: nil))
+            }
         case "setStyle":
             if let args = call.arguments as? [String: Any] {
                 if let tintValue = args["tint"] {

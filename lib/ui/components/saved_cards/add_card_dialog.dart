@@ -130,30 +130,22 @@ class AddCardDialog extends HookConsumerWidget {
               decoration: InputDecoration(labelText: l10n.nameDescription),
             ),
             const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              key: ValueKey(selectedFolderIdState.value),
-              initialValue: selectedFolderIdState.value,
-              decoration: InputDecoration(labelText: l10n.folder),
-              items: [
-                ...folders.map(
-                  (folder) => DropdownMenuItem(
+            NativeChoiceField<String>(
+              label: l10n.folder,
+              options: [
+                for (final folder in folders)
+                  NativeChoice(
+                    label: folderDisplayName(folder.id, folder.name),
                     value: folder.id,
-                    child: Text(folderDisplayName(folder.id, folder.name)),
                   ),
-                ),
-                DropdownMenuItem(
-                  value: 'CREATE_NEW',
-                  child: Text(
-                    l10n.newFolderOption,
-                    style: const TextStyle(color: Colors.blue),
-                  ),
-                ),
+                NativeChoice(label: l10n.newFolderOption, value: 'CREATE_NEW'),
               ],
+              selected: selectedFolderIdState.value,
               onChanged: (val) {
                 if (val == 'CREATE_NEW') {
                   Navigator.pop(context);
                   onAddFolderRequested();
-                } else if (val != null) {
+                } else {
                   selectedFolderIdState.value = val;
                 }
               },

@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:hinata_go/l10n/l10n.dart';
-import '../navigation/router.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
@@ -13,6 +13,10 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 class NotificationService {
   final GlobalKey<ScaffoldMessengerState> messengerKey =
       GlobalKey<ScaffoldMessengerState>();
+
+  /// The layer the toasts live in: above the app, so a toast is never hidden
+  /// behind the fixed iOS toolbar or the iPhone Duo vertical bar.
+  final GlobalKey<OverlayState> overlayKey = GlobalKey<OverlayState>();
 
   AppLocalizations get l10n => L10nHolder.current;
 
@@ -29,7 +33,7 @@ class NotificationService {
   }
 
   void _showToast(String message, IconData icon, Color color) {
-    final overlayState = rootNavigatorKey.currentState?.overlay;
+    final overlayState = overlayKey.currentState;
     if (overlayState == null) return;
 
     late OverlayEntry overlayEntry;
@@ -107,13 +111,22 @@ class _ToastWidgetState extends State<_ToastWidget>
 
   @override
   Widget build(BuildContext context) {
-    final safeAreaTop = context.mediaQuery.padding.top;
+    final mediaQuery = context.mediaQuery;
+    final safeAreaTop = mediaQuery.padding.top;
     final colorScheme = context.colorScheme;
+    // iPhone Duo keeps its status cluster and camera in a strip on one side.
+    // The toast layer sits above the chrome, so keep the toast clear of that
+    // strip itself and let it cover only the chrome.
+    final viewPadding = mediaQuery.viewPadding;
+    final sideStrip = math.max<double>(
+      viewPadding.left > viewPadding.right + 8 ? viewPadding.left : 0,
+      viewPadding.right > viewPadding.left + 8 ? viewPadding.right : 0,
+    );
 
     return Positioned(
       top: safeAreaTop + 16,
-      left: 16,
-      right: 16,
+      left: 16 + (viewPadding.left > viewPadding.right ? sideStrip : 0),
+      right: 16 + (viewPadding.right > viewPadding.left ? sideStrip : 0),
       child: SlideTransition(
         position: _offsetAnimation,
         child: FadeTransition(

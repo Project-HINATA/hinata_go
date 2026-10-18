@@ -21,6 +21,7 @@ class IOS26NativeToolbar extends StatefulWidget {
     this.height = 44.0,
     this.showNativeView = true,
     this.showsGradient = true,
+    this.interactive = true,
   });
 
   final String? title;
@@ -44,6 +45,10 @@ class IOS26NativeToolbar extends StatefulWidget {
   final double height;
   final bool showNativeView;
 
+  /// Whether the native bar's buttons react to touches. A Flutter
+  /// [IgnorePointer] does not stop native bar buttons.
+  final bool interactive;
+
   /// Whether the native view draws the readability gradient behind the bar.
   /// The fixed toolbar host turns it off and draws one gradient of its own
   /// behind all page layers.
@@ -58,6 +63,7 @@ class _IOS26NativeToolbarState extends State<IOS26NativeToolbar> {
   bool? _lastIsDark;
   int? _lastTint;
   List<AdaptiveAppBarAction>? _lastActions;
+  bool? _lastInteractive;
 
   bool get _isDark =>
       MediaQuery.platformBrightnessOf(context) == Brightness.dark;
@@ -130,6 +136,15 @@ class _IOS26NativeToolbarState extends State<IOS26NativeToolbar> {
       }
     }
 
+    if (_lastInteractive != widget.interactive) {
+      try {
+        await ch.invokeMethod('setEnabled', {'enabled': widget.interactive});
+        _lastInteractive = widget.interactive;
+      } catch (e) {
+        // Ignore errors if platform view is not yet ready
+      }
+    }
+
     // Sync tint color
     final tint = widget.tintColor != null
         ? _colorToARGB(widget.tintColor!)
@@ -175,6 +190,7 @@ class _IOS26NativeToolbarState extends State<IOS26NativeToolbar> {
       if (widget.actions != null && widget.actions!.isNotEmpty)
         'actions': widget.actions!.map((a) => a.toNativeMap()).toList(),
       'isDark': _isDark,
+      'enabled': widget.interactive,
       if (!widget.showsGradient) 'showsGradient': false,
       if (widget.tintColor != null) 'tint': _colorToARGB(widget.tintColor!),
     };

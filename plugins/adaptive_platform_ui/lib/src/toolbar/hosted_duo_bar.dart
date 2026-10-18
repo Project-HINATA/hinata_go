@@ -110,7 +110,14 @@ class HostedDuoBar extends StatelessWidget {
                 alwaysIncludeSemantics: true,
                 child: ExcludeSemantics(
                   excluding: tabs.id != upperTabs?.id,
-                  child: DuoVerticalBar(tabBar: tabs.tabBar, regions: regions),
+                  child: DuoVerticalBar(
+                    tabBar: tabs.tabBar,
+                    // Tabs stay tappable in this layer: it is drawn only for
+                    // the page that owns the chrome and is blended away when
+                    // a modal covers it.
+                    interactive: !blend.ownerIsCovered,
+                    regions: regions,
+                  ),
                 ),
               ),
           ],
@@ -144,6 +151,7 @@ class HostedDuoBar extends StatelessWidget {
                 (content.impliesBack
                     ? const SizedBox.square(dimension: IOS26GlassCapsule.width)
                     : null),
+            interactive: !blend.ownerIsCovered,
             actions: content.actions,
             reservedTabs: reservedTabs,
             tint: content.tint,

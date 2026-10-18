@@ -15,6 +15,7 @@ import '../../../providers/app_state_provider.dart';
 import '../../ui_text.dart';
 import '../../ndef_record_ui.dart';
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/native_alert.dart';
 
 Future<void> showNdefEditor(
   BuildContext context, {
@@ -95,24 +96,17 @@ class NdefEditorDialog extends HookConsumerWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: folder.value,
-                decoration: InputDecoration(
-                  labelText: l10n.ndefFolder,
-                  border: const OutlineInputBorder(),
-                ),
-                items: folders
-                    .map(
-                      (f) => DropdownMenuItem(
-                        value: f.id,
-                        child: Text(folderDisplayName(f.id, f.name)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) folder.value = value;
-                },
+              NativeChoiceField<String>(
+                label: l10n.ndefFolder,
+                options: [
+                  for (final f in folders)
+                    NativeChoice(
+                      label: folderDisplayName(f.id, f.name),
+                      value: f.id,
+                    ),
+                ],
+                selected: folder.value,
+                onChanged: (value) => folder.value = value,
               ),
               const SizedBox(height: 16),
               for (var i = 0; i < records.value.length; i++)
@@ -282,52 +276,32 @@ class _RecordDialog extends HookWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: kind.value,
-                decoration: InputDecoration(
-                  labelText: l10n.ndefRecordKind,
-                  border: const OutlineInputBorder(),
-                ),
-                items: [
-                  DropdownMenuItem(value: 'text', child: Text(l10n.ndefText)),
-                  DropdownMenuItem(value: 'url', child: Text(l10n.ndefLink)),
-                  const DropdownMenuItem(value: 'mime', child: Text('MIME')),
-                  DropdownMenuItem(
-                    value: 'external',
-                    child: Text(l10n.ndefExternal),
-                  ),
-                  DropdownMenuItem(
-                    value: 'raw',
-                    child: Text(l10n.ndefRaw, overflow: TextOverflow.ellipsis),
-                  ),
+              NativeChoiceField<String>(
+                label: l10n.ndefRecordKind,
+                options: [
+                  NativeChoice(label: l10n.ndefText, value: 'text'),
+                  NativeChoice(label: l10n.ndefLink, value: 'url'),
+                  const NativeChoice(label: 'MIME', value: 'mime'),
+                  NativeChoice(label: l10n.ndefExternal, value: 'external'),
+                  NativeChoice(label: l10n.ndefRaw, value: 'raw'),
                 ],
+                selected: kind.value,
                 onChanged: (value) {
-                  if (value != null) kind.value = value;
+                  kind.value = value;
                   error.value = null;
                 },
               ),
               const SizedBox(height: 20),
               if (kind.value == 'raw') ...[
-                DropdownButtonFormField<ndef.TypeNameFormat>(
-                  isExpanded: true,
-                  initialValue: tnf.value,
-                  decoration: InputDecoration(
-                    labelText: l10n.ndefTnf,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: ndef.TypeNameFormat.values
-                      .where((v) => v != ndef.TypeNameFormat.unchanged)
-                      .map(
-                        (v) => DropdownMenuItem(
-                          value: v,
-                          child: Text(ndefTnfLabel(v)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) tnf.value = value;
-                  },
+                NativeChoiceField<ndef.TypeNameFormat>(
+                  label: l10n.ndefTnf,
+                  options: [
+                    for (final v in ndef.TypeNameFormat.values)
+                      if (v != ndef.TypeNameFormat.unchanged)
+                        NativeChoice(label: ndefTnfLabel(v), value: v),
+                  ],
+                  selected: tnf.value,
+                  onChanged: (value) => tnf.value = value,
                 ),
                 const SizedBox(height: 20),
                 TextField(
@@ -512,11 +486,14 @@ class _EditorFrame extends StatelessWidget {
     if (useCupertinoChrome) {
       return AppScaffold(
         title: title,
+        // A full-size round glass control, like the close and back buttons the
+        // system puts in the toolbar; the 38pt default reads one size small.
         leading: SizedBox.square(
-          dimension: 38,
+          dimension: 48,
           child: AdaptiveButton.sfSymbol(
             onPressed: () => Navigator.pop(context),
-            sfSymbol: const SFSymbol('xmark', size: 18),
+            sfSymbol: const SFSymbol('xmark', size: 20),
+            size: AdaptiveButtonSize.large,
             useSmoothRectangleBorder: false,
           ),
         ),

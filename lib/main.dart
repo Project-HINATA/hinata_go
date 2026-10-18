@@ -13,15 +13,24 @@ import 'package:hinata_go/providers/settings_provider.dart';
 import 'package:hinata_go/providers/storage_provider.dart';
 import 'package:hinata_go/services/notification_service.dart';
 import 'navigation/router.dart';
+import 'core/app_host_mode.dart';
 
-Future<void> main() async {
+Future<void> main() => _bootstrap(AppHostMode.flutterShell);
+
+@pragma('vm:entry-point')
+Future<void> nativeMain() => _bootstrap(AppHostMode.nativeIOS);
+
+Future<void> _bootstrap(AppHostMode hostMode) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
 
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        appHostModeProvider.overrideWithValue(hostMode),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
       child: const MyApp(),
     ),
   );
@@ -59,9 +68,17 @@ class MyApp extends ConsumerWidget {
             L10nHolder.update(AppLocalizations.of(context));
             return _SystemUiController(
               // Keeps one Liquid Glass toolbar above the navigator on iOS 26+,
-              // and lays it out in the iPhone Duo vertical bar.
-              child: AdaptiveToolbarHost(
-                child: child ?? const SizedBox.shrink(),
+              // and lays it out in the iPhone Duo vertical bar. The toast layer
+              // sits above it, so in-app notices are never tucked behind the bar.
+              child: Overlay(
+                key: notificationService.overlayKey,
+                initialEntries: [
+                  OverlayEntry(
+                    builder: (_) => AdaptiveToolbarHost(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
               ),
             );
           },

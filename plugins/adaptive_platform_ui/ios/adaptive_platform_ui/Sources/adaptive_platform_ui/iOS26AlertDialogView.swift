@@ -175,9 +175,15 @@ class iOS26AlertDialogView: NSObject, FlutterPlatformView {
 
         guard let alert = alertController else { return }
 
-        // Apply liquid glass styling for iOS 15+
-        if #available(iOS 15.0, *) {
-            // Configure with iOS corner radius and continuous curve
+        // From iOS 26, UIAlertController draws its own Liquid Glass material.
+        // Adding a blur layer behind that material would hide it and leave the
+        // alert looking flat and solid, so let the system own the background.
+        if #available(iOS 26.0, *) {
+            if let tintColor = tint {
+                alert.view.tintColor = tintColor
+            }
+        } else if #available(iOS 15.0, *) {
+            // Older iOS: stand in for the glass with a thin material.
             alert.view.layer.cornerRadius = 28.0
             alert.view.layer.cornerCurve = .continuous
 
@@ -566,7 +572,9 @@ class iOS26AlertDialogView: NSObject, FlutterPlatformView {
     private func updateBrightness(isDark: Bool) {
         guard let alert = alertController else { return }
 
-        if #available(iOS 15.0, *) {
+        if #available(iOS 26.0, *) {
+            // The system draws the Liquid Glass alert; nothing to swap.
+        } else if #available(iOS 15.0, *) {
             if alertStyle == "glass" {
                 let blurEffect = UIBlurEffect(style: isDark ? .systemThinMaterialDark : .systemThinMaterialLight)
 

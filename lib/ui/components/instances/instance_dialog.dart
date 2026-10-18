@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../widgets/native_alert.dart';
 import '../../../models/remote_instance.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../utils/constants.dart';
@@ -116,25 +117,25 @@ class InstanceDialog extends HookConsumerWidget {
     ValueNotifier<InstanceType> typeState,
     TextEditingController urlController,
   ) {
-    return DropdownButtonFormField<InstanceType>(
-      initialValue: typeState.value,
-      decoration: InputDecoration(labelText: l10n.instanceType),
-      items: [
-        DropdownMenuItem(
+    return NativeChoiceField<InstanceType>(
+      label: l10n.instanceType,
+      options: [
+        NativeChoice(
+          label: l10n.instanceTypeHinataIo,
           value: InstanceType.hinataIo,
-          child: Text(l10n.instanceTypeHinataIo),
         ),
-        DropdownMenuItem(
+        NativeChoice(
+          label: l10n.instanceTypeSpiceApi,
           value: InstanceType.spiceApi,
-          child: Text(l10n.instanceTypeSpiceApi),
         ),
-        DropdownMenuItem(
+        NativeChoice(
+          label: l10n.instanceTypeSpiceApiWebSocket,
           value: InstanceType.spiceApiWebSocket,
-          child: Text(l10n.instanceTypeSpiceApiWebSocket),
         ),
       ],
+      selected: typeState.value,
       onChanged: (value) {
-        if (value == null || value == typeState.value) return;
+        if (value == typeState.value) return;
         if (value == InstanceType.hinataIo &&
             urlController.text.trim().isEmpty) {
           urlController.text = AppConstants.defaultHinataIoUrl;
@@ -181,16 +182,14 @@ class InstanceDialog extends HookConsumerWidget {
     BuildContext context,
     ValueNotifier<int> unitState,
   ) {
-    return DropdownButtonFormField<int>(
-      initialValue: unitState.value,
-      decoration: InputDecoration(labelText: l10n.spiceApiUnit),
-      items: const [
-        DropdownMenuItem(value: 0, child: Text('0')),
-        DropdownMenuItem(value: 1, child: Text('1')),
+    return NativeChoiceField<int>(
+      label: l10n.spiceApiUnit,
+      options: const [
+        NativeChoice(label: '0', value: 0),
+        NativeChoice(label: '1', value: 1),
       ],
-      onChanged: (value) {
-        if (value != null) unitState.value = value;
-      },
+      selected: unitState.value,
+      onChanged: (value) => unitState.value = value,
     );
   }
 

@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>FlutterDeepLinkingEnabled</key>
-	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -26,20 +24,27 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
 	<key>NFCReaderUsageDescription</key>
 	<string>We need NFC access to read your smart cards.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>We need camera access to scan card QR codes.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need photo library access to import and export data</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Location access confirms you are at the arcade before signing in to a machine.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need photo library access to import and export data</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>NSUserActivityTypeBrowsingWeb</string>
+		<string>NSUserActivityTypeLiveActivity</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -88,11 +93,6 @@
 		<string>D2760000850101</string>
 		<string>A000000632010105</string>
 		<string>A00000000386980701</string>
-	</array>
-	<key>NSUserActivityTypes</key>
-	<array>
-		<string>NSUserActivityTypeBrowsingWeb</string>
-		<string>NSUserActivityTypeLiveActivity</string>
 	</array>
 </dict>
 </plist>

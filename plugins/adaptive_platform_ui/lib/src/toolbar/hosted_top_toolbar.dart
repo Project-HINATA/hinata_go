@@ -113,19 +113,20 @@ class HostedTopToolbar extends StatelessWidget {
     };
 
     // The bar's backdrop belongs to the chrome, not to a page: it only fades
-    // when the toolbar as a whole comes or goes.
-    final Animation<double> backdropOpacity = switch ((
-      upper.isEmpty,
-      lower.isEmpty,
-    )) {
-      (false, false) => kAlwaysCompleteAnimation,
-      (false, true) =>
-        blend.isBlending && lowerEntry != null
-            ? upperOpacity
-            : kAlwaysCompleteAnimation,
-      (true, false) => lowerOpacity,
-      (true, true) => kAlwaysDismissedAnimation,
-    };
+    // when the toolbar as a whole comes or goes. While a modal covers the
+    // page it goes away entirely: a translucent white gradient above the
+    // dialog barrier reads as a pale band along the top of the screen.
+    final Animation<double> backdropOpacity = blend.ownerIsCovered
+        ? kAlwaysDismissedAnimation
+        : switch ((upper.isEmpty, lower.isEmpty)) {
+            (false, false) => kAlwaysCompleteAnimation,
+            (false, true) =>
+              blend.isBlending && lowerEntry != null
+                  ? upperOpacity
+                  : kAlwaysCompleteAnimation,
+            (true, false) => lowerOpacity,
+            (true, true) => kAlwaysDismissedAnimation,
+          };
 
     return Align(
       alignment: Alignment.topCenter,
@@ -224,6 +225,7 @@ class HostedTopToolbar extends StatelessWidget {
                   titleWidget: content.titleOverlay,
                   leading: content.customLeading,
                   actions: content.actions,
+                  interactive: !blend.ownerIsCovered,
                   tintColor: content.tint,
                   showsGradient: false,
                   onActionTap: (index) {
@@ -244,6 +246,16 @@ class HostedTopToolbar extends StatelessWidget {
     final display = View.of(context).display.size;
     final viewport =
         MediaQuery.sizeOf(context) * MediaQuery.devicePixelRatioOf(context);
+
+    // A windowed iPad window always fits inside its display. iPhone Duo
+    // reports the other display's size here, and the app view on the inner
+    // display is larger than that, which used to read as a windowed app and
+    // pushed the back button inwards.
+    if (viewport.width > display.width + 1 ||
+        viewport.height > display.height + 1) {
+      return false;
+    }
+
     return (display.longestSide - viewport.longestSide).abs() > 1 ||
         (display.shortestSide - viewport.shortestSide).abs() > 1;
   }

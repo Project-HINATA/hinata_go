@@ -104,20 +104,17 @@ class SaveCardDialog extends HookConsumerWidget {
     ValueNotifier<String> selectedFolderIdState,
     List<CardFolder> folders,
   ) {
-    return DropdownButtonFormField<String>(
-      initialValue: selectedFolderIdState.value,
-      decoration: InputDecoration(labelText: l10n.folder),
-      items: folders.map((folder) {
-        return DropdownMenuItem(
-          value: folder.id,
-          child: Text(folderDisplayName(folder.id, folder.name)),
-        );
-      }).toList(),
-      onChanged: (val) {
-        if (val != null) {
-          selectedFolderIdState.value = val;
-        }
-      },
+    return NativeChoiceField<String>(
+      label: l10n.folder,
+      options: [
+        for (final folder in folders)
+          NativeChoice(
+            label: folderDisplayName(folder.id, folder.name),
+            value: folder.id,
+          ),
+      ],
+      selected: selectedFolderIdState.value,
+      onChanged: (val) => selectedFolderIdState.value = val,
     );
   }
 
