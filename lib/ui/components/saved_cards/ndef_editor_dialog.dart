@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:ndef/ndef.dart' as ndef;
@@ -13,6 +14,7 @@ import '../../../models/card/saved_card.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../ui_text.dart';
 import '../../ndef_record_ui.dart';
+import '../../widgets/app_scaffold.dart';
 
 Future<void> showNdefEditor(
   BuildContext context, {
@@ -498,6 +500,45 @@ class _EditorFrame extends StatelessWidget {
         actions: actions,
       );
     }
+    final primaryAction = SizedBox(
+      height: 48,
+      child: FilledButtonTheme(
+        data: FilledButtonThemeData(
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        ),
+        child: actions.last,
+      ),
+    );
+    if (useCupertinoChrome) {
+      return AppScaffold(
+        title: title,
+        leading: SizedBox.square(
+          dimension: 38,
+          child: AdaptiveButton.sfSymbol(
+            onPressed: () => Navigator.pop(context),
+            sfSymbol: const SFSymbol('xmark', size: 18),
+            useSmoothRectangleBorder: false,
+          ),
+        ),
+        body: SafeArea(
+          minimum: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: content,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                child: primaryAction,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Dialog.fullscreen(
       child: Scaffold(
         appBar: AppBar(
@@ -520,17 +561,7 @@ class _EditorFrame extends StatelessWidget {
           child: SafeArea(
             top: false,
             minimum: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-            child: SizedBox(
-              height: 48,
-              child: FilledButtonTheme(
-                data: FilledButtonThemeData(
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                ),
-                child: actions.last,
-              ),
-            ),
+            child: primaryAction,
           ),
         ),
       ),

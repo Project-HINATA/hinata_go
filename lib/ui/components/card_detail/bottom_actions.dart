@@ -26,9 +26,8 @@ class CardDetailBottomActions extends StatelessWidget {
     final colorScheme = context.colorScheme;
     final padding = context.mediaQuery.padding;
 
-    return Container(
+    return Padding(
       padding: _buildPadding(padding),
-      decoration: _buildDecoration(colorScheme),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final useTwoRows =
@@ -77,24 +76,13 @@ class CardDetailBottomActions extends StatelessWidget {
     );
   }
 
-  BoxDecoration _buildDecoration(ColorScheme colorScheme) {
-    return BoxDecoration(
-      color: colorScheme.surface,
-      boxShadow: [
-        BoxShadow(
-          color: colorScheme.shadow.withValues(alpha: 0.05),
-          blurRadius: 10,
-          offset: const Offset(0, -5),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSaveButton(BuildContext context, ColorScheme colorScheme) {
     return Expanded(
       child: OutlinedButton.icon(
         onPressed: isSaving || isSending || isWriting ? null : onSave,
         style: OutlinedButton.styleFrom(
+          // Floats over the scrolling detail, so it needs a fill of its own.
+          backgroundColor: colorScheme.surface,
           padding: const EdgeInsets.symmetric(horizontal: 8),
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(

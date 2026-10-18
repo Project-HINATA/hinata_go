@@ -21,6 +21,8 @@ import '../components/saved_cards/ndef_editor_dialog.dart';
 import '../components/saved_cards/add_folder_dialog.dart';
 import '../components/instances/select_instance_dialog.dart';
 import '../app_action_button.dart';
+import '../widgets/app_scaffold.dart';
+import '../widgets/native_alert.dart';
 
 class SavedCardsPage extends HookConsumerWidget {
   const SavedCardsPage({super.key});
@@ -67,13 +69,31 @@ class SavedCardsPage extends HookConsumerWidget {
           .showError(l10n.cannotDeleteDefaultFolders);
       return;
     }
+    void deleteFolder() {
+      ref.read(cardFoldersProvider.notifier).removeFolder(folder.id);
+      setSelectedFolderId('favorites_folder');
+    }
+
+    final message = l10n.deleteFolderMessage(
+      folderDisplayName(folder.id, folder.name),
+    );
+    if (useCupertinoChrome) {
+      showNativeConfirmation(
+        context,
+        title: l10n.deleteFolder,
+        message: message,
+        confirmLabel: l10n.delete,
+        destructive: true,
+      ).then((confirmed) {
+        if (confirmed) deleteFolder();
+      });
+      return;
+    }
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.deleteFolder),
-        content: Text(
-          l10n.deleteFolderMessage(folderDisplayName(folder.id, folder.name)),
-        ),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -81,8 +101,7 @@ class SavedCardsPage extends HookConsumerWidget {
           ),
           FilledButton(
             onPressed: () {
-              ref.read(cardFoldersProvider.notifier).removeFolder(folder.id);
-              setSelectedFolderId('favorites_folder');
+              deleteFolder();
               Navigator.pop(dialogContext);
             },
             child: Text(l10n.delete),
@@ -168,11 +187,12 @@ class SavedCardsPage extends HookConsumerWidget {
         .where((c) => c.folderId == selectedFolderIdState.value)
         .toList();
 
-    return Scaffold(
-      appBar: layout.isLandscape ? null : _buildAppBar(context),
+    return AppScaffold(
+      title: l10n.savedCards,
+      showMaterialAppBar: !layout.isLandscape,
       body: SafeArea(
-        top: layout.isLandscape,
-        bottom: false,
+        top: layout.isLandscape || useCupertinoChrome,
+        bottom: useCupertinoChrome,
         child: _buildBody(
           context,
           ref,
@@ -181,52 +201,47 @@ class SavedCardsPage extends HookConsumerWidget {
           folderCards,
         ),
       ),
-      floatingActionButton: buildAppActionButton(
-        context,
-        ref,
-        config: AppActionConfig(
-          id: 'cardsAction',
-          icon: Icons.add,
-          tooltip: l10n.addCard,
-          nativeSymbol: 'plus',
-          visible: selectedFolderIdState.value != 'history_folder',
-          menuItems: [
-            AppActionItem(
-              id: 'addCard',
-              label: l10n.addAimeBanapass,
-              icon: Icons.add,
-              onPressed: () => _showAddCardDialog(
-                context,
-                selectedFolderIdState.value,
-                (newId) => selectedFolderIdState.value = newId,
-              ),
+      primaryAction: AppActionConfig(
+        id: 'cardsAction',
+        icon: Icons.add,
+        tooltip: l10n.addCard,
+        nativeSymbol: 'plus',
+        visible: selectedFolderIdState.value != 'history_folder',
+        menuItems: [
+          AppActionItem(
+            id: 'addCard',
+            label: l10n.addAimeBanapass,
+            icon: Icons.add,
+            nativeSymbol: 'creditcard',
+            onPressed: () => _showAddCardDialog(
+              context,
+              selectedFolderIdState.value,
+              (newId) => selectedFolderIdState.value = newId,
             ),
-            AppActionItem(
-              id: 'addNdef',
-              label: l10n.ndefCreate,
-              icon: Icons.nfc,
-              onPressed: () => showNdefEditor(
-                context,
-                initialFolderId: selectedFolderIdState.value,
-              ),
+          ),
+          AppActionItem(
+            id: 'addNdef',
+            label: l10n.ndefCreate,
+            icon: Icons.nfc,
+            nativeSymbol: 'wave.3.right',
+            onPressed: () => showNdefEditor(
+              context,
+              initialFolderId: selectedFolderIdState.value,
             ),
-            AppActionItem(
-              id: 'addFolder',
-              label: l10n.newFolder,
-              icon: Icons.create_new_folder,
-              onPressed: () => _showAddFolderDialog(
-                context,
-                (newId) => selectedFolderIdState.value = newId,
-              ),
+          ),
+          AppActionItem(
+            id: 'addFolder',
+            label: l10n.newFolder,
+            icon: Icons.create_new_folder,
+            nativeSymbol: 'folder.badge.plus',
+            onPressed: () => _showAddFolderDialog(
+              context,
+              (newId) => selectedFolderIdState.value = newId,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(title: Text(l10n.savedCards));
   }
 
   Widget _buildBody(

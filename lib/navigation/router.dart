@@ -15,24 +15,19 @@ import '../ui/pages/saved_cards_page.dart';
 import '../ui/pages/scan_logs_page.dart';
 import '../ui/pages/scan_page.dart';
 import '../ui/pages/settings_page.dart';
+import '../ui/adaptive_tab_shell.dart';
 import '../ui/scaffold_with_navbar.dart';
-import '../ui/native_hosted_scaffold.dart';
-import '../ui/shell_state_sync.dart';
 import '../ui/widgets/animated_branch_container.dart';
-import '../core/app_host_mode.dart';
+import '../ui/widgets/app_scaffold.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
 );
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final hostMode = ref.watch(appHostModeProvider);
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/scan',
-    observers: hostMode == AppHostMode.nativeIOS
-        ? [ref.watch(nativeShellNavigatorObserverProvider)]
-        : null,
     routes: [
       GoRoute(
         path: '/camera',
@@ -63,13 +58,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ScanLogsPage(),
       ),
       StatefulShellRoute(
-        // Branch navigators must not forward their events to the root observers: the native shell
-        // tracks the root navigator's stack, and branch routes would pollute it.
-        notifyRootObserver: false,
         navigatorContainerBuilder: (context, navigationShell, children) {
           return AnimatedBranchContainer(
             currentIndex: navigationShell.currentIndex,
-            axis: hostMode == AppHostMode.nativeIOS
+            axis: useCupertinoChrome
                 ? Axis.horizontal
                 : context.appLayout.useRailNavigation
                 ? Axis.vertical
@@ -78,8 +70,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
         builder: (context, state, navigationShell) {
-          return hostMode == AppHostMode.nativeIOS
-              ? NativeHostedScaffold(navigationShell: navigationShell)
+          return useCupertinoChrome
+              ? AdaptiveTabShell(navigationShell: navigationShell)
               : ScaffoldWithNavBar(navigationShell: navigationShell);
         },
         branches: [

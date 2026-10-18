@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,6 +11,7 @@ import '../../providers/settings_provider.dart';
 import '../../utils/constants.dart';
 import '../app_layout.dart';
 import '../components/settings/data_management_sheet.dart';
+import '../widgets/app_scaffold.dart';
 
 class SettingsPage extends HookConsumerWidget {
   const SettingsPage({super.key});
@@ -20,8 +22,9 @@ class SettingsPage extends HookConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final updateState = ref.watch(appUpdateProvider);
 
-    return Scaffold(
-      appBar: layout.isLandscape ? null : _buildAppBar(context),
+    return AppScaffold(
+      title: l10n.settings,
+      showMaterialAppBar: !layout.isLandscape,
       body: SafeArea(
         top: layout.isLandscape,
         bottom: false,
@@ -58,36 +61,40 @@ class SettingsPage extends HookConsumerWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(title: Text(l10n.settings));
-  }
-
   Widget _buildExpirationSettings(
     BuildContext context,
     WidgetRef ref,
     AppSettings settings,
   ) {
+    const options = [5, 10, 15, 30, 60];
+    void select(int value) {
+      ref.read(settingsProvider.notifier).updateCardExpirationSeconds(value);
+    }
+
     return ListTile(
       title: Text(l10n.cardExpiration),
       subtitle: Text(l10n.cardExpirationDescription),
-      trailing: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: settings.cardExpirationSeconds,
-          onChanged: (value) {
-            if (value != null) {
-              ref
-                  .read(settingsProvider.notifier)
-                  .updateCardExpirationSeconds(value);
-            }
-          },
-          items: [5, 10, 15, 30, 60].map((int val) {
-            return DropdownMenuItem<int>(
-              value: val,
-              child: Text(l10n.cardExpirationValue(val.toString())),
-            );
-          }).toList(),
-        ),
-      ),
+      trailing: useCupertinoChrome
+          ? _NativeMenuSelector<int>(
+              options: options,
+              selected: settings.cardExpirationSeconds,
+              labelOf: (value) => l10n.cardExpirationValue(value.toString()),
+              onSelected: select,
+            )
+          : DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: settings.cardExpirationSeconds,
+                onChanged: (value) {
+                  if (value != null) select(value);
+                },
+                items: options.map((int val) {
+                  return DropdownMenuItem<int>(
+                    value: val,
+                    child: Text(l10n.cardExpirationValue(val.toString())),
+                  );
+                }).toList(),
+              ),
+            ),
     );
   }
 
@@ -96,33 +103,40 @@ class SettingsPage extends HookConsumerWidget {
     WidgetRef ref,
     AppSettings settings,
   ) {
+    String labelOf(AppLanguage language) => switch (language) {
+      AppLanguage.system => l10n.languageSystem,
+      AppLanguage.english => l10n.languageEnglishNative,
+      AppLanguage.simplifiedChinese => l10n.languageChineseNative,
+    };
+    void select(AppLanguage value) {
+      ref.read(settingsProvider.notifier).updateLanguage(value);
+    }
+
     return ListTile(
       title: Text(l10n.language),
       subtitle: Text(l10n.languageDescription),
-      trailing: DropdownButtonHideUnderline(
-        child: DropdownButton<AppLanguage>(
-          value: settings.language,
-          onChanged: (value) {
-            if (value != null) {
-              ref.read(settingsProvider.notifier).updateLanguage(value);
-            }
-          },
-          items: [
-            DropdownMenuItem(
-              value: AppLanguage.system,
-              child: Text(l10n.languageSystem),
+      trailing: useCupertinoChrome
+          ? _NativeMenuSelector<AppLanguage>(
+              options: AppLanguage.values,
+              selected: settings.language,
+              labelOf: labelOf,
+              onSelected: select,
+            )
+          : DropdownButtonHideUnderline(
+              child: DropdownButton<AppLanguage>(
+                value: settings.language,
+                onChanged: (value) {
+                  if (value != null) select(value);
+                },
+                items: [
+                  for (final language in AppLanguage.values)
+                    DropdownMenuItem(
+                      value: language,
+                      child: Text(labelOf(language)),
+                    ),
+                ],
+              ),
             ),
-            DropdownMenuItem(
-              value: AppLanguage.english,
-              child: Text(l10n.languageEnglishNative),
-            ),
-            DropdownMenuItem(
-              value: AppLanguage.simplifiedChinese,
-              child: Text(l10n.languageChineseNative),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -317,6 +331,40 @@ class _SettingsList extends StatelessWidget {
         prismItem,
         ...(updateActionButton == null ? const [] : [updateActionButton!]),
       ],
+    );
+  }
+}
+
+/// A pull-down button that picks one value from a native iOS menu, with the
+/// current choice checked.
+class _NativeMenuSelector<T> extends StatelessWidget {
+  const _NativeMenuSelector({
+    required this.options,
+    required this.selected,
+    required this.labelOf,
+    required this.onSelected,
+  });
+
+  final List<T> options;
+  final T selected;
+  final String Function(T value) labelOf;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return AdaptivePopupMenuButton.text<T>(
+      label: labelOf(selected),
+      buttonStyle: PopupButtonStyle.plain,
+      shrinkWrap: true,
+      items: [
+        for (final option in options)
+          AdaptivePopupMenuItem<T>(
+            label: labelOf(option),
+            value: option,
+            selected: option == selected,
+          ),
+      ],
+      onSelected: (index, item) => onSelected(item.value as T),
     );
   }
 }

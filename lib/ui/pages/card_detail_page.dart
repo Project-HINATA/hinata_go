@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../core/engine/mifare_write_payload.dart';
@@ -19,6 +20,8 @@ import '../components/instances/select_instance_dialog.dart';
 import '../components/reader/scanned_card_detail_v2.dart';
 import '../components/reader/transit_history_card.dart';
 import '../components/reader/ndef_records_card.dart';
+import '../widgets/app_scaffold.dart';
+import '../widgets/native_alert.dart';
 import '../widgets/save_card_dialog.dart';
 
 class CardDetailPage extends HookConsumerWidget {
@@ -69,27 +72,36 @@ class CardDetailPage extends HookConsumerWidget {
     SavedCard activeSavedCard,
   ) async {
     final controller = TextEditingController(text: activeSavedCard.name);
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.renameCard),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: l10n.cardNameLabel),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
-    );
+    final newName = useCupertinoChrome
+        ? (await showNativeTextInput(
+            context,
+            title: l10n.renameCard,
+            placeholder: l10n.cardNameLabel,
+            initialValue: activeSavedCard.name,
+            confirmLabel: l10n.save,
+          ))?.trim()
+        : await showDialog<String>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(l10n.renameCard),
+              content: TextField(
+                controller: controller,
+                decoration: InputDecoration(labelText: l10n.cardNameLabel),
+                autofocus: true,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n.cancel),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.pop(context, controller.text.trim()),
+                  child: Text(l10n.save),
+                ),
+              ],
+            ),
+          );
 
     if (newName != null &&
         newName.isNotEmpty &&
@@ -106,26 +118,36 @@ class CardDetailPage extends HookConsumerWidget {
     WidgetRef ref,
     SavedCard activeSavedCard,
   ) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.deleteCard),
-        content: Text(l10n.confirmDeleteCard),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              l10n.delete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+    final confirm = useCupertinoChrome
+        ? await showNativeConfirmation(
+            context,
+            title: l10n.deleteCard,
+            message: l10n.confirmDeleteCard,
+            confirmLabel: l10n.delete,
+            destructive: true,
+          )
+        : await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(l10n.deleteCard),
+              content: Text(l10n.confirmDeleteCard),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(l10n.cancel),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(
+                    l10n.delete,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
+          );
 
     if (confirm == true) {
       if (!context.mounted) return;
@@ -164,16 +186,15 @@ class CardDetailPage extends HookConsumerWidget {
 
     final activeCard = activeSavedCard?.card ?? card!;
 
-    return Scaffold(
-      appBar: _buildAppBar(
-        context,
-        ref,
-        activeSavedCard,
-        activeCard,
-        writerState.isWriting,
-      ),
+    return AppScaffold(
+      title: activeCard is NdefCard
+          ? l10n.ndefDetails
+          : l10n.cardDetails(activeSavedCard?.name ?? activeCard.name),
+      actions: activeSavedCard == null || writerState.isWriting
+          ? const []
+          : _buildActions(context, ref, activeSavedCard, activeCard),
       body: SafeArea(
-        top: false,
+        top: useCupertinoChrome,
         bottom: false,
         child: _buildBody(
           context,
@@ -190,53 +211,38 @@ class CardDetailPage extends HookConsumerWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(
+  List<AdaptiveAppBarAction> _buildActions(
     BuildContext context,
     WidgetRef ref,
-    SavedCard? activeSavedCard,
+    SavedCard activeSavedCard,
     ICCard activeCard,
-    bool isWriting,
   ) {
-    return AppBar(
-      title: Text(
-        activeCard is NdefCard
-            ? l10n.ndefDetails
-            : l10n.cardDetails(activeSavedCard?.name ?? activeCard.name),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      actions: [
-        if (activeSavedCard != null) ...[
-          if (activeCard is NdefCard)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: l10n.ndefEdit,
-              onPressed: isWriting
-                  ? null
-                  : () => showNdefEditor(
-                      context,
-                      initialFolderId: activeSavedCard.folderId,
-                      savedCard: activeSavedCard,
-                    ),
-            ),
-          if (activeCard is! NdefCard)
-            IconButton(
-              icon: const Icon(Icons.edit_note),
-              onPressed: isWriting
-                  ? null
-                  : () => _renameCard(context, ref, activeSavedCard),
-              tooltip: l10n.renameCard,
-            ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: isWriting
-                ? null
-                : () => _deleteCard(context, ref, activeSavedCard),
-            tooltip: l10n.deleteCard,
+    return [
+      if (activeCard is NdefCard)
+        AdaptiveAppBarAction(
+          iosSymbol: 'square.and.pencil',
+          icon: Icons.edit_outlined,
+          label: l10n.ndefEdit,
+          onPressed: () => showNdefEditor(
+            context,
+            initialFolderId: activeSavedCard.folderId,
+            savedCard: activeSavedCard,
           ),
-        ],
-      ],
-    );
+        )
+      else
+        AdaptiveAppBarAction(
+          iosSymbol: 'pencil',
+          icon: Icons.edit_note,
+          label: l10n.renameCard,
+          onPressed: () => _renameCard(context, ref, activeSavedCard),
+        ),
+      AdaptiveAppBarAction(
+        iosSymbol: 'trash',
+        icon: Icons.delete_outline,
+        label: l10n.deleteCard,
+        onPressed: () => _deleteCard(context, ref, activeSavedCard),
+      ),
+    ];
   }
 
   Widget _buildBody(
@@ -294,23 +300,49 @@ class CardDetailPage extends HookConsumerWidget {
   }
 }
 
-class _CardDetailBody extends StatelessWidget {
+/// The card detail with its actions floating over the bottom of it. The detail
+/// scrolls underneath them, and keeps room to scroll its end clear of them.
+class _CardDetailBody extends StatefulWidget {
   const _CardDetailBody({required this.detail, required this.actions});
 
   final Widget detail;
   final Widget actions;
 
   @override
+  State<_CardDetailBody> createState() => _CardDetailBodyState();
+}
+
+class _CardDetailBodyState extends State<_CardDetailBody> {
+  final GlobalKey _actionsKey = GlobalKey();
+  double _actionsHeight = 0;
+
+  void _measureActions() {
+    final box = _actionsKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final height = box.size.height;
+    if (height != _actionsHeight) setState(() => _actionsHeight = height);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _measureActions();
+    });
+
+    return Stack(
       children: [
-        Expanded(
+        Positioned.fill(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: detail,
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + _actionsHeight),
+            child: widget.detail,
           ),
         ),
-        actions,
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: KeyedSubtree(key: _actionsKey, child: widget.actions),
+        ),
       ],
     );
   }

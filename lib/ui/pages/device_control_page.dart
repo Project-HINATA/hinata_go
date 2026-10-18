@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../providers/hardware_device_provider.dart';
 import '../components/device/disconnected_state.dart';
 import '../components/device/device_dashboard.dart';
+import '../widgets/app_scaffold.dart';
 
 class DeviceControlPage extends ConsumerWidget {
   const DeviceControlPage({super.key});
@@ -15,22 +17,21 @@ class DeviceControlPage extends ConsumerWidget {
     final hinataDevice = deviceState.connectedDevice;
     final isConnected = hinataDevice != null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.deviceHub),
-        actions: [
-          if (isConnected)
-            IconButton(
-              icon: const Icon(Icons.link_off),
-              tooltip: 'Disconnect',
-              onPressed: () {
-                ref.read(hardwareDeviceProvider.notifier).disconnect();
-              },
-            ),
-        ],
-      ),
+    void disconnect() => ref.read(hardwareDeviceProvider.notifier).disconnect();
+
+    return AppScaffold(
+      title: l10n.deviceHub,
+      actions: [
+        if (isConnected)
+          AdaptiveAppBarAction(
+            iosSymbol: 'link.badge.minus',
+            icon: Icons.link_off,
+            label: 'Disconnect',
+            onPressed: disconnect,
+          ),
+      ],
       body: SafeArea(
-        top: false,
+        top: useCupertinoChrome,
         bottom: false,
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -42,12 +43,10 @@ class DeviceControlPage extends ConsumerWidget {
               : const DisconnectedState(),
         ),
       ),
-      floatingActionButton: !isConnected
+      materialFloatingActionButton: !isConnected
           ? null
           : FloatingActionButton.small(
-              onPressed: () {
-                ref.read(hardwareDeviceProvider.notifier).disconnect();
-              },
+              onPressed: disconnect,
               tooltip: 'Disconnect',
               child: const Icon(Icons.link_off),
             ),

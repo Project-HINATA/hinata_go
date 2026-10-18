@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:hinata_go/context_extensions.dart';
@@ -6,6 +7,8 @@ import 'package:hinata_go/l10n/l10n.dart';
 
 import '../../../providers/data_management_provider.dart';
 import '../../../services/notification_service.dart';
+import '../../widgets/app_scaffold.dart';
+import '../../widgets/native_alert.dart';
 
 class DataManagementSheet extends HookConsumerWidget {
   const DataManagementSheet({super.key});
@@ -27,67 +30,94 @@ class DataManagementSheet extends HookConsumerWidget {
       final foldersCount = (data['card_folders'] as List?)?.length ?? 0;
       final instancesCount = (data['instances'] as List?)?.length ?? 0;
 
-      final result = await showDialog<String>(
-        context: sheetContext,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(l10n.importPreviewTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.importPreviewMessage),
-              const SizedBox(height: 16),
-              Text(l10n.itemCountCards(cardsCount)),
-              Text(l10n.itemCountFolders(foldersCount)),
-              Text(l10n.itemCountInstances(instancesCount)),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => dialogContext.navigator.pop('cancel'),
-              child: Text(l10n.cancel),
-            ),
-            TextButton(
-              onPressed: () => dialogContext.navigator.pop('merge'),
-              child: Text(l10n.importMerge),
-            ),
-            FilledButton(
-              onPressed: () => dialogContext.navigator.pop('overwrite'),
-              style: FilledButton.styleFrom(
-                backgroundColor: sheetContext.colorScheme.error,
-                foregroundColor: sheetContext.colorScheme.onError,
+      final result = useCupertinoChrome
+          ? await showNativeAlert<String>(
+              sheetContext,
+              title: l10n.importPreviewTitle,
+              message: [
+                l10n.importPreviewMessage,
+                l10n.itemCountCards(cardsCount),
+                l10n.itemCountFolders(foldersCount),
+                l10n.itemCountInstances(instancesCount),
+              ].join('\n'),
+              choices: [
+                NativeAlertChoice(label: l10n.importMerge, value: 'merge'),
+                NativeAlertChoice(
+                  label: l10n.importOverwrite,
+                  value: 'overwrite',
+                  style: AlertActionStyle.destructive,
+                ),
+              ],
+            )
+          : await showDialog<String>(
+              context: sheetContext,
+              builder: (dialogContext) => AlertDialog(
+                title: Text(l10n.importPreviewTitle),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.importPreviewMessage),
+                    const SizedBox(height: 16),
+                    Text(l10n.itemCountCards(cardsCount)),
+                    Text(l10n.itemCountFolders(foldersCount)),
+                    Text(l10n.itemCountInstances(instancesCount)),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => dialogContext.navigator.pop('cancel'),
+                    child: Text(l10n.cancel),
+                  ),
+                  TextButton(
+                    onPressed: () => dialogContext.navigator.pop('merge'),
+                    child: Text(l10n.importMerge),
+                  ),
+                  FilledButton(
+                    onPressed: () => dialogContext.navigator.pop('overwrite'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: sheetContext.colorScheme.error,
+                      foregroundColor: sheetContext.colorScheme.onError,
+                    ),
+                    child: Text(l10n.importOverwrite),
+                  ),
+                ],
               ),
-              child: Text(l10n.importOverwrite),
-            ),
-          ],
-        ),
-      );
+            );
 
       if (result == 'cancel' || result == null) return;
 
       if (result == 'overwrite') {
         if (!sheetContext.mounted) return;
-        final confirmOverwrite = await showDialog<bool>(
-          context: sheetContext,
-          builder: (dialogContext) => AlertDialog(
-            title: Text(l10n.confirmOverwriteTitle),
-            content: Text(l10n.confirmOverwriteMessage),
-            actions: [
-              TextButton(
-                onPressed: () => dialogContext.navigator.pop(false),
-                child: Text(l10n.cancel),
-              ),
-              FilledButton(
-                onPressed: () => dialogContext.navigator.pop(true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: sheetContext.colorScheme.error,
-                  foregroundColor: sheetContext.colorScheme.onError,
+        final confirmOverwrite = useCupertinoChrome
+            ? await showNativeConfirmation(
+                sheetContext,
+                title: l10n.confirmOverwriteTitle,
+                message: l10n.confirmOverwriteMessage,
+                confirmLabel: l10n.importOverwrite,
+                destructive: true,
+              )
+            : await showDialog<bool>(
+                context: sheetContext,
+                builder: (dialogContext) => AlertDialog(
+                  title: Text(l10n.confirmOverwriteTitle),
+                  content: Text(l10n.confirmOverwriteMessage),
+                  actions: [
+                    TextButton(
+                      onPressed: () => dialogContext.navigator.pop(false),
+                      child: Text(l10n.cancel),
+                    ),
+                    FilledButton(
+                      onPressed: () => dialogContext.navigator.pop(true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: sheetContext.colorScheme.error,
+                        foregroundColor: sheetContext.colorScheme.onError,
+                      ),
+                      child: Text(l10n.importOverwrite),
+                    ),
+                  ],
                 ),
-                child: Text(l10n.importOverwrite),
-              ),
-            ],
-          ),
-        );
+              );
         if (confirmOverwrite != true) return;
       }
 

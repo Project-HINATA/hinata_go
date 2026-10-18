@@ -12,6 +12,8 @@ import '../../../providers/app_state_provider.dart';
 import '../../../core/validators/access_code_validator.dart';
 import '../../../l10n/l10n.dart';
 import '../../ui_text.dart';
+import '../../widgets/app_scaffold.dart';
+import '../../widgets/native_alert.dart';
 
 class AddCardDialog extends HookConsumerWidget {
   final String initialFolderId;
@@ -70,26 +72,36 @@ class AddCardDialog extends HookConsumerWidget {
       );
 
       if (duplicate != null) {
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(l10n.duplicateCardTitle),
-            content: Text(l10n.duplicateCardPrompt),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l10n.cancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(
-                  l10n.overwrite,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+        final confirm = useCupertinoChrome
+            ? await showNativeConfirmation(
+                context,
+                title: l10n.duplicateCardTitle,
+                message: l10n.duplicateCardPrompt,
+                confirmLabel: l10n.overwrite,
+                destructive: true,
+              )
+            : await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text(l10n.duplicateCardTitle),
+                  content: Text(l10n.duplicateCardPrompt),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(l10n.cancel),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text(
+                        l10n.overwrite,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        );
+              );
 
         if (confirm != true) return;
 
