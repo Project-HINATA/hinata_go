@@ -9,6 +9,8 @@ import '../../../models/card/saved_card.dart';
 import '../../../models/card/ndef.dart';
 import '../../../providers/card_writer_provider.dart';
 import '../../../services/nfc/mifare_card_writer.dart';
+import '../../widgets/app_scaffold.dart';
+import '../../widgets/native_alert.dart';
 
 Future<void> showCardWriteFlow(
   BuildContext context,
@@ -59,30 +61,38 @@ Future<void> showCardWriteFlow(
   if (mode == null || !context.mounted) return;
 
   if (mode == CardWriteMode.permanentlyReadOnly) {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(
-          Icons.lock_outline,
-          color: Theme.of(context).colorScheme.error,
-        ),
-        title: Text(l10n.cardWritePermanentConfirmTitle),
-        content: Text(l10n.cardWritePermanentConfirmBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+    final confirmed = useCupertinoChrome
+        ? await showNativeConfirmation(
+            context,
+            title: l10n.cardWritePermanentConfirmTitle,
+            message: l10n.cardWritePermanentConfirmBody,
+            confirmLabel: l10n.cardWriteConfirmPermanent,
+            destructive: true,
+          )
+        : await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              icon: Icon(
+                Icons.lock_outline,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(l10n.cardWritePermanentConfirmTitle),
+              content: Text(l10n.cardWritePermanentConfirmBody),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(l10n.cancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  child: Text(l10n.cardWriteConfirmPermanent),
+                ),
+              ],
             ),
-            child: Text(l10n.cardWriteConfirmPermanent),
-          ),
-        ],
-      ),
-    );
+          );
     if (confirmed != true || !context.mounted) return;
   }
 

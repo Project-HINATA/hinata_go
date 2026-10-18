@@ -7,6 +7,7 @@ import 'package:hinata_go/services/notification_service.dart';
 
 import '../../providers/firmware_provider.dart';
 import '../components/firmware/firmware_status_view.dart';
+import '../widgets/app_scaffold.dart';
 
 class FirmwareUpdatePage extends ConsumerWidget {
   const FirmwareUpdatePage({super.key});
@@ -14,10 +15,10 @@ class FirmwareUpdatePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!firmwareFeatureEnabled) {
-      return Scaffold(
-        appBar: _buildDisabledAppBar(),
+      return AppScaffold(
+        title: 'Firmware Update',
         body: SafeArea(
-          top: false,
+          top: useCupertinoChrome,
           bottom: false,
           child: const Center(
             child: Padding(
@@ -39,9 +40,17 @@ class FirmwareUpdatePage extends ConsumerWidget {
           _showFlashWarning(context, ref);
         }
       },
-      child: Scaffold(
-        appBar: _buildAppBar(context, isFlashing),
-        body: SafeArea(top: false, bottom: false, child: _buildBody()),
+      child: AppScaffold(
+        title: 'Firmware Update',
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: isFlashing ? null : () => context.pop(),
+        ),
+        body: SafeArea(
+          top: useCupertinoChrome,
+          bottom: false,
+          child: _buildBody(),
+        ),
       ),
     );
   }
@@ -50,20 +59,6 @@ class FirmwareUpdatePage extends ConsumerWidget {
     ref
         .read(notificationServiceProvider)
         .showInfo('Please wait until firmware update is complete.');
-  }
-
-  PreferredSizeWidget _buildDisabledAppBar() {
-    return AppBar(title: const Text('Firmware Update'));
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context, bool isFlashing) {
-    return AppBar(
-      title: const Text('Firmware Update'),
-      leading: IconButton(
-        icon: const Icon(Icons.close),
-        onPressed: isFlashing ? null : () => context.pop(),
-      ),
-    );
   }
 
   Widget _buildBody() {

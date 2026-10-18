@@ -1,37 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 
-import '../core/app_host_mode.dart';
 import '../providers/navigation_provider.dart';
-import 'widgets/shell_branch_scope.dart';
 
 export '../providers/navigation_provider.dart'
     show AppActionConfig, AppActionItem;
 
-/// Unified action button builder across platforms.
-///
-/// - On [AppHostMode.nativeIOS]: registers the action configuration with
-///   the native shell, which renders a native Liquid Glass (`.glass()`) button
-///   and handles taps/menus via platform channel.
-/// - On [AppHostMode.flutterShell]: renders a Material 3 FloatingActionButton
-///   (or menu of FABs if [AppActionConfig.menuItems] is provided).
+/// The page's primary action as a Material 3 FloatingActionButton, or a column
+/// of extended FABs when [AppActionConfig.menuItems] is provided.
 Widget? buildAppActionButton(
-  BuildContext context,
-  WidgetRef ref, {
+  BuildContext context, {
   required AppActionConfig config,
 }) {
-  final hostMode = ref.watch(appHostModeProvider);
-
-  if (!config.visible) {
-    if (hostMode == AppHostMode.nativeIOS) {
-      return const _AppActionRegistrar(config: null);
-    }
-    return null;
-  }
-
-  if (hostMode == AppHostMode.nativeIOS) {
-    return _AppActionRegistrar(config: config);
-  }
+  if (!config.visible) return null;
 
   if (config.menuItems != null && config.menuItems!.isNotEmpty) {
     return _FlutterMenuAction(config: config);
@@ -50,6 +31,40 @@ Widget? buildAppActionButton(
     onPressed: config.onPressed,
     tooltip: config.tooltip,
     child: Icon(config.icon),
+  );
+}
+
+/// The page's primary action as a native toolbar item. A config with menu items
+/// opens a native menu from the toolbar, like the "+" of a system app.
+AdaptiveAppBarAction? buildToolbarAction(AppActionConfig config) {
+  if (!config.visible) return null;
+
+  final items = config.menuItems;
+  if (items != null && items.isNotEmpty) {
+    return AdaptiveAppBarAction(
+      iosSymbol: config.nativeSymbol ?? 'plus',
+      icon: config.icon,
+      label: config.tooltip,
+      menuItems: [
+        for (final item in items)
+          AdaptivePopupMenuItem<String>(
+            label: item.label,
+            icon: item.nativeSymbol,
+            value: item.id,
+          ),
+      ],
+      onMenuItemSelected: (index, _) => items[index].onPressed(),
+    );
+  }
+
+  final onPressed = config.onPressed;
+  if (onPressed == null) return null;
+
+  return AdaptiveAppBarAction(
+    iosSymbol: config.nativeSymbol ?? 'plus',
+    icon: config.icon,
+    label: config.tooltip,
+    onPressed: onPressed,
   );
 }
 
@@ -97,76 +112,5 @@ class _FlutterMenuAction extends StatelessWidget {
         ],
       ],
     );
-  }
-}
-
-class _AppActionRegistrar extends ConsumerStatefulWidget {
-  final AppActionConfig? config;
-
-  const _AppActionRegistrar({required this.config});
-
-  @override
-  ConsumerState<_AppActionRegistrar> createState() =>
-      _AppActionRegistrarState();
-}
-
-class _AppActionRegistrarState extends ConsumerState<_AppActionRegistrar> {
-  late final AppActionNotifier _notifier;
-
-  /// Identifies this page's claim, so it can be withdrawn without disturbing anyone else's.
-  final Object _owner = Object();
-
-  /// `null` for pages that live outside the shell, such as root-level routes.
-  bool? _isSelectedBranch;
-
-  @override
-  void initState() {
-    super.initState();
-    _notifier = ref.read(appActionNotifierProvider.notifier);
-  }
-
-  @override
-  void dispose() {
-    _notifier.release(_owner);
-    super.dispose();
-  }
-
-  void _sync() {
-    if (!mounted) return;
-
-    // Only the page the user is looking at may own the native action button. Every shell branch
-    // stays mounted, so an inactive branch would otherwise keep claiming to be current.
-    final isSelectedBranch = _isSelectedBranch;
-    final coverage = ref.read(nativeShellCoverageProvider);
-    final bool onScreen;
-
-    if (isSelectedBranch != null) {
-      // Shell page: it owns the button while its branch is selected. A dialog presented on top of
-      // the shell does not take it away — the native chrome dims the button instead, so the
-      // transition is not interrupted by it popping out.
-      onScreen = isSelectedBranch && !coverage.shellCovered;
-    } else {
-      // Root-level route: it owns the button while it is what the user sees, which modals on top of
-      // it do not change. An opaque route pushed above it takes the button over.
-      final route = ModalRoute.of(context);
-      onScreen =
-          (route?.isCurrent ?? false) ||
-          identical(coverage.visibleRoute, route);
-    }
-
-    _notifier.claim(
-      _owner,
-      onScreen: onScreen,
-      inShell: isSelectedBranch != null,
-      config: widget.config,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    _isSelectedBranch = ShellBranchScope.maybeIsSelected(context);
-    ref.listen(nativeShellCoverageProvider, (previous, next) => _sync());
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
-    return const SizedBox.shrink();
   }
 }

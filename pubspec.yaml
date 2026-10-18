@@ -55,6 +55,10 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   web: ^1.1.0
 
+  # Adaptive iOS / Material UI (vendored fork, see plugins/adaptive_platform_ui/FORK.md)
+  adaptive_platform_ui:
+    path: plugins/adaptive_platform_ui/
+
   # Hardware USB APIs
   neo_web_hid:
     git:

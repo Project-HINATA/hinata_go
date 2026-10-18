@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
@@ -11,6 +12,7 @@ import '../app_layout.dart';
 import '../components/reader/current_scan_result_panel.dart';
 import '../components/reader/instance_card.dart';
 import '../components/reader/nfc_info_display.dart';
+import '../widgets/app_scaffold.dart';
 
 class ScanPage extends ConsumerWidget {
   const ScanPage({super.key});
@@ -40,11 +42,13 @@ class ScanPage extends ConsumerWidget {
       activeInstance: activeInstance,
     );
 
-    return Scaffold(
+    return AppScaffold(
       backgroundColor: context.colorScheme.surface,
-      appBar: layout.isLandscape ? null : _buildAppBar(context),
+      titleWidget: _buildAppBarTitle(context),
+      materialAppBar: _buildAppBar(context),
+      showMaterialAppBar: !layout.isLandscape,
       body: SafeArea(
-        top: layout.isLandscape,
+        top: layout.isLandscape || useCupertinoChrome,
         bottom: false,
         child: _ScanPageBody(
           layout: layout,
@@ -267,6 +271,17 @@ class _ModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (useCupertinoChrome) {
+      return SizedBox(
+        width: 240,
+        child: AdaptiveSegmentedControl(
+          labels: const ['Normal', 'Sender'],
+          selectedIndex: ScanningMode.values.indexOf(mode),
+          onValueChanged: (index) => onModeChanged(ScanningMode.values[index]),
+        ),
+      );
+    }
+
     return SegmentedButton<ScanningMode>(
       segments: const [
         ButtonSegment(

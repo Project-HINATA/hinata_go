@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'shell_branch_scope.dart';
-
 class AnimatedBranchContainer extends StatelessWidget {
   final int currentIndex;
   final List<Widget> children;
@@ -85,20 +83,17 @@ class _AnimatedBranchState extends State<_AnimatedBranch> {
 
     return IgnorePointer(
       ignoring: !isCurrent,
-      // Branches stay mounted while off screen, so publish the selection for descendants that need
-      // to know whether they are actually visible.
-      child: ShellBranchScope(
-        isSelected: isCurrent,
-        child: AnimatedSlide(
-          offset: offset,
+      child: AnimatedSlide(
+        offset: offset,
+        duration: duration,
+        curve: Curves.easeOutCubic,
+        child: AnimatedOpacity(
+          opacity: isCurrent ? 1.0 : 0.0,
           duration: duration,
           curve: Curves.easeOutCubic,
-          child: AnimatedOpacity(
-            opacity: isCurrent ? 1.0 : 0.0,
-            duration: duration,
-            curve: Curves.easeOutCubic,
-            child: widget.child,
-          ),
+          // The fixed iOS toolbar shows the page whose tickers run, so off-screen branches must
+          // stop theirs. This sits below the slide and fade, which keep animating the way out.
+          child: TickerMode(enabled: isCurrent, child: widget.child),
         ),
       ),
     );

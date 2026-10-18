@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,25 +12,16 @@ import 'package:hinata_go/providers/nfc_provider.dart';
 import 'package:hinata_go/providers/settings_provider.dart';
 import 'package:hinata_go/providers/storage_provider.dart';
 import 'package:hinata_go/services/notification_service.dart';
-import 'navigation/router.dart'; // Keep this import as it's not explicitly removed or replaced by the instruction
-import 'core/app_host_mode.dart';
+import 'navigation/router.dart';
 
-Future<void> main() => _bootstrap(AppHostMode.flutterShell);
-
-@pragma('vm:entry-point')
-Future<void> nativeMain() => _bootstrap(AppHostMode.nativeIOS);
-
-Future<void> _bootstrap(AppHostMode hostMode) async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
 
   runApp(
     ProviderScope(
-      overrides: [
-        appHostModeProvider.overrideWithValue(hostMode),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const MyApp(),
     ),
   );
@@ -65,7 +57,13 @@ class MyApp extends ConsumerWidget {
         return MaterialApp.router(
           builder: (context, child) {
             L10nHolder.update(AppLocalizations.of(context));
-            return _SystemUiController(child: child ?? const SizedBox.shrink());
+            return _SystemUiController(
+              // Keeps one Liquid Glass toolbar above the navigator on iOS 26+,
+              // and lays it out in the iPhone Duo vertical bar.
+              child: AdaptiveToolbarHost(
+                child: child ?? const SizedBox.shrink(),
+              ),
+            );
           },
           onGenerateTitle: (context) => l10n.appTitle,
           scaffoldMessengerKey: notificationService.messengerKey,

@@ -10,7 +10,7 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    flutterEngine.run(withEntrypoint: "nativeMain")
+    flutterEngine.run()
     GeneratedPluginRegistrant.register(with: flutterEngine)
     PrismURLBridge.shared.attach()
     StoreVisitLiveActivityManager.shared.startGlobalActivityTracking()

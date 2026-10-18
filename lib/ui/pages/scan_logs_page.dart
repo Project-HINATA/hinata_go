@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:hinata_go/context_extensions.dart';
 import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
 import '../ui_text.dart';
+import '../widgets/app_scaffold.dart';
 import '../widgets/save_card_dialog.dart';
 
 class ScanLogsPage extends HookConsumerWidget {
@@ -17,35 +19,30 @@ class ScanLogsPage extends HookConsumerWidget {
     final logs = ref.watch(scanLogsProvider);
     final reversedLogs = logs.reversed.toList();
 
-    return Scaffold(
-      appBar: _buildAppBar(context, ref),
+    void clearLogs() => ref.read(scanLogsProvider.notifier).clearLogs();
+
+    return AppScaffold(
+      title: l10n.scanHistoryLogs,
+      actions: [
+        AdaptiveAppBarAction(
+          iosSymbol: 'trash',
+          icon: Icons.delete_sweep,
+          label: l10n.clearHistory,
+          onPressed: clearLogs,
+        ),
+      ],
       body: SafeArea(
         top: false,
         bottom: false,
         child: _ScanLogsBody(child: _buildBody(context, reversedLogs)),
       ),
-      floatingActionButton: reversedLogs.isEmpty
+      materialFloatingActionButton: reversedLogs.isEmpty
           ? null
           : FloatingActionButton.small(
-              onPressed: () => ref.read(scanLogsProvider.notifier).clearLogs(),
+              onPressed: clearLogs,
               tooltip: l10n.clearHistory,
               child: const Icon(Icons.delete_sweep),
             ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
-    return AppBar(
-      title: Text(l10n.scanHistoryLogs),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.delete_sweep),
-          tooltip: l10n.clearHistory,
-          onPressed: () {
-            ref.read(scanLogsProvider.notifier).clearLogs();
-          },
-        ),
-      ],
     );
   }
 
