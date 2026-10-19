@@ -50,32 +50,13 @@ void usePhone(WidgetTester tester) {
 Finder get bar => find.byType(HostedTopToolbar);
 Finder inBar(Finder finder) => find.descendant(of: bar, matching: finder);
 
-/// Opacity of the page layer (or shared back layer) [finder] is drawn in.
-double opacityOf(WidgetTester tester, Finder finder) => tester
-    .widget<FadeTransition>(
-      find
-          .ancestor(
-            of: inBar(finder),
-            // Layers are keyed; the buttons' own press feedback fades are not.
-            matching: find.byWidgetPredicate(
-              (w) => w is FadeTransition && w.key != null,
-            ),
-          )
-          .first,
-    )
-    .opacity
-    .value;
-
-Finder get backButton => inBar(find.byType(AdaptiveButton));
+Finder get backButton =>
+    inBar(find.byKey(const ValueKey<String>('adaptive_toolbar_back_fallback')));
 
 void main() {
   group('HostedTopToolbar', () {
-    testWidgets('back fills the toolbar height and is tappable near its edge', (
-      tester,
-    ) async {
+    testWidgets('back pops the page in front', (tester) async {
       usePhone(tester);
-      tester.view.display.size = tester.view.physicalSize;
-      addTearDown(tester.view.display.resetSize);
       final nav = GlobalKey<NavigatorState>();
       await tester.pumpWidget(hostedApp(navigatorKey: nav, home: page('Home')));
       await tester.pump();
@@ -84,16 +65,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final rect = tester.getRect(backButton);
-      expect(rect.size, const Size(44, 44));
-      expect(rect.topLeft, const Offset(16, 62));
-      expect(rect.bottom, 62 + kHostedToolbarHeight);
-      final button = tester.widget<AdaptiveButton>(backButton);
-      expect(button.size, AdaptiveButtonSize.large);
-      expect(button.useSmoothRectangleBorder, isFalse);
-
-      // This point is above the old 38-point button's bounds.
-      await tester.tapAt(rect.topCenter + const Offset(0, 1));
+      expect(backButton, findsOneWidget);
+      await tester.tap(backButton);
       await tester.pumpAndSettle();
       expect(find.text('body:Detail'), findsNothing);
       expect(backButton, findsNothing);
@@ -134,54 +107,24 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Mid-transition: the bar has not moved; it is handing over from the
-      // outgoing page's items to the incoming page's.
+      // Mid-transition: the bar has not moved; it already shows the page in
+      // front and UIKit animates its items.
       expect(
         tester.getRect(
           find.descendant(of: bar, matching: find.byType(SizedBox)).first,
         ),
         rect,
       );
-      expect(opacityOf(tester, find.text('Home')), lessThan(1));
-      expect(opacityOf(tester, find.text('Detail')), lessThan(1));
+      expect(inBar(find.text('Detail')), findsOneWidget);
       await tester.pumpAndSettle();
       expect(inBar(find.text('Home')), findsNothing);
-      expect(opacityOf(tester, find.text('Detail')), 1);
+      expect(inBar(find.text('Detail')), findsOneWidget);
 
       // Back is performed on the owner's navigator.
       await tester.tap(backButton);
       await tester.pumpAndSettle();
       expect(find.text('body:Detail'), findsNothing);
       expect(inBar(find.text('Home')), findsOneWidget);
-    });
-
-    testWidgets('outgoing items leave before incoming ones arrive', (
-      tester,
-    ) async {
-      usePhone(tester);
-      final nav = GlobalKey<NavigatorState>();
-      await tester.pumpWidget(hostedApp(navigatorKey: nav, home: page('Home')));
-      await tester.pump();
-
-      final route = PageRouteBuilder<void>(
-        transitionDuration: const Duration(seconds: 4),
-        reverseTransitionDuration: const Duration(seconds: 4),
-        pageBuilder: (_, _, _) => page('Detail'),
-      );
-      nav.currentState!.push(route);
-      await tester.pump();
-      await tester.pump();
-
-      // A quarter in: the old title is fading, the new one has not started.
-      await tester.pump(const Duration(seconds: 1));
-      expect(opacityOf(tester, find.text('Home')), inExclusiveRange(0, 1));
-      expect(opacityOf(tester, find.text('Detail')), 0);
-
-      // Three quarters in: the old one is gone, the new one is arriving.
-      await tester.pump(const Duration(seconds: 2));
-      expect(opacityOf(tester, find.text('Home')), 0);
-      expect(opacityOf(tester, find.text('Detail')), inExclusiveRange(0, 1));
-      await tester.pumpAndSettle();
     });
 
     testWidgets('a back button both pages show stays put', (tester) async {
@@ -203,9 +146,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 150));
 
       expect(backButton, findsOneWidget);
-      expect(opacityOf(tester, find.byType(AdaptiveButton)), 1);
       expect(tester.getRect(backButton), backRect);
-      expect(opacityOf(tester, find.text('B')), lessThan(1));
+      expect(inBar(find.text('C')), findsOneWidget);
       await tester.pumpAndSettle();
     });
 

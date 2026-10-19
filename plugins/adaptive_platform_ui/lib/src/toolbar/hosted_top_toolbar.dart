@@ -1,9 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
 
-import '../style/sf_symbol.dart';
 import '../widgets/adaptive_app_bar_action.dart';
-import '../widgets/adaptive_button.dart';
 import '../widgets/ios26/ios26_native_toolbar.dart';
 import 'duo_vertical_bar.dart';
 import 'toolbar_blend.dart';
@@ -68,14 +67,14 @@ class TopToolbarContent {
 }
 
 /// The one top toolbar of the app. It stays where it is while pages come and
-/// go underneath it; only its items change.
+/// go underneath it; only its navigation item changes.
 ///
-/// It works exactly like the iPhone Duo vertical bar: every page involved in
-/// a transition gets a layer of its own (here a native Liquid Glass
-/// navigation bar), the layers are blended as [ToolbarBlend] dictates, so the
-/// outgoing items fade out before the incoming ones fade in, in step with the
-/// route transition and with a back swipe. A back button that both pages show
-/// is one control in a layer of its own and stays put.
+/// It works exactly like a system navigation bar: one native bar remains in
+/// place for the whole app, and each page change replaces its item with
+/// `setItems(animated: true)`. UIKit then plays the Liquid Glass button
+/// insertion/removal animation itself, in step with the route transition.
+/// Keeping a single bar also avoids creating a new glass bar view for every
+/// pushed page.
 class HostedTopToolbar extends StatelessWidget {
   const HostedTopToolbar({
     super.key,
@@ -99,18 +98,9 @@ class HostedTopToolbar extends StatelessWidget {
     final lowerEntry = blend.lower;
     final upper = TopToolbarContent.of(upperEntry, titleOnly: titleOnly);
     final lower = TopToolbarContent.of(lowerEntry, titleOnly: titleOnly);
-    final upperOwns = blend.upperOwns;
-    final upperOpacity = blend.upperOpacity;
-    final lowerOpacity = blend.lowerOpacity;
-
-    final upperBack = upper.impliesBack && upper.customLeading == null;
-    final lowerBack = lower.impliesBack && lower.customLeading == null;
-    final Animation<double>? backOpacity = switch ((upperBack, lowerBack)) {
-      (true, true) => kAlwaysCompleteAnimation,
-      (true, false) => upperOpacity,
-      (false, true) => lowerOpacity,
-      (false, false) => null,
-    };
+    final front = TopToolbarContent.of(blend.front, titleOnly: titleOnly);
+    final showNativeBack =
+        !titleOnly && front.impliesBack && front.customLeading == null;
 
     // The bar's backdrop belongs to the chrome, not to a page: it only fades
     // when the toolbar as a whole comes or goes. While a modal covers the
@@ -122,9 +112,9 @@ class HostedTopToolbar extends StatelessWidget {
             (false, false) => kAlwaysCompleteAnimation,
             (false, true) =>
               blend.isBlending && lowerEntry != null
-                  ? upperOpacity
+                  ? blend.upperOpacity
                   : kAlwaysCompleteAnimation,
-            (true, false) => lowerOpacity,
+            (true, false) => blend.lowerOpacity,
             (true, true) => kAlwaysDismissedAnimation,
           };
 
@@ -138,8 +128,6 @@ class HostedTopToolbar extends StatelessWidget {
           ignoring: blend.ownerIsCovered,
           child: FadeTransition(
             opacity: blend.chromeOpacity,
-            // Every layer is keyed, so a page's native bar survives the start
-            // and the end of a blend instead of being torn down and rebuilt.
             child: Stack(
               fit: StackFit.expand,
               clipBehavior: Clip.none,
@@ -151,113 +139,41 @@ class HostedTopToolbar extends StatelessWidget {
                       ? const DuoTitleBackdrop()
                       : const _Backdrop(),
                 ),
-                if (lowerEntry != null && !lower.isEmpty)
-                  _layer(
-                    key: ValueKey<Object>(lowerEntry.id),
-                    content: lower,
-                    opacity: lowerOpacity,
-                    interactive: !upperOwns,
-                  ),
-                if (upperEntry != null && !upper.isEmpty)
-                  _layer(
-                    key: ValueKey<Object>(upperEntry.id),
-                    content: upper,
-                    opacity: upperOpacity,
-                    interactive: upperOwns,
-                  ),
-                if (backOpacity != null)
-                  Positioned(
-                    key: const ValueKey<String>('adaptive_toolbar_back'),
-                    left: 16 + (_isWindowed(context) ? 62 : 0),
-                    bottom: 0,
-                    child: FadeTransition(
-                      key: const ValueKey<String>('adaptive_toolbar_back_fade'),
-                      opacity: backOpacity,
-                      alwaysIncludeSemantics: true,
-                      child: ExcludeSemantics(
-                        // Fading out with the page that is leaving.
-                        excluding: !(upperOwns ? upperBack : lowerBack),
-                        child: _BackButton(
-                          navigator: (upperOwns ? upper : lower).navigator,
-                        ),
-                      ),
-                    ),
-                  ),
+                // One native bar stays alive for the whole app. Changing its
+                // items lets UIKit animate the glass buttons themselves,
+                // instead of fading a freshly created bar view.
+                if (!front.isEmpty)
+                  titleOnly
+                      ? DuoToolbarTitle(
+                          title: front.title,
+                          titleWidget: front.titleOverlay,
+                        )
+                      : defaultTargetPlatform == TargetPlatform.iOS
+                      ? IOS26NativeToolbar(
+                          title: front.title,
+                          titleWidget: front.titleOverlay,
+                          leading: front.customLeading,
+                          leadingText: showNativeBack ? '' : null,
+                          onLeadingTap: showNativeBack
+                              ? () => front.navigator?.maybePop()
+                              : null,
+                          actions: front.actions,
+                          interactive: !blend.ownerIsCovered,
+                          tintColor: front.tint,
+                          showsGradient: false,
+                          onActionTap: (index) {
+                            if (index >= 0 && index < front.actions.length) {
+                              front.actions[index].onPressed();
+                            }
+                          },
+                        )
+                      : _FallbackBar(content: front),
               ],
             ),
           ),
         ),
       ),
     );
-  }
-
-  /// One page's bar. The back button is not part of it: the shared one is
-  /// drawn on top of all page layers.
-  Widget _layer({
-    required Key key,
-    required TopToolbarContent content,
-    required Animation<double> opacity,
-    required bool interactive,
-  }) {
-    // alwaysIncludeSemantics: a layer that fades to zero during a back swipe
-    // must not drop its semantics and restore them when the swipe comes back;
-    // doing that mid gesture trips SemanticsNode._replaceChildren with the
-    // native bar inside. The layer that is not the page in front is excluded
-    // explicitly instead, so a screen reader never lands on invisible items.
-    return FadeTransition(
-      key: key,
-      opacity: opacity,
-      alwaysIncludeSemantics: true,
-      child: ExcludeSemantics(
-        excluding: !interactive,
-        child: IgnorePointer(
-          ignoring: !interactive,
-          child: titleOnly
-              // On iPhone Duo the title sits at the leading edge and the
-              // controls are in the trailing bar, so there is no bar to draw.
-              ? DuoToolbarTitle(
-                  title: content.title,
-                  titleWidget: content.titleOverlay,
-                )
-              : defaultTargetPlatform == TargetPlatform.iOS
-              ? IOS26NativeToolbar(
-                  title: content.title,
-                  titleWidget: content.titleOverlay,
-                  leading: content.customLeading,
-                  actions: content.actions,
-                  interactive: !blend.ownerIsCovered,
-                  tintColor: content.tint,
-                  showsGradient: false,
-                  onActionTap: (index) {
-                    if (index >= 0 && index < content.actions.length) {
-                      content.actions[index].onPressed();
-                    }
-                  },
-                )
-              : _FallbackBar(content: content),
-        ),
-      ),
-    );
-  }
-
-  /// Whether the app runs in a window smaller than the display (iPadOS),
-  /// where the system's window controls take the bar's leading corner.
-  static bool _isWindowed(BuildContext context) {
-    final display = View.of(context).display.size;
-    final viewport =
-        MediaQuery.sizeOf(context) * MediaQuery.devicePixelRatioOf(context);
-
-    // A windowed iPad window always fits inside its display. iPhone Duo
-    // reports the other display's size here, and the app view on the inner
-    // display is larger than that, which used to read as a windowed app and
-    // pushed the back button inwards.
-    if (viewport.width > display.width + 1 ||
-        viewport.height > display.height + 1) {
-      return false;
-    }
-
-    return (display.longestSide - viewport.longestSide).abs() > 1 ||
-        (display.shortestSide - viewport.shortestSide).abs() > 1;
   }
 }
 
@@ -300,29 +216,8 @@ class _Backdrop extends StatelessWidget {
   }
 }
 
-/// Back for the page that owns the chrome, performed on that page's own
-/// navigator so nested navigators (tabs, shell routes) pop the right stack.
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.navigator});
-
-  final NavigatorState? navigator;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: kHostedToolbarHeight,
-      width: kHostedToolbarHeight,
-      child: AdaptiveButton.sfSymbol(
-        onPressed: () => navigator?.maybePop(),
-        sfSymbol: const SFSymbol('chevron.left', size: 20),
-        size: AdaptiveButtonSize.large,
-        useSmoothRectangleBorder: false,
-      ),
-    );
-  }
-}
-
-/// Stand-in for the native bar where there is no UIKit (widget tests).
+/// Stand-in for the native bar where there is no UIKit (widget tests and
+/// non-iOS previews).
 class _FallbackBar extends StatelessWidget {
   const _FallbackBar({required this.content});
 
@@ -336,7 +231,15 @@ class _FallbackBar extends StatelessWidget {
         height: kHostedToolbarHeight,
         child: Row(
           children: [
-            if (content.customLeading != null) content.customLeading!,
+            if (content.customLeading != null)
+              content.customLeading!
+            else if (content.impliesBack)
+              CupertinoButton(
+                key: const ValueKey<String>('adaptive_toolbar_back_fallback'),
+                padding: EdgeInsets.zero,
+                onPressed: () => content.navigator?.maybePop(),
+                child: const Icon(CupertinoIcons.back),
+              ),
             Expanded(
               child: Center(
                 child:

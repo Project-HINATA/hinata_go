@@ -82,6 +82,37 @@ class ToolbarBlend extends ChangeNotifier {
   /// While blending: the page shown at [driver] value 0. Otherwise null.
   ToolbarEntry? get lower => isBlending ? _entry(_lowerId) : null;
 
+  /// The page whose controls the bar should show.
+  ///
+  /// A push runs the new route forward, so the incoming page owns the bar. A
+  /// pop runs the leaving route backward; UIKit navigation bars switch to the
+  /// revealed page at the start of that transition, not at its end. During an
+  /// interactive back swipe the top route's animation value follows the
+  /// finger, so the bar hands over once the gesture is past halfway and takes
+  /// the controls back if the swipe is cancelled.
+  ToolbarEntry? get front {
+    if (!isBlending) return owner;
+    final animation = driver;
+    if (animation == null) return upper;
+    if (isGestureBlend) {
+      return animation.value < 0.5 ? (lower ?? upper) : upper;
+    }
+    if (animation.status == AnimationStatus.reverse) {
+      return lower ?? upper;
+    }
+    return upper;
+  }
+
+  Object? _frontId;
+
+  void _onDriverTick() {
+    if (_disposed) return;
+    final next = front;
+    if (next?.id == _frontId) return;
+    _frontId = next?.id;
+    notifyListeners();
+  }
+
   /// Whether [upper] (rather than [lower]) is the [owner].
   bool get upperOwns => !isBlending || _upperId == _ownerId;
 
@@ -234,17 +265,26 @@ class ToolbarBlend extends ChangeNotifier {
     _upperId = upper?.id;
     _lowerId = lower?.id;
     driver.addStatusListener(_onDriverStatus);
+    driver.addListener(_onDriverTick);
+    _frontId = front?.id;
   }
 
   void _stopBlend() {
     _driver?.removeStatusListener(_onDriverStatus);
+    _driver?.removeListener(_onDriverTick);
     _driver = null;
     _gestureBlend = false;
     _upperId = null;
     _lowerId = null;
+    _frontId = null;
   }
 
-  void _onDriverStatus(AnimationStatus status) => _endBlendIfSettled();
+  void _onDriverStatus(AnimationStatus status) {
+    _endBlendIfSettled();
+    // A back swipe starts with the route still reporting `completed`; when it
+    // flips to `reverse` the bar has to hand itself to the revealed page.
+    if (!_disposed) notifyListeners();
+  }
 
   void _endBlendIfSettled() {
     final driver = _driver;

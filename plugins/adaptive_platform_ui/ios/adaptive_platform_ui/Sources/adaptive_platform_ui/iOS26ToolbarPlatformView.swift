@@ -199,9 +199,18 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
     }
 
     private func configureItems(_ params: [String: Any]) {
+        configureItems(params, on: navigationItem)
+    }
+
+    /// Builds a navigation item from the page content. The item is installed
+    /// with `setItems(animated:)` so UIKit animates the Liquid Glass buttons
+    /// themselves instead of fading a whole bar view.
+    private func configureItems(_ params: [String: Any], on item: UINavigationItem) {
+        perActionTintTags.removeAll()
+
         // Title
         if let title = params["title"] as? String {
-            navigationItem.title = title
+            item.title = title
         }
 
         // Leading/Back button
@@ -322,8 +331,30 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
         }
 
         // Assign to navigation item
-        navigationItem.leftBarButtonItems = leadingItems + leftGroup
-        navigationItem.rightBarButtonItems = rightGroup.reversed()
+        item.leftBarButtonItems = leadingItems + leftGroup
+        item.rightBarButtonItems = rightGroup.reversed()
+    }
+
+    /// Replaces the navigation item in one animated UIKit update.
+    private func applyContent(_ params: [String: Any], animated: Bool) {
+        let item = UINavigationItem()
+        configureItems(params, on: item)
+        navigationItem = item
+        navigationBar.setItems([item], animated: animated)
+
+        // Items created with the new item default to the bar's tint; apply a
+        // global tint explicitly to those without a per-action color.
+        if let globalTint = navigationBar.tintColor {
+            for barItem in (item.leftBarButtonItems ?? []) + (item.rightBarButtonItems ?? []) {
+                if !perActionTintTags.contains(barItem.tag) {
+                    barItem.tintColor = globalTint
+                }
+            }
+        }
+
+        if !isEnabled {
+            applyEnabled(false)
+        }
     }
 
     /// Builds the menu of a bar button; dividers split it into inline groups
@@ -377,6 +408,13 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
 
     private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
+        case "setContent":
+            if let args = call.arguments as? [String: Any] {
+                applyContent(args, animated: args["animated"] as? Bool ?? true)
+                result(nil)
+            } else {
+                result(FlutterMethodNotImplemented)
+            }
         case "updateTitle":
             if let args = call.arguments as? [String: Any], let title = args["title"] as? String {
                 navigationItem.title = title

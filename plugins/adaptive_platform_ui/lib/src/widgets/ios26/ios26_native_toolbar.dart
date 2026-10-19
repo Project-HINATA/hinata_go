@@ -64,6 +64,10 @@ class _IOS26NativeToolbarState extends State<IOS26NativeToolbar> {
   int? _lastTint;
   List<AdaptiveAppBarAction>? _lastActions;
   bool? _lastInteractive;
+  String? _lastTitle;
+  String? _lastLeadingText;
+  bool? _lastHadLeading;
+  bool? _lastHadTitleWidget;
 
   bool get _isDark =>
       MediaQuery.platformBrightnessOf(context) == Brightness.dark;
@@ -94,14 +98,36 @@ class _IOS26NativeToolbarState extends State<IOS26NativeToolbar> {
   void didUpdateWidget(IOS26NativeToolbar oldWidget) {
     super.didUpdateWidget(oldWidget);
     _syncPropsToNativeIfNeeded();
+  }
 
-    if (widget.title != oldWidget.title) {
-      final ch = _channel;
-      // Skip when a titleWidget overlay is shown — the native title stays hidden
-      if (ch != null && widget.title != null && widget.titleWidget == null) {
-        ch.invokeMethod('updateTitle', {'title': widget.title!});
-      }
-    }
+  /// The bar owns one native navigation item. Replacing that item with
+  /// `setItems(animated: true)` lets UIKit run its own Liquid Glass item
+  /// transition, instead of fading a whole newly created bar view.
+  Map<String, dynamic> _contentParams() {
+    return <String, dynamic>{
+      if (widget.title != null && widget.titleWidget == null)
+        'title': widget.title!,
+      if (widget.leading == null && widget.leadingText != null)
+        'leading': widget.leadingText!,
+      if (widget.actions != null && widget.actions!.isNotEmpty)
+        'actions': widget.actions!.map((a) => a.toNativeMap()).toList(),
+    };
+  }
+
+  bool get _contentChanged {
+    return widget.title != _lastTitle ||
+        widget.leadingText != _lastLeadingText ||
+        (widget.leading != null) != _lastHadLeading ||
+        (widget.titleWidget != null) != _lastHadTitleWidget ||
+        !_actionsEqual(_lastActions, widget.actions);
+  }
+
+  void _rememberContent() {
+    _lastTitle = widget.title;
+    _lastLeadingText = widget.leadingText;
+    _lastHadLeading = widget.leading != null;
+    _lastHadTitleWidget = widget.titleWidget != null;
+    _lastActions = widget.actions != null ? List.of(widget.actions!) : null;
   }
 
   Future<void> _syncPropsToNativeIfNeeded() async {
@@ -119,18 +145,15 @@ class _IOS26NativeToolbarState extends State<IOS26NativeToolbar> {
       }
     }
 
-    // Sync actions (per-action tint, prominent, etc.). A null list and an
-    // empty one both mean "no actions", so going from null to a real list
-    // (or back) has to reach the native bar too (#84).
-    final actions = widget.actions;
-    if (!_actionsEqual(_lastActions, actions)) {
+    // Sync the whole item: title, leading and actions change together when a
+    // page pushes or pops. The native side animates the replacement.
+    if (_contentChanged) {
       try {
-        final params = <String, dynamic>{
-          if (actions != null && actions.isNotEmpty)
-            'actions': actions.map((a) => a.toNativeMap()).toList(),
-        };
-        await ch.invokeMethod('updateActions', params);
-        _lastActions = actions != null ? List.of(actions) : null;
+        await ch.invokeMethod('setContent', {
+          ..._contentParams(),
+          'animated': true,
+        });
+        _rememberContent();
       } catch (e) {
         // Ignore errors if platform view is not yet ready
       }
@@ -253,7 +276,25 @@ class _IOS26NativeToolbarState extends State<IOS26NativeToolbar> {
     _lastTint = widget.tintColor != null
         ? _colorToARGB(widget.tintColor!)
         : null;
-    _lastActions = widget.actions != null ? List.of(widget.actions!) : null;
+    _lastInteractive = widget.interactive;
+    _syncInitialContent();
+  }
+
+  /// Creation params describe the first build. Sync once without animation so
+  /// a widget that changed while the platform view was being created (or a
+  /// later rebuild) starts from the real content; every later change animates.
+  Future<void> _syncInitialContent() async {
+    final ch = _channel;
+    if (ch == null) return;
+    try {
+      await ch.invokeMethod('setContent', {
+        ..._contentParams(),
+        'animated': false,
+      });
+      _rememberContent();
+    } catch (e) {
+      // Ignore errors if platform view is not yet ready
+    }
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {

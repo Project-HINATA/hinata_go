@@ -8,8 +8,10 @@ import 'toolbar_blend.dart';
 import 'toolbar_registry.dart';
 
 /// The one vertical bar of the app. It never moves; only its controls follow
-/// the page that owns the chrome, blended as [ToolbarBlend] dictates. A back
-/// button that both pages show stays put instead of fading out and in.
+/// the page that owns the chrome. A single action bar stays alive for the
+/// whole app, so pushing a page updates its native glass capsule in place
+/// instead of creating a new one and fading it in. The tab bar and the shared
+/// back button remain in their own stable layers.
 class HostedDuoBar extends StatelessWidget {
   const HostedDuoBar({super.key, required this.blend, required this.regions});
 
@@ -26,6 +28,8 @@ class HostedDuoBar extends StatelessWidget {
     final lowerEntry = blend.lower;
     final upper = _BarContent.of(upperEntry);
     final lower = _BarContent.of(lowerEntry);
+    final front = _BarContent.of(blend.front);
+    final frontTabs = blend.registry.tabBarOwnerFor(blend.front);
     final upperOwns = blend.upperOwns;
     final upperOpacity = blend.upperOpacity;
     final lowerOpacity = blend.lowerOpacity;
@@ -70,21 +74,25 @@ class HostedDuoBar extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (lowerEntry != null && !lower.isEmpty)
-              _layer(
-                key: ValueKey<Object>(lowerEntry.id),
-                content: lower,
-                opacity: lowerOpacity,
-                interactive: !upperOwns,
-                reservedTabs: lowerTabs?.tabBar?.items?.length ?? 0,
-              ),
-            if (upperEntry != null && !upper.isEmpty)
-              _layer(
-                key: ValueKey<Object>(upperEntry.id),
-                content: upper,
-                opacity: upperOpacity,
-                interactive: upperOwns,
-                reservedTabs: upperTabs?.tabBar?.items?.length ?? 0,
+            // One action capsule stays alive for the whole app; updating its
+            // items keeps the native glass views instead of rebuilding them
+            // for every pushed page.
+            if (!front.isEmpty)
+              DuoVerticalBar(
+                key: const ValueKey<String>('adaptive_duo_page_controls'),
+                leading:
+                    front.customLeading ??
+                    (front.impliesBack
+                        ? const SizedBox.square(
+                            dimension: IOS26GlassCapsule.width,
+                          )
+                        : null),
+                interactive: !blend.ownerIsCovered,
+                actions: front.actions,
+                reservedTabs: frontTabs?.tabBar?.items?.length ?? 0,
+                tint: front.tint,
+                regions: regions,
+                navigator: front.navigator,
               ),
             if (backOpacity != null)
               FadeTransition(
@@ -121,43 +129,6 @@ class HostedDuoBar extends StatelessWidget {
                 ),
               ),
           ],
-        ),
-      ),
-    );
-  }
-
-  /// One page's controls. The back button's slot is left empty because the
-  /// shared one is drawn on top of all page layers.
-  Widget _layer({
-    required Key key,
-    required _BarContent content,
-    required Animation<double> opacity,
-    required bool interactive,
-    required int reservedTabs,
-  }) {
-    // See HostedTopToolbar._layer for why semantics are always included and
-    // the layer that is not in front is excluded explicitly.
-    return FadeTransition(
-      key: key,
-      opacity: opacity,
-      alwaysIncludeSemantics: true,
-      child: ExcludeSemantics(
-        excluding: !interactive,
-        child: IgnorePointer(
-          ignoring: !interactive,
-          child: DuoVerticalBar(
-            leading:
-                content.customLeading ??
-                (content.impliesBack
-                    ? const SizedBox.square(dimension: IOS26GlassCapsule.width)
-                    : null),
-            interactive: !blend.ownerIsCovered,
-            actions: content.actions,
-            reservedTabs: reservedTabs,
-            tint: content.tint,
-            regions: regions,
-            navigator: content.navigator,
-          ),
         ),
       ),
     );

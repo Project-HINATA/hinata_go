@@ -165,17 +165,17 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // Mid-transition the chrome has not moved, and it is handing over from
-    // the outgoing page's controls to the incoming page's.
+    // Mid-transition the chrome has not moved; the single action capsule has
+    // already updated to the page in front.
     expect(bar, findsOneWidget);
     expect(tester.getRect(bar), barRect);
-    expect(opacityOf(tester, find.byIcon(Icons.add)), lessThan(1));
-    expect(opacityOf(tester, find.byIcon(Icons.share)), lessThan(1));
+    expect(inBar(find.byIcon(Icons.share)), findsOneWidget);
+    expect(inBar(find.byIcon(Icons.add)), findsNothing);
 
     await tester.pumpAndSettle();
     expect(tester.getRect(bar), barRect);
     expect(inBar(find.byIcon(Icons.add)), findsNothing);
-    expect(opacityOf(tester, find.byIcon(Icons.share)), 1);
+    expect(inBar(find.byIcon(Icons.share)), findsOneWidget);
   });
 
   testWidgets('back appears for a pushed page and pops it', (tester) async {
@@ -363,7 +363,7 @@ void main() {
   });
 
   group('item swap follows the route transition', () {
-    testWidgets('push: driven by the incoming route, not by a timer', (
+    testWidgets('the single action bar shows the incoming page', (
       tester,
     ) async {
       useDuoLandscape(tester);
@@ -376,7 +376,7 @@ void main() {
       );
       await tester.pump();
 
-      // A deliberately slow route: a fixed-duration swap would be long over.
+      // A deliberately slow route: the bar should not wait for it to settle.
       final route = PageRouteBuilder<void>(
         transitionDuration: const Duration(seconds: 4),
         reverseTransitionDuration: const Duration(seconds: 4),
@@ -388,33 +388,23 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
       expect(route.animation!.value, closeTo(0.25, 0.05));
-      expect(opacityOf(tester, find.byIcon(Icons.add)), inExclusiveRange(0, 1));
-      expect(opacityOf(tester, find.byIcon(Icons.share)), 0);
-
-      await tester.pump(const Duration(seconds: 2));
-      expect(
-        opacityOf(tester, find.byIcon(Icons.share)),
-        inExclusiveRange(0, 1),
-      );
-
-      await tester.pumpAndSettle();
-      expect(opacityOf(tester, find.byIcon(Icons.share)), 1);
+      expect(inBar(find.byIcon(Icons.share)), findsOneWidget);
       expect(inBar(find.byIcon(Icons.add)), findsNothing);
 
-      // Pop: the same route drives it in reverse.
+      await tester.pumpAndSettle();
+      expect(inBar(find.byIcon(Icons.share)), findsOneWidget);
+      expect(inBar(find.byIcon(Icons.add)), findsNothing);
+
+      // Pop: the bar hands itself to the revealed page immediately.
       nav.currentState!.pop();
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      expect(
-        opacityOf(tester, find.byIcon(Icons.share)),
-        inExclusiveRange(0, 1),
-      );
-      await tester.pump(const Duration(seconds: 2));
-      expect(opacityOf(tester, find.byIcon(Icons.add)), inExclusiveRange(0, 1));
+      expect(inBar(find.byIcon(Icons.add)), findsOneWidget);
+      expect(inBar(find.byIcon(Icons.share)), findsNothing);
 
       await tester.pumpAndSettle();
-      expect(opacityOf(tester, find.byIcon(Icons.add)), 1);
+      expect(inBar(find.byIcon(Icons.add)), findsOneWidget);
       expect(inBar(find.byIcon(Icons.share)), findsNothing);
     });
 
@@ -439,7 +429,8 @@ void main() {
       expect(inBar(find.byType(DuoBarBackButton)), findsOneWidget);
       expect(opacityOf(tester, find.byType(DuoBarBackButton)), 1);
       expect(tester.getRect(inBar(find.byType(DuoBarBackButton))), backRect);
-      expect(opacityOf(tester, find.byIcon(Icons.add)), lessThan(1));
+      expect(inBar(find.byIcon(Icons.share)), findsOneWidget);
+      expect(inBar(find.byIcon(Icons.add)), findsNothing);
       await tester.pumpAndSettle();
     });
 
@@ -469,15 +460,15 @@ void main() {
       await tester.pump();
       expect(nav.currentState!.userGestureInProgress, isTrue);
       expect(find.text('body:Detail'), findsOneWidget);
-      expect(opacityOf(tester, find.byIcon(Icons.share)), lessThan(1));
-      expect(opacityOf(tester, find.byIcon(Icons.add)), greaterThan(0));
+      expect(inBar(find.byIcon(Icons.add)), findsOneWidget);
+      expect(inBar(find.byIcon(Icons.share)), findsNothing);
 
       // Drag back towards the start and let go: cancelled, Detail stays.
       await gesture.moveBy(Offset(-duoLandscape.width * 0.65, 0));
       await gesture.up();
       await tester.pumpAndSettle();
       expect(find.text('body:Detail'), findsOneWidget);
-      expect(opacityOf(tester, find.byIcon(Icons.share)), 1);
+      expect(inBar(find.byIcon(Icons.share)), findsOneWidget);
       expect(inBar(find.byIcon(Icons.add)), findsNothing);
 
       // A full swipe pops and hands the chrome back.
@@ -487,13 +478,11 @@ void main() {
       await swipe.up();
       await tester.pumpAndSettle();
       expect(find.text('body:Detail'), findsNothing);
-      expect(opacityOf(tester, find.byIcon(Icons.add)), 1);
+      expect(inBar(find.byIcon(Icons.add)), findsOneWidget);
       expect(inBar(find.byIcon(Icons.share)), findsNothing);
     });
 
-    testWidgets('a tab switch has no route to follow and crossfades briefly', (
-      tester,
-    ) async {
+    testWidgets('a tab switch updates the controls', (tester) async {
       useDuoLandscape(tester);
       final index = ValueNotifier<int>(0);
       Widget tab(String title, IconData icon) => Navigator(
@@ -514,17 +503,16 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(opacityOf(tester, find.byIcon(Icons.add)), 1);
+      expect(inBar(find.byIcon(Icons.add)), findsOneWidget);
 
       index.value = 1;
       await tester.pump();
       await tester.pump();
-      await tester.pump(kToolbarItemSwapDuration ~/ 2);
-      expect(opacityOf(tester, find.byIcon(Icons.share)), lessThan(1));
+      expect(inBar(find.byIcon(Icons.share)), findsOneWidget);
+      expect(inBar(find.byIcon(Icons.add)), findsNothing);
 
-      await tester.pump(kToolbarItemSwapDuration);
-      await tester.pump();
-      expect(opacityOf(tester, find.byIcon(Icons.share)), 1);
+      await tester.pumpAndSettle();
+      expect(inBar(find.byIcon(Icons.share)), findsOneWidget);
       expect(inBar(find.byIcon(Icons.add)), findsNothing);
     });
   });
