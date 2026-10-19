@@ -99,15 +99,18 @@ class AppLayoutInfo {
     return _insetDerivedDeviceTopOnRight;
   }
 
-  /// The Flutter rail keeps its conventional leading position. Only a compact
-  /// phone with NFC hardware anchors the scan target to a physical edge, and
-  /// there the rail takes the other edge so it never sits over the tap area.
-  /// Web, desktop and larger tablets have no such anchor and stay leading.
+  /// The Flutter rail keeps its conventional leading position. Only a phone,
+  /// or a book-style foldable whose unfolded window is nearly square, anchors
+  /// the scan target to a physical edge; there the rail takes the other edge.
+  ///
+  /// This is a purely responsive test: the fold itself is never inspected.
+  /// A foldable's inner display lands well under 1.25 in landscape, while a
+  /// 4:3 tablet starts at 1.33 and desktops are wider.
   bool resolveRailOnLeadingSide({
     required int? androidDisplayRotation,
     required bool? iosDeviceTopOnRight,
   }) {
-    if (!isLandscape || !isPhone || !_hasNfcSensor) {
+    if (!isLandscape || !_isHandheldNfcLayout) {
       return true;
     }
 
@@ -115,6 +118,18 @@ class AppLayoutInfo {
       androidDisplayRotation: androidDisplayRotation,
       iosDeviceTopOnRight: iosDeviceTopOnRight,
     );
+  }
+
+  bool get _isHandheldNfcLayout {
+    if (!_hasNfcSensor) {
+      return false;
+    }
+
+    if (isPhone) {
+      return true;
+    }
+
+    return isLandscape && size.longestSide / size.shortestSide <= 1.25;
   }
 
   static bool get _hasNfcSensor =>

@@ -31,6 +31,22 @@ const _landscapeTablet = AppLayoutInfo(
   systemGestureInsets: EdgeInsets.zero,
 );
 
+/// An unfolded book-style foldable: short side over the phone breakpoint, but
+/// still nearly square.
+const _unfoldedFoldable = AppLayoutInfo(
+  size: Size(1000, 800),
+  orientation: Orientation.landscape,
+  viewPadding: EdgeInsets.zero,
+  systemGestureInsets: EdgeInsets.zero,
+);
+
+const _fourThreeTablet = AppLayoutInfo(
+  size: Size(1200, 900),
+  orientation: Orientation.landscape,
+  viewPadding: EdgeInsets.zero,
+  systemGestureInsets: EdgeInsets.zero,
+);
+
 void main() {
   group('resolveDeviceTopOnRight', () {
     test('follows the Android display rotation in landscape', () {
@@ -135,6 +151,33 @@ void main() {
     test('keeps a wide tablet rail leading whatever the scan side', () {
       expect(
         _landscapeTablet.resolveRailOnLeadingSide(
+          androidDisplayRotation: 1,
+          iosDeviceTopOnRight: null,
+        ),
+        isTrue,
+      );
+    });
+
+    test('treats an unfolded foldable as a handheld by window shape', () {
+      expect(
+        _unfoldedFoldable.resolveRailOnLeadingSide(
+          androidDisplayRotation: 1,
+          iosDeviceTopOnRight: null,
+        ),
+        isFalse,
+      );
+      expect(
+        _unfoldedFoldable.resolveRailOnLeadingSide(
+          androidDisplayRotation: 3,
+          iosDeviceTopOnRight: null,
+        ),
+        isTrue,
+      );
+    });
+
+    test('keeps a 4:3 tablet rail leading whatever the scan side', () {
+      expect(
+        _fourThreeTablet.resolveRailOnLeadingSide(
           androidDisplayRotation: 1,
           iosDeviceTopOnRight: null,
         ),

@@ -80,7 +80,7 @@ void main() {
           shouldShowIOSTopBar(
             usesNativeBar: true,
             landscape: false,
-            duoVerticalBar: duo,
+            verticalBar: duo,
           ),
           isTrue,
         );
@@ -92,7 +92,7 @@ void main() {
         shouldShowIOSTopBar(
           usesNativeBar: true,
           landscape: true,
-          duoVerticalBar: false,
+          verticalBar: false,
         ),
         isFalse,
       );
@@ -100,7 +100,7 @@ void main() {
         shouldShowIOSTopBar(
           usesNativeBar: true,
           landscape: true,
-          duoVerticalBar: true,
+          verticalBar: true,
         ),
         isTrue,
       );
@@ -111,7 +111,7 @@ void main() {
         shouldShowIOSTopBar(
           usesNativeBar: false,
           landscape: false,
-          duoVerticalBar: false,
+          verticalBar: false,
         ),
         isFalse,
       );

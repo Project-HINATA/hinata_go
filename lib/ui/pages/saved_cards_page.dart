@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -24,7 +22,7 @@ import '../app_action_button.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/native_alert.dart';
 
-class SavedCardsPage extends HookConsumerWidget {
+class SavedCardsPage extends ConsumerWidget {
   const SavedCardsPage({super.key});
 
   // ---------------------------------------------------------------------------
@@ -144,48 +142,22 @@ class SavedCardsPage extends HookConsumerWidget {
         );
   }
 
-  void _handleSwipe(
-    BuildContext context,
-    DragEndDetails details,
-    List<CardFolder> folders,
-    ValueNotifier<String> selectedFolderIdState,
-  ) {
-    final double velocity = details.primaryVelocity ?? 0.0;
-    if (velocity.abs() < 300) return;
-
-    final currentFolderIndex = folders.indexWhere(
-      (f) => f.id == selectedFolderIdState.value,
-    );
-    if (currentFolderIndex == -1) return;
-
-    if (velocity > 0) {
-      if (currentFolderIndex > 0) {
-        selectedFolderIdState.value = folders[currentFolderIndex - 1].id;
-      } else {
-        context.go('/scan');
-      }
-    } else {
-      if (currentFolderIndex < folders.length - 1) {
-        selectedFolderIdState.value = folders[currentFolderIndex + 1].id;
-      } else {
-        context.go('/settings');
-      }
-    }
-  }
-
   // ---------------------------------------------------------------------------
   // Build Method (Flattened)
   // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedFolderIdState = useState('favorites_folder');
+    final selectedFolderId = ref.watch(selectedCardFolderIdProvider);
     final layout = context.appLayout;
     final folders = ref.watch(cardFoldersProvider);
     final allCards = ref.watch(savedCardsProvider);
     final folderCards = allCards
-        .where((c) => c.folderId == selectedFolderIdState.value)
+        .where((c) => c.folderId == selectedFolderId)
         .toList();
+    void selectFolder(String id) {
+      ref.read(selectedCardFolderIdProvider.notifier).select(id);
+    }
 
     return AppScaffold(
       title: l10n.savedCards,
@@ -196,7 +168,7 @@ class SavedCardsPage extends HookConsumerWidget {
           context,
           ref,
           folders,
-          selectedFolderIdState,
+          selectedFolderId,
           folderCards,
         ),
       ),
@@ -205,7 +177,7 @@ class SavedCardsPage extends HookConsumerWidget {
         icon: Icons.add,
         tooltip: l10n.addCard,
         nativeSymbol: 'plus',
-        visible: selectedFolderIdState.value != 'history_folder',
+        visible: selectedFolderId != 'history_folder',
         menuItems: [
           AppActionItem(
             id: 'addCard',
@@ -214,8 +186,8 @@ class SavedCardsPage extends HookConsumerWidget {
             nativeSymbol: 'creditcard',
             onPressed: () => _showAddCardDialog(
               context,
-              selectedFolderIdState.value,
-              (newId) => selectedFolderIdState.value = newId,
+              selectedFolderId,
+              selectFolder,
             ),
           ),
           AppActionItem(
@@ -225,7 +197,7 @@ class SavedCardsPage extends HookConsumerWidget {
             nativeSymbol: 'wave.3.right',
             onPressed: () => showNdefEditor(
               context,
-              initialFolderId: selectedFolderIdState.value,
+              initialFolderId: selectedFolderId,
             ),
           ),
           AppActionItem(
@@ -233,10 +205,7 @@ class SavedCardsPage extends HookConsumerWidget {
             label: l10n.newFolder,
             icon: Icons.create_new_folder,
             nativeSymbol: 'folder.badge.plus',
-            onPressed: () => _showAddFolderDialog(
-              context,
-              (newId) => selectedFolderIdState.value = newId,
-            ),
+            onPressed: () => _showAddFolderDialog(context, selectFolder),
           ),
         ],
       ),
@@ -247,36 +216,35 @@ class SavedCardsPage extends HookConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<CardFolder> folders,
-    ValueNotifier<String> selectedFolderIdState,
+    String selectedFolderId,
     List<SavedCard> folderCards,
   ) {
+    void selectFolder(String id) {
+      ref.read(selectedCardFolderIdProvider.notifier).select(id);
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return constraints.maxWidth > 700
             ? _SavedCardsWideBody(
                 folders: folders,
-                selectedFolderId: selectedFolderIdState.value,
-                onFolderSelected: (id) => selectedFolderIdState.value = id,
+                selectedFolderId: selectedFolderId,
+                onFolderSelected: selectFolder,
                 onFolderLongPress: (folder) => _onDeleteFolder(
                   context,
                   ref,
                   folder,
-                  (id) => selectedFolderIdState.value = id,
+                  selectFolder,
                 ),
                 cardsView: _buildCardsView(context, ref, folderCards),
               )
             : _SavedCardsCompactBody(
-                onSwipe: (details) => _handleSwipe(
-                  context,
-                  details,
-                  folders,
-                  selectedFolderIdState,
-                ),
                 folderStrip: _buildFolderStrip(
                   context,
                   ref,
                   folders,
-                  selectedFolderIdState,
+                  selectedFolderId,
+                  selectFolder,
                 ),
                 cardsView: _buildCardsView(context, ref, folderCards),
               );
@@ -288,17 +256,18 @@ class SavedCardsPage extends HookConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<CardFolder> folders,
-    ValueNotifier<String> selectedFolderIdState,
+    String selectedFolderId,
+    ValueSetter<String> selectFolder,
   ) {
     return FolderSelectionStrip(
       folders: folders,
-      selectedFolderId: selectedFolderIdState.value,
-      onFolderSelected: (id) => selectedFolderIdState.value = id,
+      selectedFolderId: selectedFolderId,
+      onFolderSelected: selectFolder,
       onFolderLongPress: (folder) => _onDeleteFolder(
         context,
         ref,
         folder,
-        (id) => selectedFolderIdState.value = id,
+        selectFolder,
       ),
     );
   }
@@ -395,23 +364,17 @@ class _SavedCardsWideBody extends StatelessWidget {
 
 class _SavedCardsCompactBody extends StatelessWidget {
   const _SavedCardsCompactBody({
-    required this.onSwipe,
     required this.folderStrip,
     required this.cardsView,
   });
 
-  final GestureDragEndCallback onSwipe;
   final Widget folderStrip;
   final Widget cardsView;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onHorizontalDragEnd: onSwipe,
-      behavior: HitTestBehavior.translucent,
-      child: Column(
-        children: [folderStrip, const Divider(height: 1), cardsView],
-      ),
+    return Column(
+      children: [folderStrip, const Divider(height: 1), cardsView],
     );
   }
 }

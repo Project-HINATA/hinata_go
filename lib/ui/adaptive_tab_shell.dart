@@ -3,7 +3,9 @@ import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../providers/navigation_bar_provider.dart';
 import '../providers/navigation_provider.dart';
+import 'widgets/app_swipe_navigation.dart';
 
 /// Height of the content area of the iOS 26 Liquid Glass tab bar, above the
 /// home indicator. UIKit insets a tab's safe area by this much.
@@ -31,9 +33,14 @@ class AdaptiveTabShell extends ConsumerWidget {
 
     return AdaptiveScaffold(
       minimizeBehavior: TabBarMinimizeBehavior.never,
-      body: nativeTabBar
-          ? _NativeTabBarInset(child: navigationShell)
-          : navigationShell,
+      body: AppSwipeNavigation(
+        tabAxis: ref.watch(navigationBarAxisProvider),
+        branchIndex: navigationShell.currentIndex,
+        onBranchSelected: _goBranch,
+        child: nativeTabBar
+            ? _NativeTabBarInset(child: navigationShell)
+            : navigationShell,
+      ),
       bottomNavigationBar: AdaptiveBottomNavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onTap: _goBranch,

@@ -139,6 +139,24 @@ final cardFoldersProvider =
       return CardFoldersNotifier();
     });
 
+/// The folder shown by the cards tab.
+///
+/// It lives above the page so a swipe across the shell can move between
+/// folders even while another tab is on screen.
+final selectedCardFolderIdProvider =
+    NotifierProvider<SelectedCardFolderIdNotifier, String>(
+      SelectedCardFolderIdNotifier.new,
+    );
+
+class SelectedCardFolderIdNotifier extends Notifier<String> {
+  @override
+  String build() => 'favorites_folder';
+
+  void select(String id) {
+    if (state != id) state = id;
+  }
+}
+
 class CardFoldersNotifier extends Notifier<List<CardFolder>> {
   @override
   List<CardFolder> build() {

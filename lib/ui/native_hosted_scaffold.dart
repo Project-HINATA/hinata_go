@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/app_update_provider.dart';
+import '../providers/navigation_bar_provider.dart';
 import '../providers/navigation_provider.dart';
+import 'widgets/app_swipe_navigation.dart';
 
 class NativeHostedScaffold extends ConsumerStatefulWidget {
   const NativeHostedScaffold({required this.navigationShell, super.key});
@@ -161,6 +163,13 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
       _publishActionButton(config);
     });
 
-    return Scaffold(body: widget.navigationShell);
+    return Scaffold(
+      body: AppSwipeNavigation(
+        tabAxis: ref.watch(navigationBarAxisProvider),
+        branchIndex: widget.navigationShell.currentIndex,
+        onBranchSelected: (index) => widget.navigationShell.goBranch(index),
+        child: widget.navigationShell,
+      ),
+    );
   }
 }

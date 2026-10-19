@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../providers/navigation_bar_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../app_action_button.dart';
 import '../app_layout.dart';
@@ -45,24 +46,26 @@ Axis tabTransitionAxis({
 /// Whether the page should draw a top bar on iOS.
 ///
 /// Portrait keeps the bar. In landscape it would cost a strip of an already
-/// short screen, so it is dropped — except on the iPhone Duo, whose vertical
-/// tab bar shows icons only and leaves the page title with nowhere else to go.
-bool showsIOSTopBar(BuildContext context) => shouldShowIOSTopBar(
-  usesNativeBar: useCupertinoChrome,
-  landscape: MediaQuery.orientationOf(context) == Orientation.landscape,
-  duoVerticalBar: isDuoVerticalBar(context) ?? false,
-);
+/// short screen, so it is dropped — unless the navigation bar runs vertically
+/// (iPhone Duo), whose icon-only bar leaves the page title with nowhere else
+/// to go.
+bool showsIOSTopBar(BuildContext context, {required Axis navigationBarAxis}) =>
+    shouldShowIOSTopBar(
+      usesNativeBar: useCupertinoChrome,
+      landscape: MediaQuery.orientationOf(context) == Orientation.landscape,
+      verticalBar: navigationBarAxis == Axis.vertical,
+    );
 
 /// The rule behind [showsIOSTopBar], without a [BuildContext].
 @visibleForTesting
 bool shouldShowIOSTopBar({
   required bool usesNativeBar,
   required bool landscape,
-  required bool duoVerticalBar,
+  required bool verticalBar,
 }) {
   if (!usesNativeBar) return false;
   if (!landscape) return true;
-  return duoVerticalBar;
+  return verticalBar;
 }
 
 /// Whether a Material page draws its own top app bar.
@@ -101,7 +104,7 @@ class _HideWhenCovered extends ConsumerWidget {
 ///
 /// The page describes its title and actions once; [primaryAction] becomes the
 /// floating action button on Material and the trailing toolbar item on iOS.
-class AppScaffold extends StatelessWidget {
+class AppScaffold extends ConsumerWidget {
   const AppScaffold({
     super.key,
     required this.body,
@@ -233,13 +236,16 @@ class AppScaffold extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (useCupertinoChrome) {
       final toolbarAction = primaryAction == null
           ? null
           : buildToolbarAction(primaryAction!);
       final toolbarActions = [...actions, ?toolbarAction];
-      final showTopBar = showsIOSTopBar(context);
+      final showTopBar = showsIOSTopBar(
+        context,
+        navigationBarAxis: ref.watch(navigationBarAxisProvider),
+      );
 
       return AdaptiveScaffold(
         backgroundColor: backgroundColor,

@@ -14,6 +14,7 @@ import 'package:hinata_go/providers/storage_provider.dart';
 import 'package:hinata_go/services/notification_service.dart';
 import 'navigation/router.dart';
 import 'core/app_host_mode.dart';
+import 'ui/widgets/navigation_bar_axis_scope.dart';
 
 Future<void> main() => _bootstrap(AppHostMode.flutterShell);
 
@@ -75,7 +76,9 @@ class MyApp extends ConsumerWidget {
                 initialEntries: [
                   OverlayEntry(
                     builder: (_) => AdaptiveToolbarHost(
-                      child: child ?? const SizedBox.shrink(),
+                      child: NavigationBarAxisScope(
+                        child: child ?? const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                 ],

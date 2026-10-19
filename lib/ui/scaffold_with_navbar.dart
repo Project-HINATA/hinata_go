@@ -9,8 +9,10 @@ import '../providers/app_state_provider.dart';
 import '../providers/device_orientation_provider.dart';
 import '../providers/display_rotation_provider.dart';
 import '../providers/hardware_device_provider.dart';
+import '../providers/navigation_bar_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'components/device/device_mini_bar.dart';
+import 'widgets/app_swipe_navigation.dart';
 
 const double _bottomFloatingDeviceBarInset = 80;
 
@@ -24,29 +26,6 @@ class ScaffoldWithNavBar extends ConsumerWidget {
       index,
       initialLocation: index == navigationShell.currentIndex,
     );
-  }
-
-  void _handleSwipe(DragEndDetails details) {
-    // Determine the swipe velocity
-    final double velocity = details.primaryVelocity ?? 0.0;
-
-    // We only care about noticeable swipes
-    if (velocity.abs() < 300) return;
-
-    final int currentIndex = navigationShell.currentIndex;
-
-    if (velocity > 0) {
-      // Swiped right -> go to previous tab (left)
-      if (currentIndex > 0) {
-        _goBranch(currentIndex - 1);
-      }
-    } else {
-      // Swiped left -> go to next tab (right)
-      if (currentIndex < 2) {
-        // 2 is the max index (Settings)
-        _goBranch(currentIndex + 1);
-      }
-    }
   }
 
   @override
@@ -64,10 +43,10 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         final showBottomFloatingDeviceBar =
             hardwareDeviceState.hidAvailable && !layout.isCompactLandscapePhone;
 
-        return GestureDetector(
-          onHorizontalDragEnd: layout.useRailNavigation ? null : _handleSwipe,
-          onVerticalDragEnd: layout.useRailNavigation ? _handleSwipe : null,
-          behavior: HitTestBehavior.translucent,
+        return AppSwipeNavigation(
+          tabAxis: ref.watch(navigationBarAxisProvider),
+          branchIndex: navigationShell.currentIndex,
+          onBranchSelected: _goBranch,
           child: layout.useRailNavigation
               ? _RailScaffoldBody(
                   layout: layout,
