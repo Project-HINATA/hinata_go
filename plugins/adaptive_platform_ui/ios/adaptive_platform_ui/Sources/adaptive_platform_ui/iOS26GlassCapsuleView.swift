@@ -168,7 +168,17 @@ class iOS26GlassCapsuleView: NSObject, FlutterPlatformView {
             let same = (newItems as NSArray).isEqual(to: items)
             items = newItems
             if !same || buttons.count != newItems.count {
-                rebuildButtons()
+                // The capsule stays alive while its items change. Crossfade
+                // the old and new controls so they do not pop; this is the
+                // custom capsule's equivalent of the bar's item transition.
+                UIView.transition(
+                    with: container,
+                    duration: 0.22,
+                    options: [.transitionCrossDissolve, .allowAnimatedContent]
+                ) {
+                    self.rebuildButtons()
+                    self.refreshAppearance()
+                }
             }
         }
         refreshAppearance()

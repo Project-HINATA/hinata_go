@@ -76,24 +76,15 @@ class HostedDuoBar extends StatelessWidget {
           children: [
             // One action capsule stays alive for the whole app; updating its
             // items keeps the native glass views instead of rebuilding them
-            // for every pushed page.
-            if (!front.isEmpty)
-              DuoVerticalBar(
-                key: const ValueKey<String>('adaptive_duo_page_controls'),
-                leading:
-                    front.customLeading ??
-                    (front.impliesBack
-                        ? const SizedBox.square(
-                            dimension: IOS26GlassCapsule.width,
-                          )
-                        : null),
-                interactive: !blend.ownerIsCovered,
-                actions: front.actions,
-                reservedTabs: frontTabs?.tabBar?.items?.length ?? 0,
-                tint: front.tint,
-                regions: regions,
-                navigator: front.navigator,
-              ),
+            // for every pushed page. The wrapper keeps the last controls for
+            // one short fade when the incoming page has none, so the capsule
+            // does not simply vanish.
+            _DuoActionsLayer(
+              content: front,
+              reservedTabs: frontTabs?.tabBar?.items?.length ?? 0,
+              regions: regions,
+              interactive: !blend.ownerIsCovered,
+            ),
             if (backOpacity != null)
               FadeTransition(
                 key: const ValueKey<String>('adaptive_toolbar_back'),
@@ -130,6 +121,88 @@ class HostedDuoBar extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Keeps the page controls in the vertical bar while a page with controls
+/// leaves, so the action capsule fades instead of disappearing outright.
+class _DuoActionsLayer extends StatefulWidget {
+  const _DuoActionsLayer({
+    required this.content,
+    required this.reservedTabs,
+    required this.regions,
+    required this.interactive,
+  });
+
+  final _BarContent content;
+  final int reservedTabs;
+  final List<ReservedRegion> regions;
+  final bool interactive;
+
+  @override
+  State<_DuoActionsLayer> createState() => _DuoActionsLayerState();
+}
+
+class _DuoActionsLayerState extends State<_DuoActionsLayer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fade;
+  _BarContent? _shown;
+
+  @override
+  void initState() {
+    super.initState();
+    _shown = widget.content.isEmpty ? null : widget.content;
+    _fade = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+      value: _shown == null ? 0 : 1,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _DuoActionsLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final incoming = widget.content;
+    if (!incoming.isEmpty) {
+      final wasEmpty = _shown == null;
+      _shown = incoming;
+      if (wasEmpty) _fade.value = 0;
+      _fade.forward();
+    } else if (_shown != null) {
+      _fade.reverse().whenComplete(() {
+        if (!mounted || !widget.content.isEmpty) return;
+        setState(() => _shown = null);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _fade.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = _shown;
+    if (shown == null) return const SizedBox.shrink();
+    return FadeTransition(
+      opacity: _fade,
+      child: DuoVerticalBar(
+        key: const ValueKey<String>('adaptive_duo_page_controls'),
+        leading:
+            shown.customLeading ??
+            (shown.impliesBack
+                ? const SizedBox.square(dimension: IOS26GlassCapsule.width)
+                : null),
+        interactive: widget.interactive && !widget.content.isEmpty,
+        actions: shown.actions,
+        reservedTabs: widget.reservedTabs,
+        tint: shown.tint,
+        regions: widget.regions,
+        navigator: shown.navigator,
       ),
     );
   }
