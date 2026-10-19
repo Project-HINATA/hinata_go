@@ -7,6 +7,7 @@ import 'package:hinata_go/context_extensions.dart';
 import '../../models/remote_instance.dart';
 import '../../models/scanning_mode.dart';
 import '../../providers/app_state_provider.dart';
+import '../../providers/device_orientation_provider.dart';
 import '../../providers/display_rotation_provider.dart';
 import '../app_layout.dart';
 import '../components/reader/current_scan_result_panel.dart';
@@ -28,8 +29,10 @@ class ScanPage extends ConsumerWidget {
     final activeInstance = ref.watch(activeInstanceProvider);
     final layout = context.appLayout;
     final androidDisplayRotation = ref.watch(androidDisplayRotationProvider);
+    final iosDeviceTopOnRight = ref.watch(iosDeviceTopOnRightProvider);
     final deviceTopOnRight = layout.resolveDeviceTopOnRight(
-      androidDisplayRotation,
+      androidDisplayRotation: androidDisplayRotation,
+      iosDeviceTopOnRight: iosDeviceTopOnRight,
     );
     final modeSelector = _ModeSelector(
       mode: mode,
@@ -46,7 +49,6 @@ class ScanPage extends ConsumerWidget {
       backgroundColor: context.colorScheme.surface,
       titleWidget: _buildAppBarTitle(context),
       materialAppBar: _buildAppBar(context),
-      showMaterialAppBar: !layout.isLandscape,
       body: SafeArea(
         top: layout.isLandscape || useCupertinoChrome,
         bottom: false,

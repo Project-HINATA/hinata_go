@@ -6,6 +6,7 @@ import 'package:hinata_go/context_extensions.dart';
 import '../models/scanning_mode.dart';
 import 'app_layout.dart';
 import '../providers/app_state_provider.dart';
+import '../providers/device_orientation_provider.dart';
 import '../providers/display_rotation_provider.dart';
 import '../providers/hardware_device_provider.dart';
 import '../providers/navigation_provider.dart';
@@ -58,6 +59,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         final androidDisplayRotation = ref.watch(
           androidDisplayRotationProvider,
         );
+        final iosDeviceTopOnRight = ref.watch(iosDeviceTopOnRightProvider);
         final hardwareDeviceState = ref.watch(hardwareDeviceProvider);
         final showBottomFloatingDeviceBar =
             hardwareDeviceState.hidAvailable && !layout.isCompactLandscapePhone;
@@ -70,6 +72,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
               ? _RailScaffoldBody(
                   layout: layout,
                   androidDisplayRotation: androidDisplayRotation,
+                  iosDeviceTopOnRight: iosDeviceTopOnRight,
                   navigationShell: navigationShell,
                   currentIndex: navigationShell.currentIndex,
                   onDestinationSelected: _goBranch,
@@ -146,6 +149,7 @@ class _RailScaffoldBody extends ConsumerWidget {
   const _RailScaffoldBody({
     required this.layout,
     required this.androidDisplayRotation,
+    required this.iosDeviceTopOnRight,
     required this.navigationShell,
     required this.currentIndex,
     required this.onDestinationSelected,
@@ -154,6 +158,7 @@ class _RailScaffoldBody extends ConsumerWidget {
 
   final AppLayoutInfo layout;
   final int? androidDisplayRotation;
+  final bool? iosDeviceTopOnRight;
   final StatefulNavigationShell navigationShell;
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
@@ -163,7 +168,8 @@ class _RailScaffoldBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isExtended = layout.canExtendRail;
     final railOnLeadingSide = layout.resolveRailOnLeadingSide(
-      androidDisplayRotation,
+      androidDisplayRotation: androidDisplayRotation,
+      iosDeviceTopOnRight: iosDeviceTopOnRight,
     );
     final railColumn = _RailColumn(
       currentIndex: currentIndex,
@@ -178,9 +184,11 @@ class _RailScaffoldBody extends ConsumerWidget {
           if (railOnLeadingSide) railColumn,
           if (railOnLeadingSide) const VerticalDivider(thickness: 1, width: 1),
           Expanded(
-            child: _RailContentHost(
-              navigationShell: navigationShell,
-              showBottomFloatingDeviceBar: showBottomFloatingDeviceBar,
+            child: RailHostScope(
+              child: _RailContentHost(
+                navigationShell: navigationShell,
+                showBottomFloatingDeviceBar: showBottomFloatingDeviceBar,
+              ),
             ),
           ),
           if (!railOnLeadingSide) const VerticalDivider(thickness: 1, width: 1),

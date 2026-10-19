@@ -50,6 +50,29 @@ void main() {
     });
   });
 
+  group('Material top bar', () {
+    test('pages beside the rail drop the bar in landscape', () {
+      expect(
+        shouldShowMaterialTopBar(landscape: true, railHosted: true),
+        isFalse,
+      );
+    });
+
+    test('pushed and standalone pages keep their bar', () {
+      expect(
+        shouldShowMaterialTopBar(landscape: true, railHosted: false),
+        isTrue,
+      );
+    });
+
+    test('portrait keeps the bar even beside a rail', () {
+      expect(
+        shouldShowMaterialTopBar(landscape: false, railHosted: true),
+        isTrue,
+      );
+    });
+  });
+
   group('iOS top bar', () {
     test('portrait keeps the bar everywhere', () {
       for (final duo in [false, true]) {

@@ -189,7 +189,6 @@ class SavedCardsPage extends HookConsumerWidget {
 
     return AppScaffold(
       title: l10n.savedCards,
-      showMaterialAppBar: !layout.isLandscape,
       body: SafeArea(
         top: layout.isLandscape || useCupertinoChrome,
         bottom: useCupertinoChrome,

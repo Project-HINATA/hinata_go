@@ -65,6 +65,29 @@ final class NativeShellViewController: UITabBarController,
     }
   }
 
+  /// A turn between the two landscape poses changes the scene orientation but
+  /// not its size, and UIKit only exposes the new value while the transition
+  /// runs. Publish it once the rotation settles so Dart never keeps the scan
+  /// target on the previous edge.
+  override func viewWillTransition(
+    to size: CGSize,
+    with coordinator: any UIViewControllerTransitionCoordinator
+  ) {
+    super.viewWillTransition(to: size, with: coordinator)
+    coordinator.animate(alongsideTransition: nil) { _ in
+      (UIApplication.shared.delegate as? AppDelegate)?
+        .deviceOrientationBridge.deviceTopOnRightChanged()
+    }
+  }
+
+  /// The scene may report portrait during the first Flutter frame of a launch
+  /// that is already landscape; re-publish once the shell is on screen.
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    (UIApplication.shared.delegate as? AppDelegate)?
+      .deviceOrientationBridge.deviceTopOnRightChanged()
+  }
+
   private func makeSlot(title: String, symbol: String) -> UIViewController {
     let controller = UIViewController()
     controller.view.backgroundColor = .systemBackground

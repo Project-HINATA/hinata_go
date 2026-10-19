@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../providers/navigation_provider.dart';
 import '../app_action_button.dart';
+import '../app_layout.dart';
 
 /// Whether the app draws iOS chrome (native toolbars and tab bar) instead of
 /// Material app bars. Web renders exactly like Android.
@@ -64,6 +65,20 @@ bool shouldShowIOSTopBar({
   return duoVerticalBar;
 }
 
+/// Whether a Material page draws its own top app bar.
+///
+/// The rail already provides navigation for the pages beside it in landscape,
+/// so their bar would only repeat that and take a strip off an already short
+/// screen. Everywhere else — portrait, pushed routes, standalone pages — the
+/// page keeps its bar.
+@visibleForTesting
+bool shouldShowMaterialTopBar({
+  required bool landscape,
+  required bool railHosted,
+}) {
+  return !(landscape && railHosted);
+}
+
 /// Hides a page's floating controls while a modal covers the page.
 ///
 /// They are platform views, so a Flutter barrier paints underneath them and
@@ -96,7 +111,6 @@ class AppScaffold extends StatelessWidget {
     this.primaryAction,
     this.leading,
     this.materialAppBar,
-    this.showMaterialAppBar = true,
     this.materialFloatingActionButton,
     this.backgroundColor,
   });
@@ -112,9 +126,6 @@ class AppScaffold extends StatelessWidget {
 
   /// Replaces the app bar built from [title] and [actions] on Material.
   final PreferredSizeWidget? materialAppBar;
-
-  /// Material pages drop their app bar where the navigation rail takes over.
-  final bool showMaterialAppBar;
 
   /// Replaces the button built from [primaryAction] on Material.
   final Widget? materialFloatingActionButton;
@@ -271,9 +282,15 @@ class AppScaffold extends StatelessWidget {
       );
     }
 
+    final layout = context.appLayout;
+    final showTopBar = shouldShowMaterialTopBar(
+      landscape: layout.isLandscape,
+      railHosted: RailHostScope.isHosted(context),
+    );
+
     return AdaptiveScaffold(
       backgroundColor: backgroundColor,
-      appBar: showMaterialAppBar
+      appBar: showTopBar
           ? AdaptiveAppBar(
               title: title,
               actions: actions,

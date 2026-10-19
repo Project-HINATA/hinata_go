@@ -24,7 +24,6 @@ class SettingsPage extends HookConsumerWidget {
 
     return AppScaffold(
       title: l10n.settings,
-      showMaterialAppBar: !layout.isLandscape,
       body: SafeArea(
         top: layout.isLandscape,
         bottom: false,

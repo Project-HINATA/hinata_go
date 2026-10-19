@@ -1,5 +1,6 @@
 import Flutter
 import Foundation
+import UIKit
 
 protocol NativeShellBridgeDelegate: AnyObject {
   func nativeShell(setSelectedIndex index: Int)
@@ -87,5 +88,62 @@ final class NativeShellBridge {
 
   func userRequested(action: String) {
     channel.invokeMethod("nativeAction", arguments: ["action": action])
+  }
+}
+
+/// Reports which screen edge carries the device's NFC antenna.
+///
+/// Most phones put the NFC antenna at the top, next to the front camera, so
+/// the edge is the side the device's top points to. The window scene's
+/// landscape value tracks that side on the tested runtime, while
+/// `UIDevice.orientation` is unreliable on the Duo (it reports portrait while
+/// the window is landscape). Safe-area insets are not used either: iPhones
+/// keep symmetric landscape insets, and the Duo's vertical bar makes the
+/// right side look like the top.
+final class DeviceOrientationBridge {
+  static let channelName = "moe.neri.hinatago/device_orientation"
+  private let channel: FlutterMethodChannel
+
+  init(messenger: FlutterBinaryMessenger) {
+    channel = FlutterMethodChannel(
+      name: Self.channelName,
+      binaryMessenger: messenger
+    )
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "getDeviceTopOnRight":
+        result(Self.currentDeviceTopOnRight())
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  /// True when the device's top edge is on the right. Nil in portrait or when
+  /// no window scene has connected yet.
+  static func currentDeviceTopOnRight() -> Bool? {
+    let scenes = UIApplication.shared.connectedScenes.compactMap {
+      $0 as? UIWindowScene
+    }
+    let scene =
+      scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+    let result: Bool?
+    switch scene?.interfaceOrientation {
+    case .landscapeLeft:
+      // The interface turned left, so the device's top edge is on the right.
+      result = true
+    case .landscapeRight:
+      result = false
+    default:
+      result = nil
+    }
+    return result
+  }
+
+  func deviceTopOnRightChanged() {
+    channel.invokeMethod(
+      "deviceTopOnRightChanged",
+      arguments: Self.currentDeviceTopOnRight()
+    )
   }
 }
