@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../models/card_folder.dart';
 import '../../models/scanning_mode.dart';
 import '../../providers/app_state_provider.dart';
+import '../../providers/navigation_bar_provider.dart';
 
 /// One step through the app's pages.
 enum AppSwipeMove { previous, next }
@@ -64,6 +65,7 @@ AppSwipeTarget resolveFullSequenceSwipe({
   required ScanningMode mode,
   required List<CardFolder> folders,
   required String selectedFolderId,
+  required bool cardsWideLayout,
 }) {
   switch (branchIndex) {
     case 0:
@@ -80,6 +82,13 @@ AppSwipeTarget resolveFullSequenceSwipe({
           : const AppSwipeTarget();
 
     case 1:
+      // The wide layout lists folders vertically, so there is no left/right
+      // folder sequence. It behaves as one page inside the horizontal tabs.
+      if (cardsWideLayout) {
+        return move == AppSwipeMove.next
+            ? const AppSwipeTarget(branchIndex: 2)
+            : const AppSwipeTarget(branchIndex: 0, mode: ScanningMode.sender);
+      }
       final index = _folderIndex(folders, selectedFolderId);
       if (move == AppSwipeMove.next) {
         return index >= folders.length - 1
@@ -124,6 +133,7 @@ AppSwipeTarget resolveSubPageSwipe({
   required ScanningMode mode,
   required List<CardFolder> folders,
   required String selectedFolderId,
+  required bool cardsWideLayout,
 }) {
   switch (branchIndex) {
     case 0:
@@ -137,6 +147,9 @@ AppSwipeTarget resolveSubPageSwipe({
           : const AppSwipeTarget();
 
     case 1:
+      if (cardsWideLayout) {
+        return const AppSwipeTarget();
+      }
       final index = _folderIndex(folders, selectedFolderId);
       if (move == AppSwipeMove.next) {
         return index < folders.length - 1
@@ -206,6 +219,7 @@ class AppSwipeNavigation extends ConsumerWidget {
       onHorizontalDragEnd: (details) {
         final move = _moveFrom(details);
         if (move == null) return;
+        final cardsWideLayout = ref.read(cardsWideLayoutProvider);
         _apply(
           ref,
           horizontalTabs
@@ -215,6 +229,7 @@ class AppSwipeNavigation extends ConsumerWidget {
                   mode: ref.read(scanningModeProvider),
                   folders: ref.read(cardFoldersProvider),
                   selectedFolderId: ref.read(selectedCardFolderIdProvider),
+                  cardsWideLayout: cardsWideLayout,
                 )
               : resolveSubPageSwipe(
                   move: move,
@@ -222,6 +237,7 @@ class AppSwipeNavigation extends ConsumerWidget {
                   mode: ref.read(scanningModeProvider),
                   folders: ref.read(cardFoldersProvider),
                   selectedFolderId: ref.read(selectedCardFolderIdProvider),
+                  cardsWideLayout: cardsWideLayout,
                 ),
         );
       },

@@ -24,6 +24,7 @@ void main() {
         mode: mode,
         folders: _folders(),
         selectedFolderId: folder,
+        cardsWideLayout: false,
       );
     }
 
@@ -72,6 +73,25 @@ void main() {
       expect(resolve(AppSwipeMove.previous, branch: 0), const AppSwipeTarget());
       expect(resolve(AppSwipeMove.next, branch: 2), const AppSwipeTarget());
     });
+
+    test('treats the wide cards layout as one page', () {
+      AppSwipeTarget wide(AppSwipeMove move) {
+        return resolveFullSequenceSwipe(
+          move: move,
+          branchIndex: 1,
+          mode: ScanningMode.normal,
+          folders: _folders(),
+          selectedFolderId: 'favorites_folder',
+          cardsWideLayout: true,
+        );
+      }
+
+      expect(wide(AppSwipeMove.next), const AppSwipeTarget(branchIndex: 2));
+      expect(
+        wide(AppSwipeMove.previous),
+        const AppSwipeTarget(branchIndex: 0, mode: ScanningMode.sender),
+      );
+    });
   });
 
   group('vertical bar', () {
@@ -98,6 +118,7 @@ void main() {
           mode: mode,
           folders: _folders(),
           selectedFolderId: 'favorites_folder',
+          cardsWideLayout: false,
         );
       }
 
@@ -123,6 +144,7 @@ void main() {
           mode: ScanningMode.normal,
           folders: _folders(),
           selectedFolderId: folder,
+          cardsWideLayout: false,
         );
       }
 
@@ -139,6 +161,22 @@ void main() {
         const AppSwipeTarget(),
       );
       expect(resolve(AppSwipeMove.next, 'travel'), const AppSwipeTarget());
+    });
+
+    test('does not swipe folders in the wide cards layout', () {
+      for (final move in AppSwipeMove.values) {
+        expect(
+          resolveSubPageSwipe(
+            move: move,
+            branchIndex: 1,
+            mode: ScanningMode.normal,
+            folders: _folders(),
+            selectedFolderId: 'favorites_folder',
+            cardsWideLayout: true,
+          ),
+          const AppSwipeTarget(),
+        );
+      }
     });
   });
 }

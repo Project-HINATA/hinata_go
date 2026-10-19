@@ -9,6 +9,7 @@ import '../../models/scan_log.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/card_sender.dart';
+import '../../providers/navigation_bar_provider.dart';
 import '../../services/notification_service.dart';
 import '../app_layout.dart';
 import '../ui_text.dart';
@@ -164,13 +165,7 @@ class SavedCardsPage extends ConsumerWidget {
       body: SafeArea(
         top: layout.isLandscape || useCupertinoChrome,
         bottom: useCupertinoChrome,
-        child: _buildBody(
-          context,
-          ref,
-          folders,
-          selectedFolderId,
-          folderCards,
-        ),
+        child: _buildBody(context, ref, folders, selectedFolderId, folderCards),
       ),
       primaryAction: AppActionConfig(
         id: 'cardsAction',
@@ -184,21 +179,16 @@ class SavedCardsPage extends ConsumerWidget {
             label: l10n.addAimeBanapass,
             icon: Icons.add,
             nativeSymbol: 'creditcard',
-            onPressed: () => _showAddCardDialog(
-              context,
-              selectedFolderId,
-              selectFolder,
-            ),
+            onPressed: () =>
+                _showAddCardDialog(context, selectedFolderId, selectFolder),
           ),
           AppActionItem(
             id: 'addNdef',
             label: l10n.ndefCreate,
             icon: Icons.nfc,
             nativeSymbol: 'wave.3.right',
-            onPressed: () => showNdefEditor(
-              context,
-              initialFolderId: selectedFolderId,
-            ),
+            onPressed: () =>
+                showNdefEditor(context, initialFolderId: selectedFolderId),
           ),
           AppActionItem(
             id: 'addFolder',
@@ -225,17 +215,20 @@ class SavedCardsPage extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return constraints.maxWidth > 700
+        final wide = constraints.maxWidth > 700;
+        if (wide != ref.read(cardsWideLayoutProvider)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!context.mounted) return;
+            ref.read(cardsWideLayoutProvider.notifier).setWide(wide);
+          });
+        }
+        return wide
             ? _SavedCardsWideBody(
                 folders: folders,
                 selectedFolderId: selectedFolderId,
                 onFolderSelected: selectFolder,
-                onFolderLongPress: (folder) => _onDeleteFolder(
-                  context,
-                  ref,
-                  folder,
-                  selectFolder,
-                ),
+                onFolderLongPress: (folder) =>
+                    _onDeleteFolder(context, ref, folder, selectFolder),
                 cardsView: _buildCardsView(context, ref, folderCards),
               )
             : _SavedCardsCompactBody(
@@ -263,12 +256,8 @@ class SavedCardsPage extends ConsumerWidget {
       folders: folders,
       selectedFolderId: selectedFolderId,
       onFolderSelected: selectFolder,
-      onFolderLongPress: (folder) => _onDeleteFolder(
-        context,
-        ref,
-        folder,
-        selectFolder,
-      ),
+      onFolderLongPress: (folder) =>
+          _onDeleteFolder(context, ref, folder, selectFolder),
     );
   }
 
@@ -373,9 +362,7 @@ class _SavedCardsCompactBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [folderStrip, const Divider(height: 1), cardsView],
-    );
+    return Column(children: [folderStrip, const Divider(height: 1), cardsView]);
   }
 }
 

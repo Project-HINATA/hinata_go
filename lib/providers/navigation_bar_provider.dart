@@ -21,3 +21,21 @@ class NavigationBarAxisNotifier extends Notifier<Axis> {
     if (state != axis) state = axis;
   }
 }
+
+/// Whether the cards page currently lays its folders out as a vertical rail.
+///
+/// The page reports this because its breakpoint is based on the content width
+/// left by the navigation rail, not the window width. Wide layouts have no
+/// horizontal folder sequence to swipe through.
+final cardsWideLayoutProvider = NotifierProvider<CardsWideLayoutNotifier, bool>(
+  CardsWideLayoutNotifier.new,
+);
+
+class CardsWideLayoutNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void setWide(bool wide) {
+    if (state != wide) state = wide;
+  }
+}
