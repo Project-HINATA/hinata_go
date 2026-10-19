@@ -335,12 +335,36 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
         item.rightBarButtonItems = rightGroup.reversed()
     }
 
-    /// Replaces the navigation item in one animated UIKit update.
+    /// Replaces the navigation item in one animated update.
     private func applyContent(_ params: [String: Any], animated: Bool) {
         let item = UINavigationItem()
         configureItems(params, on: item)
-        navigationItem = item
-        navigationBar.setItems([item], animated: animated)
+
+        // This bar is not owned by a UINavigationController, so its
+        // `setItems(_:animated:)` transition is not played in practice: the
+        // old buttons are simply removed. Snapshot the old bar and fade that
+        // snapshot out over the new item so the buttons visibly leave.
+        if animated, navigationBar.window != nil,
+           let snapshot = navigationBar.snapshotView(afterScreenUpdates: false) {
+            navigationBar.setItems([item], animated: false)
+            navigationItem = item
+            snapshot.frame = navigationBar.bounds
+            snapshot.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            snapshot.isUserInteractionEnabled = false
+            navigationBar.addSubview(snapshot)
+            UIView.animate(
+                withDuration: 0.22,
+                delay: 0,
+                options: [.curveEaseOut, .beginFromCurrentState]
+            ) {
+                snapshot.alpha = 0
+            } completion: { _ in
+                snapshot.removeFromSuperview()
+            }
+        } else {
+            navigationBar.setItems([item], animated: false)
+            navigationItem = item
+        }
 
         // Items created with the new item default to the bar's tint; apply a
         // global tint explicitly to those without a per-action color.
