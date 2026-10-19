@@ -698,9 +698,22 @@ private struct ClipPlatformBinding: View {
     VStack(alignment: .leading, spacing: 24) {
       Text("绑定平台身份").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
       VStack(alignment: .leading, spacing: 18) {
-        Text("向店铺 Bot 发送").font(.subheadline)
         if let binding = model.binding {
-          Text("prism.bind \(binding.code)").font(.system(size: 21, design: .monospaced)).textSelection(.enabled)
+          let lines = prismBindingPromptLines(binding.botContact, code: binding.code) ?? [
+            PrismBindingPromptLine(text: String(localized: "向店铺 Bot 发送"), command: false),
+            PrismBindingPromptLine(text: "prism.bind \(binding.code)", command: true),
+          ]
+          ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+            if line.command {
+              HStack(spacing: 12) {
+                Text(verbatim: line.text).font(.system(size: 21, design: .monospaced)).textSelection(.enabled)
+                Spacer(minLength: 0)
+                Button("复制") { UIPasteboard.general.string = line.text }.buttonStyle(.bordered)
+              }
+            } else {
+              Text(verbatim: line.text).font(.subheadline)
+            }
+          }
           Text(String(localized: "有效期至") + " " + prismTime(binding.expiresAt)).font(.caption).foregroundStyle(.secondary)
         }
         if model.errorMessage != nil {

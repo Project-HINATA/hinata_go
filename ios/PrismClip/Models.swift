@@ -197,7 +197,28 @@ struct SwipeResult: Codable {
   }
 }
 struct PrismDeviceState: Decodable { let gate: String; var power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil }
-struct PrismBinding: Decodable { let code: String; let expiresAt: String }
+struct PrismBinding: Decodable { let code: String; let expiresAt: String; let botContact: String? }
+
+struct PrismBindingPromptLine: Equatable { let text: String; let command: Bool }
+
+/// The shop's own binding instructions (`botContact`), matching the Web client. Each
+/// line is plain text; a line holding `{code}` is the command to send. Older shops stored
+/// free contact text without a placeholder, so the standard command follows that text.
+/// `nil` means the shop wrote nothing and the standard wording applies.
+func prismBindingPromptLines(_ template: String?, code: String) -> [PrismBindingPromptLine]? {
+  let lines = (template ?? "").components(separatedBy: .newlines)
+    .map { $0.trimmingCharacters(in: .whitespaces) }
+    .filter { !$0.isEmpty }
+  if lines.isEmpty { return nil }
+  let rendered = lines.map { line in
+    line.contains("{code}")
+      ? PrismBindingPromptLine(text: line.replacingOccurrences(of: "{code}", with: code), command: true)
+      : PrismBindingPromptLine(text: line, command: false)
+  }
+  return rendered.contains(where: \.command)
+    ? rendered
+    : rendered + [PrismBindingPromptLine(text: "prism.bind \(code)", command: true)]
+}
 struct PrismDoorPassword: Decodable { let temporaryPassword: String; let expiresAt: String }
 struct PrismShopResponse: Decodable {
   let shop: Settings
