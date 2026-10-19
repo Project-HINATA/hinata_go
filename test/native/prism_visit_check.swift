@@ -38,7 +38,7 @@ enum PersistentCookieCheck {
       PrismBindingPromptLine(text: "加入 QQ 群 123456", command: false),
       PrismBindingPromptLine(text: "/绑定 AB23CD45", command: true),
     ])
-    precondition(prismBindingPromptLines("Store Bot", code: "AB23CD45")?.last == PrismBindingPromptLine(text: "prism.bind AB23CD45", command: true))
+    precondition(prismBindingPromptLines("Store Bot", code: "AB23CD45")?.last == PrismBindingPromptLine(text: "bind AB23CD45", command: true))
     let origin = URL(string: "https://link-beta.neri.moe")!
     precondition(InvocationParser.invocation(from: URL(string: "https://example.com:8443/t/store/device")!)?.origin.absoluteString == "https://example.com:8443")
     precondition(InvocationParser.invocation(from: URL(string: "http://example.com/t/store/device")!) == nil)

@@ -701,7 +701,7 @@ private struct ClipPlatformBinding: View {
         if let binding = model.binding {
           let lines = prismBindingPromptLines(binding.botContact, code: binding.code) ?? [
             PrismBindingPromptLine(text: String(localized: "向店铺 Bot 发送"), command: false),
-            PrismBindingPromptLine(text: "prism.bind \(binding.code)", command: true),
+            PrismBindingPromptLine(text: "bind \(binding.code)", command: true),
           ]
           ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
             if line.command {

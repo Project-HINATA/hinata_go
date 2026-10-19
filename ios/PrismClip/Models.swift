@@ -217,7 +217,7 @@ func prismBindingPromptLines(_ template: String?, code: String) -> [PrismBinding
   }
   return rendered.contains(where: \.command)
     ? rendered
-    : rendered + [PrismBindingPromptLine(text: "prism.bind \(code)", command: true)]
+    : rendered + [PrismBindingPromptLine(text: "bind \(code)", command: true)]
 }
 struct PrismDoorPassword: Decodable { let temporaryPassword: String; let expiresAt: String }
 struct PrismShopResponse: Decodable {

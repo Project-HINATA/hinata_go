@@ -330,9 +330,6 @@
         }
       }
     },
-    "prism.bind %@" : {
-
-    },
     "上桌" : {
       "extractionState" : "stale",
       "localizations" : {
