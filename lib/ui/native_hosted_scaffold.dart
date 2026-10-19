@@ -84,20 +84,33 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
     }
   }
 
-  Future<void> _publishTabs(List<NavigationTab> tabs, {int? tint}) =>
-      _channel.invokeMethod('setTabs', {
-        'tabs': tabs
-            .map(
-              (t) => {
-                'index': t.index,
-                'label': t.label,
-                'symbol': t.iosSymbol,
-                'hasBadge': t.hasBadge,
-                'tint': ?tint,
-              },
-            )
-            .toList(),
-      });
+  /// The last tab set sent to UIKit. Re-publishing the same titles, icons and
+  /// badges on every Flutter rebuild churns the native tab bar's items, which
+  /// can swallow taps, so an unchanged set is skipped.
+  String? _lastTabsSignature;
+
+  Future<void> _publishTabs(List<NavigationTab> tabs, {int? tint}) {
+    final signature = [
+      for (final t in tabs)
+        '${t.index}|${t.label}|${t.iosSymbol}|${t.hasBadge}',
+      'tint:$tint',
+    ].join(';');
+    if (signature == _lastTabsSignature) return Future<void>.value();
+    _lastTabsSignature = signature;
+    return _channel.invokeMethod('setTabs', {
+      'tabs': tabs
+          .map(
+            (t) => {
+              'index': t.index,
+              'label': t.label,
+              'symbol': t.iosSymbol,
+              'hasBadge': t.hasBadge,
+              'tint': ?tint,
+            },
+          )
+          .toList(),
+    });
+  }
 
   Future<void> _publishActionButton(AppActionConfig? config) {
     if (config == null) {

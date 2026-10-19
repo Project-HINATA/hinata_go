@@ -150,7 +150,10 @@ class _ScanLandscapeBody extends StatelessWidget {
         ? ScanPage._desktopLandscapePlaceholderMaxHeight
         : constraints.maxHeight;
     final controlColumn = _ScanControlColumn(
-      showInlineModeSelector: !layout.isCompactLandscapePhone,
+      // Landscape phones used to drop the switcher entirely on iOS. Where a
+      // navigation rail exists (Android) the rail footer already carries it.
+      showInlineModeSelector:
+          !layout.isCompactLandscapePhone || useCupertinoChrome,
       modeSelector: modeSelector,
       dynamicContent: dynamicContent,
     );

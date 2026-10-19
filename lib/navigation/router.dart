@@ -3,9 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 
+import '../core/app_host_mode.dart';
 import '../models/card/card.dart';
 import '../models/card/saved_card.dart';
+import '../ui/adaptive_tab_shell.dart';
 import '../ui/app_layout.dart';
+import '../ui/native_hosted_scaffold.dart';
 import '../ui/pages/camera_page.dart';
 import '../ui/pages/card_detail_page.dart';
 import '../ui/pages/device_control_page.dart';
@@ -15,13 +18,10 @@ import '../ui/pages/saved_cards_page.dart';
 import '../ui/pages/scan_logs_page.dart';
 import '../ui/pages/scan_page.dart';
 import '../ui/pages/settings_page.dart';
-import '../ui/adaptive_tab_shell.dart';
-import '../ui/native_hosted_scaffold.dart';
 import '../ui/scaffold_with_navbar.dart';
 import '../ui/shell_state_sync.dart';
 import '../ui/widgets/animated_branch_container.dart';
 import '../ui/widgets/app_scaffold.dart';
-import '../core/app_host_mode.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',

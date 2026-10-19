@@ -55,7 +55,14 @@ final class NativeShellViewController: UITabBarController,
     super.viewDidLayoutSubviews()
     syncSafeAreaInsets()
     syncActionButtonPosition()
-    if isDimmed, !isChromeFading { applyChromeDimming(animated: false) }
+    if isDimmed {
+      if !isChromeFading { applyChromeDimming(animated: false) }
+    } else {
+      // Keeps a bar recreated by the system tappable while no modal covers it.
+      for bar in chromeBarViews() {
+        bar.isUserInteractionEnabled = isTabBarVisible
+      }
+    }
   }
 
   private func makeSlot(title: String, symbol: String) -> UIViewController {
@@ -363,16 +370,24 @@ final class NativeShellViewController: UITabBarController,
   /// same way. The state is re-applied after layout because the system lays
   /// its bar out again on rotation and when the device folds.
   private func applyChromeDimming(animated: Bool) {
+    let current = chromeBarViews()
     let bars: [UIView]
     let targetAlpha: CGFloat
     if isDimmed {
-      bars = chromeBarViews()
-      dimmedBarViews = bars
+      bars = current
+      dimmedBarViews = current
       targetAlpha = 0.45
       for bar in bars { bar.isUserInteractionEnabled = false }
     } else {
-      bars = dimmedBarViews
+      // Restore the views dimmed earlier *and* whatever is on screen now. A
+      // bar the system recreated while dimmed, or one dimmed while its page
+      // was covered, would otherwise stay inert after the modal closes.
+      var targets = current
+      for bar in dimmedBarViews where !targets.contains(where: { $0 === bar }) {
+        targets.append(bar)
+      }
       dimmedBarViews = []
+      bars = targets
       targetAlpha = 1.0
       for bar in bars { bar.isUserInteractionEnabled = isTabBarVisible }
     }
