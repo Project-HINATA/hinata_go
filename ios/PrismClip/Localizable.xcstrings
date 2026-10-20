@@ -1342,23 +1342,6 @@
         }
       }
     },
-    "未读卡，请在刷卡界面重试" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Card not read. Retry on the card screen."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未读卡，请在刷卡界面重试"
-          }
-        }
-      }
-    },
     "登录失败" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -418,7 +418,7 @@ final class MachineLoginViewModel: ObservableObject {
       // The card row carries the outcome; only a problem that needs the player interrupts.
       var parts = notices.filter { $0.display == "inline" }.map { CardFeedback.Part(level: $0.level, text: $0.body) }
       if parts.isEmpty {
-        parts = [CardFeedback.Part(level: cardOutcome == "failed" ? "error" : cardOutcome == "not_read" ? "warning" : "success", text: rowText(cardOutcome))]
+        parts = [CardFeedback.Part(level: ["failed", "not_read"].contains(cardOutcome) ? "error" : "success", text: rowText(cardOutcome))]
         if result.notices == nil, ["failed", "unknown"].contains(result.coin?.status ?? "") {
           parts.append(CardFeedback.Part(level: "warning", text: String(localized: "投币失败")))
         }
@@ -445,8 +445,7 @@ final class MachineLoginViewModel: ObservableObject {
   private func rowText(_ outcome: String) -> String {
     switch outcome {
     case "ok": return String(localized: "登录成功")
-    case "failed": return String(localized: "登录失败")
-    case "not_read": return String(localized: "未读卡，请在刷卡界面重试")
+    case "failed", "not_read": return String(localized: "登录失败")
     default: return String(localized: "已刷卡")
     }
   }
