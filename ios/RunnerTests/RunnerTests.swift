@@ -20,8 +20,7 @@ class RunnerTests: XCTestCase {
     let window = try XCTUnwrap(UIApplication.shared.connectedScenes
       .compactMap { ($0 as? UIWindowScene)?.keyWindow }.first)
     let shell = try XCTUnwrap(window.rootViewController as? NativeShellViewController)
-    let flutter = try XCTUnwrap(shell.selectedViewController?.children
-      .compactMap { $0 as? FlutterViewController }.first)
+    let flutter = shell.flutterSurface
     defer { shell.nativeShell(setSelectedIndex: 0) }
 
     for index in [0, 1, 2, 0] {
@@ -30,8 +29,28 @@ class RunnerTests: XCTestCase {
       let rendering = XCTNSPredicateExpectation(
         predicate: NSPredicate { _, _ in flutter.isDisplayingFlutterUI }, object: flutter)
       await fulfillment(of: [rendering], timeout: 10)
-      XCTAssertTrue(flutter.parent === shell.viewControllers?[index])
+      XCTAssertTrue(flutter.parent === pageHost(in: shell.viewControllers?[index]))
     }
+  }
+
+  /// Lets a UIKit push/pop finish before the next assertion: the coordinator
+  /// uses its own content animator, so the stack settles a moment later. The
+  /// extra drain also covers UIKit writing the popped page's item back onto
+  /// the root, which happens after the coordinator reports completion.
+  @MainActor
+  private func waitForTransition(_ nav: UINavigationController) {
+    for _ in 0..<60 {
+      RunLoop.current.run(until: Date().addingTimeInterval(0.02))
+      if nav.transitionCoordinator == nil { break }
+    }
+    RunLoop.current.run(until: Date().addingTimeInterval(0.45))
+  }
+
+  /// Flutter is a child of whichever page is on top; the page's navigation
+  /// controller is the tab that owns the surface.
+  @MainActor
+  private func pageHost(in slot: UIViewController?) -> UIViewController? {
+    (slot as? UINavigationController)?.viewControllers.first ?? slot
   }
 
   @MainActor
@@ -40,8 +59,9 @@ class RunnerTests: XCTestCase {
     let window = try XCTUnwrap(UIApplication.shared.connectedScenes
       .compactMap { ($0 as? UIWindowScene)?.keyWindow }.first)
     let shell = try XCTUnwrap(window.rootViewController as? NativeShellViewController)
-    let flutter = try XCTUnwrap(shell.selectedViewController?.children
-      .compactMap { $0 as? FlutterViewController }.first)
+    let selected = try XCTUnwrap(shell.selectedViewController)
+    let flutter = shell.flutterSurface
+    XCTAssertTrue(flutter.parent === pageHost(in: selected))
     let delegate = try XCTUnwrap(shell.delegate)
     let appDelegate = try XCTUnwrap(UIApplication.shared.delegate as? AppDelegate)
     var forwardedSelections: [Int] = []
@@ -65,7 +85,7 @@ class RunnerTests: XCTestCase {
       // UIKit should cancel selection, leaving Flutter active while Dart navigates.
       let allowed = try XCTUnwrap(delegate.tabBarController?(shell, shouldSelectTab: tab))
       XCTAssertFalse(allowed)
-      XCTAssertTrue(flutter.parent === previouslySelected)
+      XCTAssertTrue(flutter.parent === pageHost(in: previouslySelected))
       XCTAssertTrue(shell.selectedViewController === previouslySelected)
       XCTAssertEqual(forwardedSelections.last, index)
 
@@ -77,7 +97,7 @@ class RunnerTests: XCTestCase {
       // Simulate Dart's MethodChannel callback once goBranch has changed route.
       shell.nativeShell(setSelectedIndex: index)
       XCTAssertEqual(shell.selectedIndex, index)
-      XCTAssertTrue(flutter.parent === target)
+      XCTAssertTrue(flutter.parent === pageHost(in: target))
       XCTAssertEqual(forwardedSelections.count, count)
 
       shell.view.layoutIfNeeded()
@@ -94,9 +114,9 @@ class RunnerTests: XCTestCase {
     let previous = try XCTUnwrap(shell.selectedViewController)
     XCTAssertFalse(shell.tabBarController(shell, shouldSelectTab: missingControllerTab))
     XCTAssertEqual(forwardedSelections.last, 2)
-    XCTAssertTrue(flutter.parent === previous)
+    XCTAssertTrue(flutter.parent === pageHost(in: previous))
     shell.nativeShell(setSelectedIndex: 2)
-    XCTAssertTrue(flutter.parent === settings)
+    XCTAssertTrue(flutter.parent === pageHost(in: settings))
 
     // Repeated taps on the active tab should still reset its branch in Flutter.
     let count = forwardedSelections.count
@@ -154,6 +174,131 @@ class RunnerTests: XCTestCase {
         }
       }
     }
+  }
+
+  @MainActor
+  func testNativeTopBarUsesLogoOnlyOnTheRootPage() throws {
+    let (shell, bar, nav) = try nativeTopBar()
+    defer { restoreTopBar(bar, nav) }
+    let root = try XCTUnwrap(nav.viewControllers.first)
+    XCTAssertTrue(
+      pageHost(in: nav) === shell.flutterSurface.parent,
+      "Flutter must start on the selected tab (selected=\(shell.selectedIndex))")
+
+    bar.reset(["token": 1, "title": "HINATA Go", "logo": true])
+    XCTAssertEqual(nav.viewControllers.count, 1)
+    XCTAssertNil(root.navigationItem.title)
+    XCTAssertNotNil(root.navigationItem.titleView)
+
+    bar.push(["token": 2, "title": "Scan History Logs", "back": true,
+              "actions": [["icon": "trash", "label": "Delete"]]])
+    waitForTransition(nav)
+    XCTAssertEqual(
+      nav.viewControllers.count, 2,
+      "selected=\(shell.selectedIndex) sameNav=\(shell.selectedViewController === nav) "
+        + "parent=\(String(describing: shell.flutterSurface.parent))")
+    let top = try XCTUnwrap(nav.topViewController)
+    XCTAssertEqual(top.navigationItem.title, "Scan History Logs")
+    XCTAssertNil(top.navigationItem.titleView)
+    XCTAssertEqual(top.navigationItem.leftBarButtonItems?.count, 1)
+    XCTAssertEqual(top.navigationItem.rightBarButtonItems?.count, 1)
+    // The push runs UIKit's own transition, so the stack settles asynchronously.
+    waitForTransition(nav)
+    XCTAssertTrue(
+      shell.selectedViewController === nav,
+      "the selected tab changed mid-test (selected=\(shell.selectedIndex))")
+    // The placeholder transition moves no Flutter content: the surface must
+    // stay in the window even though its root controller is no longer on top.
+    let flutter = shell.flutterSurface
+    XCTAssertTrue(
+      flutter.parent === nav.topViewController,
+      "Flutter left the top page during the push (parent=\(String(describing: flutter.parent)))")
+    XCTAssertNotNil(flutter.view.window)
+    XCTAssertFalse(flutter.view.isHidden)
+    XCTAssertGreaterThan(flutter.view.frame.width, 0)
+    XCTAssertGreaterThan(flutter.view.frame.height, 0)
+    XCTAssertTrue(flutter.view.isDescendant(of: nav.view))
+    nav.popViewController(animated: false)
+    waitForTransition(nav)
+    XCTAssertEqual(nav.viewControllers.count, 1)
+    XCTAssertNotNil(root.navigationItem.titleView)
+
+    // The custom close leading (NDEF editor, firmware update) and an action
+    // menu are built as real bar items.
+    XCTAssertTrue(
+      shell.selectedViewController === nav,
+      "the selected tab changed mid-test (selected=\(shell.selectedIndex))")
+    bar.reset(["token": 3, "title": "Edit NDEF", "leading": "close",
+               "actions": [[
+                 "icon": "ellipsis",
+                 "menu": [["title": "One"], ["divider": true],
+                          ["title": "Two", "destructive": true]],
+               ]]])
+    XCTAssertEqual(nav.viewControllers.count, 1)
+    XCTAssertEqual(root.navigationItem.leftBarButtonItems?.count, 1)
+    XCTAssertEqual(root.navigationItem.rightBarButtonItems?.count, 1)
+  }
+
+  @MainActor
+  func testNativeTopBarVisibilityAndCoverage() throws {
+    let (_, bar, nav) = try nativeTopBar()
+    defer { restoreTopBar(bar, nav) }
+
+    bar.reset(["token": 1, "title": "Scan History Logs", "back": true])
+
+    bar.setVisible(true)
+    XCTAssertFalse(nav.isNavigationBarHidden)
+    XCTAssertEqual(nav.navigationBar.alpha, 1, accuracy: 0.001)
+
+    bar.setCovered(true)
+    XCTAssertEqual(nav.navigationBar.alpha, 0.45, accuracy: 0.001)
+    XCTAssertFalse(nav.navigationBar.isUserInteractionEnabled)
+
+    // The shell applies the dim itself in the same update as the tab bar; a
+    // late report from the toolbar bridge must not restart it.
+    bar.setCovered(true)
+    XCTAssertEqual(nav.navigationBar.alpha, 0.45, accuracy: 0.001)
+
+    bar.setCovered(false)
+    XCTAssertEqual(nav.navigationBar.alpha, 1, accuracy: 0.001)
+    XCTAssertTrue(nav.navigationBar.isUserInteractionEnabled)
+
+    bar.setVisible(false)
+    XCTAssertTrue(nav.isNavigationBarHidden)
+  }
+
+  @MainActor
+  private func nativeTopBar() throws -> (
+    NativeShellViewController, NativeTopBarCoordinator, UINavigationController
+  ) {
+    let window = try XCTUnwrap(UIApplication.shared.connectedScenes
+      .compactMap { ($0 as? UIWindowScene)?.keyWindow }.first)
+    let shell = try XCTUnwrap(window.rootViewController as? NativeShellViewController)
+    shell.loadViewIfNeeded()
+    let bar = try XCTUnwrap(shell.topBar)
+    // The suite shares one live Flutter app: let pending navigation from an
+    // earlier test land before pinning the tab this test works on.
+    RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+    shell.nativeShell(setSelectedIndex: 0)
+    // A tab change may animate; let it and the pending Flutter attachment
+    // settle before the test starts touching the stack.
+    shell.view.layoutIfNeeded()
+    RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+    let nav = try XCTUnwrap(shell.selectedViewController as? UINavigationController)
+    return (shell, bar, nav)
+  }
+  @MainActor
+  private func restoreTopBar(
+    _ bar: NativeTopBarCoordinator,
+    _ nav: UINavigationController
+  ) {
+    bar.setCovered(false)
+    bar.setVisible(true)
+    waitForTransition(nav)
+    nav.popToRootViewController(animated: false)
+    waitForTransition(nav)
+    bar.reset(["token": 0, "title": ""])
+    nav.setNavigationBarHidden(false, animated: false)
   }
 
 }

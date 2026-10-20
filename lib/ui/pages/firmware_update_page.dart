@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -42,6 +43,8 @@ class FirmwareUpdatePage extends ConsumerWidget {
       },
       child: AppScaffold(
         title: 'Firmware Update',
+        nativeLeading: isFlashing ? null : NativeToolbarLeading.close,
+        onNativeLeadingTap: isFlashing ? null : () => context.pop(),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: isFlashing ? null : () => context.pop(),

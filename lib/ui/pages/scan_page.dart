@@ -47,6 +47,8 @@ class ScanPage extends ConsumerWidget {
 
     return AppScaffold(
       backgroundColor: context.colorScheme.surface,
+      title: 'HINATA Go',
+      nativeLogo: true,
       titleWidget: _buildAppBarTitle(context),
       materialAppBar: _buildAppBar(context),
       body: SafeArea(

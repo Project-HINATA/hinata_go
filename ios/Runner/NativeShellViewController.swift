@@ -22,10 +22,11 @@ final class NativeShellViewController: UITabBarController,
 
   /// Same duration the plugin uses to fade its own chrome, so the tab bar and
   /// the toolbar return together instead of the bar snapping back.
-  private static let chromeFadeDuration: TimeInterval = 0.22
+  fileprivate static let chromeFadeDuration: TimeInterval = 0.22
   private var chromeFadeToken = 0
   private var isChromeFading = false
   private var currentActionConfig: [String: Any]? = nil
+  private(set) var topBar: NativeTopBarCoordinator?
 
   init(flutterViewController: FlutterViewController, bridge: NativeShellBridge) {
     self.flutterViewController = flutterViewController
@@ -41,6 +42,9 @@ final class NativeShellViewController: UITabBarController,
   override func viewDidLoad() {
     super.viewDidLoad()
     delegate = self
+    // Flutter draws every page and shows it through the transparent tab
+    // content, so the shell itself has nothing to paint.
+    view.backgroundColor = .clear
 
     let scan = makeSlot(title: String(localized: "Scan"), symbol: "wave.3.right")
     let cards = makeSlot(title: String(localized: "Cards"), symbol: "creditcard")
@@ -49,6 +53,10 @@ final class NativeShellViewController: UITabBarController,
     selectedIndex = 0
     attachFlutter(to: scan)
     installActionButton()
+    topBar = NativeTopBarCoordinator(
+      shell: self,
+      messenger: bridge.messenger
+    )
   }
 
   override func viewDidLayoutSubviews() {
@@ -88,39 +96,77 @@ final class NativeShellViewController: UITabBarController,
       .deviceOrientationBridge.deviceTopOnRightChanged()
   }
 
-  private func makeSlot(title: String, symbol: String) -> UIViewController {
-    let controller = UIViewController()
-    controller.view.backgroundColor = .systemBackground
-    controller.tabBarItem = UITabBarItem(
+  /// One tab, as a real navigation controller.
+  ///
+  /// The navigation controller has to be the tab's view controller, not a
+  /// view we lay out ourselves: only then does UIKit read its navigation
+  /// item, which is what makes the system draw the bar horizontally on
+  /// iPhone and move the same items into the vertical bar on iPhone Duo.
+  private func makeSlot(title: String, symbol: String) -> UINavigationController {
+    let content = UIViewController()
+    content.view.backgroundColor = .clear
+
+    let nav = UINavigationController(rootViewController: content)
+    let appearance = UINavigationBarAppearance()
+    appearance.configureWithTransparentBackground()
+    appearance.backgroundColor = .clear
+    appearance.shadowColor = .clear
+    nav.navigationBar.standardAppearance = appearance
+    nav.navigationBar.scrollEdgeAppearance = appearance
+    nav.navigationBar.compactAppearance = appearance
+    nav.navigationBar.compactScrollEdgeAppearance = appearance
+    nav.navigationBar.prefersLargeTitles = false
+    nav.navigationBar.tintColor = .label
+    // Back swipes are Flutter's: it reports the pop, and the bar plays its own
+    // transition. UIKit's interactive pop would move the shared surface.
+    nav.interactivePopGestureRecognizer?.isEnabled = false
+    nav.view.backgroundColor = .clear
+    nav.tabBarItem = UITabBarItem(
       title: title,
       image: UIImage(systemName: symbol),
       selectedImage: nil
     )
-    return controller
+    return nav
   }
 
-  private func attachFlutter(to target: UIViewController) {
-    if flutterViewController.parent === target { return }
+  /// Installs the Flutter view in the selected tab.
+  ///
+  /// Flutter is a child of the page on top of the stack. A page transition
+  /// moves it to the incoming page before the switch, and the custom animator
+  /// keeps that page at its final frame, so the surface never moves or leaves
+  /// the window while the bar plays UIKit's own item transition.
+  private func attachFlutter(to target: UINavigationController) {
+    // Follow whatever page the tab is showing; if the bridge then resets the
+    // stack, reset moves the surface back to the root before clearing.
+    guard let host = target.topViewController else { return }
+    moveFlutter(to: host)
+  }
+
+  /// Reparents the shared Flutter surface under [host], filling its view.
+  func moveFlutter(to host: UIViewController) {
+    if flutterViewController.parent === host,
+      flutterViewController.view.superview === host.view
+    {
+      return
+    }
     NSLayoutConstraint.deactivate(flutterConstraints)
 
-    if flutterViewController.parent != nil {
-      flutterViewController.willMove(toParent: nil)
-      flutterViewController.view.removeFromSuperview()
-      flutterViewController.removeFromParent()
-    }
+    flutterViewController.willMove(toParent: nil)
+    flutterViewController.view.removeFromSuperview()
+    flutterViewController.removeFromParent()
 
-    target.addChild(flutterViewController)
+    host.addChild(flutterViewController)
     let flutterView = flutterViewController.view!
     flutterView.translatesAutoresizingMaskIntoConstraints = false
-    target.view.addSubview(flutterView)
+    host.view.insertSubview(flutterView, at: 0)
     flutterConstraints = [
-      flutterView.leadingAnchor.constraint(equalTo: target.view.leadingAnchor),
-      flutterView.trailingAnchor.constraint(equalTo: target.view.trailingAnchor),
-      flutterView.topAnchor.constraint(equalTo: target.view.topAnchor),
-      flutterView.bottomAnchor.constraint(equalTo: target.view.bottomAnchor),
+      flutterView.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
+      flutterView.trailingAnchor.constraint(equalTo: host.view.trailingAnchor),
+      flutterView.topAnchor.constraint(equalTo: host.view.topAnchor),
+      flutterView.bottomAnchor.constraint(equalTo: host.view.bottomAnchor),
     ]
     NSLayoutConstraint.activate(flutterConstraints)
-    flutterViewController.didMove(toParent: target)
+    flutterViewController.didMove(toParent: host)
     syncSafeAreaInsets()
   }
 
@@ -175,7 +221,7 @@ final class NativeShellViewController: UITabBarController,
   }
 
   /// iOS 17 keeps the legacy bottom bar's safe-area reservation when it is
-  /// hidden directly. Apply that workaround only to the slot hosting Flutter.
+  /// hidden directly. Apply that workaround only to the tab hosting Flutter.
   private func syncSafeAreaInsets() {
     let adjustment: CGFloat
     if #available(iOS 18.0, *) {
@@ -184,7 +230,7 @@ final class NativeShellViewController: UITabBarController,
     } else {
       adjustment = isTabBarVisible ? 0 : -bottomTabBarOverlap()
     }
-    let host = flutterViewController.parent
+    let host = flutterViewControllerHost
 
     for slot in viewControllers ?? [] {
       let bottom = slot === host ? adjustment : 0
@@ -197,6 +243,15 @@ final class NativeShellViewController: UITabBarController,
       )
     }
   }
+
+  /// The tab that owns Flutter: the page's navigation controller.
+  private var flutterViewControllerHost: UIViewController? {
+    flutterViewController.parent?.parent
+  }
+
+  /// The Flutter surface every tab shares. Its parent is the selected tab's
+  /// navigation controller; exposed so tests can follow it across tabs.
+  var flutterSurface: FlutterViewController { flutterViewController }
 
   /// iPad's top tab bar may not be in this view hierarchy. Never constrain our
   /// button to it; measure only a bottom bar that actually overlaps our safe area.
@@ -322,7 +377,7 @@ final class NativeShellViewController: UITabBarController,
     }
 
     if viewControllers?.count != tabs.count {
-      let controllers = tabs.map { tab -> UIViewController in
+      let controllers = tabs.map { tab -> UINavigationController in
         let title = tab["label"] as? String ?? ""
         let symbol = tab["symbol"] as? String ?? "circle"
         return makeSlot(title: title, symbol: symbol)
@@ -351,8 +406,11 @@ final class NativeShellViewController: UITabBarController,
     pendingUserSelectionIndex = nil
     NSLog("[NativeShell] Dart committed selected index=%d", index)
     // Older UIKit needs Flutter installed before forwarding tab appearance.
+    // Older UIKit needs Flutter installed before forwarding tab appearance.
     if #unavailable(iOS 27.0) {
-      attachFlutter(to: controllers[index])
+      if let nav = controllers[index] as? UINavigationController {
+        attachFlutter(to: nav)
+      }
     }
     if selectedIndex != index {
       isApplyingFlutterSelection = true
@@ -360,7 +418,9 @@ final class NativeShellViewController: UITabBarController,
       selectedIndex = index
     }
     // iOS 27 needs the visible slot or it can leave Flutter's surface paused.
-    attachFlutter(to: controllers[index])
+    if let nav = controllers[index] as? UINavigationController {
+      attachFlutter(to: nav)
+    }
   }
 
   func nativeShell(setSettingsBadge visible: Bool) {
@@ -371,6 +431,12 @@ final class NativeShellViewController: UITabBarController,
   func nativeShell(setChromeVisibility tabBarVisible: Bool, dimmed: Bool) {
     isTabBarVisible = tabBarVisible
     isDimmed = dimmed
+
+    // The top bar dims here, in the same update that dims the tab bar, so the
+    // two bars start together. Letting the Dart toolbar bridge drive it
+    // separately made the top bar arrive ~50ms late: that bridge runs after
+    // the registry's post-frame pass.
+    topBar?.setCovered(dimmed)
 
     if #available(iOS 18.0, *) {
       setTabBarHidden(!tabBarVisible, animated: false)
@@ -539,5 +605,441 @@ final class NativeShellViewController: UITabBarController,
     actionButton?.isHidden = !hasConfig
     actionButton?.alpha = isDimmed ? 0.46 : 1.0
     actionButton?.isUserInteractionEnabled = hasConfig && !isDimmed
+  }
+}
+
+
+// MARK: - Native top bar
+
+/// Drives the system navigation bar of the selected tab from the page stack
+/// Dart publishes.
+///
+/// It does not draw a bar of its own: each tab is a real
+/// `UINavigationController`, so UIKit owns the bar and decides where it goes —
+/// horizontally at the top on iPhone, inside the vertical bar on iPhone Duo.
+/// This class only installs navigation items and pushes the transparent
+/// placeholder pages that make UIKit play its own push/pop transition.
+final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
+  private static let channelName = "moe.neri.hinatago/native_top_bar"
+
+  private weak var shell: NativeShellViewController?
+  private let channel: FlutterMethodChannel
+  private var isCovered = false
+
+  init(shell: NativeShellViewController, messenger: FlutterBinaryMessenger) {
+    self.shell = shell
+    channel = FlutterMethodChannel(
+      name: Self.channelName,
+      binaryMessenger: messenger
+    )
+    super.init()
+
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self else { return result(nil) }
+      self.handle(call, result: result)
+    }
+  }
+
+  /// The navigation controller of the tab Flutter is showing.
+  private var navigationController: UINavigationController? {
+    guard let shell else { return nil }
+    return shell.selectedViewController as? UINavigationController
+  }
+
+  /// The content controller Flutter is attached to. Pushing placeholder pages
+  /// above it moves no Flutter content; the transition happens in the bar.
+  private var rootController: UIViewController? {
+    navigationController?.viewControllers.first
+  }
+
+  private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    switch call.method {
+    case "reset":
+      guard let args = call.arguments as? [String: Any],
+        let map = args["item"] as? [String: Any]
+      else {
+        return result(FlutterError(code: "bad_args", message: nil, details: nil))
+      }
+      reset(map)
+      if let visible = args["visible"] as? Bool {
+        setVisible(visible)
+      }
+      result(nil)
+    case "push":
+      guard let args = call.arguments as? [String: Any],
+        let map = args["item"] as? [String: Any]
+      else {
+        return result(FlutterError(code: "bad_args", message: nil, details: nil))
+      }
+      push(map)
+      result(nil)
+    case "pop":
+      if let nav = navigationController, nav.viewControllers.count > 1 {
+        nav.popViewController(animated: true)
+      }
+      result(nil)
+    case "update":
+      guard let args = call.arguments as? [String: Any],
+        let map = args["item"] as? [String: Any],
+        let token = map["token"] as? Int,
+        let top = navigationController?.topViewController as? NativeTopBarPageController,
+        top.token == token
+      else {
+        return result(FlutterError(code: "bad_args", message: nil, details: nil))
+      }
+      configureItem(map, on: top.navigationItem)
+      result(nil)
+    case "setVisible":
+      if let args = call.arguments as? [String: Any],
+        let visible = args["visible"] as? Bool {
+        setVisible(visible)
+      }
+      result(nil)
+    case "setCovered":
+      if let args = call.arguments as? [String: Any],
+        let covered = args["covered"] as? Bool {
+        setCovered(covered)
+      }
+      result(nil)
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  func reset(_ map: [String: Any]) {
+    guard let nav = navigationController, let root = rootController else { return }
+    nav.delegate = self
+
+    // A tab switch starts a new stack; clear whatever the previous page left
+    // on this controller before installing the new item. Flutter moves back
+    // to the root first, or clearing the stack would take the surface with the
+    // page UIKit removes.
+    if nav.viewControllers.count > 1 {
+      shell?.moveFlutter(to: root)
+      nav.setViewControllers([root], animated: false)
+    }
+
+    configureItem(map, on: root.navigationItem)
+  }
+
+  func push(_ map: [String: Any]) {
+    guard let nav = navigationController else { return }
+    nav.delegate = self
+    let page = makePage(map)
+    nav.pushViewController(page, animated: true)
+  }
+
+  private func makePage(_ map: [String: Any]) -> NativeTopBarPageController {
+    let page = NativeTopBarPageController()
+    page.token = map["token"] as? Int ?? 0
+    configureItem(map, on: page.navigationItem)
+    return page
+  }
+
+  /// Hides or shows the bar. UIKit adds or removes the matching safe area for
+  /// us, so Flutter content follows without a manual inset.
+  func setVisible(_ visible: Bool) {
+    guard let nav = navigationController else { return }
+    nav.setNavigationBarHidden(!visible, animated: false)
+  }
+
+  func setCovered(_ covered: Bool, animated: Bool = true) {
+    guard covered != isCovered else { return }
+    isCovered = covered
+    applyCoveredAppearance(animated: animated)
+  }
+
+  private func applyCoveredAppearance(animated: Bool = false) {
+    let barAlpha: CGFloat = isCovered ? 0.45 : 1
+    guard let nav = navigationController else { return }
+    nav.navigationBar.isUserInteractionEnabled = !isCovered
+
+    guard animated else {
+      nav.navigationBar.alpha = barAlpha
+      return
+    }
+
+    // 150ms is the Flutter dialog barrier's duration, so the strip dims in
+    // step with the rest of the screen instead of lagging behind it.
+    UIView.animate(
+      withDuration: isCovered ? 0.15 : NativeShellViewController.chromeFadeDuration,
+      delay: 0,
+      options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseInOut]
+    ) {
+      nav.navigationBar.alpha = barAlpha
+    }
+  }
+
+  private func configureItem(
+    _ map: [String: Any],
+    on item: UINavigationItem
+  ) {
+    let token = map["token"] as? Int ?? 0
+    let title = map["title"] as? String
+    if map["logo"] as? Bool == true, let title, !title.isEmpty {
+      item.title = nil
+      item.titleView = Self.makeLogoTitleView(title: title)
+    } else {
+      item.titleView = nil
+      item.title = title
+    }
+    item.hidesBackButton = true
+    if #available(iOS 27.1, *) {
+      // The bar decides the axis; ask for the vertical one when both exist.
+      item.verticalBarCompressionBehavior = .automatic
+    }
+
+    var leading: [UIBarButtonItem] = []
+    if map["back"] as? Bool == true {
+      let back = UIBarButtonItem(
+        image: UIImage(systemName: "chevron.left"),
+        primaryAction: UIAction { [weak self] _ in
+          self?.channel.invokeMethod("onBack", arguments: ["token": token])
+        }
+      )
+      back.accessibilityLabel = "Back"
+      leading.append(back)
+    } else if map["leading"] as? String == "close" {
+      let close = UIBarButtonItem(
+        image: UIImage(systemName: "xmark"),
+        primaryAction: UIAction { [weak self] _ in
+          self?.channel.invokeMethod("onLeading", arguments: ["token": token])
+        }
+      )
+      close.accessibilityLabel = "Close"
+      leading.append(close)
+    }
+    item.leftBarButtonItems = leading
+
+    if let tint = map["tint"] as? NSNumber {
+      let color = Self.colorFromARGB(tint.intValue)
+      item.leftBarButtonItems?.forEach { $0.tintColor = color }
+    }
+
+    var trailing: [UIBarButtonItem] = []
+    if let actions = map["actions"] as? [[String: Any]] {
+      for (index, action) in actions.enumerated() {
+        let button: UIBarButtonItem?
+
+        if let entries = action["menu"] as? [[String: Any]] {
+          let menu = makeMenu(entries, actionIndex: index, token: token)
+          if let icon = action["icon"] as? String {
+            button = UIBarButtonItem(
+              image: UIImage(systemName: icon) ?? UIImage(named: icon),
+              menu: menu
+            )
+          } else {
+            button = UIBarButtonItem(title: action["title"] as? String, menu: menu)
+          }
+        } else if let icon = action["icon"] as? String {
+          button = UIBarButtonItem(
+            image: UIImage(systemName: icon) ?? UIImage(named: icon),
+            primaryAction: UIAction { [weak self] _ in
+              self?.channel.invokeMethod(
+                "onAction",
+                arguments: ["token": token, "index": index]
+              )
+            }
+          )
+        } else if let title = action["title"] as? String {
+          button = UIBarButtonItem(
+            title: title,
+            primaryAction: UIAction { [weak self] _ in
+              self?.channel.invokeMethod(
+                "onAction",
+                arguments: ["token": token, "index": index]
+              )
+            }
+          )
+        } else {
+          button = nil
+        }
+
+        if let button {
+          if let label = action["label"] as? String {
+            button.accessibilityLabel = label
+          }
+          if action["prominent"] as? Bool == true, #available(iOS 26.0, *) {
+            button.style = .prominent
+          }
+          if let tint = action["tint"] as? NSNumber {
+            button.tintColor = Self.colorFromARGB(tint.intValue)
+          }
+          trailing.append(button)
+
+          if let spacerAfter = action["spacerAfter"] as? Int, spacerAfter == 1 {
+            if #available(iOS 16.0, *) {
+              trailing.append(.fixedSpace(12))
+            }
+          }
+        }
+      }
+    }
+    item.rightBarButtonItems = trailing.reversed()
+  }
+
+  private func makeMenu(
+    _ entries: [[String: Any]],
+    actionIndex: Int,
+    token: Int
+  ) -> UIMenu {
+    var groups: [[UIMenuElement]] = []
+    var current: [UIMenuElement] = []
+
+    for (itemIndex, entry) in entries.enumerated() {
+      if entry["divider"] as? Bool == true {
+        if !current.isEmpty {
+          groups.append(current)
+          current = []
+        }
+        continue
+      }
+
+      let title = entry["title"] as? String ?? ""
+      let image = (entry["icon"] as? String).flatMap {
+        UIImage(systemName: $0) ?? UIImage(named: $0)
+      }
+      var attributes: UIMenuElement.Attributes = []
+      if entry["enabled"] as? Bool == false {
+        attributes.insert(.disabled)
+      }
+      if entry["destructive"] as? Bool == true {
+        attributes.insert(.destructive)
+      }
+
+      let action = UIAction(
+        title: title,
+        subtitle: entry["subtitle"] as? String,
+        image: image,
+        attributes: attributes
+      ) { [weak self] _ in
+        self?.channel.invokeMethod(
+          "onMenu",
+          arguments: ["token": token, "action": actionIndex, "item": itemIndex]
+        )
+      }
+      current.append(action)
+    }
+    if !current.isEmpty {
+      groups.append(current)
+    }
+
+    return UIMenu(
+      title: "",
+      children: groups.map { UIMenu(title: "", options: .displayInline, children: $0) }
+    )
+  }
+
+  private static func makeLogoTitleView(title: String) -> UIView {
+    let imageView = UIImageView(
+      image: UIImage(named: "HinataLogo")?.withRenderingMode(.alwaysTemplate)
+    )
+    imageView.contentMode = .scaleAspectFit
+    imageView.tintColor = .label
+    imageView.isAccessibilityElement = false
+    imageView.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      imageView.widthAnchor.constraint(equalToConstant: 22),
+      imageView.heightAnchor.constraint(equalToConstant: 22),
+    ])
+
+    let label = UILabel()
+    label.text = title
+    label.font = UIFontMetrics(forTextStyle: .headline).scaledFont(
+      for: .systemFont(ofSize: 17, weight: .semibold)
+    )
+    label.adjustsFontForContentSizeCategory = true
+    label.textColor = .label
+
+    let stack = UIStackView(arrangedSubviews: [imageView, label])
+    stack.axis = .horizontal
+    stack.alignment = .center
+    stack.spacing = 6
+    return stack
+  }
+
+  private static func colorFromARGB(_ argb: Int) -> UIColor {
+    let a = CGFloat((argb >> 24) & 0xFF) / 255.0
+    let r = CGFloat((argb >> 16) & 0xFF) / 255.0
+    let g = CGFloat((argb >> 8) & 0xFF) / 255.0
+    let b = CGFloat(argb & 0xFF) / 255.0
+    return UIColor(red: r, green: g, blue: b, alpha: a)
+  }
+
+  /// UIKit gives a pushed page a rounded card and a drop shadow. The card
+  /// holds no content — the visible page is Flutter's — and it would cut
+  /// across the bar as a stray edge, so the content transition is suppressed
+  /// while the bar keeps animating its items. Flutter moves to the incoming
+  /// page first, so the surface stays in the window throughout.
+  func navigationController(
+    _ navigationController: UINavigationController,
+    animationControllerFor operation: UINavigationController.Operation,
+    from fromVC: UIViewController,
+    to toVC: UIViewController
+  ) -> (any UIViewControllerAnimatedTransitioning)? {
+    NativeTopBarContentAnimator { [weak self] host in
+      self?.shell?.moveFlutter(to: host)
+    }
+  }
+}
+
+private final class NativeTopBarContentAnimator: NSObject,
+  UIViewControllerAnimatedTransitioning
+{
+  private let duration: TimeInterval = 0.35
+  private let prepare: (UIViewController) -> Void
+
+  init(prepare: @escaping (UIViewController) -> Void) {
+    self.prepare = prepare
+  }
+
+  func transitionDuration(
+    using transitionContext: (any UIViewControllerContextTransitioning)?
+  ) -> TimeInterval {
+    duration
+  }
+
+  func animateTransition(
+    using transitionContext: any UIViewControllerContextTransitioning
+  ) {
+    guard
+      let toViewController = transitionContext.viewController(forKey: .to),
+      let toView = transitionContext.view(forKey: .to)
+    else {
+      transitionContext.completeTransition(false)
+      return
+    }
+
+    // The incoming page holds Flutter and stays exactly where the old one
+    // was: only the bar animates.
+    toView.frame = transitionContext.finalFrame(for: toViewController)
+    transitionContext.containerView.addSubview(toView)
+    prepare(toViewController)
+
+    let fromView = transitionContext.view(forKey: .from)
+    let fromWasHidden = fromView?.isHidden ?? false
+    fromView?.isHidden = true
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+      fromView?.isHidden = fromWasHidden
+      self?.finish(transitionContext)
+    }
+  }
+
+  private func finish(_ transitionContext: any UIViewControllerContextTransitioning) {
+    transitionContext.completeTransition(
+      !transitionContext.transitionWasCancelled
+    )
+  }
+}
+
+private final class NativeTopBarPageController: UIViewController {
+  var token: Int = 0
+
+  override func loadView() {
+    let view = UIView()
+    view.backgroundColor = .clear
+    view.isOpaque = false
+    self.view = view
   }
 }

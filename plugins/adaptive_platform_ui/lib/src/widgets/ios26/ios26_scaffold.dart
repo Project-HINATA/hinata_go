@@ -302,6 +302,7 @@ class _IOS26ScaffoldState extends State<IOS26Scaffold>
                 SystemVerticalBarEdge.unknown,
           );
     final duoVerticalPose = pose != null;
+    final nativeTopBarOwned = chrome?.nativeTopBarOwned ?? false;
     if (chrome == null &&
         pose != null &&
         !pose.reservedBySystem &&
@@ -320,7 +321,8 @@ class _IOS26ScaffoldState extends State<IOS26Scaffold>
         widget.leading != null ||
         heroLeading != null ||
         (widget.actions != null && widget.actions!.isNotEmpty);
-    final showTopToolbar = duoVerticalPose ? hasTitle : hasToolbarContent;
+    final showTopToolbar =
+        !nativeTopBarOwned && (duoVerticalPose ? hasTitle : hasToolbarContent);
     final tabs = widget.tabBarHidden ? null : widget.bottomNavigationBar;
     final hasTabs = tabs?.items?.isNotEmpty ?? false;
     final showDuoSideBar =

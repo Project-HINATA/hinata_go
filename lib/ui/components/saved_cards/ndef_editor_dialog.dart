@@ -486,6 +486,8 @@ class _EditorFrame extends StatelessWidget {
     if (useCupertinoChrome) {
       return AppScaffold(
         title: title,
+        nativeLeading: NativeToolbarLeading.close,
+        onNativeLeadingTap: () => Navigator.pop(context),
         // A full-size round glass control, like the close and back buttons the
         // system puts in the toolbar; the 38pt default reads one size small.
         leading: SizedBox.square(
