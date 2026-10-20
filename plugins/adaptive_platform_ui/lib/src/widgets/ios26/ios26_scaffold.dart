@@ -221,7 +221,7 @@ class _IOS26ScaffoldState extends State<IOS26Scaffold>
         heroLeading = widget.useHeroBackButton
             ? Hero(
                 tag: 'adaptive_back_button',
-                flightShuttleBuilder: (_, __, ___, ____, toHeroContext) =>
+                flightShuttleBuilder: (_, _, _, _, toHeroContext) =>
                     toHeroContext.widget,
                 child: backButton,
               )

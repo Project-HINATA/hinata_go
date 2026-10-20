@@ -95,7 +95,7 @@ void main() {
             icon: Icons.more_vert,
             iconSize: 31,
             items: [AdaptivePopupMenuItem<String>(label: 'One', value: 'one')],
-            onSelected: (_, __) {},
+            onSelected: (_, _) {},
           ),
         ),
       ),

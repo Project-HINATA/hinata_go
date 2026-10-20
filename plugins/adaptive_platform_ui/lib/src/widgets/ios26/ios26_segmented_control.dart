@@ -113,7 +113,7 @@ class _IOS26SegmentedControlState extends State<IOS26SegmentedControl> {
       try {
         await _channel.invokeMethod('setBrightness', {
           'isDark': isDark,
-          if (tintColor != null) 'tintColor': tintColor,
+          'tintColor': ?tintColor,
           ...themeParams,
         });
         _lastIsDark = isDark;
