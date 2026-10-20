@@ -322,8 +322,10 @@ private struct ClipSessionPage: View {
                     .font(.body).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                if active && model.state == .success {
+                if active && model.state == .success && ["ok", "read", "sent"].contains(model.cardOutcome) {
                   Image(systemName: "checkmark").foregroundStyle(.blue)
+                } else if active && model.state == .success {
+                  Image(systemName: "chevron.right").font(.subheadline).foregroundStyle(.tertiary)
                 } else if active && [.locating, .sending].contains(model.state) {
                   ProgressView()
                 } else {
@@ -350,7 +352,13 @@ private struct ClipSessionPage: View {
     switch model.state {
     case .locating: return String(localized: "确认位置…")
     case .sending: return String(localized: "正在登录…")
-    case .success: return String(localized: "已登录")
+    case .success:
+      switch model.cardOutcome {
+      case "ok": return String(localized: "登录成功")
+      case "failed": return String(localized: "登录失败")
+      case "not_read": return String(localized: "未读卡")
+      default: return String(localized: "已刷卡")
+      }
     default: return cardEnding(card)
     }
   }
@@ -759,7 +767,12 @@ private struct ClipDeviceControls: View {
                 Text("在门锁上输入密码后按 #").font(.subheadline).foregroundStyle(.secondary)
               }.frame(maxWidth: .infinity).padding(.vertical, 12)
             }
-            Button { Task { await model.device("door.open", consent: consent) } } label: {
+            Button {
+              Task {
+                if device.gate == "entry" { await model.enterAndOpenDoor() }
+                else { await model.device("door.open", consent: consent) }
+              }
+            } label: {
               HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "door.left.hand.open") }; Text(model.doorPassword != nil ? "重新获取密码" : device.gate == "entry" ? "入场并获取开门密码" : "获取开门密码") }
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
             }.clipActionStyle(primary: true).disabled(device.gate == "entry" && !consent)

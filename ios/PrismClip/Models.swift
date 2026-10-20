@@ -184,6 +184,9 @@ struct EmptyResponse: Decodable {
 
 struct SwipeResult: Codable {
   let ok: Bool?
+  /// What the game did with the card on a direct-connect machine: `ok` (signed in),
+  /// `failed` (turned away), `read`, `not_read`; `sent` or absent through a relay.
+  var card: String? = nil
   let coin: Coin?
   struct Coin: Codable { let status: String; let operationId: String? }
   var message: String {
@@ -196,7 +199,7 @@ struct SwipeResult: Codable {
     }
   }
 }
-struct PrismDeviceState: Decodable { let gate: String; var power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil; var climate: PrismClimate? = nil }
+struct PrismDeviceState: Decodable { var gate: String; var power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil; var climate: PrismClimate? = nil }
 
 /// A Home Assistant air conditioner as the device state reports it. The modes, fan speeds
 /// and temperature range are the entity's own, so the controls only offer those.

@@ -276,6 +276,16 @@ final class PrismAPI {
     return path.hasSuffix("/checkout/preview") || path.hasSuffix("/machines/session/start")
   }
 
+  /// Pushed power and air-conditioner state for a device page; same session, so same sign-in.
+  func deviceLiveSocket(ticket: String) throws -> URLSessionWebSocketTask {
+    var request = try makeRequest(path: "/api/v1/devices/session/ws?ticket=\(ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ticket)")
+    if let url = request.url, var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+      parts.scheme = parts.scheme == "https" ? "wss" : "ws"
+      request.url = parts.url
+    }
+    return session.webSocketTask(with: request)
+  }
+
   private func makeRequest(path: String, method: String = "GET") throws -> URLRequest {
     guard path.hasPrefix("/api/v1/"), !path.contains(".."), let url = URL(string: path, relativeTo: baseURL)?.absoluteURL, url.scheme == baseURL.scheme, url.host == baseURL.host, url.port == baseURL.port else {
       throw PrismAPIError.invalidURL

@@ -47,6 +47,11 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var suggestPasskey = false
   @Published private(set) var addingPasskey = false
   @Published private(set) var doorPassword: PrismDoorPassword?
+  /// What the game did with the last swiped card; see `SwipeResult.card`.
+  @Published private(set) var cardOutcome = "sent"
+  /// Something in the shop is watching this device's Home Assistant, so state is pushed.
+  private var liveWatching = false
+  private var liveSocket: URLSessionWebSocketTask?
   @Published private(set) var deviceBusy = false
   @Published private(set) var notice: String?
   /// The latest settled bill, retained until a new admission supersedes it.
@@ -163,6 +168,7 @@ final class MachineLoginViewModel: ObservableObject {
       return
     }
     invocationVersion += 1
+    closeLiveState()
     polling?.cancel(); cancelPowerRead()
     shopCode = nil
     checkoutCelebrating = false; settlement = nil
@@ -189,6 +195,7 @@ final class MachineLoginViewModel: ObservableObject {
   func start(shopCode: String, publicId: String?) async {
     let api = self.api
     invocationVersion += 1
+    closeLiveState()
     let version = invocationVersion
     polling?.cancel()
     cancelPowerRead(); powerObserved = false; powerBackoff.succeed(); readBackoff.succeed(); metadataReadAt = .distantPast
@@ -323,6 +330,7 @@ final class MachineLoginViewModel: ObservableObject {
       _ = try await api.requestJSON(path: "/api/v1/auth/logout", body: [:])
       guard version == invocationVersion else { return }
       invocationVersion += 1
+    closeLiveState()
       polling?.cancel()
       // A shop link keeps its card across sign-out: the shop is public data, and the player
       // should still see which shop they are dealing with above the sign-in buttons.
@@ -389,10 +397,12 @@ final class MachineLoginViewModel: ObservableObject {
         ticket: ticket,
       ))
       guard version == invocationVersion, self.ticket == ticket else { return }
+      cardOutcome = result.card ?? "sent"
       state = .success
       await refreshVisit()
       if ["failed", "unknown"].contains(result.coin?.status ?? "") { errorMessage = String(localized: "刷卡已完成，投币请求失败，请联系店员。") }
-      try? await Task.sleep(nanoseconds: 1_000_000_000)
+      // A card the game took clears quickly; one it did not stays long enough to read.
+      try? await Task.sleep(nanoseconds: ["ok", "read", "sent"].contains(cardOutcome) ? 1_000_000_000 : 2_500_000_000)
       if version == invocationVersion, state == .success { state = .ready }
     } catch {
       guard version == invocationVersion, self.ticket == ticket else { return }
@@ -418,6 +428,7 @@ final class MachineLoginViewModel: ObservableObject {
       polling?.cancel()
       polling = nil
       cancelPowerRead()
+      closeLiveState()
     } else if ![.loadingMachine, .loadingShop, .loadingCards].contains(state) {
       StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: self.api)
       if deviceBusy { refreshPending = true; scheduleRefresh() }
@@ -602,8 +613,55 @@ final class MachineLoginViewModel: ObservableObject {
     powerGeneration = UUID(); powerPolling?.cancel(); powerPolling = nil
   }
 
+  /// Listen for this device's power and air-conditioner state while its page is ready.
+  private func openLiveState() {
+    guard liveSocket == nil, sceneActive, deviceState?.gate == "ready", let ticket,
+          machine?.has("power") == true || machine?.has("climate") == true,
+          let socket = try? api.deviceLiveSocket(ticket: ticket) else { return }
+    liveSocket = socket
+    socket.resume()
+    receiveLive(socket, version: invocationVersion)
+  }
+
+  func closeLiveState() {
+    liveSocket?.cancel(with: .normalClosure, reason: nil)
+    liveSocket = nil
+    liveWatching = false
+  }
+
+  private func receiveLive(_ socket: URLSessionWebSocketTask, version: Int) {
+    socket.receive { [weak self] result in
+      Task { @MainActor [weak self] in
+        guard let self, self.liveSocket === socket, self.invocationVersion == version else { return }
+        guard case .success(let message) = result, case .string(let text) = message,
+              let data = text.data(using: .utf8) else {
+          // Closed or failed: fall back to polling; the next schedule reopens it.
+          self.liveSocket = nil
+          self.liveWatching = false
+          self.schedulePowerRead()
+          return
+        }
+        struct Frame: Decodable { let type: String; let watching: Bool?; let power: String?; let climate: PrismClimate? }
+        if let frame = try? JSONDecoder().decode(Frame.self, from: data) {
+          if frame.type == "hello" || frame.type == "watching" { self.liveWatching = frame.watching ?? false }
+          if self.liveWatching, let power = frame.power, power == "on" || power == "off" {
+            self.deviceState?.power = power
+            self.powerObserved = true
+            if power == "on" { self.waitingPower = false }
+          }
+          if self.liveWatching, let climate = frame.climate { self.deviceState?.climate = climate }
+          if self.liveWatching { self.cancelPowerRead() } else { self.schedulePowerRead() }
+        }
+        self.receiveLive(socket, version: version)
+      }
+    }
+  }
+
   /// HA is an independent observation; only the server's action precondition authorizes use.
   private func schedulePowerRead(force: Bool = false) {
+    openLiveState()
+    // Pushed state replaces polling while the device is watched and its power is known.
+    if liveWatching, ["on", "off"].contains(deviceState?.power ?? "") { return }
     guard machine?.has("power") == true, deviceState?.gate == "ready", let ticket,
           sceneActive, !deviceBusy, ![.locating, .sending].contains(state), powerPolling == nil,
           force || !powerObserved || waitingPower || deviceState?.power == "off" || deviceState?.power == "unknown" else { return }
@@ -665,7 +723,7 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  func expire() { ticket = nil; state = .expired; activeCardId = nil; polling?.cancel(); cancelPowerRead(); errorMessage = nil }
+  func expire() { ticket = nil; state = .expired; activeCardId = nil; polling?.cancel(); cancelPowerRead(); closeLiveState(); errorMessage = nil }
   func pricingDate(_ date: String) async throws -> PrismShopResponse { try await api.request(shopPath() + "?date=" + date) }
 
   func bindPlatformIdentity() async {
@@ -738,6 +796,29 @@ final class MachineLoginViewModel: ObservableObject {
       await refreshVisit()
     }
   }
+  /// Entry that also opens the door. Both come back in one response, so the entered view
+  /// and the code appear together; the code is only returned when entry succeeded.
+  func enterAndOpenDoor() async {
+    guard let ticket else { expire(); return }
+    let requiresLocation = (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true
+    await perform {
+      let data = try await operation("entry.door.\(ticket)", path: shopPath("player/session/start"), body: ["ticket": ticket, "consent": true, "openDoor": true], requiresLocation: requiresLocation)
+      struct Result: Decodable {
+        struct Door: Decodable { let temporaryPassword: String?; let expiresAt: String?; let error: Failure? }
+        struct Failure: Decodable { let message: String? }
+        let door: Door?
+      }
+      let door = (try? JSONDecoder().decode(Result.self, from: data))?.door
+      deviceState?.gate = "ready"
+      if let password = door?.temporaryPassword, let expiresAt = door?.expiresAt {
+        doorPassword = PrismDoorPassword(temporaryPassword: password, expiresAt: expiresAt)
+      } else {
+        errorMessage = door?.error?.message ?? String(localized: "获取开门密码失败，请联系店员")
+      }
+      await refreshVisit()
+    }
+  }
+
   func enter() async {
     let requiresLocation = (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true
     // Shop-only mode has no ticket: the server accepts a ticket-free entry when the shop
@@ -841,6 +922,7 @@ final class MachineLoginViewModel: ObservableObject {
     guard checkoutCelebrating, let shopCode else { return }
     checkoutCelebrating = false
     invocationVersion += 1
+    closeLiveState()
     polling?.cancel()
     currentInvocation = api.baseURL.appendingPathComponent("t").appendingPathComponent(shopCode)
     isShopOnly = true; machine = nil; ticket = nil; publicId = nil; deviceState = nil; cards = []
