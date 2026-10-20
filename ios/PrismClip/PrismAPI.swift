@@ -7,32 +7,47 @@ enum PrismAPIError: LocalizedError, PrismRetryAfterProviding {
   case api(code: String, message: String)
   case http(status: Int, code: String, message: String)
   case limited(status: Int, code: String, message: String, retryAfter: TimeInterval)
+  /// The server said how to tell the player; everything else follows from it.
+  case notice(status: Int, notice: PrismNotice, retryAfter: TimeInterval?)
+
+  var notice: PrismNotice? {
+    if case .notice(_, let notice, _) = self { return notice }
+    return nil
+  }
 
   var code: String? {
-    switch self { case .http(_, let code, _), .limited(_, let code, _, _), .api(let code, _): return code; default: return nil }
+    switch self {
+    case .http(_, let code, _), .limited(_, let code, _, _), .api(let code, _): return code
+    case .notice(_, let notice, _): return notice.code
+    default: return nil
+    }
   }
   var isTransientReadFailure: Bool {
     guard let status else { return false }
     return status == 408 || status == 429 || status >= 500
   }
   var status: Int? {
-    switch self { case .http(let value, _, _), .limited(let value, _, _, _): return value; default: return nil }
+    switch self { case .http(let value, _, _), .limited(let value, _, _, _), .notice(let value, _, _): return value; default: return nil }
   }
   var retryAfter: TimeInterval? {
     if case .limited(_, _, _, let delay) = self { return delay }
+    if case .notice(_, _, let delay) = self { return delay }
     return nil
   }
   var isSessionExpired: Bool {
-    if code == "TICKET_EXPIRED" { return true }
+    if code == "TICKET_EXPIRED" || notice?.flow == "expired" { return true }
     guard case .server(let message) = self else { return false }
     return message == "本次会话已失效" || message == "缺少会话凭证"
   }
 
   var errorDescription: String? {
+    if let notice { return notice.body }
     if code == "INSUFFICIENT_BALANCE" {
       return String(localized: "余额不足，请充值后重试")
     }
     switch self {
+    case .notice(_, let notice, _):
+      return notice.body
     case .invalidURL:
       return String(localized: "PRiSM 地址无效")
     case .invalidResponse:
@@ -318,7 +333,9 @@ final class PrismAPI {
   private func responseError(data: Data, http: HTTPURLResponse) -> PrismAPIError {
     let detail = try? decoder.decode(ServerError.self, from: data).error
     let message = detail?.message ?? "请求失败（\(http.statusCode)）"
-    if let delay = Self.retryAfter(http.value(forHTTPHeaderField: "Retry-After")) {
+    let delay = Self.retryAfter(http.value(forHTTPHeaderField: "Retry-After"))
+    if let notice = detail?.notice { return .notice(status: http.statusCode, notice: notice, retryAfter: delay) }
+    if let delay {
       return .limited(status: http.statusCode, code: detail?.code ?? "", message: message, retryAfter: delay)
     }
     return .http(status: http.statusCode, code: detail?.code ?? "", message: message)
@@ -379,7 +396,7 @@ struct PrismReadBackoff {
 
 private struct ServerError: Decodable {
   let error: Detail
-  struct Detail: Decodable { let code: String; let message: String }
+  struct Detail: Decodable { let code: String; let message: String; var notice: PrismNotice? = nil }
 }
 
 private struct APIEnvelope<T: Decodable>: Decodable { let data: T }

@@ -52,6 +52,7 @@ struct MachineLoginView: View {
     .onChange(of: model.errorMessage) { value in
       showingError = value != nil && section == nil
     }
+    .modifier(NoticeAlert(model: model, hidden: section != nil))
   }
 
   private var page: some View {
@@ -314,18 +315,23 @@ private struct ClipSessionPage: View {
           ForEach(Array(model.cards.enumerated()), id: \.element.id) { index, card in
             if index > 0 { Divider().padding(.leading, 24) }
             let active = model.activeCardId == card.id
+            // A swipe's outcome tints the row the player tapped instead of interrupting.
+            let feedback = active && model.state == .success ? model.cardFeedback : nil
             Button { Task { await model.login(card: card) } } label: {
               HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                   Text(card.label).font(.title3.weight(.semibold)).foregroundStyle(.primary)
-                  Text(active ? rowDetail(card) : cardEnding(card))
-                    .font(.body).foregroundStyle(.secondary)
+                  if let feedback {
+                    Text(feedback.text).font(.body.weight(.semibold)).foregroundStyle(noticeColor(feedback.level))
+                  } else {
+                    Text(active ? rowDetail(card) : cardEnding(card))
+                      .font(.body).foregroundStyle(.secondary)
+                  }
                 }
                 Spacer(minLength: 0)
-                if active && model.state == .success && ["ok", "read", "sent"].contains(model.cardOutcome) {
-                  Image(systemName: "checkmark").foregroundStyle(.blue)
-                } else if active && model.state == .success {
-                  Image(systemName: "chevron.right").font(.subheadline).foregroundStyle(.tertiary)
+                if let feedback {
+                  Image(systemName: feedback.level == "success" ? "checkmark.circle" : feedback.level == "error" ? "xmark.circle" : "exclamationmark.circle")
+                    .font(.title2).foregroundStyle(noticeColor(feedback.level))
                 } else if active && [.locating, .sending].contains(model.state) {
                   ProgressView()
                 } else {
@@ -334,6 +340,8 @@ private struct ClipSessionPage: View {
               }
               .padding(.horizontal, 24).padding(.vertical, 16)
               .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
+              .background(feedback.map { noticeColor($0.level).opacity(0.12) } ?? Color.clear)
+              .animation(.easeOut(duration: 0.2), value: feedback?.text)
               .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
@@ -737,6 +745,15 @@ private struct ClipDeviceControls: View {
   @State private var consent = false
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
+      if let note = model.inlineNotice {
+        Text(note.body)
+          .font(.subheadline.weight(.semibold))
+          .foregroundStyle(noticeColor(note.level))
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 16).padding(.vertical, 12)
+          .background(noticeColor(note.level).opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+          .accessibilityAddTraits(.updatesFrequently)
+      }
       if let device = model.deviceState, let shop = model.visit {
         if device.gate == "binding" {
           ClipPlatformBinding()
@@ -1182,7 +1199,7 @@ private struct ClipAccountContent: View {
     VStack(spacing: 0) {
       ScrollView {
       VStack(alignment: .leading, spacing: 20) {
-        if let error = loadError ?? model.errorMessage {
+        if let error = loadError ?? model.errorMessage ?? model.dialogNotice?.body {
           VStack(alignment: .leading, spacing: 8) {
             Text(error).font(.subheadline).foregroundStyle(.red)
             Button("重试") { attempt += 1 }
@@ -1398,5 +1415,48 @@ private struct ClipBillEntry: View {
     }.padding(entry.trackId == nil ? 0 : 12)
       .frame(maxWidth: .infinity, alignment: .leading)
       .background(entry.trackId == nil ? Color.clear : Color.primary.opacity(0.025), in: RoundedRectangle(cornerRadius: 14))
+  }
+}
+
+/// The colour of a notice level, shared by the card row and the controls.
+func noticeColor(_ level: String) -> Color {
+  switch level {
+  case "success": return .green
+  case "warning": return .orange
+  case "error": return .red
+  default: return .blue
+  }
+}
+
+/// A server notice that interrupts: its own title, body and buttons. Hidden while an
+/// account sheet is up, which shows the text inline instead.
+private struct NoticeAlert: ViewModifier {
+  @ObservedObject var model: MachineLoginViewModel
+  let hidden: Bool
+
+  func body(content: Content) -> some View {
+    content.background {
+      Color.clear.alert(
+        model.dialogNotice?.title ?? "PRiSM",
+        isPresented: Binding(
+          get: { model.dialogNotice != nil && !hidden },
+          set: { if !$0 { model.dismissNotice(retrying: false) } }
+        ),
+        presenting: model.dialogNotice
+      ) { notice in
+        ForEach(buttons(notice), id: \.self) { action in
+          Button(action.label, role: action.kind == "retry" ? nil : .cancel) {
+            model.dismissNotice(retrying: action.kind == "retry")
+          }
+        }
+      } message: { notice in
+        Text(notice.body)
+      }
+    }
+  }
+
+  private func buttons(_ notice: PrismNotice) -> [PrismNotice.Action] {
+    let shown = notice.actions.filter { $0.kind != "retry" || model.canRetryNotice }
+    return shown.isEmpty ? [.init(kind: "dismiss", label: String(localized: "知道了"))] : shown
   }
 }

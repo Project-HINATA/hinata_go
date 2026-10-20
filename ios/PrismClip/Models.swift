@@ -182,11 +182,26 @@ struct EmptyResponse: Decodable {
   let ok: Bool
 }
 
+/// What the server wants the player told, and how. `dialog` interrupts, `inline` belongs
+/// next to what they touched, `none` only runs `flow` (expired, refresh, signin).
+struct PrismNotice: Codable, Equatable {
+  let code: String
+  let level: String
+  let display: String
+  let flow: String
+  var title: String? = nil
+  let body: String
+  var actions: [Action] = []
+  struct Action: Codable, Equatable, Hashable { let kind: String; let label: String }
+}
+
 struct SwipeResult: Codable {
   let ok: Bool?
   /// What the game did with the card on a direct-connect machine: `ok` (signed in),
   /// `failed` (turned away), `read`, `not_read`; `sent` or absent through a relay.
   var card: String? = nil
+  /// Inline ones go on the card row; a dialog only when the coin went wrong.
+  var notices: [PrismNotice]? = nil
   let coin: Coin?
   struct Coin: Codable { let status: String; let operationId: String? }
   var message: String {

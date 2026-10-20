@@ -49,6 +49,14 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var doorPassword: PrismDoorPassword?
   /// What the game did with the last swiped card; see `SwipeResult.card`.
   @Published private(set) var cardOutcome = "sent"
+  /// The swiped card row's colour (`level`) and text while its outcome shows.
+  @Published private(set) var cardFeedback: (level: String, text: String)?
+  /// A problem that needs the player: shown as an alert with the server's buttons.
+  @Published private(set) var dialogNotice: PrismNotice?
+  private var dialogRetry: (() async -> Void)?
+  /// An expected outcome of a device action, shown above the controls for a moment.
+  @Published private(set) var inlineNotice: PrismNotice?
+  private var inlineNoticeTask: Task<Void, Never>?
   /// Something in the shop is watching this device's Home Assistant, so state is pushed.
   private var liveWatching = false
   private var liveSocket: URLSessionWebSocketTask?
@@ -398,19 +406,86 @@ final class MachineLoginViewModel: ObservableObject {
       ))
       guard version == invocationVersion, self.ticket == ticket else { return }
       cardOutcome = result.card ?? "sent"
+      let notices = result.notices ?? []
+      let inline = notices.filter { $0.display == "inline" }
+      // The card row carries the outcome; only a problem that needs the player interrupts.
+      if let first = inline.first {
+        cardFeedback = (first.level, inline.map(\.body).joined(separator: " · "))
+      } else {
+        cardFeedback = (cardOutcome == "failed" ? "error" : cardOutcome == "not_read" ? "warning" : "success", rowText(cardOutcome))
+      }
       state = .success
+      if let dialog = notices.first(where: { $0.display == "dialog" }) { dialogNotice = dialog }
+      else if result.notices == nil, ["failed", "unknown"].contains(result.coin?.status ?? "") {
+        errorMessage = String(localized: "刷卡已完成，投币请求失败，请联系店员。")
+      }
       await refreshVisit()
-      if ["failed", "unknown"].contains(result.coin?.status ?? "") { errorMessage = String(localized: "刷卡已完成，投币请求失败，请联系店员。") }
-      // A card the game took clears quickly; one it did not stays long enough to read.
-      try? await Task.sleep(nanoseconds: ["ok", "read", "sent"].contains(cardOutcome) ? 1_000_000_000 : 2_500_000_000)
-      if version == invocationVersion, state == .success { state = .ready }
+      try? await Task.sleep(nanoseconds: cardFeedback?.level == "success" ? 1_500_000_000 : 3_500_000_000)
+      if version == invocationVersion, state == .success { state = .ready; cardFeedback = nil }
     } catch {
       guard version == invocationVersion, self.ticket == ticket else { return }
-      let message = friendlyMessage(error)
-      if (error as? PrismAPIError)?.isSessionExpired == true { state = .expired } else { state = .ready }
+      if let notice = present(error, retry: { [weak self] in await self?.login(card: card) }), notice.display == "inline" {
+        cardFeedback = (notice.level, notice.body)
+        state = .success
+        try? await Task.sleep(nanoseconds: 3_500_000_000)
+        if version == invocationVersion, state == .success { state = .ready; cardFeedback = nil }
+        return
+      }
+      if state != .expired { state = .ready }
       activeCardId = nil
-      errorMessage = state == .expired ? nil : message
-      if ["PLATFORM_BINDING_REQUIRED", "CHECKIN_REQUIRED"].contains((error as? PrismAPIError)?.code ?? "") { await refreshVisit() }
+      if ["PLATFORM_BINDING_REQUIRED", "CHECKIN_REQUIRED"].contains((error as? PrismAPIError)?.code ?? ""),
+         (error as? PrismAPIError)?.notice == nil { await refreshVisit() }
+    }
+  }
+
+  private func rowText(_ outcome: String) -> String {
+    switch outcome {
+    case "ok": return String(localized: "登录成功")
+    case "failed": return String(localized: "登录失败")
+    case "not_read": return String(localized: "未读卡")
+    default: return String(localized: "已刷卡")
+    }
+  }
+
+  /// The one place problems reach the player. A server notice decides: run its flow,
+  /// interrupt with an alert, or hand it back to be shown inline. Without one (no
+  /// network, no location) the local message is shown as before.
+  @discardableResult
+  func present(_ error: Error, retry: (() async -> Void)? = nil) -> PrismNotice? {
+    guard let notice = (error as? PrismAPIError)?.notice else {
+      if (error as? PrismAPIError)?.isSessionExpired == true { expire() } else { errorMessage = friendlyMessage(error) }
+      return nil
+    }
+    switch notice.flow {
+    case "expired": expire()
+    case "refresh": Task { [weak self] in await self?.refreshVisit() }
+    case "signin":
+      state = .unauthenticated; user = nil; userId = ""; cards = []; deviceState = nil; cancelPowerRead()
+    default: break
+    }
+    if notice.display == "dialog" {
+      dialogRetry = retry
+      dialogNotice = notice
+    }
+    return notice
+  }
+
+  var canRetryNotice: Bool { dialogRetry != nil }
+
+  func dismissNotice(retrying: Bool) {
+    let retry = retrying ? dialogRetry : nil
+    dialogNotice = nil
+    dialogRetry = nil
+    if let retry { Task { await retry() } }
+  }
+
+  private func showInline(_ notice: PrismNotice) {
+    inlineNotice = notice
+    inlineNoticeTask?.cancel()
+    inlineNoticeTask = Task { [weak self] in
+      try? await Task.sleep(nanoseconds: notice.level == "success" ? 2_000_000_000 : 5_000_000_000)
+      guard !Task.isCancelled else { return }
+      self?.inlineNotice = nil
     }
   }
 
@@ -716,9 +791,8 @@ final class MachineLoginViewModel: ObservableObject {
     do { try await action() }
     catch {
       if version == invocationVersion {
-        if (error as? PrismAPIError)?.isSessionExpired == true { expire() }
-        else if (error as? PrismAPIError)?.code == "COIN_ALREADY_USED" { deviceState?.coinUsed = true }
-        else { errorMessage = friendlyMessage(error) }
+        if (error as? PrismAPIError)?.code == "COIN_ALREADY_USED" { deviceState?.coinUsed = true }
+        else if let notice = present(error), notice.display == "inline" { showInline(notice) }
       }
     }
   }
@@ -804,7 +878,7 @@ final class MachineLoginViewModel: ObservableObject {
     await perform {
       let data = try await operation("entry.door.\(ticket)", path: shopPath("player/session/start"), body: ["ticket": ticket, "consent": true, "openDoor": true], requiresLocation: requiresLocation)
       struct Result: Decodable {
-        struct Door: Decodable { let temporaryPassword: String?; let expiresAt: String?; let error: Failure? }
+        struct Door: Decodable { let temporaryPassword: String?; let expiresAt: String?; let error: Failure?; let notice: PrismNotice? }
         struct Failure: Decodable { let message: String? }
         let door: Door?
       }
@@ -812,6 +886,8 @@ final class MachineLoginViewModel: ObservableObject {
       deviceState?.gate = "ready"
       if let password = door?.temporaryPassword, let expiresAt = door?.expiresAt {
         doorPassword = PrismDoorPassword(temporaryPassword: password, expiresAt: expiresAt)
+      } else if let notice = door?.notice {
+        dialogNotice = notice
       } else {
         errorMessage = door?.error?.message ?? String(localized: "获取开门密码失败，请联系店员")
       }
