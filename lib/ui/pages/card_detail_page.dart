@@ -254,7 +254,23 @@ class CardDetailPage extends HookConsumerWidget {
     SavedCard? activeSavedCard,
     ICCard activeCard,
   ) {
+    final canWrite =
+        activeSavedCard != null &&
+        writerAvailable &&
+        (activeCard is NdefCard || MifareCardWritePayload.canBuild(activeCard));
+    final canSend = activeCard.gamePayload != null;
+    // The actions' height comes from the width they will get and the buttons
+    // they will show, so the detail can reserve it in the same layout pass.
+    final media = MediaQuery.of(context);
+    final actionsHeight = CardDetailBottomActions.heightFor(
+      width: media.size.width - 32,
+      padding: media.padding,
+      hasWrite: canWrite,
+      hasSend: canSend,
+    );
+
     return _CardDetailBody(
+      actionsHeight: actionsHeight,
       detail: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -274,9 +290,7 @@ class CardDetailPage extends HookConsumerWidget {
         ],
       ),
       actions: CardDetailBottomActions(
-        onSend: activeCard.gamePayload != null
-            ? () => _sendCard(context, ref, activeCard)
-            : null,
+        onSend: canSend ? () => _sendCard(context, ref, activeCard) : null,
         onSave: () => _saveCard(
           context,
           activeCard,
@@ -285,11 +299,7 @@ class CardDetailPage extends HookConsumerWidget {
         saveLabel: activeCard is NdefCard && activeSavedCard != null
             ? l10n.ndefSaveCopy
             : null,
-        onWrite:
-            activeSavedCard != null &&
-                writerAvailable &&
-                (activeCard is NdefCard ||
-                    MifareCardWritePayload.canBuild(activeCard))
+        onWrite: canWrite
             ? () => showCardWriteFlow(context, ref, activeSavedCard)
             : null,
         isSending: senderState.isSending,
@@ -302,47 +312,32 @@ class CardDetailPage extends HookConsumerWidget {
 
 /// The card detail with its actions floating over the bottom of it. The detail
 /// scrolls underneath them, and keeps room to scroll its end clear of them.
-class _CardDetailBody extends StatefulWidget {
-  const _CardDetailBody({required this.detail, required this.actions});
+class _CardDetailBody extends StatelessWidget {
+  const _CardDetailBody({
+    required this.detail,
+    required this.actions,
+    required this.actionsHeight,
+  });
 
   final Widget detail;
   final Widget actions;
 
-  @override
-  State<_CardDetailBody> createState() => _CardDetailBodyState();
-}
-
-class _CardDetailBodyState extends State<_CardDetailBody> {
-  final GlobalKey _actionsKey = GlobalKey();
-  double _actionsHeight = 0;
-
-  void _measureActions() {
-    final box = _actionsKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final height = box.size.height;
-    if (height != _actionsHeight) setState(() => _actionsHeight = height);
-  }
+  /// The height the actions take, decided by the page from the same values
+  /// that lay them out. Measuring it after layout instead would read the
+  /// geometry of a page that is still sliding in, and rebuild the detail.
+  final double actionsHeight;
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _measureActions();
-    });
-
     return Stack(
       children: [
         Positioned.fill(
           child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + _actionsHeight),
-            child: widget.detail,
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + actionsHeight),
+            child: detail,
           ),
         ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: KeyedSubtree(key: _actionsKey, child: widget.actions),
-        ),
+        Positioned(left: 0, right: 0, bottom: 0, child: actions),
       ],
     );
   }

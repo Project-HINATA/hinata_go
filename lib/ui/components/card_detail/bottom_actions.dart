@@ -25,6 +25,38 @@ class CardDetailBottomActions extends StatelessWidget {
     this.isWriting = false,
   });
 
+  /// Width below which three buttons no longer fit on one row.
+  static const double _twoRowWidth = 388;
+
+  /// Height of every action button.
+  static const double _buttonHeight = 56;
+
+  /// The space these actions occupy for a given width and safe area.
+  ///
+  /// The detail body reserves exactly this much, so it can place the actions
+  /// without measuring them after layout: a post-frame measurement runs again
+  /// on every rebuild and, worse, reads the narrower geometry of a page that
+  /// is still sliding in, which rebuilds the whole detail a second time.
+  static double heightFor({
+    required double width,
+    required EdgeInsets padding,
+    required bool hasWrite,
+    required bool hasSend,
+  }) {
+    final rows = hasWrite && hasSend && width < _twoRowWidth ? 2 : 1;
+    final buttons = rows * _buttonHeight + (rows - 1) * 8;
+    return _buildPadding(padding).vertical + buttons;
+  }
+
+  static EdgeInsets _buildPadding(EdgeInsets padding) {
+    return EdgeInsets.only(
+      left: 16,
+      right: 16,
+      top: 16,
+      bottom: padding.bottom > 0 ? padding.bottom : 24,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -35,7 +67,9 @@ class CardDetailBottomActions extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final useTwoRows =
-              onWrite != null && onSend != null && constraints.maxWidth < 388;
+              onWrite != null &&
+              onSend != null &&
+              constraints.maxWidth < _twoRowWidth;
           if (useTwoRows) {
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -71,25 +105,19 @@ class CardDetailBottomActions extends StatelessWidget {
     );
   }
 
-  EdgeInsets _buildPadding(EdgeInsets padding) {
-    return EdgeInsets.only(
-      left: 16,
-      right: 16,
-      top: 16,
-      bottom: padding.bottom > 0 ? padding.bottom : 24,
-    );
-  }
-
   Widget _buildSaveButton(BuildContext context, ColorScheme colorScheme) {
     if (useCupertinoChrome) {
       return Expanded(
-        child: _nativeButton(
-          context,
-          label: isSaving ? l10n.savingUpper : (saveLabel ?? l10n.saveUpper),
-          icon: CupertinoIcons.folder_badge_plus,
-          style: AdaptiveButtonStyle.glass,
-          onPressed: isSaving || isSending || isWriting ? null : onSave,
-          busy: isSaving,
+        child: SizedBox(
+          height: _buttonHeight,
+          child: _nativeButton(
+            context,
+            label: isSaving ? l10n.savingUpper : (saveLabel ?? l10n.saveUpper),
+            icon: CupertinoIcons.folder_badge_plus,
+            style: AdaptiveButtonStyle.glass,
+            onPressed: isSaving || isSending || isWriting ? null : onSave,
+            busy: isSaving,
+          ),
         ),
       );
     }
@@ -116,13 +144,16 @@ class CardDetailBottomActions extends StatelessWidget {
   Widget _buildWriteButton(BuildContext context) {
     if (useCupertinoChrome) {
       return Expanded(
-        child: _nativeButton(
-          context,
-          label: l10n.cardWrite,
-          icon: CupertinoIcons.waveform_path_ecg,
-          style: AdaptiveButtonStyle.glass,
-          onPressed: isSaving || isSending || isWriting ? null : onWrite,
-          busy: isWriting,
+        child: SizedBox(
+          height: _buttonHeight,
+          child: _nativeButton(
+            context,
+            label: l10n.cardWrite,
+            icon: CupertinoIcons.waveform_path_ecg,
+            style: AdaptiveButtonStyle.glass,
+            onPressed: isSaving || isSending || isWriting ? null : onWrite,
+            busy: isWriting,
+          ),
         ),
       );
     }
@@ -145,13 +176,16 @@ class CardDetailBottomActions extends StatelessWidget {
   Widget _buildSendButton(BuildContext context, ColorScheme colorScheme) {
     if (useCupertinoChrome) {
       return Expanded(
-        child: _nativeButton(
-          context,
-          label: isSending ? l10n.sendingUpper : l10n.sendUpper,
-          icon: CupertinoIcons.paperplane_fill,
-          style: AdaptiveButtonStyle.prominentGlass,
-          onPressed: isSending || isSaving || isWriting ? null : onSend,
-          busy: isSending,
+        child: SizedBox(
+          height: _buttonHeight,
+          child: _nativeButton(
+            context,
+            label: isSending ? l10n.sendingUpper : l10n.sendUpper,
+            icon: CupertinoIcons.paperplane_fill,
+            style: AdaptiveButtonStyle.prominentGlass,
+            onPressed: isSending || isSaving || isWriting ? null : onSend,
+            busy: isSending,
+          ),
         ),
       );
     }
