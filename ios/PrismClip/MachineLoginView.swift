@@ -28,7 +28,8 @@ struct MachineLoginView: View {
         }
       }
     }
-    .sheet(isPresented: Binding(get: { section != nil }, set: { if !$0 { section = nil } })) {
+    // A problem raised inside the sheet was shown there; it must not pop up once the sheet is gone.
+    .sheet(isPresented: Binding(get: { section != nil }, set: { if !$0 { section = nil; model.dismissNotice(retrying: false) } })) {
       if let section {
         if #available(iOS 16.0, *) { ClipAccountSheet(section: section).environmentObject(model).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) }
         else { ClipAccountSheet(section: section).environmentObject(model) }
@@ -67,7 +68,7 @@ struct MachineLoginView: View {
           case .expired:
             ClipExpiredPage()
           case .completed: ClipExpiredPage()
-          case .unauthenticated, .loadingCards, .cardsFailed, .ready, .locating, .sending, .success:
+          case .unauthenticated, .loadingCards, .cardsFailed, .ready, .locating, .sending:
             // The card is the content width: the page's own 20-point margins, capped like the
             // stack above. Deriving it here means the cover knows its width on the first
             // layout pass, so it never renders at a provisional size.
@@ -231,11 +232,11 @@ private struct ClipSessionPage: View {
         ClipPasskeySetup()
       } else {
         if model.isShopOnly {
-          if [.ready, .locating, .sending, .success].contains(model.state) { ClipShopControls() }
-        } else if model.showDeviceControls, [.ready, .locating, .sending, .success].contains(model.state) {
+          if [.ready, .locating, .sending].contains(model.state) { ClipShopControls() }
+        } else if model.showDeviceControls, [.ready, .locating, .sending].contains(model.state) {
           ClipDeviceControls()
         }
-        if !model.isShopOnly, model.canUseCards, [.ready, .locating, .sending, .success].contains(model.state) {
+        if !model.isShopOnly, model.canUseCards, [.ready, .locating, .sending].contains(model.state) {
           Text("选择卡片").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.bottom, 2)
         }
 
@@ -256,17 +257,17 @@ private struct ClipSessionPage: View {
             .clipActionStyle()
           }
           .disabled(model.authenticating != nil)
-        case .ready, .locating, .sending, .success:
+        case .ready, .locating, .sending:
           if !model.isShopOnly, model.canUseCards { cardsView.disabled(model.deviceBusy) }
-          // Kept in place while a swipe's outcome shows, so the page does not jump.
-          if [.ready, .success].contains(model.state), model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
+          // Stays in place while a card is being sent, so the page does not jump.
+          if model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
             Button { Task { await model.device("coin") } } label: {
               HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
             }.clipActionStyle().disabled(model.deviceBusy || model.state != .ready)
           }
-          // A machine without its own controls shows an action's outcome under the coin button.
-          if !model.showDeviceControls, let note = model.inlineNotice { InlineNotice(notice: note) }
+          // A machine without its own controls shows every action's outcome here, under the coin button.
+          AnchoredNotice(model.showDeviceControls ? ["coin"] : AnchoredNotice.page)
           if model.showNoDeviceActions {
             Text("当前设备没有可操作项").font(.subheadline).foregroundStyle(.secondary)
               .frame(maxWidth: .infinity).multilineTextAlignment(.center)
@@ -318,14 +319,14 @@ private struct ClipSessionPage: View {
           ForEach(Array(model.cards.enumerated()), id: \.element.id) { index, card in
             if index > 0 { Divider().padding(.leading, 24) }
             let active = model.activeCardId == card.id
-            // A swipe's outcome tints the row the player tapped instead of interrupting.
-            let feedback = active && model.state == .success ? model.cardFeedback : nil
+            // A swipe's outcome stays on the row the player tapped; nothing else waits for it.
+            let feedback = model.cardFeedback?.cardId == card.id ? model.cardFeedback : nil
             Button { Task { await model.login(card: card) } } label: {
               HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                   Text(card.label).font(.title3.weight(.semibold)).foregroundStyle(.primary)
                   if let feedback {
-                    Text(feedback.text).font(.body.weight(.semibold)).foregroundStyle(noticeColor(feedback.level))
+                    feedbackText(feedback).font(.body.weight(.semibold)).multilineTextAlignment(.leading)
                   } else {
                     Text(active ? rowDetail(card) : cardEnding(card))
                       .font(.body).foregroundStyle(.secondary)
@@ -343,8 +344,7 @@ private struct ClipSessionPage: View {
               }
               .padding(.horizontal, 24).padding(.vertical, 16)
               .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
-              .background(feedback.map { noticeColor($0.level).opacity(0.12) } ?? Color.clear)
-              .animation(.easeOut(duration: 0.2), value: feedback?.text)
+              .animation(.easeOut(duration: 0.2), value: feedback)
               .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
@@ -363,14 +363,14 @@ private struct ClipSessionPage: View {
     switch model.state {
     case .locating: return String(localized: "确认位置…")
     case .sending: return String(localized: "正在登录…")
-    case .success:
-      switch model.cardOutcome {
-      case "ok": return String(localized: "登录成功")
-      case "failed": return String(localized: "登录失败")
-      case "not_read": return String(localized: "未读卡")
-      default: return String(localized: "已刷卡")
-      }
     default: return cardEnding(card)
+    }
+  }
+
+  private func feedbackText(_ feedback: CardFeedback) -> Text {
+    feedback.parts.enumerated().reduce(Text(verbatim: "")) { text, item in
+      let part = Text(item.element.text).foregroundStyle(noticeColor(item.element.level))
+      return item.offset == 0 ? part : text + Text(verbatim: " · ").foregroundStyle(.secondary) + part
     }
   }
 
@@ -713,6 +713,7 @@ private struct ClipPasskeySetup: View {
 
 private struct ClipPlatformBinding: View {
   @EnvironmentObject private var model: MachineLoginViewModel
+  @State private var copied = false
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
       Text("绑定平台身份").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
@@ -727,7 +728,11 @@ private struct ClipPlatformBinding: View {
               HStack(spacing: 12) {
                 Text(verbatim: line.text).font(.system(size: 21, design: .monospaced)).textSelection(.enabled)
                 Spacer(minLength: 0)
-                Button("复制") { UIPasteboard.general.string = line.text }.buttonStyle(.bordered)
+                Button(copied ? "已复制" : "复制") {
+                  UIPasteboard.general.string = line.text
+                  copied = true
+                  Task { try? await Task.sleep(nanoseconds: 2_000_000_000); copied = false }
+                }.buttonStyle(.bordered)
               }
             } else {
               Text(verbatim: line.text).font(.subheadline)
@@ -748,7 +753,6 @@ private struct ClipDeviceControls: View {
   @State private var consent = false
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
-      if let note = model.inlineNotice { InlineNotice(notice: note) }
       if let device = model.deviceState, let shop = model.visit {
         if device.gate == "binding" {
           ClipPlatformBinding()
@@ -767,6 +771,7 @@ private struct ClipDeviceControls: View {
                 Button { Task { await model.enter() } } label: {
                   HStack { if model.deviceBusy { ProgressView() }; Text("确认入场") }.frame(maxWidth: .infinity).padding(.vertical, 12)
                 }.clipActionStyle(primary: true).disabled(!consent)
+                AnchoredNotice(["entry"])
               }
             }
           }
@@ -788,9 +793,11 @@ private struct ClipDeviceControls: View {
               HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "door.left.hand.open") }; Text(model.doorPassword != nil ? "重新获取密码" : device.gate == "entry" ? "入场并获取开门密码" : "获取开门密码") }
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
             }.clipActionStyle(primary: true).disabled(device.gate == "entry" && !consent)
+            AnchoredNotice(["door"])
           }
           if device.gate == "ready", model.machine?.has("climate") == true {
             ClipClimateCard(state: device.climate)
+            AnchoredNotice(["climate"])
           }
           if device.gate == "ready", device.power != "off", let table = device.mahjong {
             let mine = table.seats.contains { $0.mine }
@@ -828,6 +835,7 @@ private struct ClipDeviceControls: View {
                   HStack { if model.deviceBusy { ProgressView() }; Text(mine ? "下桌" : "上桌") }.frame(maxWidth: .infinity).padding(.vertical, 12)
                 }.clipActionStyle(primary: !mine)
               }
+              AnchoredNotice(["mahjong"])
             }.frame(maxWidth: .infinity)
 
           }
@@ -838,8 +846,10 @@ private struct ClipDeviceControls: View {
                 HStack(spacing: 10) { if model.deviceBusy || model.waitingPower { ProgressView() } else { Image(systemName: "power") }; Text("开机") }
                   .frame(maxWidth: .infinity).padding(.vertical, 12)
               }.clipActionStyle(primary: true).disabled(model.waitingPower)
+              AnchoredNotice(["power"])
             }.frame(maxWidth: .infinity)
           }
+          AnchoredNotice(["binding"])
         }
       } else if model.errorMessage != nil {
         Button { Task { model.clearError(); await model.refreshVisit() } } label: {
@@ -1194,10 +1204,12 @@ private struct ClipAccountContent: View {
     VStack(spacing: 0) {
       ScrollView {
       VStack(alignment: .leading, spacing: 20) {
-        if let error = loadError ?? model.errorMessage ?? model.dialogNotice?.body {
+        // A section that could not load offers to load again. An action's problem is shown
+        // by that action instead: above the checkout button, or under the code field.
+        if let error = loadError ?? (section == 0 ? nil : model.errorMessage ?? model.dialogNotice?.body) {
           VStack(alignment: .leading, spacing: 8) {
             Text(error).font(.subheadline).foregroundStyle(.red)
-            Button("重试") { attempt += 1 }
+            if loadError != nil { Button("重新加载") { attempt += 1 } }
           }
         }
         if model.deviceBusy && model.checkoutPreview == nil { ProgressView().frame(maxWidth: .infinity) }
@@ -1213,9 +1225,10 @@ private struct ClipAccountContent: View {
         } else if section == 1 {
           if done { Text("兑换成功") } else {
             TextField("兑换码", text: $redeemCode).textInputAutocapitalization(.never).autocorrectionDisabled().padding(18).overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.15)))
-            Button { Task { await model.redeem(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines)); done = model.errorMessage == nil } } label: {
+            Button { Task { done = await model.redeem(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines)) } } label: {
               HStack { if model.deviceBusy { ProgressView() }; Text("兑换") }.frame(maxWidth: .infinity).padding(.vertical, 12)
             }.clipActionStyle(primary: true).disabled(redeemCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            AnchoredNotice(["redeem"])
           }
         } else if section == 2 {
           if model.history.isEmpty && !model.deviceBusy && loadError == nil {
@@ -1234,7 +1247,7 @@ private struct ClipAccountContent: View {
       }
       .overlay(alignment: .bottom) {
         if section == 0, !done, model.checkoutPreview != nil {
-          ClipCheckoutButton().padding(.horizontal, horizontalPadding)
+          ClipCheckoutButton(inSheet: true).padding(.horizontal, horizontalPadding)
             .frame(maxWidth: 480).frame(maxWidth: .infinity)
         }
       }
@@ -1290,18 +1303,26 @@ private struct ClipBillContent: View {
 private struct ClipCheckoutButton: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   var onSuccess: () -> Void = {}
+  /// In the account sheet alerts are held back, so the problem is written above the button.
+  var inSheet = false
   var body: some View {
-    Button {
-      Task {
-        await model.checkout()
-        if model.settlement != nil { onSuccess() }
+    VStack(spacing: 12) {
+      if inSheet, let message = model.errorMessage ?? model.dialogNotice?.body {
+        Text(message).font(.subheadline.weight(.semibold)).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading)
       }
-    } label: {
-      HStack { if model.deviceBusy { ProgressView() }; Text("结账") }
-        .frame(maxWidth: .infinity).padding(.vertical, 12)
+      AnchoredNotice(["checkout"])
+      Button {
+        Task {
+          await model.checkout()
+          if model.settlement != nil { onSuccess() }
+        }
+      } label: {
+        HStack { if model.deviceBusy { ProgressView() }; Text("结账") }
+          .frame(maxWidth: .infinity).padding(.vertical, 12)
+      }
+      .clipActionStyle(primary: true)
+      .disabled(model.deviceBusy)
     }
-    .clipActionStyle(primary: true)
-    .disabled(model.deviceBusy)
   }
 }
 
@@ -1432,7 +1453,7 @@ private struct NoticeAlert: ViewModifier {
   func body(content: Content) -> some View {
     content.background {
       Color.clear.alert(
-        model.dialogNotice?.title ?? "PRiSM",
+        model.dialogNotice.map { $0.title ?? $0.body } ?? "",
         isPresented: Binding(
           get: { model.dialogNotice != nil && !hidden },
           set: { if !$0 { model.dismissNotice(retrying: false) } }
@@ -1445,7 +1466,7 @@ private struct NoticeAlert: ViewModifier {
           }
         }
       } message: { notice in
-        Text(notice.body)
+        if notice.title != nil { Text(notice.body) }
       }
     }
   }
@@ -1456,16 +1477,31 @@ private struct NoticeAlert: ViewModifier {
   }
 }
 
-/// An action's expected outcome, shown where the player acted instead of in an alert.
+/// An action's expected outcome, shown where the player acted instead of in an alert:
+/// a coloured line with its icon, no box around it.
 struct InlineNotice: View {
   let notice: PrismNotice
   var body: some View {
-    Text(notice.body)
-      .font(.subheadline.weight(.semibold))
-      .foregroundStyle(noticeColor(notice.level))
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, 16).padding(.vertical, 12)
-      .background(noticeColor(notice.level).opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-      .accessibilityAddTraits(.updatesFrequently)
+    Label {
+      Text(notice.body)
+    } icon: {
+      Image(systemName: notice.level == "success" ? "checkmark.circle" : notice.level == "error" ? "xmark.circle" : notice.level == "info" ? "info.circle" : "exclamationmark.circle")
+    }
+    .font(.subheadline.weight(.semibold))
+    .foregroundStyle(noticeColor(notice.level))
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .accessibilityAddTraits(.updatesFrequently)
+  }
+}
+
+/// The current inline notice, when it belongs to one of these controls.
+private struct AnchoredNotice: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  let anchors: Set<String>
+  init(_ anchors: Set<String>) { self.anchors = anchors }
+  /// Every control on the page itself; the account sheet shows its own.
+  static let page: Set<String> = ["coin", "power", "door", "climate", "mahjong", "entry", "binding"]
+  var body: some View {
+    if let note = model.inlineNotice, anchors.contains(model.inlineNoticeAnchor) { InlineNotice(notice: note) }
   }
 }

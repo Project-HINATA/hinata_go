@@ -195,6 +195,16 @@ struct PrismNotice: Codable, Equatable {
   struct Action: Codable, Equatable, Hashable { let kind: String; let label: String }
 }
 
+/// A swipe's outcome on the row of the card it came from: the card's part, then the coin's,
+/// each coloured by its own level.
+struct CardFeedback: Equatable {
+  let cardId: String
+  let parts: [Part]
+  struct Part: Equatable { let level: String; let text: String }
+  /// The card's own outcome decides the row's icon.
+  var level: String { parts.first?.level ?? "success" }
+}
+
 struct SwipeResult: Codable {
   let ok: Bool?
   /// What the game did with the card on a direct-connect machine: `ok` (signed in),
