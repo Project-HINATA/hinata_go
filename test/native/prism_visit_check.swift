@@ -33,6 +33,12 @@ enum PersistentCookieCheck {
     precondition(prismParsedDate("2026-09-12T09:00:00.123+09:00") == milliseconds)
     precondition(prismParsedDate("invalid") == nil)
     try await PersistentCookieCheck.check()
+    precondition(prismBindingPromptLines("  \n ", code: "AB23CD45") == nil)
+    precondition(prismBindingPromptLines("加入 QQ 群 123456\n/绑定 {code}", code: "AB23CD45") == [
+      PrismBindingPromptLine(text: "加入 QQ 群 123456", command: false),
+      PrismBindingPromptLine(text: "/绑定 AB23CD45", command: true),
+    ])
+    precondition(prismBindingPromptLines("Store Bot", code: "AB23CD45")?.last == PrismBindingPromptLine(text: "bind AB23CD45", command: true))
     let origin = URL(string: "https://link-beta.neri.moe")!
     precondition(InvocationParser.invocation(from: URL(string: "https://example.com:8443/t/store/device")!)?.origin.absoluteString == "https://example.com:8443")
     precondition(InvocationParser.invocation(from: URL(string: "http://example.com/t/store/device")!) == nil)
