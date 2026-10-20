@@ -261,13 +261,20 @@ private struct ClipSessionPage: View {
           if !model.isShopOnly, model.canUseCards { cardsView.disabled(model.deviceBusy) }
           // Stays in place while a card is being sent, so the page does not jump.
           if model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
+            // The press answers on the button itself (已投币, 请稍后再投币…) for a moment.
+            let coinNote = model.inlineNoticeAnchor == "coin" ? model.inlineNotice : nil
             Button { Task { await model.device("coin") } } label: {
-              HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
-                .frame(maxWidth: .infinity).padding(.vertical, 12)
+              HStack(spacing: 10) {
+                if model.deviceBusy { ProgressView() }
+                else { Image(systemName: coinNote.map { noticeSymbol($0.level) } ?? "centsign.circle") }
+                if let coinNote { Text(coinNote.body) } else { Text("投币") }
+              }
+              .foregroundStyle(coinNote.map { noticeColor($0.level) } ?? Color.primary)
+              .frame(maxWidth: .infinity).padding(.vertical, 12)
             }.clipActionStyle().disabled(model.deviceBusy || model.state != .ready)
           }
-          // A machine without its own controls shows every action's outcome here, under the coin button.
-          AnchoredNotice(model.showDeviceControls ? ["coin"] : AnchoredNotice.page)
+          // A machine without its own controls shows other actions' outcomes here; the coin's is on its button.
+          if !model.showDeviceControls { AnchoredNotice(AnchoredNotice.page.subtracting(["coin"])) }
           if model.showNoDeviceActions {
             Text("当前设备没有可操作项").font(.subheadline).foregroundStyle(.secondary)
               .frame(maxWidth: .infinity).multilineTextAlignment(.center)
@@ -334,7 +341,7 @@ private struct ClipSessionPage: View {
                 }
                 Spacer(minLength: 0)
                 if let feedback {
-                  Image(systemName: feedback.level == "success" ? "checkmark.circle" : feedback.level == "error" ? "xmark.circle" : "exclamationmark.circle")
+                  Image(systemName: noticeSymbol(feedback.level))
                     .font(.title2).foregroundStyle(noticeColor(feedback.level))
                 } else if active && [.locating, .sending].contains(model.state) {
                   ProgressView()
@@ -1309,6 +1316,11 @@ private struct ClipCheckoutButton: View {
     VStack(spacing: 12) {
       if inSheet, let message = model.errorMessage ?? model.dialogNotice?.body {
         Text(message).font(.subheadline.weight(.semibold)).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading)
+          .task(id: message) {
+            // Like every other outcome, it goes away after a moment.
+            do { try await Task.sleep(nanoseconds: 5_000_000_000) } catch { return }
+            model.clearError(); model.dismissNotice(retrying: false)
+          }
       }
       AnchoredNotice(["checkout"])
       Button {
@@ -1434,13 +1446,24 @@ private struct ClipBillEntry: View {
   }
 }
 
-/// The colour of a notice level, shared by the card row and the controls.
+/// The symbol of a notice level, shared by the card row, the coin button and the controls.
+func noticeSymbol(_ level: String) -> String {
+  switch level {
+  case "success": return "checkmark.circle"
+  case "error": return "xmark.circle"
+  case "info": return "info.circle"
+  default: return "exclamationmark.circle"
+  }
+}
+
+/// The colour of a notice level, shared by the card row and the controls. Success takes the
+/// app's accent blue; info stays quiet.
 func noticeColor(_ level: String) -> Color {
   switch level {
-  case "success": return .green
+  case "success": return .blue
   case "warning": return .orange
   case "error": return .red
-  default: return .blue
+  default: return .secondary
   }
 }
 
@@ -1485,7 +1508,7 @@ struct InlineNotice: View {
     Label {
       Text(notice.body)
     } icon: {
-      Image(systemName: notice.level == "success" ? "checkmark.circle" : notice.level == "error" ? "xmark.circle" : notice.level == "info" ? "info.circle" : "exclamationmark.circle")
+      Image(systemName: noticeSymbol(notice.level))
     }
     .font(.subheadline.weight(.semibold))
     .foregroundStyle(noticeColor(notice.level))

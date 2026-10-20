@@ -418,7 +418,7 @@ final class MachineLoginViewModel: ObservableObject {
       // The card row carries the outcome; only a problem that needs the player interrupts.
       var parts = notices.filter { $0.display == "inline" }.map { CardFeedback.Part(level: $0.level, text: $0.body) }
       if parts.isEmpty {
-        parts = [CardFeedback.Part(level: ["failed", "not_read"].contains(cardOutcome) ? "error" : "success", text: rowText(cardOutcome))]
+        parts = [CardFeedback.Part(level: cardOutcome == "failed" ? "error" : cardOutcome == "not_read" ? "warning" : "success", text: rowText(cardOutcome))]
         if result.notices == nil, ["failed", "unknown"].contains(result.coin?.status ?? "") {
           parts.append(CardFeedback.Part(level: "warning", text: String(localized: "投币失败")))
         }
@@ -454,7 +454,7 @@ final class MachineLoginViewModel: ObservableObject {
     cardFeedback = feedback
     cardFeedbackTask?.cancel()
     cardFeedbackTask = Task { [weak self] in
-      try? await Task.sleep(nanoseconds: feedback.level == "success" ? 3_000_000_000 : 6_000_000_000)
+      try? await Task.sleep(nanoseconds: feedback.level == "success" ? 3_000_000_000 : 5_000_000_000)
       guard !Task.isCancelled else { return }
       self?.cardFeedback = nil
     }
@@ -509,7 +509,7 @@ final class MachineLoginViewModel: ObservableObject {
     inlineNoticeAnchor = anchor
     inlineNoticeTask?.cancel()
     inlineNoticeTask = Task { [weak self] in
-      try? await Task.sleep(nanoseconds: notice.level == "success" ? 2_000_000_000 : 5_000_000_000)
+      try? await Task.sleep(nanoseconds: notice.level == "success" ? 3_000_000_000 : 5_000_000_000)
       guard !Task.isCancelled else { return }
       self?.inlineNotice = nil
     }
