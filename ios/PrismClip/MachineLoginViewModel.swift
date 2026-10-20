@@ -60,6 +60,9 @@ final class MachineLoginViewModel: ObservableObject {
   /// Something in the shop is watching this device's Home Assistant, so state is pushed.
   private var liveWatching = false
   private var liveSocket: URLSessionWebSocketTask?
+  /// A failed live connection is retried no sooner than this, backing off up to a minute.
+  private var liveRetryAt = Date.distantPast
+  private var liveFailures = 0
   @Published private(set) var deviceBusy = false
   @Published private(set) var notice: String?
   /// The latest settled bill, retained until a new admission supersedes it.
@@ -690,7 +693,7 @@ final class MachineLoginViewModel: ObservableObject {
 
   /// Listen for this device's power and air-conditioner state while its page is ready.
   private func openLiveState() {
-    guard liveSocket == nil, sceneActive, deviceState?.gate == "ready", let ticket,
+    guard liveSocket == nil, Date() >= liveRetryAt, sceneActive, deviceState?.gate == "ready", let ticket,
           machine?.has("power") == true || machine?.has("climate") == true,
           let socket = try? api.deviceLiveSocket(ticket: ticket) else { return }
     liveSocket = socket
@@ -710,14 +713,17 @@ final class MachineLoginViewModel: ObservableObject {
         guard let self, self.liveSocket === socket, self.invocationVersion == version else { return }
         guard case .success(let message) = result, case .string(let text) = message,
               let data = text.data(using: .utf8) else {
-          // Closed or failed: fall back to polling; the next schedule reopens it.
+          // Closed or failed: fall back to polling, and wait before trying again.
           self.liveSocket = nil
           self.liveWatching = false
+          self.liveFailures += 1
+          self.liveRetryAt = Date().addingTimeInterval(min(60, 5 * pow(2, Double(self.liveFailures - 1))))
           self.schedulePowerRead()
           return
         }
         struct Frame: Decodable { let type: String; let watching: Bool?; let power: String?; let climate: PrismClimate? }
         if let frame = try? JSONDecoder().decode(Frame.self, from: data) {
+          if frame.type == "hello" { self.liveFailures = 0 }
           if frame.type == "hello" || frame.type == "watching" { self.liveWatching = frame.watching ?? false }
           if self.liveWatching, let power = frame.power, power == "on" || power == "off" {
             self.deviceState?.power = power

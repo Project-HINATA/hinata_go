@@ -258,12 +258,15 @@ private struct ClipSessionPage: View {
           .disabled(model.authenticating != nil)
         case .ready, .locating, .sending, .success:
           if !model.isShopOnly, model.canUseCards { cardsView.disabled(model.deviceBusy) }
-          if model.state == .ready, model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
+          // Kept in place while a swipe's outcome shows, so the page does not jump.
+          if [.ready, .success].contains(model.state), model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
             Button { Task { await model.device("coin") } } label: {
               HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "centsign.circle") }; Text("投币") }
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
-            }.clipActionStyle().disabled(model.deviceBusy)
+            }.clipActionStyle().disabled(model.deviceBusy || model.state != .ready)
           }
+          // A machine without its own controls shows an action's outcome under the coin button.
+          if !model.showDeviceControls, let note = model.inlineNotice { InlineNotice(notice: note) }
           if model.showNoDeviceActions {
             Text("当前设备没有可操作项").font(.subheadline).foregroundStyle(.secondary)
               .frame(maxWidth: .infinity).multilineTextAlignment(.center)
@@ -745,15 +748,7 @@ private struct ClipDeviceControls: View {
   @State private var consent = false
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
-      if let note = model.inlineNotice {
-        Text(note.body)
-          .font(.subheadline.weight(.semibold))
-          .foregroundStyle(noticeColor(note.level))
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 16).padding(.vertical, 12)
-          .background(noticeColor(note.level).opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-          .accessibilityAddTraits(.updatesFrequently)
-      }
+      if let note = model.inlineNotice { InlineNotice(notice: note) }
       if let device = model.deviceState, let shop = model.visit {
         if device.gate == "binding" {
           ClipPlatformBinding()
@@ -1458,5 +1453,19 @@ private struct NoticeAlert: ViewModifier {
   private func buttons(_ notice: PrismNotice) -> [PrismNotice.Action] {
     let shown = notice.actions.filter { $0.kind != "retry" || model.canRetryNotice }
     return shown.isEmpty ? [.init(kind: "dismiss", label: String(localized: "知道了"))] : shown
+  }
+}
+
+/// An action's expected outcome, shown where the player acted instead of in an alert.
+struct InlineNotice: View {
+  let notice: PrismNotice
+  var body: some View {
+    Text(notice.body)
+      .font(.subheadline.weight(.semibold))
+      .foregroundStyle(noticeColor(notice.level))
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 16).padding(.vertical, 12)
+      .background(noticeColor(notice.level).opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+      .accessibilityAddTraits(.updatesFrequently)
   }
 }
