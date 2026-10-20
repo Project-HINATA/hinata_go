@@ -113,6 +113,9 @@ class AppScaffold extends ConsumerWidget {
     this.actions = const [],
     this.primaryAction,
     this.leading,
+    this.nativeLogo = false,
+    this.nativeLeading,
+    this.onNativeLeadingTap,
     this.materialAppBar,
     this.materialFloatingActionButton,
     this.backgroundColor,
@@ -126,6 +129,14 @@ class AppScaffold extends ConsumerWidget {
   final List<AdaptiveAppBarAction> actions;
   final AppActionConfig? primaryAction;
   final Widget? leading;
+
+  /// Show the HINATA logo next to [title] in the native iPhone top bar.
+  final bool nativeLogo;
+
+  /// A leading control the native iPhone top bar can build, for pages whose
+  /// Flutter leading widget cannot be represented by UIKit.
+  final NativeToolbarLeading? nativeLeading;
+  final VoidCallback? onNativeLeadingTap;
 
   /// Replaces the app bar built from [title] and [actions] on Material.
   final PreferredSizeWidget? materialAppBar;
@@ -258,6 +269,9 @@ class AppScaffold extends ConsumerWidget {
                 titleWidget: titleWidget,
                 actions: toolbarActions,
                 leading: leading,
+                nativeLogo: nativeLogo,
+                nativeLeading: nativeLeading,
+                onNativeLeadingTap: onNativeLeadingTap,
               ),
         // Pages are built from Material widgets, which need a Material ancestor
         // that the Cupertino page scaffold does not provide.

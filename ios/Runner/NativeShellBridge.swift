@@ -12,11 +12,13 @@ protocol NativeShellBridgeDelegate: AnyObject {
 
 final class NativeShellBridge {
   weak var delegate: NativeShellBridgeDelegate?
+  let messenger: FlutterBinaryMessenger
   private let channel: FlutterMethodChannel
   // RunnerTests observes the notification before the platform-channel send.
   var onUserSelected: ((Int) -> Void)?
 
   init(messenger: FlutterBinaryMessenger) {
+    self.messenger = messenger
     channel = FlutterMethodChannel(
       name: "dev.hinata.go/native_shell",
       binaryMessenger: messenger

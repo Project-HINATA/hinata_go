@@ -223,11 +223,7 @@ class AdaptiveFormSection extends StatelessWidget {
       section = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        children: [
-          if (headerWidget != null) headerWidget,
-          section,
-          if (footerWidget != null) footerWidget,
-        ],
+        children: [?headerWidget, section, ?footerWidget],
       );
     }
 

@@ -11,6 +11,33 @@ const Duration kToolbarItemSwapDuration = Duration(milliseconds: 220);
 /// How far the chrome is dimmed while a dialog or sheet covers its owner.
 const double kToolbarCoveredOpacity = 0.45;
 
+/// A page-stack change the native top bar needs to mirror.
+enum NativeBarTransitionKind { reset, push, pop, update }
+
+@immutable
+class NativeBarTransition {
+  const NativeBarTransition.reset(this.entry)
+    : kind = NativeBarTransitionKind.reset;
+
+  const NativeBarTransition.push(this.entry)
+    : kind = NativeBarTransitionKind.push;
+
+  const NativeBarTransition.pop()
+    : kind = NativeBarTransitionKind.pop,
+      entry = null;
+
+  /// A pop whose uncovered page is [entry]. A native stack that a tab switch
+  /// reset to a single placeholder uses it to replace that page.
+  const NativeBarTransition.popTo(ToolbarEntry this.entry)
+    : kind = NativeBarTransitionKind.pop;
+
+  const NativeBarTransition.update(this.entry)
+    : kind = NativeBarTransitionKind.update;
+
+  final NativeBarTransitionKind kind;
+  final ToolbarEntry? entry;
+}
+
 /// Works out, for every part of the fixed chrome, whose controls to show and
 /// how to move from one page's controls to the next.
 ///
@@ -38,6 +65,10 @@ class ToolbarBlend extends ChangeNotifier {
   }
 
   final ToolbarRegistry registry;
+
+  /// Called when the page stack changes, so a native navigation controller
+  /// can push/pop its placeholder bar items in step with the Flutter routes.
+  void Function(NativeBarTransition transition)? onNativeTransition;
 
   /// Drives swaps that have no route transition to follow.
   final AnimationController _swap;
@@ -179,6 +210,9 @@ class ToolbarBlend extends ChangeNotifier {
     if (!_hasShownOwner) {
       _ownerId = next?.id;
       _hasShownOwner = next != null;
+      if (next != null) {
+        onNativeTransition?.call(NativeBarTransition.reset(next));
+      }
     } else if (next?.id != previous?.id) {
       _ownerId = next?.id;
       final pushing = next?.route?.animation;
@@ -193,6 +227,7 @@ class ToolbarBlend extends ChangeNotifier {
       if (isPushing) {
         // A new page is coming in on top of the previous owner.
         _startBlend(pushing, upper: next, lower: previous);
+        onNativeTransition?.call(NativeBarTransition.push(next));
       } else if (popping != null && popping.status == AnimationStatus.reverse) {
         // The previous owner is leaving and uncovers the new one. When a
         // back swipe was already blending the two, this continues it.
@@ -202,13 +237,22 @@ class ToolbarBlend extends ChangeNotifier {
           lower: next,
           continuesGesture: _gestureBlend && identical(_driver, popping),
         );
+        onNativeTransition?.call(
+          next != null
+              ? NativeBarTransition.popTo(next)
+              : const NativeBarTransition.pop(),
+        );
       } else {
         // No route transition to follow: a tab switch, or a transition that
         // a heavy first frame has already outlasted. Crossfade briefly.
         _swap.value = 0;
         _startBlend(_swap, upper: next, lower: previous);
         _swap.forward();
+        onNativeTransition?.call(NativeBarTransition.reset(next));
       }
+    } else if (next != null) {
+      // Same page, changed app-bar content (actions enabled/visible, etc.).
+      onNativeTransition?.call(NativeBarTransition.update(next));
     }
 
     if (ownerIsCovered) {

@@ -44,6 +44,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final settings = ref.watch(settingsProvider);
+    final hostMode = ref.watch(appHostModeProvider);
     ref.listen(nfcProvider, (previous, next) {});
 
     return DynamicColorBuilder(
@@ -76,6 +77,15 @@ class MyApp extends ConsumerWidget {
                 initialEntries: [
                   OverlayEntry(
                     builder: (_) => AdaptiveToolbarHost(
+                      // Escape hatch while the UIKit bar is evaluated: run with
+                      // --dart-define=HINATA_NATIVE_TOP_BAR=false to fall back
+                      // to the Flutter-hosted toolbar.
+                      nativeTopBar:
+                          hostMode == AppHostMode.nativeIOS &&
+                          const bool.fromEnvironment(
+                            'HINATA_NATIVE_TOP_BAR',
+                            defaultValue: true,
+                          ),
                       child: NavigationBarAxisScope(
                         child: child ?? const SizedBox.shrink(),
                       ),

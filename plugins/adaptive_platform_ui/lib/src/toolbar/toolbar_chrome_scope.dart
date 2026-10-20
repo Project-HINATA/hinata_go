@@ -11,6 +11,7 @@ class ToolbarChromeScope extends InheritedWidget {
     super.key,
     required this.hostsToolbar,
     required this.hostsDuoControls,
+    this.nativeTopBarOwned = false,
     required super.child,
   });
 
@@ -24,6 +25,11 @@ class ToolbarChromeScope extends InheritedWidget {
   /// (see `DuoPose`). Pages then keep only their title at the top.
   final bool hostsDuoControls;
 
+  /// True while a native UIKit `UINavigationController` above the Flutter view
+  /// owns the top bar. Pages draw no top bar and add no top inset; the native
+  /// controller contributes the safe area instead.
+  final bool nativeTopBarOwned;
+
   /// The nearest scope, or null when no host is installed and the page must
   /// draw its whole toolbar itself.
   static ToolbarChromeScope? maybeOf(BuildContext context) =>
@@ -32,5 +38,6 @@ class ToolbarChromeScope extends InheritedWidget {
   @override
   bool updateShouldNotify(ToolbarChromeScope oldWidget) =>
       hostsToolbar != oldWidget.hostsToolbar ||
-      hostsDuoControls != oldWidget.hostsDuoControls;
+      hostsDuoControls != oldWidget.hostsDuoControls ||
+      nativeTopBarOwned != oldWidget.nativeTopBarOwned;
 }

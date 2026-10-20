@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:foldable/foldable.dart';
 
@@ -341,6 +340,13 @@ const double kDuoBarGroupSpacing = 12.0;
 /// Space the system leaves below the tab capsule.
 const double kDuoBarBottomMargin = kDuoBarEdgeMargin;
 
+/// How long a capsule takes to grow or shrink when a page change alters the
+/// number of items it holds. Matches the native crossfade inside it.
+const Duration kDuoActionCapsuleResizeDuration = Duration(milliseconds: 260);
+
+/// The capsule resize curve: fast at first, settling like the system bar.
+const Curve kDuoActionCapsuleResizeCurve = Curves.easeOutCubic;
+
 /// The trailing vertical bar used on iPhone Duo, laid out the way the system
 /// lays out its own: from the top, below the status cluster, primary
 /// navigation (back, close), then the toolbar items, each group in one glass
@@ -593,9 +599,23 @@ class _ActionCapsule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: IOS26GlassCapsule.width,
-      height: IOS26GlassCapsule.actionsHeight(actions.length),
+    // A page change can add or drop an action. The capsule then grows or
+    // shrinks by one slot; doing that in a single frame next to the native
+    // button crossfade read as the old control vanishing and a new one
+    // appearing. Animating the height lets the glass grow while its buttons
+    // change, the way the system bar does. The sibling gaps ride along with
+    // the same curve so the capsule below it does not jump either.
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(
+        end: IOS26GlassCapsule.actionsHeight(actions.length),
+      ),
+      duration: kDuoActionCapsuleResizeDuration,
+      curve: kDuoActionCapsuleResizeCurve,
+      builder: (context, height, child) => SizedBox(
+        width: IOS26GlassCapsule.width,
+        height: height,
+        child: child,
+      ),
       child: IOS26GlassCapsule(
         interactive: interactive,
         items: [

@@ -9,6 +9,7 @@ import '../platform/system_vertical_bar.dart';
 import 'duo_vertical_bar.dart';
 import 'hosted_duo_bar.dart';
 import 'hosted_top_toolbar.dart';
+import 'native_top_bar_bridge.dart';
 import 'toolbar_blend.dart';
 import 'toolbar_chrome_scope.dart';
 import 'toolbar_registry.dart';
@@ -28,12 +29,17 @@ class AdaptiveToolbarHost extends StatefulWidget {
   const AdaptiveToolbarHost({
     super.key,
     required this.child,
+    this.nativeTopBar = false,
     @visibleForTesting this.debugFold,
     @visibleForTesting this.debugVerticalBarEdge,
   });
 
   /// The navigator (or whatever the app's `builder` receives).
   final Widget child;
+
+  /// Let a real UIKit `UINavigationController` own the top bar on iPhone.
+  /// The host keeps the registry/blend, but draws no top bar there.
+  final bool nativeTopBar;
 
   /// Replaces the platform's fold readings (the reserved regions) and the
   /// iOS 26 check, so the chrome can be exercised in widget tests anywhere.
@@ -53,6 +59,7 @@ class _AdaptiveToolbarHostState extends State<AdaptiveToolbarHost>
     with TickerProviderStateMixin {
   final ToolbarRegistry _registry = ToolbarRegistry();
   late final ToolbarBlend _blend;
+  late final NativeTopBarBridge _nativeBar;
 
   /// Latest fold / size-class reading; null until the first one arrives and
   /// on platforms where the chrome is never drawn.
@@ -71,6 +78,7 @@ class _AdaptiveToolbarHostState extends State<AdaptiveToolbarHost>
   void initState() {
     super.initState();
     _blend = ToolbarBlend(registry: _registry, vsync: this);
+    _nativeBar = NativeTopBarBridge(blend: _blend);
     // Fold readings are only needed for the camera clearance of the bar.
     if (widget.debugFold == null && PlatformInfo.isIOS26OrHigher()) {
       Foldable.snapshot.then(_onFoldChanged).catchError((Object _) {});
@@ -96,6 +104,7 @@ class _AdaptiveToolbarHostState extends State<AdaptiveToolbarHost>
 
   @override
   void dispose() {
+    _nativeBar.dispose();
     _edge?.removeListener(_onEdgeChanged);
     _foldSub?.cancel();
     _blend.dispose();
@@ -131,11 +140,27 @@ class _AdaptiveToolbarHostState extends State<AdaptiveToolbarHost>
       return true;
     }());
 
+    // A real UIKit navigation controller now owns the top bar everywhere on
+    // iOS: the shell gives each tab a UINavigationController, and the system
+    // places the items in whatever bar layout the device uses. Pages only
+    // publish their items.
+    final nativeActive = widget.nativeTopBar && hostsToolbar;
+    // Rotation does not bring the bar back: the app has no top bar in
+    // landscape, and the vertical bar keeps the items on Duo.
+    final nativeVisible =
+        nativeActive &&
+        (pose != null ||
+            MediaQuery.orientationOf(context) == Orientation.portrait);
+    _nativeBar.update(active: nativeActive, visible: nativeVisible);
+
     return ToolbarRegistryScope(
       registry: _registry,
       child: ToolbarChromeScope(
         hostsToolbar: hostsToolbar,
+        // True wherever the Duo pose puts the tabs in the vertical bar,
+        // whether the system draws it or the fallback below does.
         hostsDuoControls: pose != null,
+        nativeTopBarOwned: nativeActive,
         child: DuoPoseScope(
           pose: pose,
           child: Stack(
@@ -149,9 +174,9 @@ class _AdaptiveToolbarHostState extends State<AdaptiveToolbarHost>
               // element tree whenever the pose changes (moving between Split
               // View panes), and rebuild every route.
               _BarInset(pose: pose, child: widget.child),
-              if (hostsToolbar)
+              if (hostsToolbar && !nativeActive)
                 HostedTopToolbar(blend: _blend, titleOnly: pose != null),
-              if (pose != null)
+              if (pose != null && !nativeActive)
                 // The bar sits on whichever edge the pose names: the right in
                 // most poses, the left in the leading Split View pane.
                 Positioned(

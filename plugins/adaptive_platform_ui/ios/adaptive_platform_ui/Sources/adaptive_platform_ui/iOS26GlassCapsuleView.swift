@@ -166,18 +166,47 @@ class iOS26GlassCapsuleView: NSObject, FlutterPlatformView {
 
         if let newItems = params["items"] as? [[String: Any]] {
             let same = (newItems as NSArray).isEqual(to: items)
+            let countChanged = buttons.count != newItems.count
             items = newItems
-            if !same || buttons.count != newItems.count {
-                // The capsule stays alive while its items change. Crossfade
-                // the old and new controls so they do not pop; this is the
-                // custom capsule's equivalent of the bar's item transition.
-                UIView.transition(
-                    with: container,
-                    duration: 0.22,
-                    options: [.transitionCrossDissolve, .allowAnimatedContent]
-                ) {
-                    self.rebuildButtons()
-                    self.refreshAppearance()
+            if !same || countChanged {
+                // The glass is the stable part, exactly like a navigation bar:
+                // only its buttons change. Cross-dissolving the whole capsule
+                // made a page switch read as one control disappearing and a
+                // new one appearing, so instead the outgoing column is kept
+                // as a fixed snapshot and fades out while the incoming
+                // buttons fade in, at the same time and in the same place.
+                if container.window != nil,
+                   let snapshot = stack.snapshotView(afterScreenUpdates: false) {
+                    snapshot.frame = stack.frame
+                    // Height stays fixed: the capsule grows around the
+                    // snapshot, and stretching it would distort the old icon.
+                    snapshot.autoresizingMask = [.flexibleWidth]
+                    snapshot.isUserInteractionEnabled = false
+                    effectView.contentView.addSubview(snapshot)
+                    rebuildButtons()
+                    refreshAppearance()
+                    for button in buttons {
+                        button.alpha = 0
+                        if countChanged {
+                            button.transform = CGAffineTransform(translationX: 0, y: 8)
+                        }
+                    }
+                    UIView.animate(
+                        withDuration: 0.26,
+                        delay: 0,
+                        options: [.curveEaseOut, .beginFromCurrentState, .allowUserInteraction]
+                    ) {
+                        snapshot.alpha = 0
+                        for button in self.buttons {
+                            button.alpha = 1
+                            button.transform = .identity
+                        }
+                    } completion: { _ in
+                        snapshot.removeFromSuperview()
+                    }
+                } else {
+                    rebuildButtons()
+                    refreshAppearance()
                 }
             }
         }

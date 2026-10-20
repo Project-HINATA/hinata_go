@@ -1,6 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'adaptive_app_bar_action.dart';
 
+/// A leading control the native top bar can build itself, for pages whose
+/// Flutter leading widget cannot be represented by UIKit.
+enum NativeToolbarLeading { close }
+
 /// Configuration for an adaptive app bar
 ///
 /// This class holds the configuration for the app bar in [AdaptiveScaffold].
@@ -24,6 +28,9 @@ class AdaptiveAppBar {
     this.useNativeToolbar = true,
     this.tintColor,
     this.titleWidget,
+    this.nativeLogo = false,
+    this.nativeLeading,
+    this.onNativeLeadingTap,
     this.cupertinoNavigationBar,
     this.appBar,
   });
@@ -69,6 +76,16 @@ class AdaptiveAppBar {
   /// If null, the system default tint color is used.
   final Color? tintColor;
 
+  /// Whether the native bar should show the app logo next to [title].
+  final bool nativeLogo;
+
+  /// A leading control for the native top bar. When null, the native bar
+  /// falls back to an automatic back button or no leading.
+  final NativeToolbarLeading? nativeLeading;
+
+  /// Invoked when the native leading control is tapped.
+  final VoidCallback? onNativeLeadingTap;
+
   /// Custom CupertinoNavigationBar for iOS
   ///
   /// When provided and [useNativeToolbar] is false, this custom navigation bar will be used
@@ -94,6 +111,9 @@ class AdaptiveAppBar {
     bool? useNativeToolbar,
     Color? tintColor,
     Widget? titleWidget,
+    bool? nativeLogo,
+    NativeToolbarLeading? nativeLeading,
+    VoidCallback? onNativeLeadingTap,
     PreferredSizeWidget? cupertinoNavigationBar,
     PreferredSizeWidget? appBar,
   }) {
@@ -105,6 +125,9 @@ class AdaptiveAppBar {
       useNativeToolbar: useNativeToolbar ?? this.useNativeToolbar,
       tintColor: tintColor ?? this.tintColor,
       titleWidget: titleWidget ?? this.titleWidget,
+      nativeLogo: nativeLogo ?? this.nativeLogo,
+      nativeLeading: nativeLeading ?? this.nativeLeading,
+      onNativeLeadingTap: onNativeLeadingTap ?? this.onNativeLeadingTap,
       cupertinoNavigationBar:
           cupertinoNavigationBar ?? this.cupertinoNavigationBar,
       appBar: appBar ?? this.appBar,

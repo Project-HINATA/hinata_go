@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform;
 
+import '../widgets/adaptive_app_bar.dart';
 import '../widgets/adaptive_app_bar_action.dart';
 import '../widgets/ios26/ios26_native_toolbar.dart';
 import 'duo_vertical_bar.dart';
@@ -22,6 +23,9 @@ class TopToolbarContent {
     this.actions = const <AdaptiveAppBarAction>[],
     this.tint,
     this.navigator,
+    this.nativeLogo = false,
+    this.nativeLeading,
+    this.onNativeLeadingTap,
   });
 
   /// No page owns the chrome, the page has no toolbar, or it draws a
@@ -44,6 +48,9 @@ class TopToolbarContent {
           : appBar.actions ?? const <AdaptiveAppBarAction>[],
       tint: appBar.tintColor,
       navigator: entry.navigator,
+      nativeLogo: appBar.nativeLogo,
+      nativeLeading: titleOnly ? null : appBar.nativeLeading,
+      onNativeLeadingTap: titleOnly ? null : appBar.onNativeLeadingTap,
     );
   }
 
@@ -57,6 +64,9 @@ class TopToolbarContent {
   final List<AdaptiveAppBarAction> actions;
   final Color? tint;
   final NavigatorState? navigator;
+  final bool nativeLogo;
+  final NativeToolbarLeading? nativeLeading;
+  final VoidCallback? onNativeLeadingTap;
 
   bool get isEmpty =>
       title == null &&
