@@ -55,6 +55,9 @@ enum PersistentCookieCheck {
     precondition(InvocationParser.shopInvocation(from: URL(string: "https://link.neri.moe/t/bad!code")!) == nil)
     precondition(InvocationParser.shopInvocation(from: URL(string: "https://user@link.neri.moe/t/store")!) == nil)
     var mahjongSeats: [[String:Any]] = []
+    var climate: [String:Any] = ["mode":"off","modes":["off","cool","heat","dry","fan_only","auto"],"temperature":26,"currentTemperature":28.5,
+      "minTemperature":16,"maxTemperature":30,"temperatureStep":1,"fanMode":"auto","fanModes":["auto","low","high"]]
+    var climateBodies: [[String:Any]] = []
     var member = false, active = false
     var signedIn = true
     var power = "unknown"
@@ -135,7 +138,7 @@ enum PersistentCookieCheck {
         precondition(request.url!.query!.contains("includePower=0"))
         let gated = billing || capabilities["door"] == true || capabilities["mahjong"] == true
         let gate = !gated ? "ready" : identityBindingRequired && (!member || !identityBound) ? "binding" : !billing ? "ready" : member && active ? "ready" : "entry"
-        return ok(["gate":gate, "power":power,"mahjong":["capacity":4,"seats":mahjongSeats]])
+        return ok(["gate":gate, "power":power,"mahjong":["capacity":4,"seats":mahjongSeats],"climate":capabilities["climate"] == true ? climate : NSNull()])
       case "/api/v1/shops/store/platform-binding":
         if request.httpMethod == "GET" {
           bindingStatusReads += 1
@@ -169,6 +172,16 @@ enum PersistentCookieCheck {
           return ok([:])
         }
         if body["action"] as? String == "mahjong.leave" { mahjongSeats = []; return ok([:]) }
+        if let action = body["action"] as? String, action.hasPrefix("climate.") {
+          precondition(body["ticket"] != nil && body["operationId"] != nil && body["consent"] == nil)
+          climateBodies.append(body)
+          if action == "climate.on" { climate["mode"] = "cool" }
+          if action == "climate.off" { climate["mode"] = "off" }
+          if let mode = body["mode"] as? String { climate["mode"] = mode }
+          if let value = body["temperature"] as? Double { climate["temperature"] = value }
+          if let fan = body["fanMode"] as? String { climate["fanMode"] = fan }
+          return ok(["climate":climate])
+        }
 
         if body["action"] as? String == "coin" { coinCalls += 1; throw URLError(.networkConnectionLost) }
         precondition(body["consent"] as? Bool == true)
@@ -274,6 +287,23 @@ enum PersistentCookieCheck {
     precondition(model.deviceState?.mahjong?.seats.first?.mine == true && !model.waitingPower)
     await model.device("mahjong.leave")
     precondition(model.deviceState?.mahjong?.seats.isEmpty == true)
+    // An air conditioner is a control of its own: shown even with nothing else to do.
+    capabilities = ["climate":true]
+    await model.start(shopCode:"store",publicId:"device")
+    precondition(model.showDeviceControls && !model.showNoDeviceActions)
+    precondition(model.deviceState?.climate?.isOn == false && model.deviceState?.climate?.choosableModes.first == "cool")
+    await model.climate("climate.on")
+    precondition(model.deviceState?.climate?.mode == "cool")
+    await model.climate("climate.set_mode", ["mode":"heat"])
+    await model.climate("climate.set_temperature", ["temperature":23.0])
+    await model.climate("climate.set_fan_mode", ["fanMode":"high"])
+    precondition(model.deviceState?.climate == PrismClimate(mode:"heat",modes:["off","cool","heat","dry","fan_only","auto"],temperature:23,
+      currentTemperature:28.5,minTemperature:16,maxTemperature:30,temperatureStep:1,fanMode:"high",fanModes:["auto","low","high"]))
+    precondition(climateBodies.map { $0["action"] as! String } == ["climate.on","climate.set_mode","climate.set_temperature","climate.set_fan_mode"])
+    precondition(climateBodies[2]["temperature"] as? Double == 23 && climateBodies[3]["fanMode"] as? String == "high")
+    let ac = model.deviceState!.climate!
+    precondition(ac.nudged(23, by: 1) == 24 && ac.nudged(30, by: 1) == 30 && ac.nudged(16, by: -3) == 16)
+    precondition(PrismClimate(mode:"cool",temperatureStep:0.5).nudged(25, by: -1) == 24.5)
     // A power-only device has an action while off, then explains why no controls remain.
     capabilities = ["power":true]; power = "off"
     await model.start(shopCode: "store", publicId: "device")

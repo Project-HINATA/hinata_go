@@ -71,13 +71,13 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var isShopOnly = false
   var showDeviceControls: Bool {
     guard machine?.capabilities != nil, machine?.empty != true else { return false }
-    return deviceState == nil || deviceState?.gate != "ready" || deviceState?.power == "off" || machine?.has("door") == true || machine?.has("mahjong") == true
+    return deviceState == nil || deviceState?.gate != "ready" || deviceState?.power == "off" || machine?.has("door") == true || machine?.has("mahjong") == true || machine?.has("climate") == true
   }
   var showNoDeviceActions: Bool {
     guard !isShopOnly, let machine else { return false }
     if machine.empty { return true }
     guard let device = deviceState, device.gate == "ready" else { return false }
-    if machine.has("door") || (machine.has("power") && device.power == "off") { return false }
+    if machine.has("door") || machine.has("climate") || (machine.has("power") && device.power == "off") { return false }
     if canUseCards || (device.power != "off" && machine.has("coin") && machine.coinAfterSwipe != true) { return false }
     if machine.has("mahjong"), device.power != "off", let table = device.mahjong,
        table.seats.contains(where: { $0.mine }) || table.seats.count < table.capacity { return false }
@@ -722,6 +722,19 @@ final class MachineLoginViewModel: ObservableObject {
       if action == "door.open" { doorPassword = try JSONDecoder().decode(PrismDoorPassword.self, from: data) }
       else if action == "coin" { deviceState?.coinUsed = true }
       else if action == "power.on" { waitingPower = true }
+      await refreshVisit()
+    }
+  }
+  /// Send an air conditioner action. Its result carries the entity's state, which is shown
+  /// right away; the refresh that follows reads it again.
+  func climate(_ action: String, _ extra: [String: Any] = [:]) async {
+    guard let ticket else { return }
+    await perform {
+      var body: [String: Any] = ["ticket": ticket, "action": action]
+      body.merge(extra) { _, new in new }
+      let data = try await operation("device.\(ticket).\(action)", path: "/api/v1/devices/session/actions", body: body, requiresLocation: (machine?.shop.locationEnabled ?? machine?.shop.machineGeo) != false)
+      struct Result: Decodable { let climate: PrismClimate? }
+      if let climate = (try? JSONDecoder().decode(Result.self, from: data))?.climate { deviceState?.climate = climate }
       await refreshVisit()
     }
   }

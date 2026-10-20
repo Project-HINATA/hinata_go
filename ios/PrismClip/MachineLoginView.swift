@@ -764,6 +764,9 @@ private struct ClipDeviceControls: View {
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
             }.clipActionStyle(primary: true).disabled(device.gate == "entry" && !consent)
           }
+          if device.gate == "ready", model.machine?.has("climate") == true {
+            ClipClimateCard(state: device.climate)
+          }
           if device.gate == "ready", device.power != "off", let table = device.mahjong {
             let mine = table.seats.contains { $0.mine }
             VStack(spacing: 16) {
@@ -819,6 +822,217 @@ private struct ClipDeviceControls: View {
         }.clipActionStyle()
       } else { ProgressView().accessibilityLabel("正在加载") }
     }.disabled(model.deviceBusy || [.loadingCards, .locating, .sending].contains(model.state))
+  }
+}
+
+/// The player's air conditioner, matching the Web device page. Off, it is one button; on,
+/// the target temperature is the centre with round − and + either side, and mode and fan
+/// speed are segmented rows underneath. The card takes the running mode's colour.
+///
+/// A choice is shown at once and gives way to what Home Assistant reports, or falls back
+/// after a few seconds if it never does. Quick − / + presses are sent as one temperature, so
+/// an on-site location fix is not taken for every step.
+private struct ClipClimateCard: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  let state: PrismClimate?
+  @State private var draftMode: String?
+  @State private var draftFan: String?
+  @State private var draftTemperature: Double?
+  @State private var sendTemperature: Task<Void, Never>?
+  @State private var expireDraft: Task<Void, Never>?
+
+  private static let modeNames: [String: LocalizedStringKey] = [
+    "off": "已关闭", "cool": "制冷", "heat": "制热", "dry": "除湿", "fan_only": "送风", "auto": "自动", "heat_cool": "自动冷暖",
+  ]
+  private static let modeSymbols: [String: String] = [
+    "cool": "snowflake", "heat": "sun.max", "dry": "drop", "fan_only": "fan",
+    "auto": "arrow.triangle.2.circlepath", "heat_cool": "arrow.triangle.2.circlepath",
+  ]
+  private static let fanNames: [String: LocalizedStringKey] = [
+    "auto": "自动", "silent": "静音", "quiet": "静音", "low": "低风", "medium": "中风", "middle": "中风",
+    "high": "高风", "strong": "强劲", "turbo": "强劲",
+  ]
+  private func modeName(_ mode: String) -> Text { Self.modeNames[mode].map { Text($0) } ?? Text(verbatim: mode) }
+  private func fanName(_ mode: String) -> Text { Self.fanNames[mode.lowercased()].map { Text($0) } ?? Text(verbatim: mode) }
+
+  private var mode: String { draftMode ?? state?.mode ?? "off" }
+  private var fanMode: String? { draftFan ?? state?.fanMode }
+  private var temperature: Double? { draftTemperature ?? state?.temperature }
+  private var isOn: Bool { state?.isOn == true }
+  private var busy: Bool { model.deviceBusy || [.locating, .sending].contains(model.state) }
+
+  private var accent: Color {
+    guard isOn else { return .secondary }
+    switch mode {
+    case "heat": return Color(red: 0.91, green: 0.44, blue: 0.16)
+    case "dry": return Color(red: 0.10, green: 0.60, blue: 0.54)
+    case "fan_only": return Color(red: 0.37, green: 0.45, blue: 0.53)
+    case "auto", "heat_cool": return Color(red: 0.48, green: 0.35, blue: 0.84)
+    default: return .blue
+    }
+  }
+
+  private func degrees(_ value: Double) -> String {
+    value.formatted(.number.precision(.fractionLength(0...1)))
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 20) {
+      HStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("空调").font(.title3.weight(.semibold))
+          status.font(.subheadline).foregroundStyle(.secondary)
+        }
+        Spacer(minLength: 0)
+        if isOn {
+          Button { send("climate.off") } label: {
+            Label("关空调", systemImage: "power").font(.subheadline.weight(.semibold))
+              .padding(.horizontal, 14).padding(.vertical, 9)
+              .background(Color.primary.opacity(0.07), in: Capsule())
+          }.buttonStyle(.plain)
+        }
+      }
+      if state == nil {
+        HStack(spacing: 10) { powerButton(on: true); powerButton(on: false) }
+      } else if !isOn {
+        powerButton(on: true)
+      } else {
+        if let temperature { temperatureRow(temperature) }
+        if let state, !state.choosableModes.isEmpty {
+          segments(title: "模式", options: state.choosableModes, selected: mode, tall: true) { option in
+            if let symbol = Self.modeSymbols[option] { Image(systemName: symbol).font(.system(size: 18)) }
+            modeName(option)
+          } choose: { option in
+            draftMode = option; hold(); send("climate.set_mode", ["mode": option])
+          }
+        }
+        if let fans = state?.fanModes, !fans.isEmpty {
+          segments(title: "风速", options: fans, selected: fanMode ?? "", tall: false) { option in
+            fanName(option)
+          } choose: { option in
+            draftFan = option; hold(); send("climate.set_fan_mode", ["fanMode": option])
+          }
+        }
+      }
+    }
+    .padding(20)
+    .background(accent.opacity(isOn ? 0.08 : 0.06), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+    .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(accent.opacity(isOn ? 0.18 : 0.08)))
+    .animation(.easeInOut(duration: 0.25), value: mode)
+    .onChange(of: state) {
+      if draftMode == state?.mode { draftMode = nil }
+      if draftFan == state?.fanMode { draftFan = nil }
+      if draftTemperature == state?.temperature { draftTemperature = nil }
+    }
+    .onDisappear { sendTemperature?.cancel(); expireDraft?.cancel() }
+  }
+
+  private var status: Text {
+    guard let state else { return Text("空调状态未知") }
+    let room = state.currentTemperature.map { Text(" · ") + Text("室温 \(degrees($0))°") } ?? Text(verbatim: "")
+    return (isOn ? modeName(mode) : Text("已关闭")) + room
+  }
+
+  private func powerButton(on: Bool) -> some View {
+    Button { send(on ? "climate.on" : "climate.off") } label: {
+      HStack(spacing: 10) {
+        if busy { ProgressView() } else { Image(systemName: "power") }
+        Text(on ? "开空调" : "关空调")
+      }.frame(maxWidth: .infinity).padding(.vertical, 12)
+    }.clipActionStyle(primary: on)
+  }
+
+  private func temperatureRow(_ value: Double) -> some View {
+    HStack(spacing: 12) {
+      round("minus", label: "调低温度", disabled: value <= (state?.minTemperature ?? 16)) { nudge(-1) }
+      Spacer(minLength: 0)
+      VStack(spacing: 2) {
+        HStack(alignment: .top, spacing: 2) {
+          Text(verbatim: degrees(value)).font(.system(size: 64, weight: .light, design: .rounded)).monospacedDigit()
+            .contentTransition(.numericText(value: value))
+          Text(verbatim: "°").font(.system(size: 30, weight: .light, design: .rounded)).padding(.top, 6)
+        }.foregroundStyle(accent)
+        Text("设定温度").font(.footnote).foregroundStyle(.secondary)
+      }
+      .accessibilityElement(children: .combine)
+      Spacer(minLength: 0)
+      round("plus", label: "调高温度", disabled: value >= (state?.maxTemperature ?? 30)) { nudge(1) }
+    }
+    .animation(.snappy, value: value)
+  }
+
+  private func round(_ symbol: String, label: LocalizedStringKey, disabled: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Image(systemName: symbol).font(.title2.weight(.medium)).foregroundStyle(accent)
+        .frame(width: 56, height: 56)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: Circle())
+        .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
+    }
+    .buttonStyle(.plain)
+    .opacity(disabled ? 0.35 : 1)
+    .disabled(disabled)
+    .accessibilityLabel(label)
+  }
+
+  private func segments<Content: View>(
+    title: LocalizedStringKey, options: [String], selected: String, tall: Bool,
+    @ViewBuilder label: @escaping (String) -> Content, choose: @escaping (String) -> Void
+  ) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text(title).font(.footnote.weight(.medium)).foregroundStyle(.secondary)
+      // Up to six options share one row; a longer list wraps instead of crushing labels.
+      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: min(options.count, 6)), spacing: 4) {
+        ForEach(options, id: \.self) { option in
+          let on = option == selected
+          Button { if !on { choose(option) } } label: {
+            VStack(spacing: 4) { label(option) }
+              .font(tall ? .footnote : .subheadline).fontWeight(on ? .semibold : .regular)
+              .lineLimit(1).minimumScaleFactor(0.8)
+              .frame(maxWidth: .infinity, minHeight: tall ? 56 : 42)
+              .foregroundStyle(on ? accent : Color.primary.opacity(0.7))
+              .background(on ? Color(uiColor: .secondarySystemGroupedBackground) : .clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+              .shadow(color: .black.opacity(on ? 0.1 : 0), radius: 3, y: 1)
+          }
+          .buttonStyle(.plain)
+          .accessibilityAddTraits(on ? .isSelected : [])
+        }
+      }
+      .padding(4)
+      .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .accessibilityElement(children: .contain)
+      .accessibilityLabel(title)
+    }
+  }
+
+  private func send(_ action: String, _ extra: [String: Any] = [:]) {
+    Task { await model.climate(action, extra) }
+  }
+
+  /// Keep a choice on screen while Home Assistant catches up, but not forever.
+  private func hold() {
+    expireDraft?.cancel()
+    expireDraft = Task {
+      try? await Task.sleep(for: .seconds(6))
+      guard !Task.isCancelled else { return }
+      draftMode = nil; draftFan = nil; draftTemperature = nil
+    }
+  }
+
+  private func nudge(_ direction: Int) {
+    guard let state, let current = temperature else { return }
+    let next = state.nudged(current, by: direction)
+    guard next != current else { return }
+    draftTemperature = next
+    hold()
+    sendTemperature?.cancel()
+    sendTemperature = Task {
+      try? await Task.sleep(for: .milliseconds(700))
+      // A press made while another action runs waits for it rather than being dropped.
+      while !Task.isCancelled && busy { try? await Task.sleep(for: .milliseconds(200)) }
+      guard !Task.isCancelled, let wanted = draftTemperature else { return }
+      hold()
+      await model.climate("climate.set_temperature", ["temperature": wanted])
+    }
   }
 }
 
