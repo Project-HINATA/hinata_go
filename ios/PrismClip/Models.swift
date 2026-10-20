@@ -196,7 +196,35 @@ struct SwipeResult: Codable {
     }
   }
 }
-struct PrismDeviceState: Decodable { let gate: String; var power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil }
+struct PrismDeviceState: Decodable { let gate: String; var power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil; var climate: PrismClimate? = nil }
+
+/// A Home Assistant air conditioner as the device state reports it. The modes, fan speeds
+/// and temperature range are the entity's own, so the controls only offer those.
+struct PrismClimate: Decodable, Equatable {
+  var mode: String
+  var modes: [String]? = nil
+  var temperature: Double? = nil
+  var currentTemperature: Double? = nil
+  var minTemperature: Double? = nil
+  var maxTemperature: Double? = nil
+  var temperatureStep: Double? = nil
+  var fanMode: String? = nil
+  var fanModes: [String]? = nil
+
+  var isOn: Bool { mode != "off" }
+  var choosableModes: [String] { (modes ?? []).filter { $0 != "off" } }
+
+  /// The target after `steps` presses of − / +, kept inside the entity's range and step.
+  func nudged(_ current: Double, by steps: Int) -> Double {
+    let step = temperatureStep ?? 0.5
+    let next = (current + Double(steps) * step).clamped(minTemperature ?? 16, maxTemperature ?? 30)
+    return (next / step).rounded() * step
+  }
+}
+
+private extension Double {
+  func clamped(_ low: Double, _ high: Double) -> Double { Swift.min(high, Swift.max(low, self)) }
+}
 struct PrismBinding: Decodable { let code: String; let expiresAt: String; let botContact: String? }
 
 struct PrismBindingPromptLine: Equatable { let text: String; let command: Bool }
