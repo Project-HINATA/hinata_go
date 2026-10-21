@@ -895,7 +895,8 @@ final class MachineLoginViewModel: ObservableObject {
       if let note = (try? JSONDecoder().decode(Result.self, from: data))?.notices?.first(where: { $0.display == "inline" }) {
         showInline(note, anchor: anchor)
       }
-      refreshPending = true
+      // Seats decide what the mahjong button offers, so they are read before it comes back.
+      if action.hasPrefix("mahjong.") { await refreshVisit(silent: true) } else { refreshPending = true }
     }
   }
 

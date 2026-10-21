@@ -62,6 +62,8 @@ final class ScanCounts {
         precondition(request.url!.query!.contains("includePower=0"))
         return ok(["gate": "ready", "power": "unmanaged", "mahjong": ["capacity": 4, "seats": []]])
       case "/api/v1/devices/session/power": return ok(["power": "on"])
+      // A server without live state: the page keeps polling.
+      case "/api/v1/devices/session/ws": return (404, ["error": ["code": "NOT_FOUND", "message": "Not found"]])
       case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": false, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": NSNull(), "entryPricing": []])
       case "/api/v1/auth/passkey": return ok(["ok": true])
       default: preconditionFailure("Unexpected path: \(path)")

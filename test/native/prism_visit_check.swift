@@ -76,6 +76,7 @@ enum PersistentCookieCheck {
     var statusReads = 0, deviceReads = 0, identityReads = 0, bindingStatusReads = 0
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
+    var coinOperations: [String] = []
     var checkoutIds: [String] = []
     var lastReceipt: [String: Any]?
     let testUser = UUID().uuidString
@@ -183,7 +184,10 @@ enum PersistentCookieCheck {
           return ok(["climate":climate])
         }
 
-        if body["action"] as? String == "coin" { coinCalls += 1; throw URLError(.networkConnectionLost) }
+        if body["action"] as? String == "coin" {
+          coinCalls += 1; coinOperations.append(body["operationId"] as? String ?? "")
+          throw URLError(.networkConnectionLost)
+        }
         precondition(body["consent"] as? Bool == true)
         precondition(body["location"] != nil)
         active = true
@@ -210,6 +214,8 @@ enum PersistentCookieCheck {
           "wallet":["balanceBefore":100,"balanceAfter":88],
         ]
         return ok(lastReceipt!)
+      // A server without live state: the page keeps polling.
+      case "/api/v1/devices/session/ws": return (404, ["error": ["code": "NOT_FOUND", "message": "Not found"]])
       default: preconditionFailure("Unexpected API path: \(path)")
       }
     }
@@ -239,12 +245,19 @@ enum PersistentCookieCheck {
     member = true; await model.refreshVisit()
     precondition(model.deviceState?.gate == "entry" && !model.needsPlatformBinding && model.binding == nil)
     await model.device("door.open", consent:true)
-    precondition(model.doorPassword?.temporaryPassword == "12345678" && model.summary?.activeSession != nil)
+    precondition(model.doorPassword?.temporaryPassword == "12345678")
+    // The page is read again in the background after an action; nothing waits on it.
+    for _ in 0..<500 where model.summary?.activeSession == nil { try await Task.sleep(nanoseconds: 10_000_000) }
+    precondition(model.summary?.activeSession != nil)
     precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
     precondition(prismParsedDate(StoreVisitLiveActivityManager.shared.session!.startedAt) == milliseconds)
     precondition(model.canUseCards && model.deviceState?.power == "unknown")
-    await model.device("coin"); await model.device("coin"); precondition(coinCalls == 1)
-    precondition(model.state == .ready && model.ticket != nil && model.errorMessage != nil && sessionStarts == 1)
+    // A coin whose reply was lost is sent again under the same id when pressed again, so the
+    // server replays it rather than pressing twice; the player sees it beside the button.
+    await model.device("coin"); await model.device("coin")
+    precondition(coinCalls == 2 && coinOperations[0] == coinOperations[1] && !coinOperations[0].isEmpty)
+    precondition(model.state == .ready && model.ticket != nil && model.errorMessage == nil && sessionStarts == 1)
+    precondition(model.inlineNotice?.code == "DEVICE_RESULT_UNKNOWN" && model.inlineNoticeAnchor == "coin")
     await model.refreshVisit(); precondition(sessionStarts == 1)
     await model.start(shopCode: "store", publicId: "device")
     await model.login(card:model.cards[0]); precondition(model.state == .ready && model.ticket != nil)
