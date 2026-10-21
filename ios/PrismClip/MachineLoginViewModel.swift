@@ -16,7 +16,6 @@ final class MachineLoginViewModel: ObservableObject {
     case ready
     case locating
     case sending
-    case success
     case failed(String)
   }
 
@@ -47,6 +46,26 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var suggestPasskey = false
   @Published private(set) var addingPasskey = false
   @Published private(set) var doorPassword: PrismDoorPassword?
+  /// What the game did with the last swiped card; see `SwipeResult.card`.
+  @Published private(set) var cardOutcome = "sent"
+  /// A swipe's outcome, shown on its card row for a few seconds without holding the page.
+  @Published private(set) var cardFeedback: CardFeedback?
+  private var cardFeedbackTask: Task<Void, Never>?
+  /// A problem that needs the player: shown as an alert with the server's buttons.
+  @Published private(set) var dialogNotice: PrismNotice?
+  private var dialogRetry: (() async -> Void)?
+  /// An expected outcome of an action, shown for a moment under the control named by
+  /// `inlineNoticeAnchor` (coin, power, door, climate, mahjong, entry, checkout, redeem…).
+  @Published private(set) var inlineNotice: PrismNotice?
+  @Published private(set) var inlineNoticeAnchor = ""
+  private var inlineNoticeTask: Task<Void, Never>?
+  private var powerWaitTask: Task<Void, Never>?
+  /// Something in the shop is watching this device's Home Assistant, so state is pushed.
+  private var liveWatching = false
+  private var liveSocket: URLSessionWebSocketTask?
+  /// A failed live connection is retried no sooner than this, backing off up to a minute.
+  private var liveRetryAt = Date.distantPast
+  private var liveFailures = 0
   @Published private(set) var deviceBusy = false
   @Published private(set) var notice: String?
   /// The latest settled bill, retained until a new admission supersedes it.
@@ -163,6 +182,7 @@ final class MachineLoginViewModel: ObservableObject {
       return
     }
     invocationVersion += 1
+    closeLiveState()
     polling?.cancel(); cancelPowerRead()
     shopCode = nil
     checkoutCelebrating = false; settlement = nil
@@ -189,6 +209,7 @@ final class MachineLoginViewModel: ObservableObject {
   func start(shopCode: String, publicId: String?) async {
     let api = self.api
     invocationVersion += 1
+    closeLiveState()
     let version = invocationVersion
     polling?.cancel()
     cancelPowerRead(); powerObserved = false; powerBackoff.succeed(); readBackoff.succeed(); metadataReadAt = .distantPast
@@ -196,6 +217,7 @@ final class MachineLoginViewModel: ObservableObject {
     guard version == invocationVersion else { return }
     assets = []; history = []; historyNextOffset = nil
     visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; checkoutCelebrating = false; user = nil; waitingPower = false
+    powerWaitTask?.cancel(); inlineNotice = nil; cardFeedbackTask?.cancel(); cardFeedback = nil
     self.shopCode = shopCode
     self.publicId = publicId
     isShopOnly = publicId == nil
@@ -323,6 +345,7 @@ final class MachineLoginViewModel: ObservableObject {
       _ = try await api.requestJSON(path: "/api/v1/auth/logout", body: [:])
       guard version == invocationVersion else { return }
       invocationVersion += 1
+    closeLiveState()
       polling?.cancel()
       // A shop link keeps its card across sign-out: the shop is public data, and the player
       // should still see which shop they are dealing with above the sign-in buttons.
@@ -375,6 +398,7 @@ final class MachineLoginViewModel: ObservableObject {
       return
     }
     activeCardId = card.id
+    cardFeedbackTask?.cancel(); cardFeedback = nil
     state = .locating
     errorMessage = nil
     do {
@@ -389,18 +413,105 @@ final class MachineLoginViewModel: ObservableObject {
         ticket: ticket,
       ))
       guard version == invocationVersion, self.ticket == ticket else { return }
-      state = .success
+      cardOutcome = result.card ?? "sent"
+      let notices = result.notices ?? []
+      // The card row carries the outcome; only a problem that needs the player interrupts.
+      var parts = notices.filter { $0.display == "inline" }.map { CardFeedback.Part(level: $0.level, text: $0.body) }
+      if parts.isEmpty {
+        parts = [CardFeedback.Part(level: cardOutcome == "failed" ? "error" : cardOutcome == "not_read" ? "warning" : "success", text: rowText(cardOutcome))]
+        if result.notices == nil, ["failed", "unknown"].contains(result.coin?.status ?? "") {
+          parts.append(CardFeedback.Part(level: "warning", text: String(localized: "投币失败")))
+        }
+      }
+      state = .ready
+      showCardFeedback(CardFeedback(cardId: card.id, parts: parts))
+      if let dialog = notices.first(where: { $0.display == "dialog" }) { dialogNotice = dialog }
       await refreshVisit()
-      if ["failed", "unknown"].contains(result.coin?.status ?? "") { errorMessage = String(localized: "刷卡已完成，投币请求失败，请联系店员。") }
-      try? await Task.sleep(nanoseconds: 1_000_000_000)
-      if version == invocationVersion, state == .success { state = .ready }
     } catch {
       guard version == invocationVersion, self.ticket == ticket else { return }
-      let message = friendlyMessage(error)
-      if (error as? PrismAPIError)?.isSessionExpired == true { state = .expired } else { state = .ready }
+      if let notice = present(error, retry: { [weak self] in await self?.login(card: card) }), notice.display == "inline" {
+        state = .ready
+        showCardFeedback(CardFeedback(cardId: card.id, parts: [CardFeedback.Part(level: notice.level, text: notice.body)]))
+        return
+      }
+      if state != .expired { state = .ready }
       activeCardId = nil
-      errorMessage = state == .expired ? nil : message
-      if ["PLATFORM_BINDING_REQUIRED", "CHECKIN_REQUIRED"].contains((error as? PrismAPIError)?.code ?? "") { await refreshVisit() }
+      if ["PLATFORM_BINDING_REQUIRED", "CHECKIN_REQUIRED"].contains((error as? PrismAPIError)?.code ?? ""),
+         (error as? PrismAPIError)?.notice == nil { await refreshVisit() }
+    }
+  }
+
+  /// For a server that predates notices: the card result alone.
+  private func rowText(_ outcome: String) -> String {
+    switch outcome {
+    case "ok": return String(localized: "登录成功")
+    case "failed", "not_read": return String(localized: "登录失败")
+    default: return String(localized: "已刷卡")
+    }
+  }
+
+  private func showCardFeedback(_ feedback: CardFeedback) {
+    cardFeedback = feedback
+    cardFeedbackTask?.cancel()
+    cardFeedbackTask = Task { [weak self] in
+      try? await Task.sleep(nanoseconds: feedback.level == "success" ? 3_000_000_000 : 5_000_000_000)
+      guard !Task.isCancelled else { return }
+      self?.cardFeedback = nil
+    }
+  }
+
+  /// The one place problems reach the player. A server notice decides: run its flow,
+  /// interrupt with an alert, or hand it back to be shown inline. Without one (no
+  /// network, no location) the local message is shown as before.
+  @discardableResult
+  func present(_ error: Error, retry: (() async -> Void)? = nil) -> PrismNotice? {
+    guard let notice = (error as? PrismAPIError)?.notice ?? localNotice(error) else {
+      if (error as? PrismAPIError)?.isSessionExpired == true { expire() } else { errorMessage = friendlyMessage(error) }
+      return nil
+    }
+    switch notice.flow {
+    case "expired": expire()
+    case "refresh": Task { [weak self] in await self?.refreshVisit() }
+    case "signin":
+      state = .unauthenticated; user = nil; userId = ""; cards = []; deviceState = nil; cancelPowerRead()
+    default: break
+    }
+    if notice.display == "dialog" {
+      dialogRetry = retry
+      dialogNotice = notice
+    }
+    return notice
+  }
+
+  /// Problems found on the phone that are part of normal use, worded like the server's.
+  private func localNotice(_ error: Error) -> PrismNotice? {
+    func inline(_ code: String, _ level: String, _ body: String) -> PrismNotice {
+      PrismNotice(code: code, level: level, display: "inline", flow: "none", body: body)
+    }
+    if case LocationError.unavailable = error { return inline("LOCATION_UNAVAILABLE", "warning", String(localized: "定位获取失败，请重试")) }
+    if (error as? PrismAPIError)?.code == "DEVICE_RESULT_UNKNOWN" {
+      return inline("DEVICE_RESULT_UNKNOWN", "warning", String(localized: "网络异常，请重试"))
+    }
+    return nil
+  }
+
+  var canRetryNotice: Bool { dialogRetry != nil }
+
+  func dismissNotice(retrying: Bool) {
+    let retry = retrying ? dialogRetry : nil
+    dialogNotice = nil
+    dialogRetry = nil
+    if let retry { Task { await retry() } }
+  }
+
+  private func showInline(_ notice: PrismNotice, anchor: String) {
+    inlineNotice = notice
+    inlineNoticeAnchor = anchor
+    inlineNoticeTask?.cancel()
+    inlineNoticeTask = Task { [weak self] in
+      try? await Task.sleep(nanoseconds: notice.level == "success" ? 3_000_000_000 : 5_000_000_000)
+      guard !Task.isCancelled else { return }
+      self?.inlineNotice = nil
     }
   }
 
@@ -418,6 +529,7 @@ final class MachineLoginViewModel: ObservableObject {
       polling?.cancel()
       polling = nil
       cancelPowerRead()
+      closeLiveState()
     } else if ![.loadingMachine, .loadingShop, .loadingCards].contains(state) {
       StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: self.api)
       if deviceBusy { refreshPending = true; scheduleRefresh() }
@@ -602,8 +714,58 @@ final class MachineLoginViewModel: ObservableObject {
     powerGeneration = UUID(); powerPolling?.cancel(); powerPolling = nil
   }
 
+  /// Listen for this device's power and air-conditioner state while its page is ready.
+  private func openLiveState() {
+    guard liveSocket == nil, Date() >= liveRetryAt, sceneActive, deviceState?.gate == "ready", let ticket,
+          machine?.has("power") == true || machine?.has("climate") == true,
+          let socket = try? api.deviceLiveSocket(ticket: ticket) else { return }
+    liveSocket = socket
+    socket.resume()
+    receiveLive(socket, version: invocationVersion)
+  }
+
+  func closeLiveState() {
+    liveSocket?.cancel(with: .normalClosure, reason: nil)
+    liveSocket = nil
+    liveWatching = false
+  }
+
+  private func receiveLive(_ socket: URLSessionWebSocketTask, version: Int) {
+    socket.receive { [weak self] result in
+      Task { @MainActor [weak self] in
+        guard let self, self.liveSocket === socket, self.invocationVersion == version else { return }
+        guard case .success(let message) = result, case .string(let text) = message,
+              let data = text.data(using: .utf8) else {
+          // Closed or failed: fall back to polling, and wait before trying again.
+          self.liveSocket = nil
+          self.liveWatching = false
+          self.liveFailures += 1
+          self.liveRetryAt = Date().addingTimeInterval(min(60, 5 * pow(2, Double(self.liveFailures - 1))))
+          self.schedulePowerRead()
+          return
+        }
+        struct Frame: Decodable { let type: String; let watching: Bool?; let power: String?; let climate: PrismClimate? }
+        if let frame = try? JSONDecoder().decode(Frame.self, from: data) {
+          if frame.type == "hello" { self.liveFailures = 0 }
+          if frame.type == "hello" || frame.type == "watching" { self.liveWatching = frame.watching ?? false }
+          if self.liveWatching, let power = frame.power, power == "on" || power == "off" {
+            self.deviceState?.power = power
+            self.powerObserved = true
+            if power == "on" { self.waitingPower = false }
+          }
+          if self.liveWatching, let climate = frame.climate { self.deviceState?.climate = climate }
+          if self.liveWatching { self.cancelPowerRead() } else { self.schedulePowerRead() }
+        }
+        self.receiveLive(socket, version: version)
+      }
+    }
+  }
+
   /// HA is an independent observation; only the server's action precondition authorizes use.
   private func schedulePowerRead(force: Bool = false) {
+    openLiveState()
+    // Pushed state replaces polling while the device is watched and its power is known.
+    if liveWatching, ["on", "off"].contains(deviceState?.power ?? "") { return }
     guard machine?.has("power") == true, deviceState?.gate == "ready", let ticket,
           sceneActive, !deviceBusy, ![.locating, .sending].contains(state), powerPolling == nil,
           force || !powerObserved || waitingPower || deviceState?.power == "off" || deviceState?.power == "unknown" else { return }
@@ -638,7 +800,9 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  private func perform(_ action: () async throws -> Void) async {
+  /// Runs a player action. Its outcome is shown under the control named by `anchor`; the
+  /// page is read again afterwards in the background, so nothing waits on that read.
+  private func perform(_ anchor: String, _ action: () async throws -> Void) async {
     guard !deviceBusy, ![.locating, .sending].contains(state) else { return }
     let version = invocationVersion
     visitRevision += 1
@@ -655,29 +819,26 @@ final class MachineLoginViewModel: ObservableObject {
         } else { scheduleRefresh() }
       }
     }
+    if inlineNoticeAnchor == anchor { inlineNotice = nil }
     do { try await action() }
     catch {
-      if version == invocationVersion {
-        if (error as? PrismAPIError)?.isSessionExpired == true { expire() }
-        else if (error as? PrismAPIError)?.code == "COIN_ALREADY_USED" { deviceState?.coinUsed = true }
-        else { errorMessage = friendlyMessage(error) }
-      }
+      if version == invocationVersion, let notice = present(error), notice.display == "inline" { showInline(notice, anchor: anchor) }
     }
   }
 
-  func expire() { ticket = nil; state = .expired; activeCardId = nil; polling?.cancel(); cancelPowerRead(); errorMessage = nil }
+  func expire() { ticket = nil; state = .expired; activeCardId = nil; polling?.cancel(); cancelPowerRead(); closeLiveState(); errorMessage = nil }
   func pricingDate(_ date: String) async throws -> PrismShopResponse { try await api.request(shopPath() + "?date=" + date) }
 
   func bindPlatformIdentity() async {
     let api = self.api
-    await perform {
+    await perform("binding") {
       let version = invocationVersion
       if binding.flatMap({ prismParsedDate($0.expiresAt) }) ?? .distantPast <= Date() {
         let value: PrismBinding = try await api.request(shopPath("platform-binding"), body: [:])
         guard version == invocationVersion else { return }
         binding = value
       }
-      await refreshVisit()
+      await refreshVisit(silent: true)
     }
   }
 
@@ -691,10 +852,17 @@ final class MachineLoginViewModel: ObservableObject {
       UserDefaults.standard.set(legacy, forKey: storageKey)
       UserDefaults.standard.removeObject(forKey: legacyKey)
     }
-    let saved = UserDefaults.standard.data(forKey: storageKey)
-    if saved != nil && key.hasPrefix("device.") { throw PrismAPIError.api(code: "OPERATION_PENDING", message: "操作失败，请重新扫码后重试") }
-    var payload = saved == nil ? body : try JSONSerialization.jsonObject(with: saved!) as! [String: Any]
-    if saved == nil { payload["operationId"] = UUID().uuidString }
+    // An operation whose answer was lost is sent again under the same id: the server replays
+    // its result, so a press is never performed twice. A different request (another
+    // temperature, say) starts a new operation.
+    let saved = UserDefaults.standard.data(forKey: storageKey).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+    var payload: [String: Any]
+    if let saved, !key.hasPrefix("device.") || NSDictionary(dictionary: saved.filter { $0.key != "operationId" && $0.key != "location" }).isEqual(to: body) {
+      payload = saved
+    } else {
+      payload = body
+      payload["operationId"] = UUID().uuidString
+    }
     if requiresLocation {
       let sample = try await location.currentLocation()
       payload["location"] = ["lat": sample.latitude, "lng": sample.longitude, "accuracy": sample.accuracy]
@@ -710,49 +878,101 @@ final class MachineLoginViewModel: ObservableObject {
       if let error = error as? PrismAPIError, let status = error.status, status < 500, error.code != "OPERATION_PENDING", error.code != "DEVICE_RESULT_UNKNOWN" {
         UserDefaults.standard.removeObject(forKey: storageKey)
       }
-      if key.hasPrefix("device."), error is URLError { throw PrismAPIError.api(code: "DEVICE_RESULT_UNKNOWN", message: "设备连接失败，请重新扫码后重试") }
+      if key.hasPrefix("device."), error is URLError { throw PrismAPIError.api(code: "DEVICE_RESULT_UNKNOWN", message: "网络异常，请重试") }
       throw error
     }
   }
 
   func device(_ action: String, consent: Bool = false) async {
     guard let ticket else { return }
-    await perform {
+    let anchor = action == "door.open" ? "door" : action.hasPrefix("power.") ? "power" : action.hasPrefix("mahjong.") ? "mahjong" : action
+    await perform(anchor) {
       let data = try await operation("device.\(ticket).\(action)", path: "/api/v1/devices/session/actions", body: ["ticket": ticket, "action": action, "consent": consent], requiresLocation: action == "door.open" ? (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true : (machine?.shop.locationEnabled ?? machine?.shop.machineGeo) != false)
       if action == "door.open" { doorPassword = try JSONDecoder().decode(PrismDoorPassword.self, from: data) }
       else if action == "coin" { deviceState?.coinUsed = true }
-      else if action == "power.on" { waitingPower = true }
-      await refreshVisit()
+      else if action == "power.on" { waitForPower() }
+      struct Result: Decodable { let notices: [PrismNotice]? }
+      if let note = (try? JSONDecoder().decode(Result.self, from: data))?.notices?.first(where: { $0.display == "inline" }) {
+        showInline(note, anchor: anchor)
+      }
+      // Seats decide what the mahjong button offers, so they are read before it comes back.
+      if action.hasPrefix("mahjong.") { await refreshVisit(silent: true) } else { refreshPending = true }
+    }
+  }
+
+  /// The power button spins until the machine reports on; if it never does, the player
+  /// gets the button back with a word instead of a spinner that never ends.
+  private func waitForPower() {
+    waitingPower = true
+    powerWaitTask?.cancel()
+    powerWaitTask = Task { [weak self] in
+      try? await Task.sleep(nanoseconds: 30_000_000_000)
+      guard let self, !Task.isCancelled, self.waitingPower else { return }
+      self.waitingPower = false
+      self.showInline(PrismNotice(code: "POWER_NOT_SEEN", level: "warning", display: "inline", flow: "none",
+                                  body: String(localized: "未检测到开机，请重试")), anchor: "power")
     }
   }
   /// Send an air conditioner action. Its result carries the entity's state, which is shown
   /// right away; the refresh that follows reads it again.
   func climate(_ action: String, _ extra: [String: Any] = [:]) async {
     guard let ticket else { return }
-    await perform {
+    await perform("climate") {
       var body: [String: Any] = ["ticket": ticket, "action": action]
       body.merge(extra) { _, new in new }
       let data = try await operation("device.\(ticket).\(action)", path: "/api/v1/devices/session/actions", body: body, requiresLocation: (machine?.shop.locationEnabled ?? machine?.shop.machineGeo) != false)
       struct Result: Decodable { let climate: PrismClimate? }
       if let climate = (try? JSONDecoder().decode(Result.self, from: data))?.climate { deviceState?.climate = climate }
-      await refreshVisit()
+      refreshPending = true
     }
   }
+  /// Entry that also opens the door. Both come back in one response, so the entered view
+  /// and the code appear together; the code is only returned when entry succeeded.
+  func enterAndOpenDoor() async {
+    guard let ticket else { expire(); return }
+    let requiresLocation = (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true
+    await perform("door") {
+      let data = try await operation("entry.door.\(ticket)", path: shopPath("player/session/start"), body: ["ticket": ticket, "consent": true, "openDoor": true], requiresLocation: requiresLocation)
+      struct Result: Decodable {
+        struct Door: Decodable { let temporaryPassword: String?; let expiresAt: String?; let error: Failure?; let notice: PrismNotice? }
+        struct Failure: Decodable { let message: String? }
+        let door: Door?
+      }
+      var door = (try? JSONDecoder().decode(Result.self, from: data))?.door
+      deviceState?.gate = "ready"
+      if door == nil {
+        // A server that predates entry-with-door only entered: ask the lock as a second step.
+        let opened = try await operation("device.\(ticket).door.open", path: "/api/v1/devices/session/actions",
+                                         body: ["ticket": ticket, "action": "door.open", "consent": true], requiresLocation: requiresLocation)
+        door = try? JSONDecoder().decode(Result.Door.self, from: opened)
+      }
+      if let password = door?.temporaryPassword, let expiresAt = door?.expiresAt {
+        doorPassword = PrismDoorPassword(temporaryPassword: password, expiresAt: expiresAt)
+      } else if let notice = door?.notice, notice.display == "dialog" {
+        dialogNotice = notice
+      } else {
+        showInline(door?.notice ?? PrismNotice(code: "DOOR_CODE_FAILED", level: "warning", display: "inline", flow: "none",
+                                               body: String(localized: "开门密码获取失败，请重试")), anchor: "door")
+      }
+      await refreshVisit(silent: true)
+    }
+  }
+
   func enter() async {
     let requiresLocation = (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true
     // Shop-only mode has no ticket: the server accepts a ticket-free entry when the shop
     // opts in, still requiring consent and (when configured) an on-site fix.
     guard let ticket else {
       guard isShopOnly else { expire(); return }
-      await perform {
+      await perform("entry") {
         _ = try await operation("entry.remote", path: shopPath("player/remote-entry"), body: ["consent": true], requiresLocation: requiresLocation)
-        await refreshVisit()
+        await refreshVisit(silent: true)
       }
       return
     }
-    await perform {
+    await perform("entry") {
       _ = try await operation("entry.\(ticket)", path: shopPath("player/session/start"), body: ["ticket": ticket, "consent": true], requiresLocation: requiresLocation)
-      await refreshVisit()
+      await refreshVisit(silent: true)
     }
   }
   func loadAccountSection(_ section: Int) async throws {
@@ -791,7 +1011,7 @@ final class MachineLoginViewModel: ObservableObject {
 
   func previewCheckout() async {
     let api = self.api
-    await perform {
+    await perform("checkout") {
       let version = invocationVersion
       let value: PrismCheckout = try await api.request(shopPath("player/checkout/preview"), body: [:])
       guard version == invocationVersion else { return }
@@ -801,7 +1021,7 @@ final class MachineLoginViewModel: ObservableObject {
   func loadMoreHistory() async {
     guard let offset = historyNextOffset else { return }
     let version = invocationVersion
-    await perform {
+    await perform("history") {
       let records: PrismHistory = try await api.request(shopPath("player/checkouts/history?offset=\(offset)"))
       guard version == invocationVersion, !Task.isCancelled else { return }
       let existing = Set(history.map(\.id))
@@ -820,7 +1040,7 @@ final class MachineLoginViewModel: ObservableObject {
   func checkout() async {
     guard !checkoutCelebrating else { return }
     let version = invocationVersion
-    await perform {
+    await perform("checkout") {
       let data = try await operation("checkout", path: shopPath("player/checkout/confirm"), body: [:], requiresLocation: (visit?.shop.locationEnabled ?? visit?.shop.checkoutGeo) == true)
       // Keep the receipt before refreshing: the active session disappears on refresh, which
       // is exactly what used to drop the player straight back to the admission view.
@@ -841,18 +1061,23 @@ final class MachineLoginViewModel: ObservableObject {
     guard checkoutCelebrating, let shopCode else { return }
     checkoutCelebrating = false
     invocationVersion += 1
+    closeLiveState()
     polling?.cancel()
     currentInvocation = api.baseURL.appendingPathComponent("t").appendingPathComponent(shopCode)
     isShopOnly = true; machine = nil; ticket = nil; publicId = nil; deviceState = nil; cards = []
     state = .ready
     await refreshVisit()
   }
-  func redeem(_ code: String) async {
-    await perform {
+  /// Whether the code was accepted; a rejection is shown under the code field.
+  func redeem(_ code: String) async -> Bool {
+    var redeemed = false
+    await perform("redeem") {
       _ = try await operation("redeem", path: shopPath("player/redeem"), body: ["code": code], requiresLocation: false)
+      redeemed = true
       notice = String(localized: "兑换成功")
-      await refreshVisit()
+      await refreshVisit(silent: true)
     }
+    return redeemed
   }
 
   private func fail(_ error: Error) {

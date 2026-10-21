@@ -76,6 +76,8 @@ enum PersistentCookieCheck {
     var statusReads = 0, deviceReads = 0, identityReads = 0, bindingStatusReads = 0
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
+    var coinOperations: [String] = []
+    var legacyEntries = 0
     var checkoutIds: [String] = []
     var lastReceipt: [String: Any]?
     let testUser = UUID().uuidString
@@ -183,11 +185,19 @@ enum PersistentCookieCheck {
           return ok(["climate":climate])
         }
 
-        if body["action"] as? String == "coin" { coinCalls += 1; throw URLError(.networkConnectionLost) }
+        if body["action"] as? String == "coin" {
+          coinCalls += 1; coinOperations.append(body["operationId"] as? String ?? "")
+          throw URLError(.networkConnectionLost)
+        }
         precondition(body["consent"] as? Bool == true)
         precondition(body["location"] != nil)
         active = true
         return ok(["temporaryPassword":"12345678","expiresAt":"2999-01-01T00:00:00Z"])
+      // A server from before entry-with-door: it enters, ignores openDoor and sends no door.
+      case "/api/v1/shops/store/player/session/start":
+        precondition(body["openDoor"] as? Bool == true && body["consent"] as? Bool == true)
+        legacyEntries += 1
+        return ok(["session": ["id": "entry", "startedAt": "2026-09-12T00:00:00.123Z"]])
       case "/api/v1/machines/login": return ok(["ok":true,"coin":["status":"unknown"]])
       case "/api/v1/shops/store/player/checkout/preview":
         previewReads += 1
@@ -210,6 +220,8 @@ enum PersistentCookieCheck {
           "wallet":["balanceBefore":100,"balanceAfter":88],
         ]
         return ok(lastReceipt!)
+      // A server without live state: the page keeps polling.
+      case "/api/v1/devices/session/ws": return (404, ["error": ["code": "NOT_FOUND", "message": "Not found"]])
       default: preconditionFailure("Unexpected API path: \(path)")
       }
     }
@@ -238,13 +250,21 @@ enum PersistentCookieCheck {
     htmlOutage = false
     member = true; await model.refreshVisit()
     precondition(model.deviceState?.gate == "entry" && !model.needsPlatformBinding && model.binding == nil)
-    await model.device("door.open", consent:true)
-    precondition(model.doorPassword?.temporaryPassword == "12345678" && model.summary?.activeSession != nil)
+    await model.enterAndOpenDoor()
+    // The old server entered without a code; the code is fetched as a second step.
+    precondition(legacyEntries == 1 && model.doorPassword?.temporaryPassword == "12345678")
+    // The page is read again in the background after an action; nothing waits on it.
+    for _ in 0..<500 where model.summary?.activeSession == nil { try await Task.sleep(nanoseconds: 10_000_000) }
+    precondition(model.summary?.activeSession != nil)
     precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
     precondition(prismParsedDate(StoreVisitLiveActivityManager.shared.session!.startedAt) == milliseconds)
     precondition(model.canUseCards && model.deviceState?.power == "unknown")
-    await model.device("coin"); await model.device("coin"); precondition(coinCalls == 1)
-    precondition(model.state == .ready && model.ticket != nil && model.errorMessage != nil && sessionStarts == 1)
+    // A coin whose reply was lost is sent again under the same id when pressed again, so the
+    // server replays it rather than pressing twice; the player sees it beside the button.
+    await model.device("coin"); await model.device("coin")
+    precondition(coinCalls == 2 && coinOperations[0] == coinOperations[1] && !coinOperations[0].isEmpty)
+    precondition(model.state == .ready && model.ticket != nil && model.errorMessage == nil && sessionStarts == 1)
+    precondition(model.inlineNotice?.code == "DEVICE_RESULT_UNKNOWN" && model.inlineNoticeAnchor == "coin")
     await model.refreshVisit(); precondition(sessionStarts == 1)
     await model.start(shopCode: "store", publicId: "device")
     await model.login(card:model.cards[0]); precondition(model.state == .ready && model.ticket != nil)
@@ -275,7 +295,8 @@ enum PersistentCookieCheck {
     precondition(model.isShopOnly && model.machine == nil && model.ticket == nil)
     precondition(StoreVisitLiveActivityManager.shared.session == nil)
     precondition(StoreVisitLiveActivityManager.shared.finishedReceipt?.playerSettlement.total == 12)
-    precondition(LocationService.calls == 4)
+    // Entry and the door are separate requests on an old server, each with its own fix.
+    precondition(LocationService.calls == 5, "location calls: \(LocationService.calls)")
     billing = false; member = false; capabilities.removeValue(forKey: "door")
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.canUseCards && !model.showVisit && !model.showDeviceControls)

@@ -182,8 +182,36 @@ struct EmptyResponse: Decodable {
   let ok: Bool
 }
 
+/// What the server wants the player told, and how. `dialog` interrupts, `inline` belongs
+/// next to what they touched, `none` only runs `flow` (expired, refresh, signin).
+struct PrismNotice: Codable, Equatable {
+  let code: String
+  let level: String
+  let display: String
+  let flow: String
+  var title: String? = nil
+  let body: String
+  var actions: [Action] = []
+  struct Action: Codable, Equatable, Hashable { let kind: String; let label: String }
+}
+
+/// A swipe's outcome on the row of the card it came from: the card's part, then the coin's,
+/// each coloured by its own level.
+struct CardFeedback: Equatable {
+  let cardId: String
+  let parts: [Part]
+  struct Part: Equatable { let level: String; let text: String }
+  /// The card's own outcome decides the row's icon.
+  var level: String { parts.first?.level ?? "success" }
+}
+
 struct SwipeResult: Codable {
   let ok: Bool?
+  /// What the game did with the card on a direct-connect machine: `ok` (signed in),
+  /// `failed` (turned away), `read`, `not_read`; `sent` or absent through a relay.
+  var card: String? = nil
+  /// Inline ones go on the card row; a dialog only when the coin went wrong.
+  var notices: [PrismNotice]? = nil
   let coin: Coin?
   struct Coin: Codable { let status: String; let operationId: String? }
   var message: String {
@@ -196,7 +224,7 @@ struct SwipeResult: Codable {
     }
   }
 }
-struct PrismDeviceState: Decodable { let gate: String; var power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil; var climate: PrismClimate? = nil }
+struct PrismDeviceState: Decodable { var gate: String; var power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil; var climate: PrismClimate? = nil }
 
 /// A Home Assistant air conditioner as the device state reports it. The modes, fan speeds
 /// and temperature range are the entity's own, so the controls only offer those.
