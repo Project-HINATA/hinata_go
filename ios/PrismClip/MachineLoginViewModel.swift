@@ -938,8 +938,14 @@ final class MachineLoginViewModel: ObservableObject {
         struct Failure: Decodable { let message: String? }
         let door: Door?
       }
-      let door = (try? JSONDecoder().decode(Result.self, from: data))?.door
+      var door = (try? JSONDecoder().decode(Result.self, from: data))?.door
       deviceState?.gate = "ready"
+      if door == nil {
+        // A server that predates entry-with-door only entered: ask the lock as a second step.
+        let opened = try await operation("device.\(ticket).door.open", path: "/api/v1/devices/session/actions",
+                                         body: ["ticket": ticket, "action": "door.open", "consent": true], requiresLocation: requiresLocation)
+        door = try? JSONDecoder().decode(Result.Door.self, from: opened)
+      }
       if let password = door?.temporaryPassword, let expiresAt = door?.expiresAt {
         doorPassword = PrismDoorPassword(temporaryPassword: password, expiresAt: expiresAt)
       } else if let notice = door?.notice, notice.display == "dialog" {

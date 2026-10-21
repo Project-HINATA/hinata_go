@@ -77,6 +77,7 @@ enum PersistentCookieCheck {
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
     var coinOperations: [String] = []
+    var legacyEntries = 0
     var checkoutIds: [String] = []
     var lastReceipt: [String: Any]?
     let testUser = UUID().uuidString
@@ -192,6 +193,11 @@ enum PersistentCookieCheck {
         precondition(body["location"] != nil)
         active = true
         return ok(["temporaryPassword":"12345678","expiresAt":"2999-01-01T00:00:00Z"])
+      // A server from before entry-with-door: it enters, ignores openDoor and sends no door.
+      case "/api/v1/shops/store/player/session/start":
+        precondition(body["openDoor"] as? Bool == true && body["consent"] as? Bool == true)
+        legacyEntries += 1
+        return ok(["session": ["id": "entry", "startedAt": "2026-09-12T00:00:00.123Z"]])
       case "/api/v1/machines/login": return ok(["ok":true,"coin":["status":"unknown"]])
       case "/api/v1/shops/store/player/checkout/preview":
         previewReads += 1
@@ -244,8 +250,9 @@ enum PersistentCookieCheck {
     htmlOutage = false
     member = true; await model.refreshVisit()
     precondition(model.deviceState?.gate == "entry" && !model.needsPlatformBinding && model.binding == nil)
-    await model.device("door.open", consent:true)
-    precondition(model.doorPassword?.temporaryPassword == "12345678")
+    await model.enterAndOpenDoor()
+    // The old server entered without a code; the code is fetched as a second step.
+    precondition(legacyEntries == 1 && model.doorPassword?.temporaryPassword == "12345678")
     // The page is read again in the background after an action; nothing waits on it.
     for _ in 0..<500 where model.summary?.activeSession == nil { try await Task.sleep(nanoseconds: 10_000_000) }
     precondition(model.summary?.activeSession != nil)
@@ -288,7 +295,8 @@ enum PersistentCookieCheck {
     precondition(model.isShopOnly && model.machine == nil && model.ticket == nil)
     precondition(StoreVisitLiveActivityManager.shared.session == nil)
     precondition(StoreVisitLiveActivityManager.shared.finishedReceipt?.playerSettlement.total == 12)
-    precondition(LocationService.calls == 4)
+    // Entry and the door are separate requests on an old server, each with its own fix.
+    precondition(LocationService.calls == 5, "location calls: \(LocationService.calls)")
     billing = false; member = false; capabilities.removeValue(forKey: "door")
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.canUseCards && !model.showVisit && !model.showDeviceControls)
