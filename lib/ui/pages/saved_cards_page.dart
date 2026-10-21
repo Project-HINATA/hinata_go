@@ -35,7 +35,6 @@ class SavedCardsPage extends ConsumerWidget {
     String selectedFolderId,
     ValueSetter<String> onFolderCreated,
   ) {
-    if (selectedFolderId == 'history_folder') return;
     showDialog(
       context: context,
       builder: (context) => AddCardDialog(
@@ -172,7 +171,10 @@ class SavedCardsPage extends ConsumerWidget {
         icon: Icons.add,
         tooltip: l10n.addCard,
         nativeSymbol: 'plus',
-        visible: selectedFolderId != 'history_folder',
+        // The history folder holds scans, not cards the user files by hand.
+        // Its entries never mix in: adding always asks for a folder, and that
+        // picker leaves history out, so the action stays available here instead
+        // of the page hiding its whole toolbar.
         menuItems: [
           AppActionItem(
             id: 'addCard',

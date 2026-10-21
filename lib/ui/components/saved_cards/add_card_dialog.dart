@@ -29,7 +29,11 @@ class AddCardDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final nameController = useTextEditingController();
     final valueController = useTextEditingController();
-    final selectedFolderIdState = useState(initialFolderId);
+    // A card cannot be filed into history, so a page showing that folder
+    // still opens the dialog on a folder the user can pick.
+    final selectedFolderIdState = useState(
+      initialFolderId == 'history_folder' ? '' : initialFolderId,
+    );
 
     final name = useListenableSelector(
       nameController,
@@ -118,6 +122,11 @@ class AddCardDialog extends HookConsumerWidget {
         .watch(cardFoldersProvider)
         .where((f) => f.id != 'history_folder')
         .toList();
+    // Seeded before the dialog can be saved from, so a card always lands in a
+    // folder the picker offers.
+    if (selectedFolderIdState.value.isEmpty && folders.isNotEmpty) {
+      selectedFolderIdState.value = folders.first.id;
+    }
 
     return AlertDialog(
       title: Text(l10n.addAimeBanapass),
