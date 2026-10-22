@@ -323,9 +323,74 @@ final class NativeShellViewController: UITabBarController,
     actionButtonBottomToSafeArea?.constant = -16 - overlap
   }
 
-  /// UIKit must not select and hide the current Flutter host before Dart
-  /// navigates. Instead let Flutter own the selection; the Dart route change
-  /// will call nativeShell(setSelectedIndex:) to commit the UIKit tab.
+  /// A switch from the selected tab to the tab at [index].
+  private struct TabSwitch {
+    let index: Int
+    let forward: Bool
+    let outgoing: UINavigationController?
+  }
+
+  /// A tab the user tapped, between UIKit asking whether it may select it and
+  /// reporting that it did.
+  private var userSwitch: TabSwitch?
+
+  /// A tap on another tab switches right away, as in any system app: UIKit
+  /// plays its own selection, the bars change over, and Flutter is told once
+  /// the tab is selected. Its page transition follows a frame later, which
+  /// reads as one switch; making UIKit wait for that frame stalled the tab bar.
+  ///
+  /// A tap on the selected tab is Flutter's alone: UIKit would pop the
+  /// placeholder pages, while Flutter pops its branch and the bar follows.
+  private func shouldSelectTab(at index: Int) -> Bool {
+    guard !isApplyingFlutterSelection else { return true }
+    // iOS 18+ may ask through both the legacy and the UITab callback.
+    if let pending = userSwitch { return pending.index == index }
+    guard index != selectedIndex else {
+      requestFlutterSelection(index: index)
+      return false
+    }
+    userSwitch = beginSwitch(to: index)
+    // Should UIKit select without reporting it, finish once it has.
+    DispatchQueue.main.async { [weak self] in self?.finishUserSwitch() }
+    return true
+  }
+
+  private func finishUserSwitch() {
+    guard let pending = userSwitch else { return }
+    userSwitch = nil
+    guard selectedIndex == pending.index else { return }
+    finishSwitch(pending)
+    NSLog("[NativeShell] user selected tab index=%d", pending.index)
+    bridge.userSelected(index: pending.index)
+  }
+
+  /// Hands the bars over from the selected tab before UIKit leaves it.
+  private func beginSwitch(to index: Int) -> TabSwitch {
+    let outgoing = selectedViewController as? UINavigationController
+    let tabSwitch = TabSwitch(index: index, forward: index > selectedIndex, outgoing: outgoing)
+    topBar?.beginTabSwitch(from: outgoing, in: view, forward: tabSwitch.forward)
+    // Older UIKit needs Flutter installed before forwarding tab appearance.
+    if #unavailable(iOS 27.0), let nav = viewControllers?[index] as? UINavigationController {
+      attachFlutter(to: nav)
+    }
+    return tabSwitch
+  }
+
+  private func finishSwitch(_ tabSwitch: TabSwitch) {
+    guard let nav = viewControllers?[tabSwitch.index] as? UINavigationController else { return }
+    // iOS 27 needs the visible slot or it can leave Flutter's surface paused.
+    attachFlutter(to: nav)
+    // The tab left behind keeps only its root page. Coming back, Dart puts
+    // the page on top of its branch on that root (see the top bar's reset),
+    // which then never has to move Flutter into a page outside the window:
+    // done while the switch is under way, that left the surface paused.
+    if let outgoing = tabSwitch.outgoing, outgoing !== nav, outgoing.viewControllers.count > 1 {
+      outgoing.setViewControllers([outgoing.viewControllers[0]], animated: false)
+    }
+    topBar?.finishTabSwitch(to: nav, forward: tabSwitch.forward)
+  }
+
+  /// Asks Flutter to act on a tap on the selected tab.
   private func requestFlutterSelection(index: Int) {
     guard !isApplyingFlutterSelection else { return }
     // iOS 18+ may invoke both legacy and UITab selection callbacks.
@@ -372,9 +437,7 @@ final class NativeShellViewController: UITabBarController,
     guard let index = tabBarController.viewControllers?.firstIndex(
       where: { $0 === viewController }
     ) else { return false }
-    requestFlutterSelection(index: index)
-    // Keep Flutter visible in the old slot until Dart commits the new route.
-    return false
+    return shouldSelectTab(at: index)
   }
 
   @available(iOS 18.0, *)
@@ -387,8 +450,7 @@ final class NativeShellViewController: UITabBarController,
       NSLog("[NativeShell] Unknown UITab: %@", tab.identifier)
       return false
     }
-    requestFlutterSelection(index: index)
-    return false
+    return shouldSelectTab(at: index)
   }
 
   @available(iOS 18.0, *)
@@ -397,21 +459,16 @@ final class NativeShellViewController: UITabBarController,
     didSelectTab selectedTab: UITab,
     previousTab: UITab?
   ) {
-    // Fallback for systems that deliver selection despite shouldSelect=false.
-    guard !isApplyingFlutterSelection,
-      let index = indexForTab(selectedTab, in: tabBarController) else { return }
-    requestFlutterSelection(index: index)
+    guard !isApplyingFlutterSelection else { return }
+    finishUserSwitch()
   }
 
   func tabBarController(
     _ tabBarController: UITabBarController,
     didSelect viewController: UIViewController
   ) {
-    guard !isApplyingFlutterSelection,
-      let index = tabBarController.viewControllers?.firstIndex(
-        where: { $0 === viewController }
-      ) else { return }
-    requestFlutterSelection(index: index)
+    guard !isApplyingFlutterSelection else { return }
+    finishUserSwitch()
   }
 
   // MARK: - NativeShellBridgeDelegate
@@ -458,44 +515,23 @@ final class NativeShellViewController: UITabBarController,
 
   func nativeShell(setSelectedIndex index: Int) {
     guard let controllers = viewControllers, controllers.indices.contains(index) else { return }
-    // Dart-driven selection is the only place that commits the UIKit tab.
+    // Flutter changed tabs on its own (a swipe, a deep link), or brings UIKit
+    // back to the tab its router landed on.
     pendingUserSelectionIndex = nil
-    NSLog("[NativeShell] Dart committed selected index=%d", index)
-    // Flutter slides and fades the pages of a tab switch; the bars follow,
-    // instead of the system swapping them at once.
-    let switching = selectedIndex != index
-    let forward = index > selectedIndex
-    if switching {
-      topBar?.beginTabSwitch(
-        from: selectedViewController as? UINavigationController,
-        in: view,
-        forward: forward
-      )
-    }
-    defer {
-      if switching {
-        topBar?.finishTabSwitch(
-          to: controllers[index] as? UINavigationController,
-          forward: forward
-        )
-      }
-    }
-    // Older UIKit needs Flutter installed before forwarding tab appearance.
-    // Older UIKit needs Flutter installed before forwarding tab appearance.
-    if #unavailable(iOS 27.0) {
+    NSLog("[NativeShell] Dart selected index=%d", index)
+    guard selectedIndex != index else {
       if let nav = controllers[index] as? UINavigationController {
         attachFlutter(to: nav)
       }
+      return
     }
-    if selectedIndex != index {
-      isApplyingFlutterSelection = true
-      defer { isApplyingFlutterSelection = false }
-      selectedIndex = index
-    }
-    // iOS 27 needs the visible slot or it can leave Flutter's surface paused.
-    if let nav = controllers[index] as? UINavigationController {
-      attachFlutter(to: nav)
-    }
+    // Flutter slides and fades the pages of a tab switch; the bars follow,
+    // instead of the system swapping them at once.
+    let tabSwitch = beginSwitch(to: index)
+    isApplyingFlutterSelection = true
+    selectedIndex = index
+    isApplyingFlutterSelection = false
+    finishSwitch(tabSwitch)
   }
 
   func nativeShell(setSettingsBadge visible: Bool) {

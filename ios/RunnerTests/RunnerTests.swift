@@ -82,23 +82,28 @@ class RunnerTests: XCTestCase {
           image: nil, identifier: "test-\(index)") { _ in target }
       }
 
-      // UIKit should cancel selection, leaving Flutter active while Dart navigates.
-      let allowed = try XCTUnwrap(delegate.tabBarController?(shell, shouldSelectTab: tab))
-      XCTAssertFalse(allowed)
-      XCTAssertTrue(flutter.parent === pageHost(in: previouslySelected))
+      // UIKit selects the tapped tab itself; the shell hands the bars and the
+      // Flutter surface over once it has, then tells Dart.
+      XCTAssertTrue(try XCTUnwrap(delegate.tabBarController?(shell, shouldSelectTab: tab)))
       XCTAssertTrue(shell.selectedViewController === previouslySelected)
+
+      // Both callback variants can fire; they must not start a second switch.
+      XCTAssertTrue(try XCTUnwrap(delegate.tabBarController?(shell, shouldSelect: target)))
+      let count = forwardedSelections.count
+
+      shell.selectedIndex = index
+      delegate.tabBarController?(shell, didSelectTab: tab, previousTab: nil)
+      delegate.tabBarController?(shell, didSelect: target)
+      XCTAssertEqual(shell.selectedIndex, index)
+      XCTAssertTrue(flutter.parent === pageHost(in: target))
+      XCTAssertEqual(forwardedSelections.count, count + 1)
       XCTAssertEqual(forwardedSelections.last, index)
 
-      // Both callback variants can fire; they must not issue two commands.
-      let count = forwardedSelections.count
-      XCTAssertFalse(try XCTUnwrap(delegate.tabBarController?(shell, shouldSelect: target)))
-      XCTAssertEqual(forwardedSelections.count, count)
-
-      // Simulate Dart's MethodChannel callback once goBranch has changed route.
+      // Dart confirming the tab it was told about changes nothing.
       shell.nativeShell(setSelectedIndex: index)
       XCTAssertEqual(shell.selectedIndex, index)
       XCTAssertTrue(flutter.parent === pageHost(in: target))
-      XCTAssertEqual(forwardedSelections.count, count)
+      XCTAssertEqual(forwardedSelections.count, count + 1)
 
       shell.view.layoutIfNeeded()
       let rendering = XCTNSPredicateExpectation(
@@ -111,14 +116,14 @@ class RunnerTests: XCTestCase {
     let title = try XCTUnwrap(settings.tabBarItem.title)
     let missingControllerTab = UITab(title: title, image: nil, identifier: "test-nil-vc")
     XCTAssertNil(missingControllerTab.viewController)
-    let previous = try XCTUnwrap(shell.selectedViewController)
-    XCTAssertFalse(shell.tabBarController(shell, shouldSelectTab: missingControllerTab))
+    XCTAssertTrue(shell.tabBarController(shell, shouldSelectTab: missingControllerTab))
+    shell.selectedIndex = 2
+    shell.tabBarController(shell, didSelect: settings)
     XCTAssertEqual(forwardedSelections.last, 2)
-    XCTAssertTrue(flutter.parent === pageHost(in: previous))
-    shell.nativeShell(setSelectedIndex: 2)
     XCTAssertTrue(flutter.parent === pageHost(in: settings))
 
-    // Repeated taps on the active tab should still reset its branch in Flutter.
+    // Repeated taps on the active tab stay with UIKit's selection and reset
+    // the branch in Flutter instead.
     let count = forwardedSelections.count
     XCTAssertFalse(shell.tabBarController(shell, shouldSelect: settings))
     XCTAssertEqual(forwardedSelections.count, count + 1)
