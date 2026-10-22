@@ -268,6 +268,189 @@ class RunnerTests: XCTestCase {
   }
 
   @MainActor
+  func testNativeTopBarLargeTitleFollowsFlutterScroll() throws {
+    let (_, bar, nav) = try nativeTopBar()
+    defer { restoreTopBar(bar, nav) }
+    let root = try XCTUnwrap(nav.viewControllers.first)
+
+    // At the top Flutter draws the large title, so the bar shows none.
+    bar.reset(
+      ["token": 40, "title": "Settings", "largeTitle": true, "largeTitleHeight": 52,
+       "largeTitleCollapseOffset": 8],
+      scroll: ["offset": 0, "titleVisible": false])
+    XCTAssertNil(root.navigationItem.title)
+    // The bar animates the title view's own alpha, so the fade is on the view
+    // inside it.
+    let title = try XCTUnwrap(root.navigationItem.titleView?.subviews.first)
+    XCTAssertEqual(title.alpha, 0, accuracy: 0.001)
+
+    // The bar learns about Flutter's scroll from a proxy scroll view that
+    // never takes touches away from Flutter.
+    let proxy = try XCTUnwrap(root.contentScrollView(for: .top))
+    XCTAssertFalse(proxy.isUserInteractionEnabled)
+    XCTAssertFalse(proxy.scrollsToTop)
+    root.view.layoutIfNeeded()
+    XCTAssertEqual(
+      proxy.contentOffset.y, -proxy.adjustedContentInset.top, accuracy: 0.5)
+
+    // The bar stays clear until the top of the large title reaches it.
+    bar.scroll(token: 40, ["offset": 6, "titleVisible": false], animated: false)
+    XCTAssertEqual(
+      proxy.contentOffset.y, -proxy.adjustedContentInset.top, accuracy: 0.5)
+
+    bar.scroll(token: 40, ["offset": 30, "titleVisible": true], animated: false)
+    XCTAssertEqual(title.alpha, 1, accuracy: 0.001)
+    XCTAssertEqual(
+      proxy.contentOffset.y, -proxy.adjustedContentInset.top + 22, accuracy: 0.5)
+
+    // A stale page's report changes nothing.
+    bar.scroll(token: 39, ["offset": 0, "titleVisible": false], animated: false)
+    XCTAssertEqual(title.alpha, 1, accuracy: 0.001)
+
+    // A page without a large title always shows its title.
+    bar.reset(
+      ["token": 41, "title": "Scan History Logs"],
+      scroll: ["offset": 0, "titleVisible": true])
+    XCTAssertEqual(root.navigationItem.title, "Scan History Logs")
+    XCTAssertNil(root.navigationItem.titleView)
+  }
+
+  @MainActor
+  func testNativeTopBarChipStripFollowsTheTopPage() throws {
+    let (_, bar, nav) = try nativeTopBar()
+    defer { restoreTopBar(bar, nav) }
+
+    bar.reset(
+      ["token": 50, "title": "Saved Cards", "largeTitle": true, "largeTitleHeight": 52,
+       "chips": [["title": "Favorites", "selected": true],
+                 ["title": "History", "selected": false]]],
+      scroll: ["offset": 0, "titleVisible": false])
+    let strip = try XCTUnwrap(bar.chipStrip)
+    nav.view.layoutIfNeeded()
+    XCTAssertFalse(strip.isHidden)
+    XCTAssertEqual(strip.alpha, 1, accuracy: 0.001)
+    XCTAssertEqual(buttons(in: strip).map { $0.configuration?.title }, ["Favorites", "History"])
+    // Each chip is as wide as its own title, not stretched to a common width.
+    let chipButtons = buttons(in: strip)
+    let widths = chipButtons.map(\.frame.width)
+    let fitting = chipButtons.map { $0.intrinsicContentSize.width }
+    XCTAssertGreaterThan(widths[0], widths[1], "widths=\(widths) fitting=\(fitting)")
+    for (width, fit) in zip(widths, fitting) {
+      XCTAssertEqual(width, fit, accuracy: 1, "widths=\(widths) fitting=\(fitting)")
+    }
+    // Below the large title at the top, right under the bar once it collapsed.
+    let barBottom = nav.navigationBar.frame.maxY
+    XCTAssertEqual(strip.frame.minY, barBottom + 52, accuracy: 0.5)
+    bar.scroll(token: 50, ["offset": 200, "titleVisible": true], animated: false)
+    nav.view.layoutIfNeeded()
+    XCTAssertEqual(strip.frame.minY, barBottom, accuracy: 0.5)
+
+    // Covered by a Flutter modal it dims and stops taking touches.
+    bar.setCovered(true, animated: false)
+    XCTAssertEqual(strip.alpha, 0.45, accuracy: 0.001)
+    XCTAssertFalse(strip.isUserInteractionEnabled)
+    bar.setCovered(false, animated: false)
+
+    // A page without chips hides it.
+    bar.reset(["token": 51, "title": "Settings"], scroll: ["offset": 0, "titleVisible": true])
+    XCTAssertTrue(strip.isHidden)
+  }
+
+  @MainActor
+  func testTabSwitchHandsTheBarOverToTheIncomingPage() throws {
+    let (shell, bar, nav) = try nativeTopBar()
+    defer {
+      shell.nativeShell(setSelectedIndex: 0)
+      restoreTopBar(bar, nav)
+    }
+    bar.reset(["token": 60, "title": "Saved Cards", "actions": [["icon": "plus"]]])
+
+    shell.nativeShell(setSelectedIndex: 2)
+    let incoming = try XCTUnwrap(
+      (shell.selectedViewController as? UINavigationController)?.topViewController)
+    XCTAssertFalse(incoming === nav.topViewController)
+    // Until Dart installs the incoming page, its bar shows what the outgoing
+    // bar showed, so UIKit animates from there.
+    XCTAssertEqual(incoming.navigationItem.title, "Saved Cards")
+    XCTAssertEqual(incoming.navigationItem.rightBarButtonItems?.count, 1)
+
+    bar.reset(["token": 61, "title": "Settings"])
+    XCTAssertEqual(incoming.navigationItem.title, "Settings")
+    XCTAssertEqual(incoming.navigationItem.rightBarButtonItems?.count ?? 0, 0)
+  }
+
+  @MainActor
+  func testBarScrollsAwayBesideAVerticalBar() throws {
+    let (shell, bar, nav) = try nativeTopBar()
+    let original = bar.layout
+    defer {
+      bar.setLayout(original)
+      restoreTopBar(bar, nav)
+    }
+    _ = shell
+    var duo = NativeShellLayout()
+    duo.verticalTabs = true
+    bar.setLayout(duo)
+    bar.reset(["token": 70, "title": "Settings"], scroll: ["offset": 0])
+    nav.view.layoutIfNeeded()
+
+    // Scrolling down past the bar takes it away; the safe area stays.
+    let safeTop = nav.topViewController!.view.safeAreaInsets.top
+    for offset in [40, 120, 200, 300] {
+      bar.scroll(token: 70, ["offset": offset], animated: false)
+    }
+    XCTAssertNotEqual(nav.navigationBar.transform, .identity)
+    XCTAssertEqual(nav.topViewController!.view.safeAreaInsets.top, safeTop)
+
+    // Any scroll back up brings it back.
+    for offset in [290, 270] {
+      bar.scroll(token: 70, ["offset": offset], animated: false)
+    }
+    XCTAssertEqual(nav.navigationBar.transform, .identity)
+
+    // Elsewhere the bar never moves.
+    bar.setLayout(original)
+    for offset in [300, 400, 600] {
+      bar.scroll(token: 70, ["offset": offset], animated: false)
+    }
+    XCTAssertEqual(nav.navigationBar.transform, .identity)
+  }
+
+  func testShellLayoutFollowsSizeClasses() {
+    func layout(_ width: UIUserInterfaceSizeClass, _ height: UIUserInterfaceSizeClass)
+      -> NativeShellLayout
+    {
+      NativeShellLayout(
+        traits: UITraitCollection { traits in
+          traits.horizontalSizeClass = width
+          traits.verticalSizeClass = height
+        })
+    }
+    // iPhone portrait, or an iPad window narrow enough to put the tabs at the
+    // bottom: large titles under a visible bar.
+    let compact = layout(.compact, .regular)
+    XCTAssertTrue(compact.largeTitles)
+    XCTAssertFalse(compact.barHidden)
+    XCTAssertFalse(compact.tabsInBar)
+    // iPhone landscape: the app hides its bar.
+    for width in [UIUserInterfaceSizeClass.compact, .regular] {
+      let landscape = layout(width, .compact)
+      XCTAssertTrue(landscape.barHidden)
+      XCTAssertFalse(landscape.largeTitles)
+      XCTAssertFalse(landscape.tabsInBar)
+    }
+    // iPad: the tabs share the bar, no large titles.
+    let pad = layout(.regular, .regular)
+    XCTAssertTrue(pad.tabsInBar)
+    XCTAssertFalse(pad.largeTitles)
+    XCTAssertFalse(pad.barHidden)
+  }
+
+  private func buttons(in view: UIView) -> [UIButton] {
+    view.subviews.flatMap { ($0 as? UIButton).map { [$0] } ?? buttons(in: $0) }
+  }
+
+  @MainActor
   private func nativeTopBar() throws -> (
     NativeShellViewController, NativeTopBarCoordinator, UINavigationController
   ) {

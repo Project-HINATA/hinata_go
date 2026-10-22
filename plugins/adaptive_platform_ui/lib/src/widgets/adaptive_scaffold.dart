@@ -1,4 +1,3 @@
-import 'package:adaptive_platform_ui/src/widgets/ios26/ios26_native_tab_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,7 +8,6 @@ import 'adaptive_badge.dart';
 import 'adaptive_bottom_navigation_bar.dart';
 import 'adaptive_button.dart';
 import 'ios26/ios26_scaffold.dart';
-import '../toolbar/toolbar_chrome_scope.dart';
 import '../toolbar/toolbar_registry.dart';
 
 /// Navigation destination for bottom navigation
@@ -98,21 +96,6 @@ class AdaptiveNavigationDestination {
   final bool addSpacerAfter;
 }
 
-/// Tab bar minimize behavior for iOS 26+
-enum TabBarMinimizeBehavior {
-  /// Never minimize the tab bar
-  never,
-
-  /// Minimize when scrolling down
-  onScrollDown,
-
-  /// Minimize when scrolling up
-  onScrollUp,
-
-  /// Let the system decide
-  automatic,
-}
-
 /// An adaptive scaffold that renders platform-specific navigation
 class AdaptiveScaffold extends StatefulWidget {
   const AdaptiveScaffold({
@@ -122,8 +105,6 @@ class AdaptiveScaffold extends StatefulWidget {
     this.body,
     this.resizeToAvoidBottomInset,
     this.floatingActionButton,
-    this.minimizeBehavior = TabBarMinimizeBehavior.automatic,
-    this.enableBlur = true,
     this.enableToolbarGradient = true,
     this.extendBodyBehindAppBar = false,
     this.extendBody = false,
@@ -138,7 +119,6 @@ class AdaptiveScaffold extends StatefulWidget {
     this.scaffoldKey,
     this.useHeroBackButton = true,
     this.useFixedToolbar = true,
-    this.tabBarHidden = false,
   });
 
   /// App bar configuration
@@ -161,14 +141,6 @@ class AdaptiveScaffold extends StatefulWidget {
 
   /// Floating action button (Material only)
   final Widget? floatingActionButton;
-
-  /// Tab bar minimize behavior (iOS 26+ only)
-  /// Controls how the tab bar minimizes when scrolling
-  final TabBarMinimizeBehavior minimizeBehavior;
-
-  /// Enable Liquid Glass blur effect behind tab bar (iOS 26+ only)
-  /// When enabled, content behind the tab bar will be blurred
-  final bool enableBlur;
 
   /// @deprecated No longer used. iOS 26+ uses native scroll edge effects.
   /// This parameter is kept for backwards compatibility but has no effect.
@@ -239,22 +211,19 @@ class AdaptiveScaffold extends StatefulWidget {
   /// that is not a page) do this automatically.
   final bool useFixedToolbar;
 
-  /// Whether to hide the native tab bar (iOS 26+ only).
-  /// Use this to hide the tab bar when showing modal bottom sheets
-  /// to prevent native platform views from bleeding through.
-  final bool tabBarHidden;
-
   @override
   State<AdaptiveScaffold> createState() => _AdaptiveScaffoldState();
 }
 
 class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
-  final GlobalKey<_MinimizableTabBarState> _tabBarKey =
-      GlobalKey<_MinimizableTabBarState>();
-
   /// The fixed toolbar chrome this page publishes its app bar to, if an
   /// [AdaptiveToolbarHost] is installed above the navigator.
   ToolbarRegistry? _toolbarRegistry;
+
+  /// How far the body's main vertical scroll view is scrolled. Published with
+  /// the toolbar entry so the native bar can follow it, and drives the large
+  /// title.
+  final ValueNotifier<double> _scrollOffset = ValueNotifier<double>(0);
 
   @override
   void didChangeDependencies() {
@@ -267,7 +236,6 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.appBar != widget.appBar ||
         oldWidget.useFixedToolbar != widget.useFixedToolbar ||
-        oldWidget.tabBarHidden != widget.tabBarHidden ||
         oldWidget.bottomNavigationBar != widget.bottomNavigationBar) {
       _syncToolbarEntry();
     }
@@ -276,6 +244,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
   @override
   void dispose() {
     _toolbarRegistry?.remove(this);
+    _scrollOffset.dispose();
     super.dispose();
   }
 
@@ -301,23 +270,17 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
     return route == null || route is PageRoute;
   }
 
-  /// The tab bar the fixed chrome may draw in the iPhone Duo trailing bar:
-  /// only the native one. A custom `CupertinoTabBar` or bottom widget
-  /// (`useNativeBottomBar: false`) is the app's own and stays where it is.
-  AdaptiveBottomNavigationBar? get _tabBarForChrome {
+  /// The tab bar this scaffold shows, which makes it the root of a tab layout
+  /// for the toolbar registry (no automatic back button).
+  AdaptiveBottomNavigationBar? get _tabBar {
     final bar = widget.bottomNavigationBar;
-    if (bar == null || widget.tabBarHidden || !bar.useNativeBottomBar) {
-      return null;
-    }
-    if (bar.items == null || bar.selectedIndex == null || bar.onTap == null) {
+    if (bar?.items == null ||
+        bar?.selectedIndex == null ||
+        bar?.onTap == null) {
       return null;
     }
     return bar;
   }
-
-  bool _tabsInTrailingBar(BuildContext context) =>
-      _usesFixedToolbar(context) &&
-      (ToolbarChromeScope.maybeOf(context)?.hostsDuoControls ?? false);
 
   void _syncToolbarEntry() {
     final registry = ToolbarRegistry.maybeOf(context);
@@ -348,12 +311,13 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
         navigator: navigator,
         enclosingRoutes: enclosingRoutes,
         titleOverlay: _buildIOS26TitleOverlay(),
+        scrollOffset: _scrollOffset,
         // `TickerMode.valuesOf` replaces this, but only exists in Flutter
         // releases after 3.35; `of` works on every supported version.
         // ignore: deprecated_member_use
         visible: TickerMode.of(context) && Visibility.of(context),
         shownInPlace: Visibility.of(context),
-        tabBar: _tabBarForChrome,
+        tabBar: _tabBar,
       ),
     );
   }
@@ -411,6 +375,16 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
     );
   }
 
+  /// The large title the iOS 26 scaffold draws above the content, when the
+  /// app bar asks for one: the custom title widget, or else the title text.
+  Widget? _buildLargeTitle() {
+    final appBar = widget.appBar;
+    if (appBar == null || !appBar.largeTitle) return null;
+    if (appBar.titleWidget != null) return appBar.titleWidget;
+    final title = appBar.title;
+    return title == null ? null : Text(title);
+  }
+
   Widget _wrapWithDrawerIfNeeded(Widget child) {
     if (widget.drawer == null && widget.endDrawer == null) {
       return child;
@@ -448,52 +422,43 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
 
   Widget _buildPage(BuildContext context) {
     final useNativeToolbar = widget.appBar?.useNativeToolbar ?? false;
-    final useNativeBottomBar =
-        widget.bottomNavigationBar?.useNativeBottomBar ?? true;
 
-    // iOS 26+ with native toolbar enabled - Use IOS26Scaffold
-    if (PlatformInfo.isIOS26OrHigher() && useNativeToolbar) {
-      // The body is the app's own tab switcher (an `IndexedStack`, a
-      // `StatefulNavigationShell`, `pages[index]`...), so it is mounted
-      // exactly once. Earlier versions built one copy per tab, which ran
-      // every page's `initState` once per destination (#76).
-      List<Widget> childrenList = [widget.body ?? const SizedBox.shrink()];
-
-      // Wrap children with Stack if floatingActionButton is provided
+    // iOS 26+ with native toolbar enabled - Use IOS26Scaffold. A page with
+    // tabs takes the Cupertino path below: on iOS 26 the tab bar belongs to a
+    // native UITabBarController above Flutter.
+    if (PlatformInfo.isIOS26OrHigher() && useNativeToolbar && _tabBar == null) {
+      Widget body = _ScrollOffsetReporter(
+        offset: _scrollOffset,
+        child: widget.body ?? const SizedBox.shrink(),
+      );
       if (widget.floatingActionButton != null) {
-        final hasBottomNav =
-            widget.bottomNavigationBar?.items != null &&
-            widget.bottomNavigationBar!.items!.isNotEmpty;
-        childrenList = childrenList.map((child) {
-          return Stack(
-            children: [
-              child,
-              Positioned(
-                right: 16,
-                bottom: hasBottomNav ? 96 : 96, // Add space for native tab bar
-                child: widget.floatingActionButton!,
-              ),
-            ],
-          );
-        }).toList();
+        body = Stack(
+          children: [
+            body,
+            Positioned(
+              right: 16,
+              bottom: 96,
+              child: widget.floatingActionButton!,
+            ),
+          ],
+        );
       }
 
       return _wrapWithDrawerIfNeeded(
         IOS26Scaffold(
-          bottomNavigationBar: widget.bottomNavigationBar,
           title: widget.appBar?.title,
           actions: widget.appBar?.actions,
           leading: widget.appBar?.leading,
           tintColor: widget.appBar?.tintColor,
           titleWidget: _buildIOS26TitleOverlay(),
-          minimizeBehavior: widget.minimizeBehavior,
-          enableBlur: widget.enableBlur,
           backgroundColor: widget.backgroundColor,
           useHeroBackButton: widget.useHeroBackButton,
           useFixedToolbar: _usesFixedToolbar(context),
-          tabBarHidden: widget.tabBarHidden,
           resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-          children: childrenList,
+          largeTitle: _buildLargeTitle(),
+          scrollOffset: _scrollOffset,
+          accessory: widget.appBar?.chips?.isNotEmpty ?? false,
+          body: body,
         ),
       );
     }
@@ -561,26 +526,9 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
           );
         }
 
-        // Determine which tab bar to use based on platform and configuration
+        // Determine which tab bar to use
         Widget? tabBar;
-
-        // iOS 26+ with useNativeBottomBar=true -> Use native tab bar
-        if (PlatformInfo.isIOS26OrHigher() && useNativeBottomBar) {
-          tabBar = _MinimizableTabBar(
-            key: _tabBarKey,
-            selectedIndex: widget.bottomNavigationBar!.selectedIndex!,
-            onTap: widget.bottomNavigationBar!.onTap!,
-            destinations: widget.bottomNavigationBar!.items!,
-            minimizeBehavior: widget.minimizeBehavior,
-            enableBlur: widget.enableBlur,
-            selectedItemColor: widget.bottomNavigationBar!.selectedItemColor,
-            unselectedItemColor:
-                widget.bottomNavigationBar!.unselectedItemColor,
-            hidden: widget.tabBarHidden,
-          );
-        }
-        // iOS 26+ with useNativeBottomBar=false OR iOS <26
-        else {
+        {
           // Priority 1: Custom CupertinoTabBar (if provided)
           if (widget.bottomNavigationBar!.cupertinoTabBar != null) {
             tabBar = widget.bottomNavigationBar!.cupertinoTabBar;
@@ -624,38 +572,8 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
         // Wrap body with Stack if floatingActionButton is provided
         Widget bodyWidget = Column(
           children: [
-            Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  // Forward scroll notifications to _MinimizableTabBar state (iOS 26+ native only)
-                  if (PlatformInfo.isIOS26OrHigher() && useNativeBottomBar) {
-                    _tabBarKey.currentState?.handleScrollNotification(
-                      notification,
-                    );
-                  }
-                  return false; // Let it bubble up
-                },
-                child: PlatformInfo.isIOS26OrHigher() && useNativeBottomBar
-                    ? Stack(
-                        children: [
-                          widget.body ?? const SizedBox.shrink(),
-                          // On iPhone Duo the fixed chrome shows the tabs at
-                          // the bottom of the trailing bar instead, so the
-                          // bottom bar is not built at all.
-                          if (!_tabsInTrailingBar(context))
-                            Positioned(
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              child: tabBar!,
-                            ),
-                        ],
-                      )
-                    : widget.body ?? const SizedBox.shrink(),
-              ),
-            ),
-            // Show tab bar at bottom for non-native cases
-            if (!PlatformInfo.isIOS26OrHigher() || !useNativeBottomBar) tabBar!,
+            Expanded(child: widget.body ?? const SizedBox.shrink()),
+            tabBar!,
           ],
         );
 
@@ -665,9 +583,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
               bodyWidget,
               Positioned(
                 right: 16,
-                bottom: (!PlatformInfo.isIOS26OrHigher() || !useNativeBottomBar)
-                    ? 96
-                    : 16, // Add space for tab bar if not native
+                bottom: 96, // Clear of the tab bar
                 child: widget.floatingActionButton!,
               ),
             ],
@@ -688,18 +604,9 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
           child: bodyWidget,
         );
 
-        // When the native tab bar is rendered via Stack + Positioned(bottom:0),
-        // disable resizeToAvoidBottomInset so the keyboard covers the tab bar
-        // instead of pushing it above.
-        final hasNativeTabBar =
-            PlatformInfo.isIOS26OrHigher() &&
-            useNativeBottomBar &&
-            tabBar != null;
-
         return _wrapWithDrawerIfNeeded(
           CupertinoPageScaffold(
-            resizeToAvoidBottomInset:
-                widget.resizeToAvoidBottomInset ?? !hasNativeTabBar,
+            resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset ?? true,
             navigationBar: navigationBar,
             child: bodyWidget,
           ),
@@ -1058,144 +965,6 @@ class _NavigationImageIcon extends StatelessWidget {
 
 /// Minimizable tab bar wrapper for iOS 26+ (used when useNativeToolbar: false)
 /// Just handles animation, scroll notification is handled by parent
-class _MinimizableTabBar extends StatefulWidget {
-  const _MinimizableTabBar({
-    super.key,
-    required this.selectedIndex,
-    required this.onTap,
-    required this.destinations,
-    required this.minimizeBehavior,
-    required this.enableBlur,
-    this.selectedItemColor,
-    this.unselectedItemColor,
-    this.hidden = false,
-  });
-
-  final int selectedIndex;
-  final ValueChanged<int> onTap;
-  final List<AdaptiveNavigationDestination> destinations;
-  final TabBarMinimizeBehavior minimizeBehavior;
-  final bool enableBlur;
-  final Color? selectedItemColor;
-  final Color? unselectedItemColor;
-  final bool hidden;
-
-  @override
-  State<_MinimizableTabBar> createState() => _MinimizableTabBarState();
-}
-
-class _MinimizableTabBarState extends State<_MinimizableTabBar>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  bool _isMinimized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  // Called from parent's NotificationListener
-  void handleScrollNotification(ScrollNotification notification) {
-    if (widget.minimizeBehavior == TabBarMinimizeBehavior.never) {
-      return;
-    }
-
-    if (notification is ScrollUpdateNotification) {
-      final delta = notification.scrollDelta ?? 0;
-      final metrics = notification.metrics;
-
-      // Check if we're in overscroll territory (pull-to-refresh or bottom bounce)
-      // When pixels < minScrollExtent, user is pulling down beyond top (overscroll)
-      // When pixels > maxScrollExtent, user is pulling up beyond bottom (overscroll)
-      // Add tolerance (50px) to make it more stable - ignore scroll events near boundaries
-      const overscrollTolerance = 50.0;
-      final isOverscrolling =
-          metrics.pixels < (metrics.minScrollExtent + overscrollTolerance) ||
-          metrics.pixels > (metrics.maxScrollExtent - overscrollTolerance);
-
-      // Ignore scroll events during overscroll to prevent tab bar animation during bounce
-      if (isOverscrolling) {
-        return;
-      }
-
-      if (widget.minimizeBehavior == TabBarMinimizeBehavior.onScrollDown ||
-          widget.minimizeBehavior == TabBarMinimizeBehavior.automatic) {
-        // Minimize when scrolling down (positive delta)
-        if (delta > 0 && !_isMinimized) {
-          _minimizeTabBar();
-        } else if (delta < 0 && _isMinimized) {
-          _expandTabBar();
-        }
-      } else if (widget.minimizeBehavior == TabBarMinimizeBehavior.onScrollUp) {
-        // Minimize when scrolling up (negative delta)
-        if (delta < 0 && !_isMinimized) {
-          _minimizeTabBar();
-        } else if (delta > 0 && _isMinimized) {
-          _expandTabBar();
-        }
-      }
-    }
-  }
-
-  void _minimizeTabBar() {
-    if (!_isMinimized && mounted) {
-      _isMinimized = true;
-      _controller.forward();
-    }
-  }
-
-  void _expandTabBar() {
-    if (_isMinimized && mounted) {
-      _isMinimized = false;
-      _controller.reverse();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        // Calculate minimized state
-        // value: 0.0 = expanded (full size), 1.0 = minimized (70% size, 50% opacity)
-        final minimizeProgress = _animation.value;
-        final scale = 1.0 - (minimizeProgress * 0.3); // 1.0 → 0.7
-        final opacity = 1.0 - (minimizeProgress * 0.5); // 1.0 → 0.5
-
-        return Transform.scale(
-          scale: scale,
-          alignment: Alignment.bottomCenter,
-          child: Opacity(opacity: opacity, child: child),
-        );
-      },
-      child: IOS26NativeTabBar(
-        destinations: widget.destinations,
-        selectedIndex: widget.selectedIndex,
-        onTap: widget.onTap,
-        tint:
-            widget.selectedItemColor ?? CupertinoTheme.of(context).primaryColor,
-        unselectedItemTint: widget.unselectedItemColor,
-        minimizeBehavior: widget.minimizeBehavior,
-        hidden: widget.hidden,
-      ),
-    );
-  }
-}
-
-/// Animated back button for iOS 26+
-/// Fades out when pressed
 class _AnimatedBackButton extends StatefulWidget {
   const _AnimatedBackButton({required this.onPressed});
 
@@ -1259,6 +1028,38 @@ class _AnimatedBackButtonState extends State<_AnimatedBackButton>
           onPressed: _handlePressed,
           sfSymbol: SFSymbol("chevron.left", size: 20),
         ),
+      ),
+    );
+  }
+}
+
+/// Records the scroll offset of the page's main scroll view: the nearest
+/// vertical one below. Scroll views nested inside it and horizontal ones (a
+/// strip of chips, a pager) are not the page's scroll and are ignored.
+class _ScrollOffsetReporter extends StatelessWidget {
+  const _ScrollOffsetReporter({required this.offset, required this.child});
+
+  final ValueNotifier<double> offset;
+  final Widget child;
+
+  bool _record(ScrollMetrics metrics, int depth) {
+    if (depth == 0 && metrics.axis == Axis.vertical) {
+      offset.value = metrics.pixels;
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Metrics notifications cover offsets that change without a scroll, such
+    // as content shrinking under a scrolled list.
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (notification) =>
+          _record(notification.metrics, notification.depth),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) =>
+            _record(notification.metrics, notification.depth),
+        child: child,
       ),
     );
   }

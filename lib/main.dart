@@ -68,30 +68,25 @@ class MyApp extends ConsumerWidget {
         return MaterialApp.router(
           builder: (context, child) {
             L10nHolder.update(AppLocalizations.of(context));
-            return _SystemUiController(
-              // Keeps one Liquid Glass toolbar above the navigator on iOS 26+,
-              // and lays it out in the iPhone Duo vertical bar. The toast layer
-              // sits above it, so in-app notices are never tucked behind the bar.
-              child: Overlay(
-                key: notificationService.overlayKey,
-                initialEntries: [
-                  OverlayEntry(
-                    builder: (_) => AdaptiveToolbarHost(
-                      // Escape hatch while the UIKit bar is evaluated: run with
-                      // --dart-define=HINATA_NATIVE_TOP_BAR=false to fall back
-                      // to the Flutter-hosted toolbar.
-                      nativeTopBar:
-                          hostMode == AppHostMode.nativeIOS &&
-                          const bool.fromEnvironment(
-                            'HINATA_NATIVE_TOP_BAR',
-                            defaultValue: true,
-                          ),
-                      child: NavigationBarAxisScope(
-                        child: child ?? const SizedBox.shrink(),
+            return _LocaleRefresh(
+              child: _SystemUiController(
+                // Keeps one Liquid Glass toolbar above the navigator on iOS 26+,
+                // and lays it out in the iPhone Duo vertical bar. The toast layer
+                // sits above it, so in-app notices are never tucked behind the bar.
+                child: Overlay(
+                  key: notificationService.overlayKey,
+                  initialEntries: [
+                    OverlayEntry(
+                      builder: (_) => AdaptiveToolbarHost(
+                        // The native shell's UIKit bars own the top bar.
+                        nativeTopBar: hostMode == AppHostMode.nativeIOS,
+                        child: NavigationBarAxisScope(
+                          child: child ?? const SizedBox.shrink(),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -113,6 +108,50 @@ class MyApp extends ConsumerWidget {
       },
     );
   }
+}
+
+/// Rebuilds the whole app once the language changes.
+///
+/// Pages read their strings from the global [l10n], which no widget depends
+/// on, so pages that do not rebuild by themselves (tabs kept alive off screen,
+/// pages under a pushed route) would keep the previous language, and so would
+/// the native bars they publish their titles to.
+class _LocaleRefresh extends StatefulWidget {
+  const _LocaleRefresh({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_LocaleRefresh> createState() => _LocaleRefreshState();
+}
+
+class _LocaleRefreshState extends State<_LocaleRefresh> {
+  Locale? _locale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_locale != null && locale != _locale) {
+      // Marked after this frame: dirtying elements mid-build is not allowed.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _rebuildDescendants();
+      });
+    }
+    _locale = locale;
+  }
+
+  void _rebuildDescendants() {
+    void rebuild(Element element) {
+      element.markNeedsBuild();
+      element.visitChildren(rebuild);
+    }
+
+    (context as Element).visitChildren(rebuild);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _SystemUiController extends StatefulWidget {

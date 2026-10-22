@@ -24,8 +24,11 @@ class SettingsPage extends HookConsumerWidget {
 
     return AppScaffold(
       title: l10n.settings,
+      largeTitle: true,
       body: SafeArea(
-        top: layout.isLandscape,
+        // Under the native iOS bar the list pads itself and scrolls beneath
+        // the bar's glass.
+        top: layout.isLandscape && !useCupertinoChrome,
         bottom: false,
         child: Center(
           child: ConstrainedBox(

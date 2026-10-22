@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -159,12 +160,36 @@ class SavedCardsPage extends ConsumerWidget {
       ref.read(selectedCardFolderIdProvider.notifier).select(id);
     }
 
+    // Beside the folder rail, which already lists the folders, there are no
+    // chips.
+    final wide = ref.watch(cardsWideLayoutProvider);
+
     return AppScaffold(
       title: l10n.savedCards,
+      largeTitle: true,
+      chips: wide
+          ? null
+          : [
+              for (final folder in folders)
+                AdaptiveToolbarChip(
+                  label: folderDisplayName(folder.id, folder.name),
+                  selected: folder.id == selectedFolderId,
+                  onPressed: () => selectFolder(folder.id),
+                  onLongPress: () =>
+                      _onDeleteFolder(context, ref, folder, selectFolder),
+                ),
+            ],
       body: SafeArea(
-        top: layout.isLandscape || useCupertinoChrome,
-        bottom: useCupertinoChrome,
-        child: _buildBody(context, ref, folders, selectedFolderId, folderCards),
+        top: false,
+        bottom: false,
+        child: _buildBody(
+          context,
+          ref,
+          layout,
+          folders,
+          selectedFolderId,
+          folderCards,
+        ),
       ),
       primaryAction: AppActionConfig(
         id: 'cardsAction',
@@ -207,6 +232,7 @@ class SavedCardsPage extends ConsumerWidget {
   Widget _buildBody(
     BuildContext context,
     WidgetRef ref,
+    AppLayoutInfo layout,
     List<CardFolder> folders,
     String selectedFolderId,
     List<SavedCard> folderCards,
@@ -224,25 +250,45 @@ class SavedCardsPage extends ConsumerWidget {
             ref.read(cardsWideLayoutProvider.notifier).setWide(wide);
           });
         }
-        return wide
-            ? _SavedCardsWideBody(
-                folders: folders,
-                selectedFolderId: selectedFolderId,
-                onFolderSelected: selectFolder,
-                onFolderLongPress: (folder) =>
-                    _onDeleteFolder(context, ref, folder, selectFolder),
-                cardsView: _buildCardsView(context, ref, folderCards),
-              )
-            : _SavedCardsCompactBody(
-                folderStrip: _buildFolderStrip(
-                  context,
-                  ref,
-                  folders,
-                  selectedFolderId,
-                  selectFolder,
+        final folderStrip = _buildFolderStrip(
+          context,
+          ref,
+          folders,
+          selectedFolderId,
+          selectFolder,
+        );
+        if (!wide && TopBarAccessoryScope.isNative(context)) {
+          // The bar shows the folders as glass chips; the cards scroll
+          // underneath them, the large title and the bar.
+          return _SavedCardsScrollBody(
+            cards: _buildCardsSliver(context, ref, folderCards),
+          );
+        }
+        // Under the native bar the two columns of the wide layout pad
+        // themselves and scroll beneath its glass; the compact one keeps its
+        // folder strip below the bar.
+        final underNativeBar =
+            wide &&
+            (ToolbarChromeScope.maybeOf(context)?.nativeTopBarOwned ?? false);
+        return SafeArea(
+          top: !underNativeBar && (layout.isLandscape || useCupertinoChrome),
+          bottom: useCupertinoChrome,
+          left: false,
+          right: false,
+          child: wide
+              ? _SavedCardsWideBody(
+                  folders: folders,
+                  selectedFolderId: selectedFolderId,
+                  onFolderSelected: selectFolder,
+                  onFolderLongPress: (folder) =>
+                      _onDeleteFolder(context, ref, folder, selectFolder),
+                  cardsView: _buildCardsView(context, ref, folderCards),
+                )
+              : _SavedCardsCompactBody(
+                  folderStrip: folderStrip,
+                  cardsView: _buildCardsView(context, ref, folderCards),
                 ),
-                cardsView: _buildCardsView(context, ref, folderCards),
-              );
+        );
       },
     );
   }
@@ -279,6 +325,48 @@ class SavedCardsPage extends ConsumerWidget {
     return Center(child: Text(l10n.noCardsInFolder));
   }
 
+  // Use MaxCrossAxisExtent for true dynamic columns based on width
+  static const double _maxCardItemWidth = 380.0;
+  static const _cardsGridDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
+    maxCrossAxisExtent: _maxCardItemWidth,
+    childAspectRatio: 5.0,
+    mainAxisSpacing: 0,
+    crossAxisSpacing: 0,
+  );
+
+  static bool _cardsUseGrid(double width) => width > _maxCardItemWidth * 1.2;
+
+  /// The folder's cards as slivers, for the page that scrolls as a whole.
+  Widget _buildCardsSliver(
+    BuildContext context,
+    WidgetRef ref,
+    List<SavedCard> folderCards,
+  ) {
+    if (folderCards.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _buildEmptyState(context),
+      );
+    }
+    Widget buildItem(BuildContext context, int index) => CardItem(
+      card: folderCards[index],
+      onSend: (card) => _sendCardData(context, ref, card),
+    );
+    return SliverLayoutBuilder(
+      builder: (context, constraints) =>
+          _cardsUseGrid(constraints.crossAxisExtent)
+          ? SliverGrid.builder(
+              gridDelegate: _cardsGridDelegate,
+              itemCount: folderCards.length,
+              itemBuilder: buildItem,
+            )
+          : SliverList.builder(
+              itemCount: folderCards.length,
+              itemBuilder: buildItem,
+            ),
+    );
+  }
+
   Widget _buildCardsList(
     BuildContext context,
     WidgetRef ref,
@@ -286,19 +374,10 @@ class SavedCardsPage extends ConsumerWidget {
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Use MaxCrossAxisExtent for true dynamic columns based on width
-        const double maxItemWidth = 380.0;
-        final bool isGrid = constraints.maxWidth > maxItemWidth * 1.2;
-
-        if (isGrid) {
+        if (_cardsUseGrid(constraints.maxWidth)) {
           return GridView.builder(
-            padding: EdgeInsets.zero,
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: maxItemWidth,
-              childAspectRatio: 5.0,
-              mainAxisSpacing: 0,
-              crossAxisSpacing: 0,
-            ),
+            padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
+            gridDelegate: _cardsGridDelegate,
             itemCount: folderCards.length,
             itemBuilder: (context, index) => CardItem(
               card: folderCards[index],
@@ -308,7 +387,7 @@ class SavedCardsPage extends ConsumerWidget {
         }
 
         return ListView.builder(
-          padding: EdgeInsets.zero,
+          padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
           itemCount: folderCards.length,
           itemBuilder: (context, index) => CardItem(
             card: folderCards[index],
@@ -368,6 +447,27 @@ class _SavedCardsCompactBody extends StatelessWidget {
   }
 }
 
+/// The compact layout under the native bar's folder chips: the cards alone,
+/// inset by the bar, the large title and the chips above them.
+class _SavedCardsScrollBody extends StatelessWidget {
+  const _SavedCardsScrollBody({required this.cards});
+
+  final Widget cards;
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = MediaQuery.paddingOf(context);
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.only(top: padding.top, bottom: padding.bottom),
+          sliver: cards,
+        ),
+      ],
+    );
+  }
+}
+
 class _SavedCardsFolderRail extends StatelessWidget {
   const _SavedCardsFolderRail({
     required this.folders,
@@ -383,32 +483,58 @@ class _SavedCardsFolderRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 180,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: folders.length,
-        itemBuilder: (context, index) {
-          final folder = folders[index];
-          final isSelected = folder.id == selectedFolderId;
+    // The cards list beside the rail is the page's scroll, which the large
+    // title and the bar's glass follow; the rail must not be taken for it.
+    return _ScrollNotReported(
+      child: SizedBox(
+        width: 180,
+        child: ListView.builder(
+          padding: EdgeInsets.only(
+            top: MediaQuery.paddingOf(context).top + 8,
+            bottom: 8,
+          ),
+          itemCount: folders.length,
+          itemBuilder: (context, index) {
+            final folder = folders[index];
+            final isSelected = folder.id == selectedFolderId;
 
-          return ListTile(
-            dense: true,
-            selected: isSelected,
-            leading: Icon(
-              isSelected ? Icons.folder_open : Icons.folder,
-              size: 20,
-            ),
-            title: Text(
-              folderDisplayName(folder.id, folder.name),
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            return ListTile(
+              dense: true,
+              selected: isSelected,
+              leading: Icon(
+                isSelected ? Icons.folder_open : Icons.folder,
+                size: 20,
               ),
-            ),
-            onTap: () => onFolderSelected(folder.id),
-            onLongPress: () => onFolderLongPress(folder),
-          );
-        },
+              title: Text(
+                folderDisplayName(folder.id, folder.name),
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              onTap: () => onFolderSelected(folder.id),
+              onLongPress: () => onFolderLongPress(folder),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Keeps the scrolling of [child] from the scaffold, which follows the
+/// page's main scroll view for the large title and the bar's glass.
+class _ScrollNotReported extends StatelessWidget {
+  const _ScrollNotReported({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (_) => true,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (_) => true,
+        child: child,
       ),
     );
   }

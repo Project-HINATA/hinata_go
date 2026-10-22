@@ -1,18 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
-import 'package:foldable/foldable.dart';
-import '../../platform/platform_info.dart';
-import '../../platform/system_vertical_bar.dart';
+
 import '../../style/sf_symbol.dart';
-import '../../toolbar/duo_vertical_bar.dart';
 import '../../toolbar/toolbar_chrome_scope.dart';
+import '../../toolbar/top_bar_accessory.dart';
 import '../adaptive_app_bar_action.dart';
-import '../adaptive_bottom_navigation_bar.dart';
 import '../adaptive_button.dart';
-import '../adaptive_scaffold.dart';
-import 'ios26_native_tab_bar.dart';
 import 'ios26_native_toolbar.dart';
 
 /// Height of the iOS 26 Liquid Glass toolbar's content area (excluding the
@@ -20,28 +13,31 @@ import 'ios26_native_toolbar.dart';
 /// an overlay, so this amount is added to the body's top padding.
 const double kToolbarContentHeight = 44.0;
 
-/// Native iOS 26 scaffold with UITabBar
+/// An iOS 26 page.
+///
+/// Under an [AdaptiveToolbarHost] whose native UIKit bar owns the top bar,
+/// the page only publishes its items (see [AdaptiveScaffold]) and lays its
+/// body out for that bar: the large title and the chip strip below it, and
+/// the side insets. Anywhere else (a dialog, a sheet, an app without the
+/// native shell) it draws its own Liquid Glass toolbar.
 class IOS26Scaffold extends StatefulWidget {
   const IOS26Scaffold({
     super.key,
-    this.bottomNavigationBar,
     this.title,
     this.actions,
     this.leading,
     this.tintColor,
     this.titleWidget,
-    this.minimizeBehavior = TabBarMinimizeBehavior.automatic,
-    this.enableBlur = true,
     this.useHeroBackButton = true,
     this.useFixedToolbar = true,
-    this.tabBarHidden = false,
     this.resizeToAvoidBottomInset,
     this.backgroundColor,
-    @visibleForTesting this.debugVerticalBarEdge,
-    required this.children,
+    this.largeTitle,
+    this.scrollOffset,
+    this.accessory = false,
+    required this.body,
   });
 
-  final AdaptiveBottomNavigationBar? bottomNavigationBar;
   final String? title;
   final List<AdaptiveAppBarAction>? actions;
   final Widget? leading;
@@ -50,8 +46,6 @@ class IOS26Scaffold extends StatefulWidget {
   /// Custom widget overlaid at the toolbar's title position.
   /// When set, the native title is hidden and this widget is centered instead.
   final Widget? titleWidget;
-  final TabBarMinimizeBehavior minimizeBehavior;
-  final bool enableBlur;
   final bool useHeroBackButton;
 
   /// Whether the fixed toolbar host, when there is one, draws this page's
@@ -60,120 +54,28 @@ class IOS26Scaffold extends StatefulWidget {
 
   /// Page background; null keeps the Cupertino theme's scaffold colour.
   final Color? backgroundColor;
-  final bool tabBarHidden;
   final bool? resizeToAvoidBottomInset;
-  final List<Widget> children;
+  final Widget body;
 
-  /// Replaces the system's vertical bar edge in widget tests, where the
-  /// platform channel it comes from does not exist.
-  @visibleForTesting
-  final SystemVerticalBarEdge? debugVerticalBarEdge;
+  /// The page title drawn large above the content while the native UIKit bar
+  /// owns the top bar. The body is inset by [kLargeTitleHeight] below the bar
+  /// and the title moves with [scrollOffset], so it scrolls away under the
+  /// bar together with the content.
+  final Widget? largeTitle;
+
+  /// How far the body's main vertical scroll view is scrolled.
+  final ValueListenable<double>? scrollOffset;
+
+  /// Whether the app bar has chips, which the native UIKit top bar shows in
+  /// a strip under itself. The body is inset by [kTopBarAccessoryHeight] for
+  /// it, below the large title.
+  final bool accessory;
 
   @override
   State<IOS26Scaffold> createState() => _IOS26ScaffoldState();
 }
 
-class _IOS26ScaffoldState extends State<IOS26Scaffold>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _tabBarController;
-  late Animation<double> _tabBarAnimation;
-  bool _isMinimized = false;
-
-  /// Latest iPhone Duo fold / size-class snapshot from the `foldable` package.
-  /// Null until the first snapshot arrives; stays null on non-iOS.
-  FoldableData? _fold;
-  StreamSubscription<FoldableData>? _foldSub;
-
-  /// The system's vertical bar edge, for a page that draws its own bar and so
-  /// has no host to ask. Null off iOS 26, where no channel answers.
-  ValueListenable<SystemVerticalBarEdge>? _edge;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabBarController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _tabBarAnimation = CurvedAnimation(
-      parent: _tabBarController,
-      curve: Curves.easeInOut,
-    );
-    _listenToFold();
-    if (PlatformInfo.isIOS26OrHigher()) {
-      _edge = SystemVerticalBar.edge..addListener(_onEdgeChanged);
-    }
-  }
-
-  void _onEdgeChanged() {
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  /// Seeds [_fold] with the current snapshot and follows fold / size-class
-  /// changes (opening, closing, rotating, Split View). Failures degrade to
-  /// "not foldable" so the normal top toolbar is used.
-  void _listenToFold() {
-    Foldable.snapshot.then(_onFoldChanged).catchError((Object _) {});
-    _foldSub = Foldable.changes.listen(_onFoldChanged, onError: (Object _) {});
-  }
-
-  void _onFoldChanged(FoldableData data) {
-    if (!mounted) return;
-    setState(() => _fold = data);
-  }
-
-  @override
-  void dispose() {
-    _edge?.removeListener(_onEdgeChanged);
-    _foldSub?.cancel();
-    _tabBarController.dispose();
-    super.dispose();
-  }
-
-  bool _handleScrollNotification(ScrollNotification notification) {
-    if (widget.minimizeBehavior == TabBarMinimizeBehavior.never) {
-      return false;
-    }
-
-    if (notification is ScrollUpdateNotification) {
-      final delta = notification.scrollDelta ?? 0;
-
-      if (widget.minimizeBehavior == TabBarMinimizeBehavior.onScrollDown ||
-          widget.minimizeBehavior == TabBarMinimizeBehavior.automatic) {
-        // Minimize when scrolling down (positive delta)
-        if (delta > 0 && !_isMinimized) {
-          _minimizeTabBar();
-        } else if (delta < 0 && _isMinimized) {
-          _expandTabBar();
-        }
-      } else if (widget.minimizeBehavior == TabBarMinimizeBehavior.onScrollUp) {
-        // Minimize when scrolling up (negative delta)
-        if (delta < 0 && !_isMinimized) {
-          _minimizeTabBar();
-        } else if (delta > 0 && _isMinimized) {
-          _expandTabBar();
-        }
-      }
-    }
-
-    return false;
-  }
-
-  void _minimizeTabBar() {
-    if (!_isMinimized) {
-      _isMinimized = true;
-      _tabBarController.forward();
-    }
-  }
-
-  void _expandTabBar() {
-    if (_isMinimized) {
-      _isMinimized = false;
-      _tabBarController.reverse();
-    }
-  }
-
+class _IOS26ScaffoldState extends State<IOS26Scaffold> {
   /// Determines if the current window is in a windowed mode.
   ///
   /// This method compares the display size of the device with the viewport size
@@ -201,10 +103,7 @@ class _IOS26ScaffoldState extends State<IOS26Scaffold>
     final canPop = Navigator.of(context).canPop();
 
     // Only show auto back button if no custom leading widget
-    if (widget.leading == null &&
-        (widget.bottomNavigationBar?.items == null ||
-            widget.bottomNavigationBar!.items!.isEmpty) &&
-        canPop) {
+    if (widget.leading == null && canPop) {
       final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
       if (isCurrent) {
         final backButton = Container(
@@ -234,7 +133,7 @@ class _IOS26ScaffoldState extends State<IOS26Scaffold>
       }
     }
 
-    // Determine if toolbar/tab bar's underlying UiKitView should be shown.
+    // Determine if toolbar's underlying UiKitView should be shown.
     // Hide native platform views when another route is pushed on top to prevent bleed-through.
     final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
     final isPopping =
@@ -258,267 +157,252 @@ class _IOS26ScaffoldState extends State<IOS26Scaffold>
         ? CupertinoColors.white
         : CupertinoColors.black;
 
-    // Content - full screen - use KeepAlive to prevent rebuild
     // Wrap content with DefaultTextStyle to ensure proper text color
     Widget bodyContent = DefaultTextStyle(
       style: TextStyle(
         color: textColor,
         fontSize: 17, // iOS default
       ),
-      child: widget.children.length == 1
-          ? widget.children.first
-          : IndexedStack(
-              index: widget.bottomNavigationBar?.selectedIndex ?? 0,
-              sizing: StackFit.expand,
-              children: widget.children,
-            ),
+      child: widget.body,
     );
 
-    // iPhone Duo (inner display, and the cover display while folded): the
-    // system reserves a trailing strip and moves *controls* (back button,
-    // actions) into a vertical bar on the trailing edge and leaves the title
-    // in place. Our toolbar is a hand-built UINavigationBar, which iOS never
-    // lays out vertically, so mirror that behaviour here: keep a title-only
-    // toolbar at the top (when there is a title) and render the controls in a
-    // trailing vertical bar of our own.
-    //
-    // With an AdaptiveToolbarHost above the navigator the host decides the
-    // pose and draws the one fixed vertical bar for every page, so this page
-    // keeps only its title. Without a host it draws its own bar.
     final chrome = widget.useFixedToolbar
         ? ToolbarChromeScope.maybeOf(context)
         : null;
-    var mq = MediaQuery.of(context);
-    // A scope above (the host, or an outer scaffold) has already decided the
-    // pose, and has put any strip the system did not reserve into the
-    // MediaQuery. Only without one resolve it here.
-    final scope = DuoPoseScope.maybeOf(context);
-    final pose = scope != null
-        ? scope.pose
-        : DuoLayout.resolvePose(
-            mq.viewPadding,
-            widget.debugVerticalBarEdge ??
-                _edge?.value ??
-                SystemVerticalBarEdge.unknown,
-          );
-    final duoVerticalPose = pose != null;
+    final mq = MediaQuery.of(context);
     final nativeTopBarOwned = chrome?.nativeTopBarOwned ?? false;
-    if (chrome == null &&
-        pose != null &&
-        !pose.reservedBySystem &&
-        (pose.onLeft ? mq.viewPadding.left : mq.viewPadding.right) == 0) {
-      // Nothing above reserved the strip (the leading Split View pane): add it
-      // the way UIKit does for a native app, so the body clears the bar. A
-      // scaffold nested in this one, or one under a host, finds the inset
-      // already in place and does not add it again.
-      mq = mq.copyWith(
-        padding: pose.addStrip(mq.padding),
-        viewPadding: pose.addStrip(mq.viewPadding),
-      );
-    }
-    final hasTitle = widget.title != null || widget.titleWidget != null;
-    final hasControls =
-        widget.leading != null ||
-        heroLeading != null ||
-        (widget.actions != null && widget.actions!.isNotEmpty);
-    final showTopToolbar =
-        !nativeTopBarOwned && (duoVerticalPose ? hasTitle : hasToolbarContent);
-    final tabs = widget.tabBarHidden ? null : widget.bottomNavigationBar;
-    final hasTabs = tabs?.items?.isNotEmpty ?? false;
-    final showDuoSideBar =
-        duoVerticalPose && (hasControls || hasTabs) && chrome == null;
+    final showTopToolbar = !nativeTopBarOwned && hasToolbarContent;
 
-    // The Liquid Glass toolbar is drawn as a Positioned overlay on top of the
-    // body (see below), so, unlike CupertinoPageScaffold with a translucent
-    // nav bar, it does NOT inset the body automatically. Mirror that framework
-    // behaviour here by adding the toolbar's height to the body's top padding,
-    // so any SafeArea/SliverSafeArea inside a page clears it without per-screen
-    // offset hacks. Content still scrolls behind it (scroll-edge effect)
-    // because SafeArea insets rather than clips.
+    // A large title only exists where the native bar shows its small title
+    // once this one has scrolled under it; the native shell says where.
+    final largeTitle = widget.largeTitle;
+    final scrollOffset = widget.scrollOffset;
+    final largeTitles = nativeTopBarOwned && (chrome?.largeTitles ?? false);
+    final showLargeTitle =
+        largeTitle != null && scrollOffset != null && largeTitles;
+    // The native chip strip has the same constraint.
+    final showAccessory = widget.accessory && largeTitles;
+
+    // The Liquid Glass toolbar this page draws, and the large title and the
+    // chips below the native bar, overlay the body; like a translucent bar
+    // they are added to the body's top inset, so SafeArea and scroll views in
+    // the page start their content below them while the content still scrolls
+    // up underneath them.
     //
-    // On iPhone Duo the body is also kept out of the trailing strip, the way
-    // UIKit keeps content out of it: that strip holds the status cluster and
-    // the vertical bar, and a page that does not use SafeArea would otherwise
-    // run underneath both. The inset is taken from `padding` and consumed, so
-    // a scaffold nested in this one (a tab inside a shell) does not inset a
-    // second time, and a SafeArea further down has nothing left to add.
-    //
-    // The strip is on the right in most poses and on the left in the leading
-    // Split View pane; the pose says which.
-    final barOnLeft = pose?.onLeft ?? false;
-    final trailingInset = !duoVerticalPose
-        ? 0.0
-        : barOnLeft
-        ? mq.padding.left
-        : mq.padding.right;
-    if (showTopToolbar || trailingInset > 0) {
-      final topInset = !showTopToolbar
-          ? 0.0
-          : duoVerticalPose
-          ? kDuoTitleBandHeight
-          : kToolbarContentHeight;
+    // Under the native bar the body is also kept within the side safe area,
+    // as UIKit keeps a page's content: clear of the notch in landscape and of
+    // the iPhone Duo vertical bar. The side insets are consumed, so a SafeArea
+    // further down has nothing left to add.
+    final topInset =
+        (showTopToolbar ? kToolbarContentHeight : 0.0) +
+        (showLargeTitle ? kLargeTitleHeight : 0.0) +
+        (showAccessory ? kTopBarAccessoryHeight : 0.0);
+    final sides = nativeTopBarOwned
+        ? EdgeInsets.only(left: mq.padding.left, right: mq.padding.right)
+        : EdgeInsets.zero;
+    if (topInset > 0 || sides != EdgeInsets.zero) {
+      // One MediaQuery for every inset: a second one nested inside it would
+      // replace this one's padding rather than add to it.
       bodyContent = Padding(
-        padding: EdgeInsets.only(
-          left: barOnLeft ? trailingInset : 0,
-          right: barOnLeft ? 0 : trailingInset,
-        ),
+        padding: sides,
         child: MediaQuery(
           data: mq.copyWith(
             padding: mq.padding.copyWith(
               top: mq.padding.top + topInset,
-              left: mq.padding.left - (barOnLeft ? trailingInset : 0),
-              right: mq.padding.right - (barOnLeft ? 0 : trailingInset),
+              left: mq.padding.left - sides.left,
+              right: mq.padding.right - sides.right,
             ),
             viewPadding: mq.viewPadding.copyWith(
               top: mq.viewPadding.top + topInset,
             ),
           ),
-          child: bodyContent,
+          child: showAccessory
+              ? TopBarAccessoryScope(child: bodyContent)
+              : bodyContent,
         ),
       );
     }
 
-    // Build the stack content
-    final stackContent = Stack(
-      children: [
-        bodyContent,
-        // Top toolbar - iOS 26 Liquid Glass style. On iPhone Duo it carries
-        // only the title; the controls live in the trailing vertical bar.
-        if (showTopToolbar && !(chrome?.hostsToolbar ?? false))
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            height: duoVerticalPose ? kDuoTitleBandHeight : null,
-            child: duoVerticalPose
-                // On iPhone Duo the title sits at the leading edge; the
-                // controls are in the trailing bar.
-                ? Stack(
-                    fit: StackFit.expand,
-                    clipBehavior: Clip.none,
-                    children: [
-                      const DuoTitleBackdrop(),
-                      DuoToolbarTitle(
-                        title: widget.title,
-                        titleWidget: widget.titleWidget,
-                      ),
-                    ],
-                  )
-                : IOS26NativeToolbar(
-                    title: widget.title,
-                    leading: duoVerticalPose
-                        ? null
-                        : (widget.leading ?? heroLeading),
-                    showNativeView: showNativeView,
-                    actions: duoVerticalPose ? null : widget.actions,
-                    tintColor: widget.tintColor,
-                    titleWidget: widget.titleWidget,
-                    onActionTap: (index) {
-                      // Call the appropriate action callback
-                      if (widget.actions != null &&
-                          index >= 0 &&
-                          index < widget.actions!.length) {
-                        widget.actions![index].onPressed();
-                      }
-                    },
-                  ),
-          ),
-        // iPhone Duo: controls in a vertical bar on the trailing edge
-        if (showDuoSideBar)
-          Positioned(
-            top: 0,
-            bottom: 0,
-            left: barOnLeft ? 0 : null,
-            right: barOnLeft ? null : 0,
-            width: pose.bandWidth,
-            child: DuoVerticalBar(
-              leading:
-                  widget.leading ??
-                  (heroLeading == null
-                      ? null
-                      : DuoBarBackButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
-                        )),
-              actions: widget.actions ?? const <AdaptiveAppBarAction>[],
-              tabBar: tabs,
-              tint: widget.tintColor,
-              regions: _fold?.regions ?? const <ReservedRegion>[],
-            ),
-          ),
-        // Tab bar - only show if destinations exist
-        // On iPhone Duo the tabs are at the bottom of the trailing bar instead.
-        if (!duoVerticalPose &&
-            widget.bottomNavigationBar?.items != null &&
-            widget.bottomNavigationBar!.items!.isNotEmpty &&
-            widget.bottomNavigationBar!.selectedIndex != null &&
-            widget.bottomNavigationBar!.onTap != null)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AnimatedBuilder(
-              animation: _tabBarAnimation,
-              builder: (context, child) {
-                // Calculate minimized state
-                // value: 0.0 = expanded (full size), 1.0 = minimized (70% size, 50% opacity)
-                final minimizeProgress = _tabBarAnimation.value;
-                final scale = 1.0 - (minimizeProgress * 0.3); // 1.0 → 0.7
-                final opacity = 1.0 - (minimizeProgress * 0.5); // 1.0 → 0.5
-
-                return Transform.scale(
-                  scale: scale,
-                  alignment: Alignment.bottomCenter,
-                  child: Opacity(opacity: opacity, child: child),
-                );
-              },
-              child: widget.enableBlur
-                  ? IOS26NativeTabBar(
-                      destinations: widget.bottomNavigationBar!.items!,
-                      selectedIndex: widget.bottomNavigationBar!.selectedIndex!,
-                      onTap: widget.bottomNavigationBar!.onTap!,
-                      tint: CupertinoTheme.of(context).primaryColor,
-                      minimizeBehavior: widget.minimizeBehavior,
-                      showNativeView: showNativeView,
-                      hidden: widget.tabBarHidden,
-                    )
-                  : IOS26NativeTabBar(
-                      destinations: widget.bottomNavigationBar!.items!,
-                      selectedIndex: widget.bottomNavigationBar!.selectedIndex!,
-                      onTap: widget.bottomNavigationBar!.onTap!,
-                      tint: CupertinoTheme.of(context).primaryColor,
-                      minimizeBehavior: widget.minimizeBehavior,
-                      showNativeView: showNativeView,
-                      hidden: widget.tabBarHidden,
-                    ),
-            ),
-          ),
-      ],
-    );
-
-    // Only use NotificationListener if tab bar exists (destinations not empty)
-    // This allows scroll notifications to bubble up in single-page scenarios
-    final hasBottomNav =
-        widget.bottomNavigationBar?.items != null &&
-        widget.bottomNavigationBar!.items!.isNotEmpty;
-
-    // The title and the own bar read the pose from the scope, so they agree
-    // with the body inset above.
-    final scoped = DuoPoseScope(pose: pose, child: stackContent);
+    // Lined up with the bar's own title margin.
+    final titleMargin = chrome?.largeTitleMargin ?? 16;
 
     return CupertinoPageScaffold(
       backgroundColor: widget.backgroundColor,
-      // When a native tab bar is present it sits in Positioned(bottom: 0)
-      // inside a Stack. If the scaffold resizes for the keyboard the tab bar
-      // floats above it — non-standard on iOS. Disable the resize so the
-      // keyboard window (higher z-order) covers the tab bar naturally.
-      resizeToAvoidBottomInset:
-          widget.resizeToAvoidBottomInset ?? !hasBottomNav,
-      child: hasBottomNav
-          ? NotificationListener<ScrollNotification>(
-              onNotification: _handleScrollNotification,
-              child: scoped,
-            )
-          : scoped,
+      resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset ?? true,
+      child: Stack(
+        children: [
+          bodyContent,
+          if (showLargeTitle)
+            Positioned(
+              top: mq.padding.top,
+              left: 0,
+              right: 0,
+              height: kLargeTitleHeight,
+              child: _LargeTitle(
+                offset: scrollOffset,
+                padding: EdgeInsets.only(
+                  left: mq.padding.left + titleMargin,
+                  right: mq.padding.right + titleMargin,
+                  // Puts the baseline where UIKit puts its large title's.
+                  bottom: 6,
+                ),
+                color: textColor,
+                child: largeTitle,
+              ),
+            ),
+          if (showTopToolbar)
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              child: IOS26NativeToolbar(
+                title: widget.title,
+                leading: widget.leading ?? heroLeading,
+                showNativeView: showNativeView,
+                actions: widget.actions,
+                tintColor: widget.tintColor,
+                titleWidget: widget.titleWidget,
+                onActionTap: (index) {
+                  if (widget.actions != null &&
+                      index >= 0 &&
+                      index < widget.actions!.length) {
+                    widget.actions![index].onPressed();
+                  }
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
+}
+
+/// The large title band below the native bar.
+///
+/// It follows the page's scroll offset by repainting with a translation, so a
+/// scroll frame neither rebuilds nor lays out the title again. It moves up
+/// under the clear bar whole, and once all of it is there, where the bar
+/// takes over with its glass and small title, it fades out.
+class _LargeTitle extends StatefulWidget {
+  const _LargeTitle({
+    required this.offset,
+    required this.padding,
+    required this.color,
+    required this.child,
+  });
+
+  final ValueListenable<double> offset;
+  final EdgeInsets padding;
+  final Color color;
+  final Widget child;
+
+  @override
+  State<_LargeTitle> createState() => _LargeTitleState();
+}
+
+class _LargeTitleState extends State<_LargeTitle>
+    with SingleTickerProviderStateMixin {
+  /// 1 while the title is shown; same fade as the bar's small title.
+  late final AnimationController _visibility = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 200),
+    value: _collapsed ? 0 : 1,
+  );
+
+  bool get _collapsed => widget.offset.value >= kLargeTitleCollapseOffset;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.offset.addListener(_onOffsetChanged);
+  }
+
+  @override
+  void didUpdateWidget(_LargeTitle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.offset, widget.offset)) {
+      oldWidget.offset.removeListener(_onOffsetChanged);
+      widget.offset.addListener(_onOffsetChanged);
+      _visibility.value = _collapsed ? 0 : 1;
+    }
+  }
+
+  void _onOffsetChanged() {
+    if (_collapsed) {
+      _visibility.reverse();
+    } else {
+      _visibility.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.offset.removeListener(_onOffsetChanged);
+    _visibility.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.color;
+    final style = CupertinoTheme.of(
+      context,
+    ).textTheme.navLargeTitleTextStyle.copyWith(color: color);
+    return IgnorePointer(
+      child: Flow(
+        delegate: _ScrollFollowingFlow(widget.offset, _visibility),
+        // The title moves up out of its band, under the bar.
+        clipBehavior: Clip.none,
+        children: [
+          Padding(
+            padding: widget.padding,
+            child: Align(
+              alignment: AlignmentDirectional.bottomStart,
+              child: Semantics(
+                header: true,
+                // The band has the fixed height of UIKit's large title, so the
+                // title keeps its size at larger text settings instead of
+                // overflowing it.
+                child: MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1,
+                  child: IconTheme.merge(
+                    data: IconThemeData(size: style.fontSize, color: color),
+                    child: DefaultTextStyle(
+                      style: style,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      child: widget.child,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScrollFollowingFlow extends FlowDelegate {
+  _ScrollFollowingFlow(this.offset, this.visibility)
+    : super(repaint: Listenable.merge([offset, visibility]));
+
+  final ValueListenable<double> offset;
+  final Animation<double> visibility;
+
+  @override
+  void paintChildren(FlowPaintingContext context) {
+    if (visibility.value == 0) return;
+    context.paintChild(
+      0,
+      transform: Matrix4.translationValues(0, -offset.value, 0),
+      opacity: visibility.value,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ScrollFollowingFlow oldDelegate) =>
+      !identical(oldDelegate.offset, offset) ||
+      !identical(oldDelegate.visibility, visibility);
 }

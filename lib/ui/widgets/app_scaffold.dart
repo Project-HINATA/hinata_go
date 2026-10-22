@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../providers/navigation_bar_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../app_action_button.dart';
 import '../app_layout.dart';
@@ -11,24 +10,15 @@ import '../app_layout.dart';
 /// Material app bars. Web renders exactly like Android.
 bool get useCupertinoChrome => PlatformInfo.isIOS;
 
-/// Whether the iOS chrome is the iPhone Duo vertical bar, where the top-level
-/// tabs and the page controls run down the side of the screen. `null` before
-/// the toolbar host has resolved the pose.
-bool? isDuoVerticalBar(BuildContext context) {
-  if (!useCupertinoChrome) return false;
-  return ToolbarChromeScope.maybeOf(context)?.hostsDuoControls;
-}
-
-/// The axis a tab change slides along, decided from the platform rules for
-/// where the bar sits, not from measuring the bar.
+/// The axis a tab change slides along, following where the tabs are.
 ///
-/// * iPhone Duo's vertical bar runs down the screen: tabs move vertically.
-/// * iPhone keeps its bar at the bottom in both orientations: sideways.
+/// * The native shell reports when its tabs run down a vertical bar (iPhone
+///   Duo): tabs move vertically. Elsewhere the native tab bar is horizontal.
 /// * Android and web switch to a side rail in landscape: vertically.
 Axis navigationTransitionAxis(BuildContext context, {required bool useRail}) =>
     tabTransitionAxis(
       usesNativeBar: useCupertinoChrome,
-      duoVerticalBar: isDuoVerticalBar(context) ?? false,
+      verticalTabs: ToolbarChromeScope.maybeOf(context)?.verticalTabs ?? false,
       useRail: useRail,
     );
 
@@ -36,36 +26,36 @@ Axis navigationTransitionAxis(BuildContext context, {required bool useRail}) =>
 @visibleForTesting
 Axis tabTransitionAxis({
   required bool usesNativeBar,
-  required bool duoVerticalBar,
+  required bool verticalTabs,
   required bool useRail,
 }) {
-  if (usesNativeBar) return duoVerticalBar ? Axis.vertical : Axis.horizontal;
+  if (usesNativeBar) return verticalTabs ? Axis.vertical : Axis.horizontal;
   return useRail ? Axis.vertical : Axis.horizontal;
 }
 
 /// Whether the page should draw a top bar on iOS.
 ///
-/// Portrait keeps the bar. In landscape it would cost a strip of an already
-/// short screen, so it is dropped — unless the navigation bar runs vertically
-/// (iPhone Duo), whose icon-only bar leaves the page title with nowhere else
-/// to go.
-bool showsIOSTopBar(BuildContext context, {required Axis navigationBarAxis}) =>
-    shouldShowIOSTopBar(
-      usesNativeBar: useCupertinoChrome,
-      landscape: MediaQuery.orientationOf(context) == Orientation.landscape,
-      verticalBar: navigationBarAxis == Axis.vertical,
-    );
+/// The native shell hides its bar where height is compact (an iPhone in
+/// landscape) and says so; the page then floats its controls instead. Without
+/// the native bar (before iOS 26) the same rule is applied to the page's own
+/// bar.
+bool showsIOSTopBar(BuildContext context) {
+  final chrome = ToolbarChromeScope.maybeOf(context);
+  return shouldShowIOSTopBar(
+    usesNativeBar: useCupertinoChrome,
+    topBarHidden: chrome?.nativeTopBarOwned ?? false
+        ? chrome!.topBarHidden
+        : context.appLayout.isCompactLandscapePhone,
+  );
+}
 
 /// The rule behind [showsIOSTopBar], without a [BuildContext].
 @visibleForTesting
 bool shouldShowIOSTopBar({
   required bool usesNativeBar,
-  required bool landscape,
-  required bool verticalBar,
+  required bool topBarHidden,
 }) {
-  if (!usesNativeBar) return false;
-  if (!landscape) return true;
-  return verticalBar;
+  return usesNativeBar && !topBarHidden;
 }
 
 /// Whether a Material page draws its own top app bar.
@@ -114,6 +104,8 @@ class AppScaffold extends ConsumerWidget {
     this.primaryAction,
     this.leading,
     this.nativeLogo = false,
+    this.largeTitle = false,
+    this.chips,
     this.nativeLeading,
     this.onNativeLeadingTap,
     this.materialAppBar,
@@ -132,6 +124,18 @@ class AppScaffold extends ConsumerWidget {
 
   /// Show the HINATA logo next to [title] in the native iPhone top bar.
   final bool nativeLogo;
+
+  /// Show the title large above the content on iPhone, collapsing into the
+  /// native top bar once the content scrolls under it, like the top-level
+  /// pages of system apps. The page's main scroll view must let its content
+  /// run under the top bar (no top [SafeArea] around it) for the title to
+  /// scroll away with it.
+  final bool largeTitle;
+
+  /// Shown by the native iPhone top bar as Liquid Glass chips under itself.
+  /// The page still draws its own selector wherever
+  /// [TopBarAccessoryScope.isNative] is false.
+  final List<AdaptiveToolbarChip>? chips;
 
   /// A leading control the native iPhone top bar can build, for pages whose
   /// Flutter leading widget cannot be represented by UIKit.
@@ -253,10 +257,7 @@ class AppScaffold extends ConsumerWidget {
           ? null
           : buildToolbarAction(primaryAction!);
       final toolbarActions = [...actions, ?toolbarAction];
-      final showTopBar = showsIOSTopBar(
-        context,
-        navigationBarAxis: ref.watch(navigationBarAxisProvider),
-      );
+      final showTopBar = showsIOSTopBar(context);
 
       return AdaptiveScaffold(
         backgroundColor: backgroundColor,
@@ -270,6 +271,8 @@ class AppScaffold extends ConsumerWidget {
                 actions: toolbarActions,
                 leading: leading,
                 nativeLogo: nativeLogo,
+                largeTitle: largeTitle,
+                chips: chips,
                 nativeLeading: nativeLeading,
                 onNativeLeadingTap: onNativeLeadingTap,
               ),

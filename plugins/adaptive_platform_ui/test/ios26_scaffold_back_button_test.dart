@@ -15,7 +15,7 @@ void main() {
         home: const IOS26Scaffold(
           title: 'Home',
           useHeroBackButton: false,
-          children: [SafeArea(child: Text('body:Home'))],
+          body: SafeArea(child: Text('body:Home')),
         ),
       ),
     );
@@ -24,7 +24,7 @@ void main() {
         builder: (_) => const IOS26Scaffold(
           title: 'Detail',
           useHeroBackButton: false,
-          children: [SafeArea(child: Text('body:Detail'))],
+          body: SafeArea(child: Text('body:Detail')),
         ),
       ),
     );

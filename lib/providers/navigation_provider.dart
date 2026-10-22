@@ -8,7 +8,10 @@ import 'app_update_provider.dart';
 class NavigationTab {
   final int index;
   final String route;
-  final String label;
+
+  /// Looked up on every read, so a tab bar built after a language change shows
+  /// the new language even though this provider did not recompute.
+  final String Function(AppLocalizations l10n) labelOf;
   final IconData icon;
   final String iosSymbol;
 
@@ -19,12 +22,14 @@ class NavigationTab {
   const NavigationTab({
     required this.index,
     required this.route,
-    required this.label,
+    required this.labelOf,
     required this.icon,
     required this.iosSymbol,
     required this.cupertinoIcon,
     this.hasBadge = false,
   });
+
+  String get label => labelOf(l10n);
 }
 
 final navigationTabsProvider = Provider<List<NavigationTab>>((ref) {
@@ -33,7 +38,7 @@ final navigationTabsProvider = Provider<List<NavigationTab>>((ref) {
     NavigationTab(
       index: 0,
       route: '/scan',
-      label: l10n.scan,
+      labelOf: (l10n) => l10n.scan,
       icon: Icons.nfc,
       iosSymbol: 'wave.3.right',
       cupertinoIcon: CupertinoIcons.dot_radiowaves_right,
@@ -41,7 +46,7 @@ final navigationTabsProvider = Provider<List<NavigationTab>>((ref) {
     NavigationTab(
       index: 1,
       route: '/cards',
-      label: l10n.cards,
+      labelOf: (l10n) => l10n.cards,
       icon: Icons.credit_card,
       iosSymbol: 'creditcard',
       cupertinoIcon: CupertinoIcons.creditcard,
@@ -49,7 +54,7 @@ final navigationTabsProvider = Provider<List<NavigationTab>>((ref) {
     NavigationTab(
       index: 2,
       route: '/settings',
-      label: l10n.settings,
+      labelOf: (l10n) => l10n.settings,
       icon: Icons.settings,
       iosSymbol: 'gearshape',
       cupertinoIcon: CupertinoIcons.gear,

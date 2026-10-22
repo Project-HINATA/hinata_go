@@ -6,11 +6,6 @@ import UIKit
 public class AdaptivePlatformUiPlugin: NSObject, FlutterPlugin {
 
     public static func register(with registrar: FlutterPluginRegistrar) {
-        // Initialize iOS 26+ Native Tab Bar Manager
-        if #available(iOS 26.0, *) {
-            iOS26NativeTabBarManager.shared.setup(messenger: registrar.messenger())
-        }
-
         // Register iOS 26 Button platform view factory
         let ios26ButtonFactory = iOS26ButtonViewFactory(messenger: registrar.messenger())
         registrar.register(
@@ -60,13 +55,6 @@ public class AdaptivePlatformUiPlugin: NSObject, FlutterPlugin {
             withId: "adaptive_platform_ui/ios26_context_menu"
         )
 
-        // Register iOS 26 TabBar platform view factory
-        let ios26TabBarFactory = iOS26TabBarViewFactory(messenger: registrar.messenger())
-        registrar.register(
-            ios26TabBarFactory,
-            withId: "adaptive_platform_ui/ios26_tab_bar"
-        )
-
         // Register iOS 26 Toolbar platform view factory
         let ios26ToolbarFactory = iOS26ToolbarFactory(messenger: registrar.messenger())
         registrar.register(
@@ -80,19 +68,5 @@ public class AdaptivePlatformUiPlugin: NSObject, FlutterPlugin {
             ios26BlurViewFactory,
             withId: "adaptive_platform_ui/ios26_blur_view"
         )
-
-        // Register the Liquid Glass capsule used by the iPhone Duo trailing bar
-        let ios26GlassCapsuleFactory = iOS26GlassCapsuleFactory(messenger: registrar.messenger())
-        registrar.register(
-            ios26GlassCapsuleFactory,
-            withId: "adaptive_platform_ui/ios26_glass_capsule"
-        )
-
-        // iPhone Duo: where the system puts its vertical bar (iOS 27.1)
-        let verticalBarEdgeChannel = FlutterEventChannel(
-            name: "adaptive_platform_ui/vertical_bar_edge",
-            binaryMessenger: registrar.messenger()
-        )
-        verticalBarEdgeChannel.setStreamHandler(VerticalBarEdgeStreamHandler(registrar: registrar))
     }
 }
