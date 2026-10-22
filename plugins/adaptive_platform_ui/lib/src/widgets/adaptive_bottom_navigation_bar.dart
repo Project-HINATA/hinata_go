@@ -5,13 +5,12 @@ import 'adaptive_scaffold.dart';
 ///
 /// This class holds the configuration for the bottom navigation bar in [AdaptiveScaffold].
 /// The actual rendering is platform-specific:
-/// - iOS 26+ with useNativeBottomBar: Native UITabBar with Liquid Glass effects
-/// - iOS 26+ without useNativeBottomBar: CupertinoTabBar (custom or auto-generated)
-/// - iOS <26: CupertinoTabBar (custom or auto-generated)
+/// - iOS: CupertinoTabBar (custom or auto-generated). A native Liquid Glass
+///   tab bar belongs to a UITabBarController above Flutter, not to a page.
 /// - Android: NavigationBar (custom or auto-generated)
 ///
 /// You can provide custom bottom navigation bars using [cupertinoTabBar] or [bottomNavigationBar]:
-/// - If [cupertinoTabBar] is provided: Uses custom CupertinoTabBar on iOS (when useNativeBottomBar is false or iOS <26)
+/// - If [cupertinoTabBar] is provided: Uses custom CupertinoTabBar on iOS
 /// - If [bottomNavigationBar] is provided: Uses custom NavigationBar/BottomNavigationBar on Android
 /// - Otherwise: Builds bottom navigation bar from [items]
 class AdaptiveBottomNavigationBar {
@@ -20,7 +19,6 @@ class AdaptiveBottomNavigationBar {
     this.items,
     this.selectedIndex,
     this.onTap,
-    this.useNativeBottomBar = true,
     this.cupertinoTabBar,
     this.bottomNavigationBar,
     this.selectedItemColor,
@@ -40,22 +38,9 @@ class AdaptiveBottomNavigationBar {
   /// If null, navigation will not be interactive
   final ValueChanged<int>? onTap;
 
-  /// Use native iOS 26 bottom bar (iOS 26+ only)
-  /// - When true (default): Uses native iOS 26 UITabBar with Liquid Glass effect
-  /// - When false: Uses CupertinoTabBar (custom if provided, otherwise auto-generated)
-  ///
-  /// For iOS <26, this parameter is ignored and CupertinoTabBar is always used.
-  ///
-  /// If true, [cupertinoTabBar] will be ignored on iOS 26+ and native tab bar will be shown.
-  /// For iOS <26, if [cupertinoTabBar] is provided, it will be used regardless of this setting.
-  final bool useNativeBottomBar;
-
   /// Custom CupertinoTabBar for iOS
   ///
-  /// When provided:
-  /// - iOS 26+ with useNativeBottomBar=false: Uses this custom tab bar
-  /// - iOS 26+ with useNativeBottomBar=true: Ignored, native tab bar is shown
-  /// - iOS <26: Always uses this custom tab bar
+  /// When provided, it is used on iOS.
   ///
   /// If not provided, a tab bar will be auto-generated from [items].
   ///
@@ -93,7 +78,6 @@ class AdaptiveBottomNavigationBar {
     List<AdaptiveNavigationDestination>? items,
     int? selectedIndex,
     ValueChanged<int>? onTap,
-    bool? useNativeBottomBar,
     CupertinoTabBar? cupertinoTabBar,
     Widget? bottomNavigationBar,
     Color? selectedItemColor,
@@ -103,7 +87,6 @@ class AdaptiveBottomNavigationBar {
       items: items ?? this.items,
       selectedIndex: selectedIndex ?? this.selectedIndex,
       onTap: onTap ?? this.onTap,
-      useNativeBottomBar: useNativeBottomBar ?? this.useNativeBottomBar,
       cupertinoTabBar: cupertinoTabBar ?? this.cupertinoTabBar,
       bottomNavigationBar: bottomNavigationBar ?? this.bottomNavigationBar,
       selectedItemColor: selectedItemColor ?? this.selectedItemColor,

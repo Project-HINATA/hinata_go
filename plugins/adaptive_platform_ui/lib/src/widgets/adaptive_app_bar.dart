@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import '../toolbar/top_bar_accessory.dart';
 import 'adaptive_app_bar_action.dart';
 
 /// A leading control the native top bar can build itself, for pages whose
@@ -29,6 +30,8 @@ class AdaptiveAppBar {
     this.tintColor,
     this.titleWidget,
     this.nativeLogo = false,
+    this.largeTitle = false,
+    this.chips,
     this.nativeLeading,
     this.onNativeLeadingTap,
     this.cupertinoNavigationBar,
@@ -79,6 +82,24 @@ class AdaptiveAppBar {
   /// Whether the native bar should show the app logo next to [title].
   final bool nativeLogo;
 
+  /// Show the title large at the top of the page while its content is
+  /// scrolled to the top, the way UIKit large titles do, and hand it to the
+  /// bar as a small centred title once the content scrolls under the bar.
+  ///
+  /// Only takes effect where the native UIKit top bar is horizontal (iOS 26+
+  /// with [AdaptiveToolbarHost.nativeTopBar]); the page's main vertical
+  /// scroll view drives it.
+  final bool largeTitle;
+
+  /// Chips the native top bar shows as a strip of Liquid Glass capsules under
+  /// itself (below the large title), such as folders or filters. They stay
+  /// on screen while the content scrolls beneath them.
+  ///
+  /// Only the native UIKit top bar draws them; check
+  /// [TopBarAccessoryScope.isNative] in the page and draw a selector of its
+  /// own where it is false.
+  final List<AdaptiveToolbarChip>? chips;
+
   /// A leading control for the native top bar. When null, the native bar
   /// falls back to an automatic back button or no leading.
   final NativeToolbarLeading? nativeLeading;
@@ -112,6 +133,8 @@ class AdaptiveAppBar {
     Color? tintColor,
     Widget? titleWidget,
     bool? nativeLogo,
+    bool? largeTitle,
+    List<AdaptiveToolbarChip>? chips,
     NativeToolbarLeading? nativeLeading,
     VoidCallback? onNativeLeadingTap,
     PreferredSizeWidget? cupertinoNavigationBar,
@@ -126,6 +149,8 @@ class AdaptiveAppBar {
       tintColor: tintColor ?? this.tintColor,
       titleWidget: titleWidget ?? this.titleWidget,
       nativeLogo: nativeLogo ?? this.nativeLogo,
+      largeTitle: largeTitle ?? this.largeTitle,
+      chips: chips ?? this.chips,
       nativeLeading: nativeLeading ?? this.nativeLeading,
       onNativeLeadingTap: onNativeLeadingTap ?? this.onNativeLeadingTap,
       cupertinoNavigationBar:

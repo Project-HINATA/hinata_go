@@ -1,4 +1,5 @@
 import Flutter
+import ObjectiveC
 import UIKit
 
 final class NativeShellViewController: UITabBarController,
@@ -41,6 +42,7 @@ final class NativeShellViewController: UITabBarController,
 
   override func viewDidLoad() {
     super.viewDidLoad()
+    FlutterSemanticsEdgeEffects.disable()
     delegate = self
     // Flutter draws every page and shows it through the transparent tab
     // content, so the shell itself has nothing to paint.
@@ -57,6 +59,19 @@ final class NativeShellViewController: UITabBarController,
       shell: self,
       messenger: bridge.messenger
     )
+    syncLayout()
+    var traits: [UITrait] = [UITraitHorizontalSizeClass.self, UITraitVerticalSizeClass.self]
+    if #available(iOS 27.1, *) {
+      traits += UITraitCollection.systemTraitsAffectingVerticalBarEdge
+    }
+    registerForTraitChanges(traits) { (self: Self, _: UITraitCollection) in
+      self.syncLayout()
+    }
+  }
+
+  /// Lays the chrome out for the window's current traits.
+  private func syncLayout() {
+    topBar?.setLayout(NativeShellLayout(traits: traitCollection))
   }
 
   override func viewDidLayoutSubviews() {
@@ -92,6 +107,8 @@ final class NativeShellViewController: UITabBarController,
   /// that is already landscape; re-publish once the shell is on screen.
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
+    // The bar's title margin is only known once it is laid out.
+    topBar?.sendLayout()
     (UIApplication.shared.delegate as? AppDelegate)?
       .deviceOrientationBridge.deviceTopOnRightChanged()
   }
@@ -103,8 +120,7 @@ final class NativeShellViewController: UITabBarController,
   /// item, which is what makes the system draw the bar horizontally on
   /// iPhone and move the same items into the vertical bar on iPhone Duo.
   private func makeSlot(title: String, symbol: String) -> UINavigationController {
-    let content = UIViewController()
-    content.view.backgroundColor = .clear
+    let content = NativeTopBarPageController()
 
     let nav = UINavigationController(rootViewController: content)
     let appearance = UINavigationBarAppearance()
@@ -383,6 +399,7 @@ final class NativeShellViewController: UITabBarController,
         return makeSlot(title: title, symbol: symbol)
       }
       setViewControllers(controllers, animated: false)
+      syncLayout()
       if let first = controllers.first {
         attachFlutter(to: first)
       }
@@ -405,6 +422,25 @@ final class NativeShellViewController: UITabBarController,
     // Dart-driven selection is the only place that commits the UIKit tab.
     pendingUserSelectionIndex = nil
     NSLog("[NativeShell] Dart committed selected index=%d", index)
+    // Flutter slides and fades the pages of a tab switch; the bars follow,
+    // instead of the system swapping them at once.
+    let switching = selectedIndex != index
+    let forward = index > selectedIndex
+    if switching {
+      topBar?.beginTabSwitch(
+        from: selectedViewController as? UINavigationController,
+        in: view,
+        forward: forward
+      )
+    }
+    defer {
+      if switching {
+        topBar?.finishTabSwitch(
+          to: controllers[index] as? UINavigationController,
+          forward: forward
+        )
+      }
+    }
     // Older UIKit needs Flutter installed before forwarding tab appearance.
     // Older UIKit needs Flutter installed before forwarding tab appearance.
     if #unavailable(iOS 27.0) {
@@ -626,6 +662,53 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
   private let channel: FlutterMethodChannel
   private var isCovered = false
 
+  /// The chip strip of each tab's navigation controller, created the first
+  /// time a page of that tab has chips.
+  private var chipStrips: [ObjectIdentifier: NativeTopBarChipStrip] = [:]
+
+  /// How the shell lays its chrome out; see [setLayout].
+  private(set) var layout = NativeShellLayout()
+
+  /// The navigation controller of every tab.
+  private var navigationControllers: [UINavigationController] {
+    shell?.viewControllers?.compactMap { $0 as? UINavigationController } ?? []
+  }
+
+  /// Applies [layout] to every tab's bar and page, and tells Dart, which lays
+  /// the pages out for it.
+  func setLayout(_ layout: NativeShellLayout) {
+    let changed = layout != self.layout
+    if changed { restoreScrolledAwayBar() }
+    self.layout = layout
+    for nav in navigationControllers {
+      nav.setNavigationBarHidden(layout.barHidden, animated: false)
+      guard changed else { continue }
+      for case let page as NativeTopBarPageController in nav.viewControllers {
+        page.largeTitlesEnabled = layout.largeTitles
+        // The logo and the large title's small title depend on the layout.
+        if !page.itemMap.isEmpty { configure(page.itemMap, on: page) }
+      }
+    }
+    if changed { syncChips(.none) }
+    sendLayout()
+  }
+
+  private var layoutMap: [String: Any] {
+    var map: [String: Any] = [
+      "largeTitles": layout.largeTitles,
+      "barHidden": layout.barHidden,
+      "verticalTabs": layout.verticalTabs,
+    ]
+    if let bar = navigationController?.navigationBar, bar.window != nil {
+      map["titleMargin"] = Double(bar.directionalLayoutMargins.leading)
+    }
+    return map
+  }
+
+  func sendLayout() {
+    channel.invokeMethod("layout", arguments: layoutMap)
+  }
+
   init(shell: NativeShellViewController, messenger: FlutterBinaryMessenger) {
     self.shell = shell
     channel = FlutterMethodChannel(
@@ -648,8 +731,15 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
 
   /// The content controller Flutter is attached to. Pushing placeholder pages
   /// above it moves no Flutter content; the transition happens in the bar.
-  private var rootController: UIViewController? {
-    navigationController?.viewControllers.first
+  private var rootController: NativeTopBarPageController? {
+    navigationController?.viewControllers.first as? NativeTopBarPageController
+  }
+
+  /// The page of the selected tab's stack that Dart knows as [token].
+  private func page(token: Int) -> NativeTopBarPageController? {
+    navigationController?.viewControllers.lazy
+      .compactMap { $0 as? NativeTopBarPageController }
+      .first { $0.token == token }
   }
 
   private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -660,10 +750,7 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
       else {
         return result(FlutterError(code: "bad_args", message: nil, details: nil))
       }
-      reset(map)
-      if let visible = args["visible"] as? Bool {
-        setVisible(visible)
-      }
+      reset(map, scroll: args["scroll"] as? [String: Any])
       result(nil)
     case "push":
       guard let args = call.arguments as? [String: Any],
@@ -671,11 +758,13 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
       else {
         return result(FlutterError(code: "bad_args", message: nil, details: nil))
       }
-      push(map)
+      push(map, scroll: args["scroll"] as? [String: Any])
       result(nil)
     case "pop":
       if let nav = navigationController, nav.viewControllers.count > 1 {
+        restoreScrolledAwayBar()
         nav.popViewController(animated: true)
+        syncChips(.pop)
       }
       result(nil)
     case "update":
@@ -687,14 +776,20 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
       else {
         return result(FlutterError(code: "bad_args", message: nil, details: nil))
       }
-      configureItem(map, on: top.navigationItem)
+      configure(map, on: top)
+      syncChips(.fade)
       result(nil)
-    case "setVisible":
-      if let args = call.arguments as? [String: Any],
-        let visible = args["visible"] as? Bool {
-        setVisible(visible)
+    case "scroll":
+      guard let args = call.arguments as? [String: Any],
+        let token = args["token"] as? Int
+      else {
+        return result(FlutterError(code: "bad_args", message: nil, details: nil))
       }
+      // A page that has already left the stack has nothing to update.
+      scroll(token: token, args, animated: args["animated"] as? Bool ?? false)
       result(nil)
+    case "getLayout":
+      result(layoutMap)
     case "setCovered":
       if let args = call.arguments as? [String: Any],
         let covered = args["covered"] as? Bool {
@@ -706,7 +801,7 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
     }
   }
 
-  func reset(_ map: [String: Any]) {
+  func reset(_ map: [String: Any], scroll: [String: Any]? = nil) {
     guard let nav = navigationController, let root = rootController else { return }
     nav.delegate = self
 
@@ -714,33 +809,268 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
     // on this controller before installing the new item. Flutter moves back
     // to the root first, or clearing the stack would take the surface with the
     // page UIKit removes.
+    // A tab switch hands the bar over: it still shows the outgoing tab's
+    // items, and UIKit animates them into this page's, as on a single bar.
+    let handover = relay.flatMap { $0.nav == ObjectIdentifier(nav) ? $0 : nil }
+    relay = nil
     if nav.viewControllers.count > 1 {
       shell?.moveFlutter(to: root)
       nav.setViewControllers([root], animated: false)
+      if let source = handover?.source { show(source, on: root) }
     }
 
-    configureItem(map, on: root.navigationItem)
+    restoreScrolledAwayBar()
+    root.token = map["token"] as? Int ?? 0
+    configure(map, on: root, animated: handover != nil)
+    if let scroll { root.applyScroll(scroll, animated: false) }
+    syncChips(.none)
   }
 
-  func push(_ map: [String: Any]) {
+  func push(_ map: [String: Any], scroll: [String: Any]? = nil) {
     guard let nav = navigationController else { return }
     nav.delegate = self
-    let page = makePage(map)
-    nav.pushViewController(page, animated: true)
-  }
-
-  private func makePage(_ map: [String: Any]) -> NativeTopBarPageController {
+    restoreScrolledAwayBar()
     let page = NativeTopBarPageController()
     page.token = map["token"] as? Int ?? 0
-    configureItem(map, on: page.navigationItem)
-    return page
+    configure(map, on: page)
+    if let scroll { page.applyScroll(scroll, animated: false) }
+    nav.pushViewController(page, animated: true)
+    syncChips(.push)
   }
 
-  /// Hides or shows the bar. UIKit adds or removes the matching safe area for
-  /// us, so Flutter content follows without a manual inset.
-  func setVisible(_ visible: Bool) {
+  /// Follows the scroll position Dart reports for the page [token]: the
+  /// bar's scroll-edge effect, the small title of a large-title page, and
+  /// the chip strip moving up with the large title.
+  func scroll(token: Int, _ state: [String: Any], animated: Bool) {
+    guard let page = page(token: token) else { return }
+    let previous = page.scrollOffset
+    page.applyScroll(state, animated: animated)
+    if page === navigationController?.topViewController {
+      followScrollDirection(of: page, from: previous)
+      syncChips(.none)
+    }
+  }
+
+  // MARK: Bar scrolled away
+
+  /// Beside the iPhone Duo vertical bar height is short in every pose, so,
+  /// like the system apps there, the bar slides away while the page scrolls
+  /// down and comes back as soon as it scrolls up. The safe area does not
+  /// change, so Flutter's content does not move; the bar just leaves the
+  /// content it was covering.
+  private var barScrolledAway = false
+
+  /// The page whose scroll-edge effect was turned off with the bar.
+  private weak var scrolledAwayPage: NativeTopBarPageController?
+
+  private var scrollingDown = false
+  private var scrollTurnOffset: CGFloat = 0
+
+  /// How far a page scrolls in one direction before the bar follows, so a
+  /// jitter of the finger does not toggle it.
+  private static let barScrollThreshold: CGFloat = 16
+
+  private func followScrollDirection(of page: NativeTopBarPageController, from previous: CGFloat) {
+    guard layout.verticalTabs, let nav = navigationController else { return }
+    let offset = page.scrollOffset
+    if offset <= 0 {
+      setBarScrolledAway(false)
+      return
+    }
+    guard offset != previous else { return }
+    let down = offset > previous
+    if down != scrollingDown {
+      scrollingDown = down
+      scrollTurnOffset = previous
+    }
+    guard abs(offset - scrollTurnOffset) >= Self.barScrollThreshold else { return }
+    // Away only once the content has gone under the bar.
+    setBarScrolledAway(down && offset > nav.navigationBar.frame.maxY)
+  }
+
+  private func setBarScrolledAway(_ away: Bool, animated: Bool = true) {
+    guard away != barScrolledAway, let nav = navigationController else { return }
+    barScrolledAway = away
+    let bar = nav.navigationBar
+    let page = nav.topViewController as? NativeTopBarPageController
+    if #available(iOS 26.0, *) {
+      // Its glass would otherwise stay behind as a band with nothing on it.
+      scrolledAwayPage?.scrollProxy.topEdgeEffect.isHidden = false
+      page?.scrollProxy.topEdgeEffect.isHidden = away
+    }
+    scrolledAwayPage = away ? page : nil
+    let transform =
+      away ? CGAffineTransform(translationX: 0, y: -bar.frame.maxY) : .identity
+    if animated {
+      UIView.animate(
+        withDuration: 0.3,
+        delay: 0,
+        options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseInOut]
+      ) {
+        bar.transform = transform
+      }
+    } else {
+      bar.transform = transform
+    }
+    syncChips(animated ? .fade : .none)
+  }
+
+  /// A page change or a layout change brings the bar back.
+  private func restoreScrolledAwayBar() {
+    scrollingDown = false
+    scrollTurnOffset = 0
+    setBarScrolledAway(false, animated: false)
+  }
+
+  /// The selected tab's chip strip; nil when none of its pages had chips.
+  var chipStrip: UIView? {
+    navigationController.flatMap { chipStrips[ObjectIdentifier($0)] }
+  }
+
+  /// Shows the chips of the page on top of the selected tab in the strip
+  /// under its bar, or takes the strip away when that page has none.
+  /// [transition] is how the page on top changed.
+  private func syncChips(_ transition: NativeTopBarChipStrip.Transition) {
     guard let nav = navigationController else { return }
-    nav.setNavigationBarHidden(!visible, animated: false)
+    var transition = transition
+    if case .none = transition, let entrance = tabEntrance,
+      entrance.nav == ObjectIdentifier(nav), CACurrentMediaTime() < entrance.until
+    {
+      // The page's chips arrived just after its tab came in: they join the
+      // tab's entrance instead of popping in.
+      transition = .enter(shift: entrance.shift)
+    }
+    let page = nav.topViewController as? NativeTopBarPageController
+    // The strip sits below the large title, so it comes and goes with them.
+    let chips = layout.largeTitles && !barScrolledAway ? page?.chips ?? [] : []
+    let existing = chipStrips[ObjectIdentifier(nav)]
+    guard let page, !chips.isEmpty else {
+      existing?.setShown(false, covered: isCovered, transition: transition)
+      return
+    }
+    let strip = existing ?? makeChipStrip(in: nav)
+    strip.update(chips: chips, animated: transition.isAnimated)
+    strip.follow(page: page)
+    strip.setShown(true, covered: isCovered, transition: transition)
+  }
+
+  /// The tab whose bar is coming in, so chips that arrive for it a moment
+  /// later come in the same way.
+  private var tabEntrance: (nav: ObjectIdentifier, shift: CGPoint, until: CFTimeInterval)?
+
+  /// How far Flutter slides a tab's page while switching tabs, along the
+  /// axis the tabs run on: down the iPhone Duo vertical bar, across
+  /// elsewhere. [sign] is 1 for the incoming page, which comes from the side
+  /// of the next tab, and -1 for the outgoing one.
+  private func tabSlide(in size: CGSize, forward: Bool, sign: CGFloat) -> CGPoint {
+    let direction = (forward ? 1 : -1) * sign * NativeTopBarChipStrip.tabSlide
+    return layout.verticalTabs
+      ? CGPoint(x: 0, y: direction * size.height)
+      : CGPoint(x: direction * size.width, y: 0)
+  }
+
+  /// A tab switch in progress: the incoming tab's bar shows the outgoing
+  /// page's content until Dart installs the new page's item.
+  private var relay: (nav: ObjectIdentifier, source: NativeTopBarPageController)?
+
+  /// The page on top of the outgoing tab, captured before the switch.
+  private var outgoingPage: NativeTopBarPageController?
+
+  /// Called by the shell just before it switches from [nav]'s tab. Each tab
+  /// has its own bar, which the switch removes at once; the incoming bar takes
+  /// over what this one shows (see [finishTabSwitch]). The chips are not part
+  /// of the bar, so they are left behind as an image in [container] that
+  /// fades and slides out the way Flutter moves the outgoing page.
+  func beginTabSwitch(from nav: UINavigationController?, in container: UIView, forward: Bool) {
+    // The outgoing tab's bar is put back before it leaves; it is out of sight
+    // by then, and comes back in place when its tab does.
+    restoreScrolledAwayBar()
+    outgoingPage = nav?.topViewController as? NativeTopBarPageController
+    guard let nav, nav.view.window != nil,
+      let strip = chipStrips[ObjectIdentifier(nav)], strip.isOnScreen,
+      let image = strip.snapshotView(afterScreenUpdates: false)
+    else { return }
+    image.frame = strip.convert(strip.bounds, to: container)
+    image.alpha = strip.alpha
+    image.isUserInteractionEnabled = false
+    container.addSubview(image)
+    let shift = tabSlide(in: container.bounds.size, forward: forward, sign: -1)
+    let animator = NativeTopBarChipStrip.tabAnimator()
+    animator.addAnimations {
+      image.alpha = 0
+      image.transform = CGAffineTransform(translationX: shift.x, y: shift.y)
+    }
+    animator.addCompletion { _ in image.removeFromSuperview() }
+    animator.startAnimation()
+  }
+
+  /// Called by the shell once [nav]'s tab is selected. Its bar first shows
+  /// exactly what the outgoing bar showed, in the same place, so the two read
+  /// as one bar; [reset] then animates it to the incoming page's items with
+  /// UIKit's own Liquid Glass transition. The chips slide in from the side the
+  /// page comes from.
+  func finishTabSwitch(to nav: UINavigationController?, forward: Bool) {
+    let source = outgoingPage
+    outgoingPage = nil
+    guard let nav, nav.view.window != nil else { return }
+    if let source, let page = nav.topViewController as? NativeTopBarPageController,
+      page !== source
+    {
+      show(source, on: page)
+      // UIKit animates from the items the bar has laid out, not from the
+      // ones last assigned: lay the borrowed ones out now, or the change
+      // would start from what this bar showed on its previous visit.
+      nav.navigationBar.setNeedsLayout()
+      nav.navigationBar.layoutIfNeeded()
+      let id = ObjectIdentifier(nav)
+      relay = (id, source)
+      // Should Dart not install the incoming item, the page returns to its
+      // own content rather than keeping the outgoing tab's.
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self, weak page] in
+        guard let self, let page, let relay = self.relay, relay.nav == id else { return }
+        self.relay = nil
+        self.configure(page.itemMap, on: page, animated: true)
+      }
+    }
+    let shift = tabSlide(in: nav.view.bounds.size, forward: forward, sign: 1)
+    tabEntrance = (ObjectIdentifier(nav), shift, CACurrentMediaTime() + 0.3)
+    chipStrips[ObjectIdentifier(nav)]?.playEntrance(shift: shift)
+  }
+
+  /// Shows [source]'s bar content on [page]'s navigation item, as [source]'s
+  /// bar showed it, without changing [page]'s own state.
+  private func show(_ source: NativeTopBarPageController, on page: NativeTopBarPageController) {
+    let content = makeBarContent(source.itemMap)
+    content.titleView?.content.alpha = source.isTitleShown ? 1 : 0
+    // Scroll reports for [page] must not fade a title that is not its own.
+    page.titleView = nil
+    apply(content, to: page.navigationItem, in: nil, animated: false)
+  }
+
+  private func makeChipStrip(in nav: UINavigationController) -> NativeTopBarChipStrip {
+    let strip = NativeTopBarChipStrip()
+    strip.onTap = { [weak self, weak nav] index in
+      guard let page = nav?.topViewController as? NativeTopBarPageController else { return }
+      self?.channel.invokeMethod("onChip", arguments: ["token": page.token, "index": index])
+    }
+    strip.onLongPress = { [weak self, weak nav] index in
+      guard let page = nav?.topViewController as? NativeTopBarPageController else { return }
+      self?.channel.invokeMethod(
+        "onChipLongPress",
+        arguments: ["token": page.token, "index": index]
+      )
+    }
+    strip.install(in: nav)
+    chipStrips[ObjectIdentifier(nav)] = strip
+    return strip
+  }
+
+  /// Hides or shows every tab's bar. UIKit adds or removes the matching safe
+  /// area for us, so Flutter content follows without a manual inset.
+  func setVisible(_ visible: Bool) {
+    for nav in navigationControllers {
+      nav.setNavigationBarHidden(!visible, animated: false)
+    }
   }
 
   func setCovered(_ covered: Bool, animated: Bool = true) {
@@ -753,6 +1083,7 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
     let barAlpha: CGFloat = isCovered ? 0.45 : 1
     guard let nav = navigationController else { return }
     nav.navigationBar.isUserInteractionEnabled = !isCovered
+    chipStrips[ObjectIdentifier(nav)]?.setCovered(isCovered)
 
     guard animated else {
       nav.navigationBar.alpha = barAlpha
@@ -770,23 +1101,62 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
     }
   }
 
-  private func configureItem(
+  private func configure(
     _ map: [String: Any],
-    on item: UINavigationItem
+    on page: NativeTopBarPageController,
+    animated: Bool = false
   ) {
+    page.itemMap = map
+    page.largeTitlesEnabled = layout.largeTitles
+    page.wantsLargeTitle = map["largeTitle"] as? Bool == true
+    page.largeTitleBand = CGFloat(
+      (map["largeTitleHeight"] as? NSNumber)?.doubleValue ?? 0
+    )
+    page.largeTitleCollapseOffset = CGFloat(
+      (map["largeTitleCollapseOffset"] as? NSNumber)?.doubleValue
+        ?? Double(page.largeTitleBand)
+    )
+    page.chips = (map["chips"] as? [[String: Any]] ?? []).map {
+      NativeTopBarChip(
+        title: $0["title"] as? String ?? "",
+        selected: $0["selected"] as? Bool == true
+      )
+    }
+    let content = makeBarContent(map)
+    page.titleView = content.titleView
+    apply(
+      content,
+      to: page.navigationItem,
+      in: page.navigationController?.navigationBar,
+      animated: animated
+    )
+  }
+
+  /// What a page shows in the bar: its title and its buttons.
+  private struct BarContent {
+    var title: String?
+    var titleView: NativeTopBarTitleView?
+    var leading: [UIBarButtonItem]
+    var trailing: [UIBarButtonItem]
+  }
+
+  private func makeBarContent(_ map: [String: Any]) -> BarContent {
     let token = map["token"] as? Int ?? 0
     let title = map["title"] as? String
-    if map["logo"] as? Bool == true, let title, !title.isEmpty {
-      item.title = nil
-      item.titleView = Self.makeLogoTitleView(title: title)
-    } else {
-      item.titleView = nil
-      item.title = title
-    }
-    item.hidesBackButton = true
-    if #available(iOS 27.1, *) {
-      // The bar decides the axis; ask for the vertical one when both exist.
-      item.verticalBarCompressionBehavior = .automatic
+    // Where the tabs share the bar (iPad) it shows no page title, and so not
+    // the logo either.
+    let logo = map["logo"] as? Bool == true && !layout.tabsInBar
+    let largeTitle = map["largeTitle"] as? Bool == true && layout.largeTitles
+    var titleView: NativeTopBarTitleView?
+    if let title, !title.isEmpty, logo || largeTitle {
+      // A large-title page shows this title only once Flutter's large title
+      // has scrolled under the bar, so it has to be a view we can fade.
+      // Beside the vertical bar a plain title sits at the leading edge, as
+      // the system puts its own; the logo stays centred, as it is everywhere.
+      titleView = NativeTopBarTitleView(
+        content: logo ? Self.makeLogoTitleView(title: title) : Self.makeTitleView(title: title),
+        leadingBesideVerticalBar: !logo
+      )
     }
 
     var leading: [UIBarButtonItem] = []
@@ -798,6 +1168,7 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
         }
       )
       back.accessibilityLabel = "Back"
+      Self.identify(back, as: "back")
       leading.append(back)
     } else if map["leading"] as? String == "close" {
       let close = UIBarButtonItem(
@@ -807,13 +1178,13 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
         }
       )
       close.accessibilityLabel = "Close"
+      Self.identify(close, as: "close")
       leading.append(close)
     }
-    item.leftBarButtonItems = leading
 
     if let tint = map["tint"] as? NSNumber {
       let color = Self.colorFromARGB(tint.intValue)
-      item.leftBarButtonItems?.forEach { $0.tintColor = color }
+      leading.forEach { $0.tintColor = color }
     }
 
     var trailing: [UIBarButtonItem] = []
@@ -865,6 +1236,10 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
           if let tint = action["tint"] as? NSNumber {
             button.tintColor = Self.colorFromARGB(tint.intValue)
           }
+          // The same action on two pages is the same button: the bar morphs
+          // it instead of replacing it.
+          let key = action["icon"] as? String ?? action["title"] as? String
+          Self.identify(button, as: "action.\(key ?? String(index))")
           trailing.append(button)
 
           if let spacerAfter = action["spacerAfter"] as? Int, spacerAfter == 1 {
@@ -875,7 +1250,77 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
         }
       }
     }
-    item.rightBarButtonItems = trailing.reversed()
+    return BarContent(
+      title: title,
+      titleView: titleView,
+      leading: leading,
+      trailing: trailing.reversed()
+    )
+  }
+
+  private func apply(
+    _ content: BarContent,
+    to item: UINavigationItem,
+    in bar: UINavigationBar?,
+    animated: Bool
+  ) {
+    // The title being replaced, if shown, fades out instead of vanishing. It
+    // may never have been drawn (a tab switch has just put it there), so the
+    // view itself moves over rather than an image of it.
+    let previousTitle = (item.titleView as? NativeTopBarTitleView)?.content
+    let outgoing = animated && (previousTitle?.alpha ?? 0) > 0.01 ? previousTitle : nil
+    if let titleView = content.titleView {
+      item.title = nil
+      item.titleView = titleView
+    } else {
+      item.titleView = nil
+      item.title = content.title
+    }
+    item.hidesBackButton = true
+    if #available(iOS 27.1, *) {
+      // The bar decides the axis; ask for the vertical one when both exist.
+      item.verticalBarCompressionBehavior = .automatic
+    }
+    if animated, let titleView = content.titleView, let bar {
+      // A new title view laid out inside the animated item change would grow
+      // from an empty frame. Give it its frame first, then fade it in with
+      // the buttons.
+      bar.layoutIfNeeded()
+      let title = titleView.content
+      let target = title.alpha
+      title.alpha = 0
+      if let outgoing {
+        let size = outgoing.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+        outgoing.removeFromSuperview()
+        outgoing.translatesAutoresizingMaskIntoConstraints = true
+        outgoing.isUserInteractionEnabled = false
+        outgoing.frame = CGRect(
+          x: titleView.bounds.midX - size.width / 2,
+          y: titleView.bounds.midY - size.height / 2,
+          width: size.width,
+          height: size.height
+        )
+        titleView.addSubview(outgoing)
+      }
+      UIView.animate(
+        withDuration: 0.25,
+        delay: 0,
+        options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut],
+        animations: {
+          title.alpha = target
+          outgoing?.alpha = 0
+        },
+        completion: { _ in outgoing?.removeFromSuperview() }
+      )
+    }
+    item.setLeftBarButtonItems(content.leading, animated: animated)
+    item.setRightBarButtonItems(content.trailing, animated: animated)
+  }
+
+  private static func identify(_ item: UIBarButtonItem, as identifier: String) {
+    if #available(iOS 26.0, *) {
+      item.identifier = identifier
+    }
   }
 
   private func makeMenu(
@@ -945,9 +1390,7 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
 
     let label = UILabel()
     label.text = title
-    label.font = UIFontMetrics(forTextStyle: .headline).scaledFont(
-      for: .systemFont(ofSize: 17, weight: .semibold)
-    )
+    label.font = titleFont
     label.adjustsFontForContentSizeCategory = true
     label.textColor = .label
 
@@ -956,6 +1399,23 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
     stack.alignment = .center
     stack.spacing = 6
     return stack
+  }
+
+  /// A plain title, styled like the bar's own inline title.
+  private static func makeTitleView(title: String) -> UIView {
+    let label = UILabel()
+    label.text = title
+    label.font = titleFont
+    label.adjustsFontForContentSizeCategory = true
+    label.textColor = .label
+    label.accessibilityTraits.insert(.header)
+    return label
+  }
+
+  private static var titleFont: UIFont {
+    UIFontMetrics(forTextStyle: .headline).scaledFont(
+      for: .systemFont(ofSize: 17, weight: .semibold)
+    )
   }
 
   private static func colorFromARGB(_ argb: Int) -> UIColor {
@@ -1033,13 +1493,660 @@ private final class NativeTopBarContentAnimator: NSObject,
   }
 }
 
-private final class NativeTopBarPageController: UIViewController {
+/// One page of a tab's stack: the root page Flutter starts on, or a
+/// placeholder pushed so the bar plays UIKit's own item transition. Flutter
+/// draws the page itself; this controller only carries the navigation item
+/// and the page's scroll position.
+final class NativeTopBarPageController: UIViewController {
   var token: Int = 0
+
+  /// The item Dart last described for this page.
+  var itemMap: [String: Any] = [:]
+
+  /// Whether the bar shows this page's small title right now.
+  var isTitleShown: Bool { !largeTitle || scrollOffset >= collapseOffset }
+
+  /// The page asks for a large title.
+  var wantsLargeTitle = false {
+    didSet { largeTitleChanged() }
+  }
+
+  /// The shell's layout has large titles (see `NativeShellLayout`).
+  var largeTitlesEnabled = false {
+    didSet { largeTitleChanged() }
+  }
+
+  /// Flutter draws this page's title large while its content is at the top,
+  /// so the bar shows [titleView] only after that title has scrolled away.
+  var largeTitle: Bool { wantsLargeTitle && largeTitlesEnabled }
+
+  /// The custom title view of the navigation item, faded in and out here.
+  weak var titleView: NativeTopBarTitleView? {
+    didSet { updateTitleVisibility(animated: false) }
+  }
+
+  /// Height of the band Flutter's large title takes under the bar, as Dart
+  /// describes it.
+  var largeTitleBand: CGFloat = 0 {
+    didSet { syncProxyOffset() }
+  }
+
+  /// How far the page scrolls before the top of the large title reaches the
+  /// bar, as Dart describes it. The bar's glass starts there, as the large
+  /// title fades out, so the glass never covers part of it.
+  var largeTitleCollapseOffset: CGFloat = 0 {
+    didSet { syncProxyOffset() }
+  }
+
+  /// The large title band in the current layout; content only reaches the
+  /// bar once it has scrolled past it.
+  var largeTitleHeight: CGFloat { largeTitle ? largeTitleBand : 0 }
+
+  private var collapseOffset: CGFloat { largeTitle ? largeTitleCollapseOffset : 0 }
+
+  /// The chips Dart describes; the strip under the bar shows them where the
+  /// layout has large titles.
+  var chips: [NativeTopBarChip] = []
+
+  /// Whether content has scrolled past the large title band, under the bar
+  /// and the chip strip.
+  var contentIsUnderBar: Bool { scrollOffset > largeTitleHeight }
+
+  /// How far Flutter's content has scrolled, as reported by Dart.
+  private(set) var scrollOffset: CGFloat = 0
+
+  let scrollProxy = NativeTopBarScrollProxy()
 
   override func loadView() {
     let view = UIView()
     view.backgroundColor = .clear
     view.isOpaque = false
+    scrollProxy.frame = view.bounds
+    scrollProxy.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    // Added before Flutter is inserted below it, so the proxy's scroll-edge
+    // effect is drawn over Flutter's content.
+    view.addSubview(scrollProxy)
     self.view = view
+  }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    // Flutter's content is not a UIScrollView, so the bar would otherwise
+    // never learn that content has scrolled under it.
+    setContentScrollView(scrollProxy, for: .top)
+  }
+
+  /// Mirrors the page's scroll position sent by Dart: `offset`, how far the
+  /// content has scrolled up.
+  func applyScroll(_ state: [String: Any], animated: Bool) {
+    guard let offset = (state["offset"] as? NSNumber)?.doubleValue else { return }
+    scrollOffset = CGFloat(offset)
+    syncProxyOffset()
+    updateTitleVisibility(animated: animated)
+  }
+
+  private func largeTitleChanged() {
+    syncProxyOffset()
+    updateTitleVisibility(animated: false)
+  }
+
+  /// The bar fades its edge effect in as soon as the proxy leaves the top,
+  /// wherever its content is, so the proxy stays at the top until the large
+  /// title is about to go under the bar.
+  private func syncProxyOffset() {
+    scrollProxy.offsetFromTop = max(0, scrollOffset - collapseOffset)
+  }
+
+  private func updateTitleVisibility(animated: Bool) {
+    guard let content = titleView?.content else { return }
+    let alpha: CGFloat = isTitleShown ? 1 : 0
+    guard content.alpha != alpha else { return }
+    guard animated else {
+      content.alpha = alpha
+      return
+    }
+    UIView.animate(
+      withDuration: 0.2,
+      delay: 0,
+      options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseInOut]
+    ) {
+      content.alpha = alpha
+    }
+  }
+}
+
+/// The navigation item's title view on pages that fade their title.
+///
+/// The bar animates the alpha of the title view it is given during its own
+/// transitions, so the fade is applied to [content] inside it instead.
+final class NativeTopBarTitleView: UIView {
+  let content: UIView
+
+  /// Whether the title takes the leading edge of the band beside the iPhone
+  /// Duo vertical bar, where the system puts a plain title.
+  private let leadingBesideVerticalBar: Bool
+
+  init(content: UIView, leadingBesideVerticalBar: Bool = true) {
+    self.content = content
+    self.leadingBesideVerticalBar = leadingBesideVerticalBar
+    super.init(frame: .zero)
+    content.translatesAutoresizingMaskIntoConstraints = false
+    addSubview(content)
+    NSLayoutConstraint.activate([
+      content.leadingAnchor.constraint(equalTo: leadingAnchor),
+      content.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
+      content.topAnchor.constraint(equalTo: topAnchor),
+      content.bottomAnchor.constraint(equalTo: bottomAnchor),
+    ])
+    if #available(iOS 27.1, *) {
+      registerForTraitChanges(UITraitCollection.systemTraitsAffectingVerticalBarEdge) {
+        (self: Self, _: UITraitCollection) in
+        self.invalidateIntrinsicContentSize()
+      }
+    }
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) is not supported")
+  }
+
+  /// Beside the iPhone Duo vertical bar the system puts a plain title at the
+  /// leading edge of the title band. A title view is centred instead, unless
+  /// it takes the whole band, so it does, with its content at the start.
+  private var fillsBand: Bool {
+    guard leadingBesideVerticalBar else { return false }
+    if #available(iOS 27.1, *) {
+      return traitCollection.verticalBarEdge != .unspecified
+    }
+    return false
+  }
+
+  override var intrinsicContentSize: CGSize {
+    let size = content.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+    guard fillsBand else { return size }
+    return CGSize(width: UIView.layoutFittingExpandedSize.width, height: size.height)
+  }
+
+  override func sizeThatFits(_ size: CGSize) -> CGSize {
+    intrinsicContentSize
+  }
+}
+
+final class NativeTopBarScrollProxy: UIScrollView {
+  var offsetFromTop: CGFloat = 0 {
+    didSet { syncOffset() }
+  }
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    backgroundColor = .clear
+    isUserInteractionEnabled = false
+    // The status bar tap belongs to Flutter's own scroll-to-top view; UIKit
+    // only honours it when exactly one scroll view asks for it.
+    scrollsToTop = false
+    showsVerticalScrollIndicator = false
+    showsHorizontalScrollIndicator = false
+    contentInsetAdjustmentBehavior = .always
+    // Tall enough that the offset is never clamped by the content.
+    contentSize = CGSize(width: 1, height: 1_000_000)
+    isAccessibilityElement = false
+    accessibilityElementsHidden = true
+    if #available(iOS 26.0, *) {
+      // Only the top bar follows Flutter's scroll position.
+      bottomEdgeEffect.isHidden = true
+      leftEdgeEffect.isHidden = true
+      rightEdgeEffect.isHidden = true
+    }
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) is not supported")
+  }
+
+  /// The inset changes when the bar is shown or hidden and on rotation; keep
+  /// the same distance from the top.
+  override func adjustedContentInsetDidChange() {
+    super.adjustedContentInsetDidChange()
+    syncOffset()
+  }
+
+  private func syncOffset() {
+    let target = CGPoint(
+      x: -adjustedContentInset.left,
+      y: -adjustedContentInset.top + offsetFromTop
+    )
+    if contentOffset != target {
+      contentOffset = target
+    }
+  }
+}
+
+/// One chip of a page's strip under the bar, as Dart describes it.
+struct NativeTopBarChip: Equatable {
+  let title: String
+  let selected: Bool
+}
+
+/// A row of Liquid Glass chips under one tab's bar, such as the card folders.
+///
+/// It lives in the navigation controller's view, below the bar and above the
+/// pages, so it stays put while pages change underneath and only fades when
+/// the page on top has no chips. On a large-title page it sits under Flutter's
+/// large title and moves up with it, then stays under the bar while content
+/// scrolls beneath. The page's scroll-edge effect extends behind it, so that
+/// content never shows sharply between the chips.
+final class NativeTopBarChipStrip: UIView {
+  var onTap: ((Int) -> Void)?
+  var onLongPress: ((Int) -> Void)?
+
+  private let scrollView = UIScrollView()
+  private let stack = UIStackView()
+  private var chips: [NativeTopBarChip] = []
+  private var buttons: [UIButton] = []
+  private var topConstraint: NSLayoutConstraint?
+  private var shown = false
+  private var covered = false
+  private var edgeInteraction: AnyObject?
+
+  /// Height of the strip; Dart insets the page by the same amount
+  /// (`kTopBarAccessoryHeight`).
+  static let height: CGFloat = 52
+
+  init() {
+    super.init(frame: .zero)
+    translatesAutoresizingMaskIntoConstraints = false
+    alpha = 0
+    isHidden = true
+
+    scrollView.translatesAutoresizingMaskIntoConstraints = false
+    scrollView.showsHorizontalScrollIndicator = false
+    scrollView.showsVerticalScrollIndicator = false
+    scrollView.alwaysBounceVertical = false
+    scrollView.scrollsToTop = false
+    // Glass draws a little outside each chip.
+    scrollView.clipsToBounds = false
+    scrollView.contentInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+    addSubview(scrollView)
+
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    stack.axis = .horizontal
+    stack.alignment = .center
+    stack.spacing = 8
+    scrollView.addSubview(stack)
+
+    NSLayoutConstraint.activate([
+      scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
+      scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
+      scrollView.topAnchor.constraint(equalTo: topAnchor),
+      scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      stack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+      stack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+      stack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+      stack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+      stack.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor),
+    ])
+
+    if #available(iOS 26.0, *) {
+      let interaction = UIScrollEdgeElementContainerInteraction()
+      interaction.edge = .top
+      addInteraction(interaction)
+      edgeInteraction = interaction
+    }
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) is not supported")
+  }
+
+  /// Places the strip under [nav]'s bar, above its pages.
+  func install(in nav: UINavigationController) {
+    nav.view.insertSubview(self, belowSubview: nav.navigationBar)
+    let top = topAnchor.constraint(equalTo: nav.navigationBar.bottomAnchor)
+    topConstraint = top
+    NSLayoutConstraint.activate([
+      // Clear of the side strips, such as the iPhone Duo vertical bar.
+      leadingAnchor.constraint(equalTo: nav.view.safeAreaLayoutGuide.leadingAnchor),
+      trailingAnchor.constraint(equalTo: nav.view.safeAreaLayoutGuide.trailingAnchor),
+      heightAnchor.constraint(equalToConstant: Self.height),
+      top,
+    ])
+  }
+
+  /// Sits below [page]'s large title and moves with it: up as it collapses,
+  /// down when the content is pulled past the top.
+  func follow(page: NativeTopBarPageController) {
+    let band = page.largeTitleHeight
+    topConstraint?.constant = band > 0 ? band - min(page.scrollOffset, band) : 0
+    if #available(iOS 26.0, *) {
+      // UIKit shows the edge effect as soon as the strip overlaps the proxy's
+      // content, and the proxy, which cannot move with the large title, would
+      // overlap it from the start and blur the title. Extend the effect
+      // behind the chips only once content really is beneath them.
+      (edgeInteraction as? UIScrollEdgeElementContainerInteraction)?.scrollView =
+        page.contentIsUnderBar ? page.scrollProxy : nil
+    }
+  }
+
+  func update(chips: [NativeTopBarChip], animated: Bool) {
+    guard chips != self.chips else { return }
+    let sameChips = chips.map(\.title) == self.chips.map(\.title)
+    self.chips = chips
+    if sameChips {
+      let restyle = {
+        for (button, chip) in zip(self.buttons, chips) {
+          self.style(button, as: chip)
+        }
+      }
+      if animated {
+        UIView.animate(withDuration: 0.2, animations: restyle)
+      } else {
+        restyle()
+      }
+    } else {
+      rebuild()
+    }
+    revealSelection(animated: animated && sameChips)
+  }
+
+  /// How the page that owns the chips changed, which decides how the strip
+  /// comes and goes.
+  enum Transition {
+    /// No visible change of page (first install, a scroll report).
+    case none
+    /// The same page changed its chips.
+    case fade
+    /// A page was pushed: chips of the page underneath slide off to the left
+    /// with it, as UIKit moves the outgoing page.
+    case push
+    /// A page was popped: chips of the revealed page slide back in.
+    case pop
+    /// Their tab is coming in, sliding by [shift] like Flutter's tab switch.
+    case enter(shift: CGPoint)
+
+    var isAnimated: Bool {
+      if case .none = self { return false }
+      return true
+    }
+  }
+
+  /// How far Flutter slides a tab's page while switching tabs, as a fraction
+  /// of the width.
+  static let tabSlide: CGFloat = 0.1
+
+  /// Flutter's tab switch: 250ms, ease-out cubic.
+  static func tabAnimator() -> UIViewPropertyAnimator {
+    UIViewPropertyAnimator(
+      duration: 0.25,
+      controlPoint1: CGPoint(x: 0.215, y: 0.61),
+      controlPoint2: CGPoint(x: 0.355, y: 1)
+    )
+  }
+
+  /// Whether the strip is drawn right now, mid-animation included.
+  var isOnScreen: Bool { !isHidden && alpha > 0.01 && window != nil }
+
+  private var animator: UIViewPropertyAnimator?
+
+  private var targetAlpha: CGFloat { shown ? (covered ? 0.45 : 1) : 0 }
+
+  /// Shows or hides the strip. Repeating the current state changes nothing,
+  /// so a scroll report cannot cut a running transition short.
+  func setShown(_ shown: Bool, covered: Bool, transition: Transition) {
+    let appearing = shown && !self.shown
+    let disappearing = !shown && self.shown
+    let coverChanged = covered != self.covered
+    self.shown = shown
+    self.covered = covered
+    isUserInteractionEnabled = shown && !covered
+    if appearing {
+      appear(transition)
+    } else if disappearing {
+      disappear(transition)
+    } else if coverChanged {
+      animate(.fade) { self.alpha = self.targetAlpha }
+    }
+  }
+
+  /// Dimmed and inert while a Flutter modal covers the page, like the bar.
+  func setCovered(_ covered: Bool) {
+    setShown(shown, covered: covered, transition: .fade)
+  }
+
+  /// Brings a strip that is already shown in with its tab.
+  func playEntrance(shift: CGPoint) {
+    guard shown else { return }
+    animator?.stopAnimation(true)
+    isHidden = false
+    alpha = 0
+    transform = CGAffineTransform(translationX: shift.x, y: shift.y)
+    animate(.enter(shift: shift)) {
+      self.alpha = self.targetAlpha
+      self.transform = .identity
+    }
+  }
+
+  private func appear(_ transition: Transition) {
+    let from: CGPoint
+    switch transition {
+    case .none:
+      animator?.stopAnimation(true)
+      isHidden = false
+      alpha = targetAlpha
+      transform = .identity
+      return
+    case .fade: from = .zero
+    case .push: from = CGPoint(x: bounds.width / 3, y: 0)
+    case .pop: from = CGPoint(x: -bounds.width / 3, y: 0)
+    case .enter(let shift): from = shift
+    }
+    if isHidden || alpha < 0.01 {
+      transform = CGAffineTransform(translationX: from.x, y: from.y)
+      alpha = 0
+    }
+    isHidden = false
+    animate(transition) {
+      self.alpha = self.targetAlpha
+      self.transform = .identity
+    }
+  }
+
+  private func disappear(_ transition: Transition) {
+    let to: CGFloat
+    switch transition {
+    case .none:
+      animator?.stopAnimation(true)
+      alpha = 0
+      isHidden = true
+      transform = .identity
+      return
+    case .fade, .enter: to = 0
+    case .push: to = -bounds.width / 3
+    case .pop: to = bounds.width / 3
+    }
+    animate(transition, completion: {
+      guard !self.shown else { return }
+      self.isHidden = true
+      self.transform = .identity
+    }) {
+      self.alpha = 0
+      self.transform = CGAffineTransform(translationX: to, y: 0)
+    }
+  }
+
+  /// Runs [changes] with the timing of [transition], picking up from wherever
+  /// a running animation has got to.
+  private func animate(
+    _ transition: Transition,
+    completion: (() -> Void)? = nil,
+    changes: @escaping () -> Void
+  ) {
+    animator?.stopAnimation(true)
+    let next: UIViewPropertyAnimator
+    switch transition {
+    case .push, .pop:
+      // The navigation bar's own push and pop.
+      next = UIViewPropertyAnimator(duration: 0.35, dampingRatio: 1)
+    case .enter:
+      next = Self.tabAnimator()
+    case .none, .fade:
+      next = UIViewPropertyAnimator(duration: 0.2, curve: .easeInOut)
+    }
+    next.isUserInteractionEnabled = true
+    next.addAnimations(changes)
+    next.addCompletion { position in
+      if position == .end { completion?() }
+    }
+    animator = next
+    next.startAnimation()
+  }
+
+  /// Touches between the chips reach Flutter's content below.
+  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    let hit = super.hitTest(point, with: event)
+    return hit === self || hit === scrollView || hit === stack ? nil : hit
+  }
+
+  private func rebuild() {
+    buttons.forEach { $0.removeFromSuperview() }
+    buttons = chips.enumerated().map { index, chip in
+      let button = UIButton(type: .system)
+      button.tag = index
+      // Each chip keeps its own title's width; the stack must not even them
+      // out.
+      button.setContentHuggingPriority(.required, for: .horizontal)
+      button.setContentCompressionResistancePriority(.required, for: .horizontal)
+      style(button, as: chip)
+      button.addAction(
+        UIAction { [weak self] _ in self?.onTap?(index) },
+        for: .primaryActionTriggered
+      )
+      button.addGestureRecognizer(
+        UILongPressGestureRecognizer(target: self, action: #selector(longPressed(_:)))
+      )
+      stack.addArrangedSubview(button)
+      return button
+    }
+    layoutIfNeeded()
+  }
+
+  private func style(_ button: UIButton, as chip: NativeTopBarChip) {
+    var configuration: UIButton.Configuration
+    if #available(iOS 26.0, *) {
+      configuration = chip.selected ? .prominentGlass() : .glass()
+    } else {
+      configuration = chip.selected ? .filled() : .gray()
+    }
+    configuration.title = chip.title
+    configuration.cornerStyle = .capsule
+    configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer {
+      var attributes = $0
+      attributes.font = UIFontMetrics(forTextStyle: .subheadline).scaledFont(
+        for: .systemFont(ofSize: 15, weight: .medium)
+      )
+      return attributes
+    }
+    configuration.contentInsets = NSDirectionalEdgeInsets(
+      top: 8, leading: 14, bottom: 8, trailing: 14
+    )
+    if !chip.selected {
+      configuration.baseForegroundColor = .label
+    }
+    button.configuration = configuration
+    if chip.selected {
+      button.accessibilityTraits.insert(.selected)
+    } else {
+      button.accessibilityTraits.remove(.selected)
+    }
+  }
+
+  private func revealSelection(animated: Bool) {
+    guard let index = chips.firstIndex(where: \.selected),
+      buttons.indices.contains(index)
+    else { return }
+    layoutIfNeeded()
+    scrollView.scrollRectToVisible(
+      buttons[index].frame.insetBy(dx: -16, dy: 0),
+      animated: animated
+    )
+  }
+
+  @objc private func longPressed(_ recognizer: UILongPressGestureRecognizer) {
+    guard recognizer.state == .began, let index = recognizer.view?.tag else { return }
+    onLongPress?(index)
+  }
+}
+
+/// Keeps Flutter's accessibility scroll views from drawing a scroll-edge
+/// effect.
+///
+/// While semantics are on (VoiceOver, Voice Control, Switch Control...)
+/// Flutter mirrors every scrollable with an invisible
+/// `FlutterSemanticsScrollView` that follows its offset. iOS 26 gives those
+/// real scroll views their own edge effect under the bar, which paints the bar
+/// white as soon as a page scrolls, ignoring where its content is. The page's
+/// own proxy scroll view is what draws the bar's effect, so theirs is hidden
+/// as each one enters the window.
+private enum FlutterSemanticsEdgeEffects {
+  static func disable() {
+    _ = installed
+  }
+
+  private static let installed: Void = {
+    guard #available(iOS 26.0, *),
+      let semanticsClass = NSClassFromString("FlutterSemanticsScrollView"),
+      let method = class_getInstanceMethod(semanticsClass, #selector(UIView.didMoveToWindow))
+    else { return }
+    typealias DidMoveToWindow = @convention(c) (AnyObject, Selector) -> Void
+    let original = unsafeBitCast(method_getImplementation(method), to: DidMoveToWindow.self)
+    let replacement: @convention(block) (UIScrollView) -> Void = { scrollView in
+      original(scrollView, #selector(UIView.didMoveToWindow))
+      scrollView.topEdgeEffect.isHidden = true
+      scrollView.bottomEdgeEffect.isHidden = true
+      scrollView.leftEdgeEffect.isHidden = true
+      scrollView.rightEdgeEffect.isHidden = true
+    }
+    let implementation = imp_implementationWithBlock(replacement)
+    // Overrides the method on Flutter's class only; when the class does not
+    // define it, the inherited one is still called first.
+    if !class_addMethod(
+      semanticsClass,
+      #selector(UIView.didMoveToWindow),
+      implementation,
+      method_getTypeEncoding(method)
+    ) {
+      method_setImplementation(method, implementation)
+    }
+  }()
+}
+
+/// How the shell lays its chrome out, decided from the window's traits rather
+/// than from the device: the system itself places the bars and tabs, and this
+/// only covers what the app adds on top of them.
+struct NativeShellLayout: Equatable {
+  /// Pages draw their large title, which the bar collapses into its small
+  /// title, and get the chip strip below it. Only where the window is compact
+  /// in width and the tab bar therefore sits at the bottom, apart from the bar.
+  var largeTitles = false
+
+  /// The app has no top bar where height is compact (an iPhone in landscape),
+  /// except beside a vertical bar, which keeps the items.
+  var barHidden = false
+
+  /// A regular-width window puts the tabs inside the top bar (iPad), which
+  /// then shows no page title.
+  var tabsInBar = false
+
+  /// The tabs run down a vertical bar (iPhone Duo).
+  var verticalTabs = false
+
+  init() {}
+
+  init(traits: UITraitCollection) {
+    if #available(iOS 27.1, *) {
+      verticalTabs = traits.verticalBarEdge != .unspecified
+    }
+    barHidden = traits.verticalSizeClass == .compact && !verticalTabs
+    tabsInBar = traits.horizontalSizeClass == .regular && !verticalTabs && !barHidden
+    largeTitles = traits.horizontalSizeClass == .compact && !barHidden
   }
 }

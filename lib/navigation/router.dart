@@ -7,7 +7,6 @@ import '../core/app_host_mode.dart';
 import '../models/card/card.dart';
 import '../models/card/saved_card.dart';
 import '../providers/navigation_bar_provider.dart';
-import '../ui/adaptive_tab_shell.dart';
 import '../ui/native_hosted_scaffold.dart';
 import '../ui/pages/camera_page.dart';
 import '../ui/pages/card_detail_page.dart';
@@ -21,7 +20,6 @@ import '../ui/pages/settings_page.dart';
 import '../ui/scaffold_with_navbar.dart';
 import '../ui/shell_state_sync.dart';
 import '../ui/widgets/animated_branch_container.dart';
-import '../ui/widgets/app_scaffold.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
@@ -82,9 +80,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (usesNativeShell) {
             return NativeHostedScaffold(navigationShell: navigationShell);
           }
-          return useCupertinoChrome
-              ? AdaptiveTabShell(navigationShell: navigationShell)
-              : ScaffoldWithNavBar(navigationShell: navigationShell);
+          return ScaffoldWithNavBar(navigationShell: navigationShell);
         },
         branches: [
           StatefulShellBranch(

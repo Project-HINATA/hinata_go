@@ -1,10 +1,8 @@
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
-import 'package:adaptive_platform_ui/src/platform/system_vertical_bar.dart';
 import 'package:adaptive_platform_ui/src/toolbar/native_top_bar_bridge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foldable/foldable.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -25,93 +23,76 @@ void main() {
         .setMockMethodCallHandler(NativeTopBarBridge.channel, null);
   });
 
-  Widget host({required Size size, EdgeInsets padding = EdgeInsets.zero}) {
+  Widget host({bool iOS26 = true}) {
     return MediaQuery(
-      data: MediaQueryData(size: size, padding: padding, viewPadding: padding),
+      data: const MediaQueryData(size: Size(390, 844)),
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: AdaptiveToolbarHost(
           nativeTopBar: true,
-          debugFold: FoldableData.unsupported,
-          debugVerticalBarEdge: SystemVerticalBarEdge.unknown,
+          debugIOS26: iOS26,
           child: const SizedBox.expand(),
         ),
       ),
     );
   }
 
-  bool? lastVisibility() {
-    for (final call in calls.reversed) {
-      if (call.method == 'setVisible') {
-        return (call.arguments as Map<Object?, Object?>)['visible'] as bool?;
-      }
-    }
-    return null;
+  ToolbarChromeScope scope(WidgetTester tester) =>
+      tester.widget<ToolbarChromeScope>(find.byType(ToolbarChromeScope));
+
+  Future<void> sendLayout(Map<String, Object?> layout) {
+    return TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+          NativeTopBarBridge.channelName,
+          const StandardMethodCodec().encodeMethodCall(
+            MethodCall('layout', layout),
+          ),
+          (_) {},
+        );
   }
 
-  testWidgets('the native bar owns the chrome everywhere on iOS', (
-    tester,
-  ) async {
-    await tester.pumpWidget(host(size: const Size(390, 844)));
+  testWidgets('the native bar owns the chrome on iOS 26', (tester) async {
+    await tester.pumpWidget(host());
     await tester.pump();
     expect(
       calls.map((call) => call.method),
-      containsAll(<String>['reset', 'setVisible']),
+      containsAll(<String>['reset', 'getLayout']),
     );
-    expect(lastVisibility(), isTrue);
-    expect(
-      tester
-          .widget<ToolbarChromeScope>(find.byType(ToolbarChromeScope))
-          .nativeTopBarOwned,
-      isTrue,
-    );
+    expect(scope(tester).nativeTopBarOwned, isTrue);
 
-    // Landscape keeps the native controller active but hides it: pages have
-    // no top bar there and must not reserve its strip.
+    // Before iOS 26 the pages draw their own bars.
     calls.clear();
-    await tester.pumpWidget(host(size: const Size(844, 390)));
+    await tester.pumpWidget(host(iOS26: false));
     await tester.pump();
-    expect(calls.single.method, 'setVisible');
-    expect(lastVisibility(), isFalse);
+    expect(scope(tester).nativeTopBarOwned, isFalse);
+    expect(scope(tester).largeTitles, isFalse);
+  });
 
-    // A Duo pose keeps the same native controller: UIKit moves the item into
-    // the system vertical bar, so the bar stays visible and owned.
-    calls.clear();
-    await tester.pumpWidget(
-      host(
-        size: const Size(466, 678),
-        padding: const EdgeInsets.only(right: 84, bottom: 34),
-      ),
-    );
+  testWidgets('pages follow the layout the native shell reports', (
+    tester,
+  ) async {
+    await tester.pumpWidget(host());
     await tester.pump();
-    expect(lastVisibility(), isTrue);
-    expect(
-      tester
-          .widget<ToolbarChromeScope>(find.byType(ToolbarChromeScope))
-          .nativeTopBarOwned,
-      isTrue,
-    );
+    expect(scope(tester).largeTitles, isFalse);
 
-    // iPad uses the same controller rather than a second Flutter chrome. It
-    // was already visible, so the bridge has nothing new to send.
-    calls.clear();
-    await tester.pumpWidget(host(size: const Size(1024, 1366)));
+    // An iPhone in portrait: large titles under a visible bar.
+    await sendLayout({'largeTitles': true, 'titleMargin': 16.0});
     await tester.pump();
-    expect(lastVisibility(), isNot(false));
-    expect(
-      tester
-          .widget<ToolbarChromeScope>(find.byType(ToolbarChromeScope))
-          .nativeTopBarOwned,
-      isTrue,
-    );
+    expect(scope(tester).largeTitles, isTrue);
+    expect(scope(tester).topBarHidden, isFalse);
+    expect(scope(tester).largeTitleMargin, 16);
 
-    // Back to an iPhone portrait: still the same active controller, so only
-    // its visibility is re-sent.
-    calls.clear();
-    await tester.pumpWidget(host(size: const Size(390, 844)));
+    // In landscape the shell hides its bar.
+    await sendLayout({'barHidden': true});
     await tester.pump();
-    expect(lastVisibility(), isNot(false));
-    expect(calls.map((call) => call.method), isNot(contains('reset')));
+    expect(scope(tester).largeTitles, isFalse);
+    expect(scope(tester).topBarHidden, isTrue);
+
+    // Beside the iPhone Duo vertical bar the tabs run vertically.
+    await sendLayout({'verticalTabs': true});
+    await tester.pump();
+    expect(scope(tester).verticalTabs, isTrue);
+    expect(scope(tester).topBarHidden, isFalse);
   });
 
   testWidgets('switching tabs resets the native stack instead of pushing', (
@@ -126,8 +107,7 @@ void main() {
         child: MaterialApp(
           builder: (context, child) => AdaptiveToolbarHost(
             nativeTopBar: true,
-            debugFold: FoldableData.unsupported,
-            debugVerticalBarEdge: SystemVerticalBarEdge.unknown,
+            debugIOS26: true,
             child: child!,
           ),
           home: ValueListenableBuilder<int>(
@@ -185,8 +165,7 @@ void main() {
           navigatorKey: navigator,
           builder: (context, child) => AdaptiveToolbarHost(
             nativeTopBar: true,
-            debugFold: FoldableData.unsupported,
-            debugVerticalBarEdge: SystemVerticalBarEdge.unknown,
+            debugIOS26: true,
             child: child!,
           ),
           home: const AdaptiveScaffold(

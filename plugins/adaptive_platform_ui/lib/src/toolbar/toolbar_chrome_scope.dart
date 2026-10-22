@@ -1,34 +1,42 @@
 import 'package:flutter/widgets.dart';
 
-/// Tells the pages below an [AdaptiveToolbarHost] which parts of the toolbar
-/// the host is drawing for them right now, so they do not draw the same parts
-/// themselves.
+/// Tells the pages below an [AdaptiveToolbarHost] how the native UIKit chrome
+/// above them is laid out, so they lay themselves out for it.
 ///
-/// The host is the single source of truth for the layout decision: a page
-/// never has to agree with it by measuring the device a second time.
+/// The native shell decides all of it from the system's own traits and the
+/// host only passes it on: a page never measures the device to agree with it.
 class ToolbarChromeScope extends InheritedWidget {
   const ToolbarChromeScope({
     super.key,
-    required this.hostsToolbar,
-    required this.hostsDuoControls,
     this.nativeTopBarOwned = false,
+    this.largeTitles = false,
+    this.topBarHidden = false,
+    this.verticalTabs = false,
+    this.largeTitleMargin,
     required super.child,
   });
-
-  /// True while the host draws the top toolbar (title, back button, actions)
-  /// for every page in one fixed bar. Pages then draw no toolbar of their own
-  /// and only keep their content clear of it.
-  final bool hostsToolbar;
-
-  /// True while the host shows the page's controls (back button, actions) in
-  /// the fixed vertical bar of iPhone Duo, on whichever edge the pose puts it
-  /// (see `DuoPose`). Pages then keep only their title at the top.
-  final bool hostsDuoControls;
 
   /// True while a native UIKit `UINavigationController` above the Flutter view
   /// owns the top bar. Pages draw no top bar and add no top inset; the native
   /// controller contributes the safe area instead.
   final bool nativeTopBarOwned;
+
+  /// True where pages draw their own large title, which the native bar
+  /// collapses into its small title, and a chip strip under the bar: where
+  /// the tab bar sits at the bottom of a compact-width window.
+  final bool largeTitles;
+
+  /// True while the native shell hides the top bar (an iPhone in landscape):
+  /// pages that still need their controls show them themselves.
+  final bool topBarHidden;
+
+  /// True while the tabs run down a vertical bar (iPhone Duo), so switching
+  /// tabs moves along that axis.
+  final bool verticalTabs;
+
+  /// The leading margin of the native bar's own title, which a large title
+  /// lines up with. Null until the native shell reports it.
+  final double? largeTitleMargin;
 
   /// The nearest scope, or null when no host is installed and the page must
   /// draw its whole toolbar itself.
@@ -37,7 +45,9 @@ class ToolbarChromeScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(ToolbarChromeScope oldWidget) =>
-      hostsToolbar != oldWidget.hostsToolbar ||
-      hostsDuoControls != oldWidget.hostsDuoControls ||
-      nativeTopBarOwned != oldWidget.nativeTopBarOwned;
+      nativeTopBarOwned != oldWidget.nativeTopBarOwned ||
+      largeTitles != oldWidget.largeTitles ||
+      topBarHidden != oldWidget.topBarHidden ||
+      verticalTabs != oldWidget.verticalTabs ||
+      largeTitleMargin != oldWidget.largeTitleMargin;
 }

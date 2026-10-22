@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -21,6 +22,7 @@ class ToolbarEntry {
     this.tabBar,
     this.enclosingRoutes = const <ModalRoute<Object?>>[],
     this.titleOverlay,
+    this.scrollOffset,
   });
 
   /// Identifies the registering scaffold instance.
@@ -35,6 +37,12 @@ class ToolbarEntry {
   /// a title with a subtitle), already styled for the page's theme. Null
   /// when the native bar can show [AdaptiveAppBar.title] itself.
   final Widget? titleOverlay;
+
+  /// How far the page's main vertical scroll view is scrolled, in logical
+  /// pixels from its top. The same listenable for the page's whole life, so
+  /// the native bar can follow it across republished entries. Null when the
+  /// page does not report its scroll position.
+  final ValueListenable<double>? scrollOffset;
 
   /// The route the page lives in; null when it is not inside a Navigator.
   final ModalRoute<Object?>? route;

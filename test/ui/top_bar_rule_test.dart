@@ -11,7 +11,7 @@ void main() {
         expect(
           tabTransitionAxis(
             usesNativeBar: true,
-            duoVerticalBar: false,
+            verticalTabs: false,
             useRail: useRail,
           ),
           Axis.horizontal,
@@ -19,11 +19,11 @@ void main() {
       }
     });
 
-    test('the iPhone Duo vertical bar slides vertically', () {
+    test('tabs in a vertical bar (iPhone Duo) slide vertically', () {
       expect(
         tabTransitionAxis(
           usesNativeBar: true,
-          duoVerticalBar: true,
+          verticalTabs: true,
           useRail: false,
         ),
         Axis.vertical,
@@ -34,7 +34,7 @@ void main() {
       expect(
         tabTransitionAxis(
           usesNativeBar: false,
-          duoVerticalBar: false,
+          verticalTabs: false,
           useRail: false,
         ),
         Axis.horizontal,
@@ -42,7 +42,7 @@ void main() {
       expect(
         tabTransitionAxis(
           usesNativeBar: false,
-          duoVerticalBar: false,
+          verticalTabs: false,
           useRail: true,
         ),
         Axis.vertical,
@@ -74,45 +74,20 @@ void main() {
   });
 
   group('iOS top bar', () {
-    test('portrait keeps the bar everywhere', () {
-      for (final duo in [false, true]) {
-        expect(
-          shouldShowIOSTopBar(
-            usesNativeBar: true,
-            landscape: false,
-            verticalBar: duo,
-          ),
-          isTrue,
-        );
-      }
-    });
-
-    test('landscape drops the bar except on the Duo', () {
+    test('the bar shows unless the native shell hides it', () {
       expect(
-        shouldShowIOSTopBar(
-          usesNativeBar: true,
-          landscape: true,
-          verticalBar: false,
-        ),
-        isFalse,
+        shouldShowIOSTopBar(usesNativeBar: true, topBarHidden: false),
+        isTrue,
       );
       expect(
-        shouldShowIOSTopBar(
-          usesNativeBar: true,
-          landscape: true,
-          verticalBar: true,
-        ),
-        isTrue,
+        shouldShowIOSTopBar(usesNativeBar: true, topBarHidden: true),
+        isFalse,
       );
     });
 
     test('Material platforms never use the iOS bar', () {
       expect(
-        shouldShowIOSTopBar(
-          usesNativeBar: false,
-          landscape: false,
-          verticalBar: false,
-        ),
+        shouldShowIOSTopBar(usesNativeBar: false, topBarHidden: false),
         isFalse,
       );
     });
