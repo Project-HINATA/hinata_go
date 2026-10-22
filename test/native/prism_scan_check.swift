@@ -59,9 +59,12 @@ final class ScanCounts {
       case "/api/v1/cards": return ok(["cards": [["id": "card", "label": "测试 Aime", "accessCode": "01234567890123456789"]]])
       case "/api/v1/devices/session/state":
         if stateLimited { return (429, ["error": ["code": "RATE_LIMITED", "message": "稍后重试"], "headers": ["Retry-After": "60"]]) }
-        precondition(request.url!.query!.contains("includePower=0"))
-        return ok(["gate": "ready", "power": "unmanaged", "mahjong": ["capacity": 4, "seats": []]])
-      case "/api/v1/devices/session/power": return ok(["power": "on"])
+        let query = request.url!.query!
+        precondition(query.contains("includePower=0") && query.contains("includeClimate=0"))
+        return ok(["gate": "ready", "power": "unmanaged", "mahjong": ["capacity": 4, "seats": []], "climate": NSNull(),
+                   "device": ["watching": false, "power": NSNull(), "climate": NSNull()]])
+      // An unwatched device's state is asked for once; Home Assistant can be slow, so cards must not wait for it.
+      case "/api/v1/devices/session/device": return ok(["watching": false, "power": "on", "climate": NSNull()])
       // A server without live state: the page keeps polling.
       case "/api/v1/devices/session/ws": return (404, ["error": ["code": "NOT_FOUND", "message": "Not found"]])
       case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": false, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": NSNull(), "entryPricing": []])
@@ -115,13 +118,19 @@ final class ScanCounts {
     try await waitUntil { FixtureProtocol.heldPowerReply != nil }
     precondition(model.state == .ready && model.canUseCards && model.cards.count == 1)
     precondition(model.playerStateLoaded && model.errorMessage == nil, "Initial context must decode and settle")
+    // The header says the power is being asked for while the cards are already usable.
+    precondition(model.checkingPower, "The page names the power read it is waiting on")
     try await Task.sleep(nanoseconds: 6_500_000_000)
     precondition(counts.read("/api/v1/devices/session/state") >= 2)
     precondition(counts.read("/api/v1/shops/store") == 1, "Shop reads: \(counts.read("/api/v1/shops/store"))")
     precondition(counts.read("/api/v1/me") == 1, "Identity reads: \(counts.read("/api/v1/me"))")
-    precondition(counts.read("/api/v1/devices/session/power") == 1, "Slow HA must not overlap or block cards")
+    precondition(counts.read("/api/v1/devices/session/device") == 1, "Slow HA must not overlap or block cards")
+    precondition(counts.read("/api/v1/devices/session/power") == 0, "The old power polling endpoint is no longer used")
     let powerReply = FixtureProtocol.heldPowerReply!; FixtureProtocol.heldPowerReply = nil; powerReply()
-    try await waitUntil { model.deviceState?.power == "on" }
+    try await waitUntil { model.deviceState?.power == "on" && !model.checkingPower }
+    // Once asked, the state is not polled: a device with nothing pushing is not kept live.
+    try await Task.sleep(nanoseconds: 3_500_000_000)
+    precondition(counts.read("/api/v1/devices/session/device") == 1, "The power is asked for once")
     await model.setSceneActive(false)
     let beforeBackground = counts.read("/api/v1/devices/session/state")
     try await Task.sleep(nanoseconds: 3_300_000_000)

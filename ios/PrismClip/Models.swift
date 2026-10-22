@@ -224,7 +224,53 @@ struct SwipeResult: Codable {
     }
   }
 }
-struct PrismDeviceState: Decodable { var gate: String; var power: String; var coinUsed: Bool? = nil; var mahjong: PrismMahjong? = nil; var climate: PrismClimate? = nil }
+struct PrismDeviceState: Decodable {
+  var gate: String
+  /// What the older server contract reported; the device's power now arrives in `device`.
+  var power: String
+  var coinUsed: Bool? = nil
+  var mahjong: PrismMahjong? = nil
+  var climate: PrismClimate? = nil
+  /// What the platform knows of the device's Home Assistant state. Absent from an older server.
+  var device: PrismDeviceFacts? = nil
+}
+
+/// The device's power and air conditioner as the platform knows them. While `watching`, a
+/// HINATA IO in the shop reports every change, so the values are current and pushed; otherwise
+/// nothing is known and the page asks for the state once.
+struct PrismDeviceFacts: Decodable, Equatable {
+  var watching: Bool
+  var power: String? = nil
+  var climate: PrismClimate? = nil
+}
+
+/// A frame the shop hub pushes to a device page. A key that is absent was not said, which is
+/// not the same as one that was said as null (the source reports the device unavailable).
+struct PrismLiveFrame {
+  let type: String
+  let watching: Bool?
+  let hasPower: Bool
+  let power: String?
+  let hasClimate: Bool
+  let climate: PrismClimate?
+
+  init?(_ text: String) {
+    guard let data = text.data(using: .utf8),
+          let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let type = object["type"] as? String else { return nil }
+    self.type = type
+    watching = object["watching"] as? Bool
+    hasPower = object.keys.contains("power")
+    // Only "on" and "off" are a power state; anything else is unknown.
+    power = (object["power"] as? String).flatMap { $0 == "on" || $0 == "off" ? $0 : nil }
+    hasClimate = object.keys.contains("climate")
+    if let raw = object["climate"], !(raw is NSNull), let encoded = try? JSONSerialization.data(withJSONObject: raw) {
+      climate = try? JSONDecoder().decode(PrismClimate.self, from: encoded)
+    } else {
+      climate = nil
+    }
+  }
+}
 
 /// A Home Assistant air conditioner as the device state reports it. The modes, fan speeds
 /// and temperature range are the entity's own, so the controls only offer those.
@@ -247,6 +293,21 @@ struct PrismClimate: Decodable, Equatable {
     let step = temperatureStep ?? 0.5
     let next = (current + Double(steps) * step).clamped(minTemperature ?? 16, maxTemperature ?? 30)
     return (next / step).rounded() * step
+  }
+
+  /// What the controls show once Home Assistant accepted `action` while nothing pushes the state:
+  /// the setting that was asked for. A watched device reports the real state as an event instead.
+  func settled(by action: String, _ extra: [String: Any] = [:]) -> PrismClimate {
+    var next = self
+    switch action {
+    case "climate.off": next.mode = "off"
+    case "climate.on": if !isOn { next.mode = choosableModes.first ?? "auto" }
+    case "climate.set_mode": if let mode = extra["mode"] as? String { next.mode = mode }
+    case "climate.set_temperature": if let value = extra["temperature"] as? Double { next.temperature = value }
+    case "climate.set_fan_mode": if let fan = extra["fanMode"] as? String { next.fanMode = fan }
+    default: break
+    }
+    return next
   }
 }
 

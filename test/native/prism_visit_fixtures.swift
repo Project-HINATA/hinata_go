@@ -97,7 +97,7 @@ final class FixtureProtocol: URLProtocol {
         Self.heldReply = reply
       } else if Self.holdNextIdentityResponse && request.url?.path == "/api/v1/me" {
         Self.holdNextIdentityResponse = false; Self.heldIdentityReply = reply
-      } else if Self.holdNextPowerResponse && request.url?.path == "/api/v1/devices/session/power" {
+      } else if Self.holdNextPowerResponse && request.url?.path == "/api/v1/devices/session/device" {
         Self.holdNextPowerResponse = false; Self.heldPowerReply = reply
       } else { reply() }
     } catch { client?.urlProtocol(self, didFailWithError: error) }

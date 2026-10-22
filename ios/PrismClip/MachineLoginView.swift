@@ -214,7 +214,10 @@ private struct ClipSessionPage: View {
       if model.machine != nil || model.visit != nil {
         let name = model.machine?.shop.name ?? model.visit?.shop.name ?? "PRiSM"
         let heroUrl = model.machine?.shop.heroUrl ?? model.visit?.shop.heroUrl
-        ClipShopHero(name: name, subtitle: model.machine?.name ?? model.shopBillingState,
+        // While the machine's power is being asked for, the header says so; the page is usable meanwhile.
+        let subtitle = model.machine.map { model.checkingPower ? "\($0.name) · \(String(localized: "正在获取电源状态"))" : $0.name }
+          ?? model.shopBillingState
+        ClipShopHero(name: name, subtitle: subtitle,
                      heroUrl: heroUrl, origin: model.api.baseURL, width: cardWidth)
           .id(model.api.baseURL.absoluteString + (heroUrl ?? ""))
       }
@@ -1068,7 +1071,9 @@ private struct ClipClimateCard: View {
     hold()
     sendTemperature?.cancel()
     sendTemperature = Task {
-      try? await Task.sleep(for: .milliseconds(700))
+      // Presses are gathered: each one starts the wait again, so stepping through several
+      // degrees sends one request instead of one per press.
+      try? await Task.sleep(for: .milliseconds(1000))
       // A press made while another action runs waits for it rather than being dropped.
       while !Task.isCancelled && busy { try? await Task.sleep(for: .milliseconds(200)) }
       guard !Task.isCancelled, let wanted = draftTemperature else { return }

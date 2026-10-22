@@ -61,6 +61,8 @@ enum PersistentCookieCheck {
     var member = false, active = false
     var signedIn = true
     var power = "unknown"
+    /// Whether a HINATA IO in the shop is watching the device's Home Assistant.
+    var watching = false
     var billing = true
     var identityBindingRequired = true, identityBound = true
     var bindingRequests = 0, bindingStatus = 200
@@ -73,7 +75,7 @@ enum PersistentCookieCheck {
     var cardReads = 0, previewReads = 0
     var shopStatus = 200, previewStatus = 200
     var htmlOutage = false
-    var statusReads = 0, deviceReads = 0, identityReads = 0, bindingStatusReads = 0
+    var statusReads = 0, deviceReads = 0, identityReads = 0, bindingStatusReads = 0, deviceFactReads = 0
     var failNextStatusRead = false
     var checkoutCalls = 0, coinCalls = 0, sessionStarts = 0
     var coinOperations: [String] = []
@@ -134,13 +136,21 @@ enum PersistentCookieCheck {
         if shopStatus != 200 { return (shopStatus, ["error": ["code": "SHOP_NOT_FOUND", "message": "没有找到店铺"]]) }
         if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
         return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"Store Bot","identityBindingRequired":identityBindingRequired,"timeZone":"Asia/Tokyo","heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p","identityBound":identityBound] : NSNull(),"entryPricing":[]])
-      case "/api/v1/devices/session/power": return ok(["power":power])
+      case "/api/v1/devices/session/device":
+        // The one read of an unwatched device's state; a watched one arrives with it in `state`.
+        deviceFactReads += 1
+        return ok(["watching":watching, "power":power == "unknown" ? NSNull() : power as Any,
+                   "climate":capabilities["climate"] == true ? climate as Any : NSNull()])
       case "/api/v1/devices/session/state":
         deviceReads += 1
-        precondition(request.url!.query!.contains("includePower=0"))
+        let query = request.url!.query!
+        precondition(query.contains("includePower=0") && query.contains("includeClimate=0"))
         let gated = billing || capabilities["door"] == true || capabilities["mahjong"] == true
         let gate = !gated ? "ready" : identityBindingRequired && (!member || !identityBound) ? "binding" : !billing ? "ready" : member && active ? "ready" : "entry"
-        return ok(["gate":gate, "power":power,"mahjong":["capacity":4,"seats":mahjongSeats],"climate":capabilities["climate"] == true ? climate : NSNull()])
+        return ok(["gate":gate, "power":"unmanaged","mahjong":["capacity":4,"seats":mahjongSeats],"climate":NSNull(),
+                   "device":["watching":watching,
+                             "power":watching && power != "unknown" ? power as Any : NSNull(),
+                             "climate":watching && capabilities["climate"] == true ? climate as Any : NSNull()]])
       case "/api/v1/shops/store/platform-binding":
         if request.httpMethod == "GET" {
           bindingStatusReads += 1
@@ -182,7 +192,8 @@ enum PersistentCookieCheck {
           if let mode = body["mode"] as? String { climate["mode"] = mode }
           if let value = body["temperature"] as? Double { climate["temperature"] = value }
           if let fan = body["fanMode"] as? String { climate["fanMode"] = fan }
-          return ok(["climate":climate])
+          // Home Assistant accepting it is the whole answer; the state is not read back.
+          return ok([:])
         }
 
         if body["action"] as? String == "coin" {
@@ -312,6 +323,8 @@ enum PersistentCookieCheck {
     capabilities = ["climate":true]
     await model.start(shopCode:"store",publicId:"device")
     precondition(model.showDeviceControls && !model.showNoDeviceActions)
+    // The air conditioner's state is asked for once, without holding the page back.
+    for _ in 0..<10000 where model.deviceState?.climate == nil { await Task.yield() }
     precondition(model.deviceState?.climate?.isOn == false && model.deviceState?.climate?.choosableModes.first == "cool")
     await model.climate("climate.on")
     precondition(model.deviceState?.climate?.mode == "cool")
@@ -336,6 +349,20 @@ enum PersistentCookieCheck {
     power = "unknown"
     await model.refreshVisit()
     precondition(model.showNoDeviceActions)
+    // A watched device arrives with its power in the first read, so nothing is asked of Home
+    // Assistant: a machine found off shows its power page at once, and the press is finished when
+    // Home Assistant answers (no push is connected here to say more).
+    watching = true; capabilities = ["power":true]; power = "off"
+    let factReadsBefore = deviceFactReads
+    await model.start(shopCode: "store", publicId: "device")
+    precondition(model.deviceState?.power == "off", "power: \(String(describing: model.deviceState?.power)) device: \(String(describing: model.deviceState?.device))")
+    precondition(!model.checkingPower, "A watched device is not asked for its power")
+    precondition(!model.showNoDeviceActions, "A machine found off offers its power button")
+    try await Task.sleep(nanoseconds: 300_000_000)
+    precondition(deviceFactReads == factReadsBefore, "A watched device is never asked for its state")
+    await model.device("power.on")
+    precondition(model.deviceState?.power == "on" && !model.waitingPower)
+    watching = false
     capabilities = ["card":true,"power":true]
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.canUseCards && !model.showNoDeviceActions)

@@ -60,12 +60,20 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var inlineNoticeAnchor = ""
   private var inlineNoticeTask: Task<Void, Never>?
   private var powerWaitTask: Task<Void, Never>?
-  /// Something in the shop is watching this device's Home Assistant, so state is pushed.
+  /// The shop hub greeted this device-state connection, and said whether a HINATA IO in the
+  /// shop is watching the device's Home Assistant. While it is, the device's state is pushed.
+  private var liveConnected = false
   private var liveWatching = false
+  /// A connection that had been up closed since: what it last said may be out of date.
+  private var liveDropped = false
+  /// A read found the device watched after the first one said it was not.
+  private var deviceWatched = false
   private var liveSocket: URLSessionWebSocketTask?
   /// A failed live connection is retried no sooner than this, backing off up to a minute.
   private var liveRetryAt = Date.distantPast
   private var liveFailures = 0
+  /// The machine's power is being asked for, so the page header can say so.
+  @Published private(set) var checkingPower = false
   @Published private(set) var deviceBusy = false
   @Published private(set) var notice: String?
   /// The latest settled bill, retained until a new admission supersedes it.
@@ -75,10 +83,11 @@ final class MachineLoginViewModel: ObservableObject {
   private var polling: Task<Void, Never>?
   private var readBackoff = PrismReadBackoff()
   private var metadataReadAt = Date.distantPast
-  private var powerPolling: Task<Void, Never>?
-  private var powerGeneration = UUID()
-  private var powerObserved = false
-  private var powerBackoff = PrismReadBackoff()
+  /// The one read of the device's state, made when nothing pushes it.
+  private var factsTask: Task<Void, Never>?
+  private var factsGeneration = UUID()
+  /// That read was made for this stretch of nothing pushing the state; it is not repeated.
+  private var factsAsked = false
   private var refreshRunning = false
   private var refreshPending = false
   private var refreshError: String?
@@ -183,7 +192,7 @@ final class MachineLoginViewModel: ObservableObject {
     }
     invocationVersion += 1
     closeLiveState()
-    polling?.cancel(); cancelPowerRead()
+    polling?.cancel(); cancelFactsRead()
     shopCode = nil
     checkoutCelebrating = false; settlement = nil
     publicId = nil
@@ -212,7 +221,7 @@ final class MachineLoginViewModel: ObservableObject {
     closeLiveState()
     let version = invocationVersion
     polling?.cancel()
-    cancelPowerRead(); powerObserved = false; powerBackoff.succeed(); readBackoff.succeed(); metadataReadAt = .distantPast
+    cancelFactsRead(); deviceWatched = false; readBackoff.succeed(); metadataReadAt = .distantPast
     await api.invalidateReads()
     guard version == invocationVersion else { return }
     assets = []; history = []; historyNextOffset = nil
@@ -337,7 +346,7 @@ final class MachineLoginViewModel: ObservableObject {
     deviceBusy = true
     visitRevision += 1
     polling?.cancel()
-    cancelPowerRead()
+    cancelFactsRead()
     defer { deviceBusy = false }
     do {
       // Unregister while authentication is still valid, and await the entire sweep.
@@ -473,7 +482,7 @@ final class MachineLoginViewModel: ObservableObject {
     case "expired": expire()
     case "refresh": Task { [weak self] in await self?.refreshVisit() }
     case "signin":
-      state = .unauthenticated; user = nil; userId = ""; cards = []; deviceState = nil; cancelPowerRead()
+      state = .unauthenticated; user = nil; userId = ""; cards = []; deviceState = nil; cancelFactsRead()
     default: break
     }
     if notice.display == "dialog" {
@@ -528,7 +537,7 @@ final class MachineLoginViewModel: ObservableObject {
       if state != .loadingCards { visitRevision += 1 }
       polling?.cancel()
       polling = nil
-      cancelPowerRead()
+      cancelFactsRead()
       closeLiveState()
     } else if ![.loadingMachine, .loadingShop, .loadingCards].contains(state) {
       StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: self.api)
@@ -538,8 +547,9 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   private func scheduleRefresh() {
-    // Binding completion ends binding polling; ordinary bill pages do not poll.
-    let needsRead = needsPlatformBinding
+    // Binding completion ends binding polling; ordinary bill pages do not poll. A device whose state
+    // is pushed hears of the binding from the hub instead of asking.
+    let needsRead = (needsPlatformBinding && !(ticket != nil && pushed))
       || (ticket != nil && (deviceState == nil || machine?.has("mahjong") == true))
       || (isShopOnly && !playerStateLoaded)
       || readBackoff.failures > 0
@@ -590,18 +600,29 @@ final class MachineLoginViewModel: ObservableObject {
       var currentDevice = deviceState
       if let ticket {
         do {
-          var value: PrismDeviceState = try await api.request("/api/v1/devices/session/state?ticket=\(ticket)&includePower=0")
-          guard version == invocationVersion, revision == visitRevision else { return }
+          var value: PrismDeviceState = try await api.request("/api/v1/devices/session/state?ticket=\(ticket)&includePower=0&includeClimate=0")
+          // A read that was under way when the page was restarted belongs to the old ticket and must
+          // not publish a state for the new one.
+          guard version == invocationVersion, revision == visitRevision, self.ticket == ticket else { return }
           if value.gate != deviceState?.gate {
             fullRead = true
             if deviceState != nil { await api.invalidateReads() }
             guard version == invocationVersion, revision == visitRevision else { return }
-            powerObserved = false; cancelPowerRead()
           }
-          if machine?.has("power") == true { value.power = deviceState?.gate == value.gate ? (deviceState?.power ?? "unknown") : "unknown" }
+          if value.device?.watching == true { deviceWatched = true }
+          if value.device?.watching == true && !liveConnected {
+            // A watched device's stored state is current. A pushed one is fresher still, so this
+            // read only decides when nothing is pushing.
+            if machine?.has("power") == true { value.power = value.device?.power ?? "unknown" }
+            if machine?.has("climate") == true { value.climate = value.device?.climate }
+          } else {
+            // Power and climate do not depend on the page's gate: keep what is already known.
+            if machine?.has("power") == true { value.power = deviceState?.power ?? "unknown" }
+            value.climate = deviceState?.climate
+          }
           currentDevice = value
           deviceState = value
-          schedulePowerRead(force: !dynamicOnly)
+          ensureDeviceFacts()
         } catch {
           guard (error as? PrismAPIError)?.isSessionExpired == true else { throw error }
           expire(); return
@@ -644,7 +665,7 @@ final class MachineLoginViewModel: ObservableObject {
       guard me.user != nil else {
         state = .unauthenticated
         user = nil; userId = ""; cards = []; summary = nil; checkoutPreview = nil; billLoaded = false; playerStateLoaded = false; assets = []; history = []; historyNextOffset = nil; settlement = nil
-        binding = nil; doorPassword = nil; deviceState = nil; cancelPowerRead()
+        binding = nil; doorPassword = nil; deviceState = nil; cancelFactsRead()
         return
       }
       var currentSummary: PrismSummary? = fullRead ? nil : summary
@@ -702,7 +723,7 @@ final class MachineLoginViewModel: ObservableObject {
         if (error as? PrismAPIError)?.code == "AUTHENTICATION_REQUIRED" {
           state = .unauthenticated; user = nil; userId = ""; cards = []; deviceState = nil
           summary = nil; binding = nil; checkoutPreview = nil; settlement = nil; assets = []; history = []
-          playerStateLoaded = false; billLoaded = false; cancelPowerRead(); await api.invalidateReads()
+          playerStateLoaded = false; billLoaded = false; cancelFactsRead(); await api.invalidateReads()
         }
         refreshError = friendlyMessage(error)
         errorMessage = refreshError
@@ -710,13 +731,27 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  private func cancelPowerRead() {
-    powerGeneration = UUID(); powerPolling?.cancel(); powerPolling = nil
+  /// Drop the read of the device's state that is under way, and let one be made again.
+  private func cancelFactsRead() {
+    factsGeneration = UUID(); factsTask?.cancel(); factsTask = nil
+    factsAsked = false
+    checkingPower = false
   }
 
-  /// Listen for this device's power and air-conditioner state while its page is ready.
+  /// Whether the device's state is current and pushed: the shop hub said so or, before it has
+  /// spoken, the first read did. A connection that dropped is not trusted until it is back.
+  private var eventMode: Bool {
+    if liveDropped { return false }
+    return liveConnected ? liveWatching : (deviceState?.device?.watching == true || deviceWatched)
+  }
+  private var pushed: Bool { liveConnected && liveWatching }
+
+  /// Listen for this device's power and air-conditioner state, but only for a device that is
+  /// watched: the hub then pushes every change, and tells the page when its own state changed
+  /// elsewhere (a bot confirmed the binding).
   private func openLiveState() {
-    guard liveSocket == nil, Date() >= liveRetryAt, sceneActive, deviceState?.gate == "ready", let ticket,
+    guard liveSocket == nil, Date() >= liveRetryAt, sceneActive, let ticket,
+          deviceState?.device?.watching == true || deviceWatched,
           machine?.has("power") == true || machine?.has("climate") == true,
           let socket = try? api.deviceLiveSocket(ticket: ticket) else { return }
     liveSocket = socket
@@ -727,75 +762,116 @@ final class MachineLoginViewModel: ObservableObject {
   func closeLiveState() {
     liveSocket?.cancel(with: .normalClosure, reason: nil)
     liveSocket = nil
-    liveWatching = false
+    liveConnected = false; liveWatching = false; liveDropped = false
   }
 
   private func receiveLive(_ socket: URLSessionWebSocketTask, version: Int) {
     socket.receive { [weak self] result in
       Task { @MainActor [weak self] in
         guard let self, self.liveSocket === socket, self.invocationVersion == version else { return }
-        guard case .success(let message) = result, case .string(let text) = message,
-              let data = text.data(using: .utf8) else {
-          // Closed or failed: fall back to polling, and wait before trying again.
+        guard case .success(let message) = result, case .string(let text) = message else {
+          // Closed or failed. What it last said may be out of date, so the page asks again, and
+          // the connection is retried after a wait that grows.
           self.liveSocket = nil
-          self.liveWatching = false
+          self.liveDropped = self.liveConnected || self.liveDropped
+          self.liveConnected = false; self.liveWatching = false
           self.liveFailures += 1
           self.liveRetryAt = Date().addingTimeInterval(min(60, 5 * pow(2, Double(self.liveFailures - 1))))
-          self.schedulePowerRead()
+          self.releasePowerWait()
+          self.factsAsked = false
+          self.ensureDeviceFacts()
           return
         }
-        struct Frame: Decodable { let type: String; let watching: Bool?; let power: String?; let climate: PrismClimate? }
-        if let frame = try? JSONDecoder().decode(Frame.self, from: data) {
-          if frame.type == "hello" { self.liveFailures = 0 }
-          if frame.type == "hello" || frame.type == "watching" { self.liveWatching = frame.watching ?? false }
-          if self.liveWatching, let power = frame.power, power == "on" || power == "off" {
-            self.deviceState?.power = power
-            self.powerObserved = true
-            if power == "on" { self.waitingPower = false }
-          }
-          if self.liveWatching, let climate = frame.climate { self.deviceState?.climate = climate }
-          if self.liveWatching { self.cancelPowerRead() } else { self.schedulePowerRead() }
-        }
+        if let frame = PrismLiveFrame(text) { self.handle(frame) }
         self.receiveLive(socket, version: version)
       }
     }
   }
 
-  /// HA is an independent observation; only the server's action precondition authorizes use.
-  private func schedulePowerRead(force: Bool = false) {
+  private func handle(_ frame: PrismLiveFrame) {
+    switch frame.type {
+    case "refresh":
+      // Something this page shows changed elsewhere, such as a bot confirming the binding.
+      Task { [weak self] in await self?.refreshVisit(silent: true) }
+    case "hello", "watching":
+      if frame.type == "hello" { liveFailures = 0 }
+      liveConnected = true; liveDropped = false
+      liveWatching = frame.watching ?? false
+      if liveWatching {
+        deviceWatched = true
+        // The state is pushed now, so a read that is under way has nothing left to add.
+        cancelFactsRead()
+        applyLive(frame)
+      } else {
+        releasePowerWait()
+        factsAsked = false
+        ensureDeviceFacts()
+      }
+    case "state":
+      // The hub only pushes changes for a watched device.
+      if liveWatching { applyLive(frame) }
+    default: break
+    }
+  }
+
+  private func applyLive(_ frame: PrismLiveFrame) {
+    if frame.hasPower, machine?.has("power") == true { applyPower(frame.power) }
+    if frame.hasClimate, machine?.has("climate") == true { deviceState?.climate = frame.climate }
+  }
+
+  /// `nil` is a power the source cannot report; the page treats it as unknown and does not block.
+  private func applyPower(_ power: String?) {
+    deviceState?.power = power ?? "unknown"
+    if power == "on" { waitingPower = false; powerWaitTask?.cancel() }
+  }
+
+  private func applyFacts(_ facts: PrismDeviceFacts) {
+    if facts.watching { deviceWatched = true; openLiveState() }
+    if machine?.has("power") == true { applyPower(facts.power) }
+    if machine?.has("climate") == true { deviceState?.climate = facts.climate }
+  }
+
+  /// Nothing pushes the state that would say the machine is on any more. Home Assistant accepted
+  /// the request, which is all there is to wait for.
+  private func releasePowerWait() {
+    guard waitingPower else { return }
+    waitingPower = false; powerWaitTask?.cancel()
+    deviceState?.power = "on"
+  }
+
+  /// Ask for the device's power and air conditioner once when nothing pushes them. A watched
+  /// device arrives with its state and is told of every change. An unwatched one has no state, so
+  /// the page asks Home Assistant right away, before entry and without holding anything back, and
+  /// does not ask again: the page is not kept live, and a machine found off switches to its power page.
+  private func ensureDeviceFacts() {
     openLiveState()
-    // Pushed state replaces polling while the device is watched and its power is known.
-    if liveWatching, ["on", "off"].contains(deviceState?.power ?? "") { return }
-    guard machine?.has("power") == true, deviceState?.gate == "ready", let ticket,
-          sceneActive, !deviceBusy, ![.locating, .sending].contains(state), powerPolling == nil,
-          force || !powerObserved || waitingPower || deviceState?.power == "off" || deviceState?.power == "unknown" else { return }
+    guard machine?.has("power") == true || machine?.has("climate") == true, deviceState != nil, let ticket,
+          sceneActive, !eventMode, factsTask == nil, !factsAsked else { return }
+    factsAsked = true
     let version = invocationVersion, generation = UUID(), api = self.api
-    powerGeneration = generation
-    powerPolling = Task { [weak self] in
-      defer { if self?.powerGeneration == generation { self?.powerPolling = nil } }
+    factsGeneration = generation
+    checkingPower = machine?.has("power") == true
+    factsTask = Task { [weak self] in
+      defer { if self?.factsGeneration == generation { self?.factsTask = nil; self?.checkingPower = false } }
+      var attempt = 0
       while !Task.isCancelled {
-        guard let self, self.invocationVersion == version, self.sceneActive else { return }
-        if self.powerBackoff.remaining() > 0 {
-          do { try await Task.sleep(nanoseconds: UInt64(min(self.powerBackoff.remaining(), 3600) * 1_000_000_000)) }
-          catch { return }
-          continue
-        }
         do {
-          struct Observation: Decodable { let power: String }
-          let result: Observation = try await api.request("/api/v1/devices/session/power?ticket=\(ticket)")
-          guard !Task.isCancelled, self.invocationVersion == version, self.powerGeneration == generation else { return }
-          self.deviceState?.power = result.power; self.powerObserved = true
-          if result.power == "on" || result.power == "unmanaged" { self.powerBackoff.succeed(); self.waitingPower = false; return }
-          if result.power == "unknown" { self.powerBackoff.fail() } else { self.powerBackoff.succeed() }
+          let facts: PrismDeviceFacts = try await api.request("/api/v1/devices/session/device?ticket=\(ticket)")
+          guard !Task.isCancelled, let self, self.invocationVersion == version, self.factsGeneration == generation else { return }
+          self.applyFacts(facts)
+          return
         } catch {
           if Task.isCancelled || error is CancellationError { return }
-          guard self.invocationVersion == version, self.powerGeneration == generation else { return }
+          guard let self, self.invocationVersion == version, self.factsGeneration == generation else { return }
           if (error as? PrismAPIError)?.isSessionExpired == true { self.expire(); return }
-          self.deviceState?.power = "unknown"
-          self.powerBackoff.fail(retryAfter: (error as? PrismAPIError)?.retryAfter)
+          attempt += 1
+          // One quiet retry for a flaky network; after that the power stays unknown and the page carries on.
+          guard attempt < 2, error is URLError || (error as? PrismAPIError)?.isTransientReadFailure == true else {
+            if self.machine?.has("power") == true { self.deviceState?.power = "unknown" }
+            return
+          }
+          try? await Task.sleep(nanoseconds: 3_000_000_000)
         }
-        do { try await Task.sleep(nanoseconds: UInt64(min(max(3, self.powerBackoff.remaining()), 3600) * 1_000_000_000)) }
-        catch { return }
       }
     }
   }
@@ -807,12 +883,11 @@ final class MachineLoginViewModel: ObservableObject {
     let version = invocationVersion
     visitRevision += 1
     polling?.cancel()
-    cancelPowerRead(); powerObserved = false
     deviceBusy = true; errorMessage = nil
     defer {
       if version == invocationVersion {
         deviceBusy = false
-        schedulePowerRead()
+        ensureDeviceFacts()
         if refreshPending && sceneActive {
           refreshPending = false
           Task { [weak self] in await self?.refreshVisit(silent: true) }
@@ -826,7 +901,7 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  func expire() { ticket = nil; state = .expired; activeCardId = nil; polling?.cancel(); cancelPowerRead(); closeLiveState(); errorMessage = nil }
+  func expire() { ticket = nil; state = .expired; activeCardId = nil; polling?.cancel(); cancelFactsRead(); closeLiveState(); errorMessage = nil }
   func pricingDate(_ date: String) async throws -> PrismShopResponse { try await api.request(shopPath() + "?date=" + date) }
 
   func bindPlatformIdentity() async {
@@ -890,7 +965,11 @@ final class MachineLoginViewModel: ObservableObject {
       let data = try await operation("device.\(ticket).\(action)", path: "/api/v1/devices/session/actions", body: ["ticket": ticket, "action": action, "consent": consent], requiresLocation: action == "door.open" ? (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true : (machine?.shop.locationEnabled ?? machine?.shop.machineGeo) != false)
       if action == "door.open" { doorPassword = try JSONDecoder().decode(PrismDoorPassword.self, from: data) }
       else if action == "coin" { deviceState?.coinUsed = true }
-      else if action == "power.on" { waitForPower() }
+      else if action == "power.on" {
+        // A watched machine reports when it is on, and the page moves on then. Otherwise Home
+        // Assistant answering is the end of it.
+        if pushed { waitForPower() } else { deviceState?.power = "on" }
+      }
       struct Result: Decodable { let notices: [PrismNotice]? }
       if let note = (try? JSONDecoder().decode(Result.self, from: data))?.notices?.first(where: { $0.display == "inline" }) {
         showInline(note, anchor: anchor)
@@ -906,23 +985,22 @@ final class MachineLoginViewModel: ObservableObject {
     waitingPower = true
     powerWaitTask?.cancel()
     powerWaitTask = Task { [weak self] in
-      try? await Task.sleep(nanoseconds: 30_000_000_000)
+      try? await Task.sleep(nanoseconds: 15_000_000_000)
       guard let self, !Task.isCancelled, self.waitingPower else { return }
       self.waitingPower = false
       self.showInline(PrismNotice(code: "POWER_NOT_SEEN", level: "warning", display: "inline", flow: "none",
                                   body: String(localized: "未检测到开机，请重试")), anchor: "power")
     }
   }
-  /// Send an air conditioner action. Its result carries the entity's state, which is shown
-  /// right away; the refresh that follows reads it again.
+  /// Send an air conditioner action. Home Assistant accepting it is the whole outcome: a watched
+  /// device reports the new state as an event, and otherwise the page shows what was asked.
   func climate(_ action: String, _ extra: [String: Any] = [:]) async {
     guard let ticket else { return }
     await perform("climate") {
       var body: [String: Any] = ["ticket": ticket, "action": action]
       body.merge(extra) { _, new in new }
-      let data = try await operation("device.\(ticket).\(action)", path: "/api/v1/devices/session/actions", body: body, requiresLocation: (machine?.shop.locationEnabled ?? machine?.shop.machineGeo) != false)
-      struct Result: Decodable { let climate: PrismClimate? }
-      if let climate = (try? JSONDecoder().decode(Result.self, from: data))?.climate { deviceState?.climate = climate }
+      _ = try await operation("device.\(ticket).\(action)", path: "/api/v1/devices/session/actions", body: body, requiresLocation: (machine?.shop.locationEnabled ?? machine?.shop.machineGeo) != false)
+      if !pushed, let current = deviceState?.climate { deviceState?.climate = current.settled(by: action, extra) }
       refreshPending = true
     }
   }

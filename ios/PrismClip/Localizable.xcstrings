@@ -1274,6 +1274,23 @@
         }
       }
     },
+    "正在获取电源状态" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking power status"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在获取电源状态"
+          }
+        }
+      }
+    },
     "开门密码获取失败，请重试" : {
       "extractionState" : "manual",
       "localizations" : {
