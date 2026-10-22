@@ -39,6 +39,7 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
     if (oldWidget.navigationShell.currentIndex !=
         widget.navigationShell.currentIndex) {
       // Finish Flutter's route frame before UIKit moves the shared view.
+      // A switch UIKit started itself is already in place.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _publishSelection();
       });
@@ -56,19 +57,15 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
             '[NativeShell] Dart received selectTopLevel=$index '
             'current=$previousIndex',
           );
+          // UIKit has already switched to the tab the user tapped.
+          _nativeIndex = index;
           widget.navigationShell.goBranch(
             index,
             initialLocation: index == previousIndex,
           );
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            final selected = widget.navigationShell.currentIndex;
-            debugPrint(
-              '[NativeShell] Dart after routing index=$selected '
-              'requested=$index',
-            );
-            // Synchronize UIKit even when a route changes without a
-            // NativeHostedScaffold widget identity change.
+            // Brings UIKit back should the router have landed elsewhere.
             _publishSelection();
           });
           return {'accepted': true, 'index': index, 'previous': previousIndex};
@@ -133,8 +130,17 @@ class _NativeHostedScaffoldState extends ConsumerState<NativeHostedScaffold> {
     });
   }
 
+  /// The tab UIKit has selected, as far as Dart knows.
+  ///
+  /// A tap switches UIKit first and reports it here. Sending the same index
+  /// back is not only redundant: with two quick taps, the echo of the first
+  /// would reach UIKit after the second and switch it back for a moment.
+  int? _nativeIndex;
+
   Future<void> _publishSelection() {
     final index = widget.navigationShell.currentIndex;
+    if (index == _nativeIndex) return Future<void>.value();
+    _nativeIndex = index;
     debugPrint('[NativeShell] Flutter -> UIKit setSelectedIndex=$index');
     return _channel.invokeMethod('setSelectedIndex', {'index': index});
   }
