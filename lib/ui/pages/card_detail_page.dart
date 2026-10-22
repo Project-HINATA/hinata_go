@@ -193,8 +193,10 @@ class CardDetailPage extends HookConsumerWidget {
       actions: activeSavedCard == null || writerState.isWriting
           ? const []
           : _buildActions(context, ref, activeSavedCard, activeCard),
+      // The detail scrolls under the native iOS bar and its glass, padding
+      // itself below the bar; a Material app bar takes the top inset away.
       body: SafeArea(
-        top: useCupertinoChrome,
+        top: false,
         bottom: false,
         child: _buildBody(
           context,
@@ -333,7 +335,12 @@ class _CardDetailBody extends StatelessWidget {
       children: [
         Positioned.fill(
           child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + actionsHeight),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20 + MediaQuery.paddingOf(context).top,
+              20,
+              20 + actionsHeight,
+            ),
             child: detail,
           ),
         ),
