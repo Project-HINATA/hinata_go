@@ -765,6 +765,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get nesicaSerial => 'NESiCA 卡号';
+
+  @override
   String get cardWrite => '写入';
 
   @override

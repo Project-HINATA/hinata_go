@@ -1502,6 +1502,12 @@ abstract class AppLocalizations {
   /// **'Other ({code})'**
   String transitCardTypeOther(String code);
 
+  /// NESiCA card serial number field label
+  ///
+  /// In en, this message translates to:
+  /// **'NESiCA Serial'**
+  String get nesicaSerial;
+
   /// No description provided for @cardWrite.
   ///
   /// In en, this message translates to:

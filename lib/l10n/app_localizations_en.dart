@@ -778,6 +778,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get nesicaSerial => 'NESiCA Serial';
+
+  @override
   String get cardWrite => 'Write';
 
   @override
