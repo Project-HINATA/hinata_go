@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
@@ -13,6 +14,7 @@ import '../../../providers/card_sender.dart';
 import '../../../providers/current_scan_session_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../components/instances/select_instance_dialog.dart';
+import '../../widgets/app_scaffold.dart';
 import '../../widgets/save_card_dialog.dart';
 import 'scanned_card_detail_v2.dart';
 import 'transit_history_card.dart';
@@ -300,19 +302,21 @@ class _ScanActionRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _ScanActionButton.outlined(
+          child: _ScanActionButton(
             icon: Icons.save_alt,
             label: l10n.saveUpper,
             onPressed: onSave,
+            style: AdaptiveButtonStyle.glass,
           ),
         ),
         if (onSend != null) ...[
           const SizedBox(width: 16),
           Expanded(
-            child: _ScanActionButton.filled(
+            child: _ScanActionButton(
               icon: Icons.send_rounded,
               label: l10n.sendUpper,
               onPressed: () => onSend!(),
+              style: AdaptiveButtonStyle.prominentGlass,
             ),
           ),
         ],
@@ -321,27 +325,67 @@ class _ScanActionRow extends StatelessWidget {
   }
 }
 
+/// A scan action, drawn as a native Liquid Glass pill on iOS, like the
+/// bottom actions of the card detail page, and as a Material button elsewhere.
 class _ScanActionButton extends StatelessWidget {
-  const _ScanActionButton.outlined({
+  const _ScanActionButton({
     required this.icon,
     required this.label,
     required this.onPressed,
-  }) : filled = false;
-
-  const _ScanActionButton.filled({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  }) : filled = true;
+    required this.style,
+  });
 
   final IconData icon;
   final String label;
   final VoidCallback? onPressed;
-  final bool filled;
+  final AdaptiveButtonStyle style;
+
+  /// Same height as the card detail's bottom actions.
+  static const double _height = 56;
 
   @override
   Widget build(BuildContext context) {
-    final style = ButtonStyle(
+    if (useCupertinoChrome) {
+      final scheme = context.colorScheme;
+      final foreground = style == AdaptiveButtonStyle.prominentGlass
+          ? scheme.onPrimary
+          : scheme.primary;
+      return SizedBox(
+        height: _height,
+        child: AdaptiveButton.child(
+          onPressed: onPressed ?? () {},
+          style: style,
+          size: AdaptiveButtonSize.large,
+          enabled: onPressed != null,
+          useSmoothRectangleBorder: false,
+          color: style == AdaptiveButtonStyle.prominentGlass
+              ? scheme.primary
+              : null,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: foreground),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: foreground,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final materialStyle = ButtonStyle(
       padding: WidgetStateProperty.all(
         const EdgeInsets.symmetric(vertical: 20),
       ),
@@ -350,18 +394,18 @@ class _ScanActionButton extends StatelessWidget {
       ),
     );
 
-    return filled
+    return style == AdaptiveButtonStyle.prominentGlass
         ? FilledButton.icon(
             onPressed: onPressed,
             icon: Icon(icon),
             label: Text(label),
-            style: style,
+            style: materialStyle,
           )
         : OutlinedButton.icon(
             onPressed: onPressed,
             icon: Icon(icon),
             label: Text(label),
-            style: style,
+            style: materialStyle,
           );
   }
 }
