@@ -55,6 +55,7 @@ final class NativeShellViewController: UITabBarController,
     selectedIndex = 0
     attachFlutter(to: scan)
     installActionButton()
+    installLaunchCover()
     topBar = NativeTopBarCoordinator(
       shell: self,
       messenger: bridge.messenger
@@ -111,6 +112,44 @@ final class NativeShellViewController: UITabBarController,
     topBar?.sendLayout()
     (UIApplication.shared.delegate as? AppDelegate)?
       .deviceOrientationBridge.deviceTopOnRightChanged()
+  }
+
+  /// The launch screen, kept over the whole shell until Flutter has drawn its
+  /// first frame.
+  ///
+  /// The system takes its own launch screen down as soon as this shell
+  /// appears, while Flutter is still building the first page. Without the
+  /// cover the empty, transparent shell would show for that moment: a black
+  /// screen with only the native tab bar on it.
+  private var launchCover: UIView?
+
+  private func installLaunchCover() {
+    guard !flutterViewController.isDisplayingFlutterUI,
+      let name = Bundle.main.object(forInfoDictionaryKey: "UILaunchStoryboardName") as? String,
+      let cover = UIStoryboard(name: name, bundle: nil).instantiateInitialViewController()?.view
+    else { return }
+    cover.frame = view.bounds
+    cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    view.addSubview(cover)
+    launchCover = cover
+    flutterViewController.setFlutterViewDidRenderCallback { [weak self] in
+      self?.removeLaunchCover()
+    }
+    // Never leave the app hidden should the callback not come.
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+      self?.removeLaunchCover()
+    }
+  }
+
+  private func removeLaunchCover() {
+    guard let cover = launchCover else { return }
+    launchCover = nil
+    // Flutter's own splash screen fades out the same way.
+    UIView.animate(
+      withDuration: 0.2,
+      animations: { cover.alpha = 0 },
+      completion: { _ in cover.removeFromSuperview() }
+    )
   }
 
   /// One tab, as a real navigation controller.
@@ -1885,8 +1924,6 @@ final class NativeTopBarChipStrip: UIView {
   /// Whether the strip is drawn right now, mid-animation included.
   var isOnScreen: Bool { !isHidden && alpha > 0.01 && window != nil }
 
-  private var animator: UIViewPropertyAnimator?
-
   private var targetAlpha: CGFloat { shown ? (covered ? 0.45 : 1) : 0 }
 
   /// Shows or hides the strip. Repeating the current state changes nothing,
@@ -1903,7 +1940,7 @@ final class NativeTopBarChipStrip: UIView {
     } else if disappearing {
       disappear(transition)
     } else if coverChanged {
-      animate(.fade) { self.alpha = self.targetAlpha }
+      animate(toAlpha: targetAlpha, translation: .zero, .fade)
     }
   }
 
@@ -1915,89 +1952,121 @@ final class NativeTopBarChipStrip: UIView {
   /// Brings a strip that is already shown in with its tab.
   func playEntrance(shift: CGPoint) {
     guard shown else { return }
-    animator?.stopAnimation(true)
     isHidden = false
-    alpha = 0
-    transform = CGAffineTransform(translationX: shift.x, y: shift.y)
-    animate(.enter(shift: shift)) {
-      self.alpha = self.targetAlpha
-      self.transform = .identity
-    }
+    animate(toAlpha: targetAlpha, translation: .zero, from: (0, shift), .enter(shift: shift))
   }
 
   private func appear(_ transition: Transition) {
     let from: CGPoint
     switch transition {
     case .none:
-      animator?.stopAnimation(true)
       isHidden = false
-      alpha = targetAlpha
-      transform = .identity
+      animate(toAlpha: targetAlpha, translation: .zero, .none)
       return
     case .fade: from = .zero
     case .push: from = CGPoint(x: bounds.width / 3, y: 0)
     case .pop: from = CGPoint(x: -bounds.width / 3, y: 0)
     case .enter(let shift): from = shift
     }
-    if isHidden || alpha < 0.01 {
-      transform = CGAffineTransform(translationX: from.x, y: from.y)
-      alpha = 0
-    }
+    let fromHidden = isHidden || alpha < 0.01
     isHidden = false
-    animate(transition) {
-      self.alpha = self.targetAlpha
-      self.transform = .identity
-    }
+    animate(
+      toAlpha: targetAlpha,
+      translation: .zero,
+      from: fromHidden ? (0, from) : nil,
+      transition
+    )
   }
 
   private func disappear(_ transition: Transition) {
     let to: CGFloat
     switch transition {
     case .none:
-      animator?.stopAnimation(true)
-      alpha = 0
+      animate(toAlpha: 0, translation: .zero, .none)
       isHidden = true
-      transform = .identity
       return
     case .fade, .enter: to = 0
     case .push: to = -bounds.width / 3
     case .pop: to = bounds.width / 3
     }
-    animate(transition, completion: {
+    animate(toAlpha: 0, translation: CGPoint(x: to, y: 0), transition) {
       guard !self.shown else { return }
       self.isHidden = true
       self.transform = .identity
-    }) {
-      self.alpha = 0
-      self.transform = CGAffineTransform(translationX: to, y: 0)
     }
   }
 
-  /// Runs [changes] with the timing of [transition], picking up from wherever
-  /// a running animation has got to.
+  /// Counts the animations started, so a superseded one does not complete.
+  private var animationGeneration = 0
+
+  /// Moves the strip to [alpha] and [translation] with the timing of
+  /// [transition], starting from [from] or from wherever a running animation
+  /// has got to.
+  ///
+  /// Animated on the layer: a UIKit animation of this view would configure an
+  /// animation for every glass effect inside it, which costs a frame right as
+  /// a page or tab changes.
   private func animate(
+    toAlpha alpha: CGFloat,
+    translation: CGPoint,
+    from: (alpha: CGFloat, translation: CGPoint)? = nil,
     _ transition: Transition,
-    completion: (() -> Void)? = nil,
-    changes: @escaping () -> Void
+    completion: (() -> Void)? = nil
   ) {
-    animator?.stopAnimation(true)
-    let next: UIViewPropertyAnimator
+    let current = layer.presentation() ?? layer
+    let fromOpacity = from.map { Float($0.alpha) } ?? current.opacity
+    let fromTransform =
+      from.map { CATransform3DMakeTranslation($0.translation.x, $0.translation.y, 0) }
+      ?? current.transform
+    layer.removeAnimation(forKey: "visibility")
+    animationGeneration += 1
+    let generation = animationGeneration
+    self.alpha = alpha
+    transform = CGAffineTransform(translationX: translation.x, y: translation.y)
+    guard transition.isAnimated else {
+      completion?()
+      return
+    }
+
+    let fade = Self.animation(keyPath: "opacity", for: transition)
+    fade.fromValue = fromOpacity
+    fade.toValue = Float(alpha)
+    let slide = Self.animation(keyPath: "transform", for: transition)
+    slide.fromValue = fromTransform
+    slide.toValue = CATransform3DMakeTranslation(translation.x, translation.y, 0)
+    let group = CAAnimationGroup()
+    group.animations = [fade, slide]
+    group.duration = max(fade.duration, slide.duration)
+
+    CATransaction.begin()
+    CATransaction.setCompletionBlock { [weak self] in
+      guard let self, self.animationGeneration == generation else { return }
+      completion?()
+    }
+    layer.add(group, forKey: "visibility")
+    CATransaction.commit()
+  }
+
+  private static func animation(keyPath: String, for transition: Transition) -> CABasicAnimation {
     switch transition {
     case .push, .pop:
-      // The navigation bar's own push and pop.
-      next = UIViewPropertyAnimator(duration: 0.35, dampingRatio: 1)
+      // The navigation bar's own push and pop: critically damped.
+      let spring = CASpringAnimation(perceptualDuration: 0.35, bounce: 0)
+      spring.keyPath = keyPath
+      spring.duration = spring.settlingDuration
+      return spring
     case .enter:
-      next = Self.tabAnimator()
+      // Flutter's tab switch: 250ms, ease-out cubic.
+      let animation = CABasicAnimation(keyPath: keyPath)
+      animation.duration = 0.25
+      animation.timingFunction = CAMediaTimingFunction(controlPoints: 0.215, 0.61, 0.355, 1)
+      return animation
     case .none, .fade:
-      next = UIViewPropertyAnimator(duration: 0.2, curve: .easeInOut)
+      let animation = CABasicAnimation(keyPath: keyPath)
+      animation.duration = 0.2
+      animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+      return animation
     }
-    next.isUserInteractionEnabled = true
-    next.addAnimations(changes)
-    next.addCompletion { position in
-      if position == .end { completion?() }
-    }
-    animator = next
-    next.startAnimation()
   }
 
   /// Touches between the chips reach Flutter's content below.

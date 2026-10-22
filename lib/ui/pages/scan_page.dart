@@ -199,8 +199,11 @@ class _ScanPortraitBody extends StatelessWidget {
     final bottomContentPadding =
         context.mediaQuery.padding.bottom + ScanPage._contentBottomSpacing;
 
-    return _ScrollOnlyWhenOverflowing(
-      maxHeight: constraints.maxHeight,
+    // The default physics only claim a drag while the content overflows,
+    // re-checked whenever it changes size (a scan result growing in), so
+    // when everything fits the drag goes to the shell's swipe navigation.
+    return SingleChildScrollView(
+      clipBehavior: Clip.none,
       padding: EdgeInsets.only(bottom: bottomContentPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -216,54 +219,6 @@ class _ScanPortraitBody extends StatelessWidget {
           dynamicContent,
         ],
       ),
-    );
-  }
-}
-
-/// A scroll view that only claims vertical drags when its content actually
-/// overflows. When everything fits, the drag belongs to the shell's swipe
-/// navigation instead of being swallowed by an invisible scrollable.
-class _ScrollOnlyWhenOverflowing extends StatefulWidget {
-  const _ScrollOnlyWhenOverflowing({
-    required this.maxHeight,
-    required this.padding,
-    required this.child,
-  });
-
-  final double maxHeight;
-  final EdgeInsets padding;
-  final Widget child;
-
-  @override
-  State<_ScrollOnlyWhenOverflowing> createState() =>
-      _ScrollOnlyWhenOverflowingState();
-}
-
-class _ScrollOnlyWhenOverflowingState
-    extends State<_ScrollOnlyWhenOverflowing> {
-  final _contentKey = GlobalKey();
-  bool _contentFits = false;
-
-  @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final box = _contentKey.currentContext?.findRenderObject();
-      if (box is! RenderBox || !box.hasSize) return;
-      final fits =
-          box.size.height + widget.padding.vertical <= widget.maxHeight;
-      if (fits != _contentFits) {
-        setState(() => _contentFits = fits);
-      }
-    });
-
-    return SingleChildScrollView(
-      clipBehavior: Clip.none,
-      physics: _contentFits
-          ? const NeverScrollableScrollPhysics()
-          : const AlwaysScrollableScrollPhysics(),
-      padding: widget.padding,
-      child: KeyedSubtree(key: _contentKey, child: widget.child),
     );
   }
 }
