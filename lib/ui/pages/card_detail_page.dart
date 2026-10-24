@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../core/engine/card_emulation.dart';
 import '../../core/engine/mifare_write_payload.dart';
 import '../../l10n/l10n.dart';
 import '../../models/card/card.dart';
@@ -266,7 +267,9 @@ class CardDetailPage extends HookConsumerWidget {
         writerAvailable &&
         (activeCard is NdefCard || MifareCardWritePayload.canBuild(activeCard));
     final canEmulate =
-        activeSavedCard != null && emulatorAvailable && activeCard is NdefCard;
+        activeSavedCard != null &&
+        emulatorAvailable &&
+        emulationKindOf(activeCard) != null;
     final canSend = activeCard.gamePayload != null;
     // The actions' height comes from the width they will get and the buttons
     // they will show, so the detail can reserve it in the same layout pass.

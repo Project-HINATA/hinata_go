@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../core/engine/card_emulation.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/card/saved_card.dart';
 import '../../../providers/card_emulator_provider.dart';
@@ -38,13 +39,14 @@ class _EmulateDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final emulator = ref.watch(cardEmulatorProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final isNdef = emulator.kind == EmulationKind.ndef;
     return PopScope(
       canPop: !emulator.isEmulating,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_stop(context, ref));
       },
       child: AlertDialog(
-        title: Text(l10n.ndefEmulateTitle),
+        title: Text(isNdef ? l10n.ndefEmulateTitle : l10n.cardEmulateTitle),
         content: SizedBox(
           width: 400,
           child: SingleChildScrollView(
@@ -63,7 +65,7 @@ class _EmulateDialog extends ConsumerWidget {
                           Text(_statusText(emulator)),
                           if (emulator.readCount > 0)
                             Text(
-                              l10n.ndefEmulateReadCount(emulator.readCount),
+                              l10n.cardEmulateReadCount(emulator.readCount),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: colorScheme.primary),
                             ),
@@ -73,10 +75,28 @@ class _EmulateDialog extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                _InfoRow(text: l10n.ndefEmulateReadOnly),
-                _InfoRow(text: l10n.ndefEmulatePollingPaused),
-                _InfoRow(text: l10n.ndefEmulateIosLimit),
-                _InfoRow(text: l10n.ndefEmulateFirmware),
+                if (!isNdef)
+                  _InfoRow(
+                    text: l10n.cardEmulateOfficialWarning,
+                    warning: true,
+                  ),
+                ...switch (emulator.kind) {
+                  EmulationKind.ndef => [
+                    _InfoRow(text: l10n.ndefEmulateReadOnly),
+                    _InfoRow(text: l10n.ndefEmulateIosLimit),
+                  ],
+                  EmulationKind.amusementIc => [
+                    _InfoRow(text: l10n.cardEmulateAicData),
+                    _InfoRow(text: l10n.cardEmulatePollOnly),
+                  ],
+                  EmulationKind.felica => [
+                    _InfoRow(text: l10n.cardEmulateFelicaData),
+                    _InfoRow(text: l10n.cardEmulatePollOnly),
+                  ],
+                  null => const <Widget>[],
+                },
+                _InfoRow(text: l10n.cardEmulatePollingPaused),
+                _InfoRow(text: l10n.cardEmulateFirmware),
               ],
             ),
           ),
@@ -87,8 +107,8 @@ class _EmulateDialog extends ConsumerWidget {
               onPressed: emulator.canStop ? () => _stop(context, ref) : null,
               child: Text(
                 emulator.canStop
-                    ? l10n.ndefEmulateStop
-                    : l10n.ndefEmulateStopping,
+                    ? l10n.cardEmulateStop
+                    : l10n.cardEmulateStopping,
               ),
             )
           else
@@ -103,17 +123,26 @@ class _EmulateDialog extends ConsumerWidget {
 
   String _statusText(CardEmulatorState state) => switch (state.status) {
     CardEmulatorStatus.idle ||
-    CardEmulatorStatus.starting => l10n.ndefEmulatePreparing,
-    CardEmulatorStatus.waitingForPhone => l10n.ndefEmulateWaiting,
-    CardEmulatorStatus.phoneConnected => l10n.ndefEmulateConnected,
-    CardEmulatorStatus.stopping => l10n.ndefEmulateStopping,
-    CardEmulatorStatus.stopped => l10n.ndefEmulateStopped,
+    CardEmulatorStatus.starting => l10n.cardEmulatePreparing,
+    CardEmulatorStatus.waitingForReader =>
+      state.kind == EmulationKind.ndef
+          ? l10n.ndefEmulateWaiting
+          : l10n.cardEmulateWaiting,
+    CardEmulatorStatus.readerConnected =>
+      state.kind == EmulationKind.ndef
+          ? l10n.ndefEmulateConnected
+          : l10n.cardEmulateConnected,
+    CardEmulatorStatus.stopping => l10n.cardEmulateStopping,
+    CardEmulatorStatus.stopped => l10n.cardEmulateStopped,
     CardEmulatorStatus.failed => switch (state.failure) {
-      CardEmulatorFailure.noReader => l10n.ndefEmulateNoReader,
-      CardEmulatorFailure.unsupportedCard => l10n.ndefEmulateUnsupported,
+      CardEmulatorFailure.noReader => l10n.cardEmulateNoReader,
+      CardEmulatorFailure.unsupportedCard =>
+        state.kind == EmulationKind.ndef
+            ? l10n.ndefEmulateUnsupported
+            : l10n.cardEmulateUnsupported,
       CardEmulatorFailure.readerDisconnected =>
-        l10n.ndefEmulateReaderDisconnected,
-      CardEmulatorFailure.failed || null => l10n.ndefEmulateFailed,
+        l10n.cardEmulateReaderDisconnected,
+      CardEmulatorFailure.failed || null => l10n.cardEmulateFailed,
     },
   };
 }
@@ -129,7 +158,7 @@ class _StatusIndicator extends StatelessWidget {
     return SizedBox.square(
       dimension: 30,
       child: switch (status) {
-        CardEmulatorStatus.phoneConnected => Icon(
+        CardEmulatorStatus.readerConnected => Icon(
           Icons.contactless,
           size: 30,
           color: colorScheme.primary,
@@ -155,23 +184,35 @@ class _StatusIndicator extends StatelessWidget {
 
 class _InfoRow extends StatelessWidget {
   final String text;
+  final bool warning;
 
-  const _InfoRow({required this.text});
+  const _InfoRow({required this.text, this.warning = false});
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            Icons.info_outline,
+            warning ? Icons.warning_amber_rounded : Icons.info_outline,
             size: 20,
-            color: Theme.of(context).colorScheme.secondary,
+            color: warning ? colorScheme.error : colorScheme.secondary,
           ),
           const SizedBox(width: 10),
-          Expanded(child: Text(text)),
+          Expanded(
+            child: Text(
+              text,
+              style: warning
+                  ? TextStyle(
+                      color: colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : null,
+            ),
+          ),
         ],
       ),
     );

@@ -3,7 +3,11 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hinata_go/services/reader/hinata_ndef_emulator.dart';
+import 'package:hinata_go/core/engine/card_emulation.dart';
+import 'package:hinata_go/core/engine/felica_tag.dart';
+import 'package:hinata_go/core/engine/type3_ndef_tag.dart';
+import 'package:hinata_go/core/engine/type4_ndef_tag.dart';
+import 'package:hinata_go/services/reader/hinata_card_emulator.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 const _ack = [0, 0, 0xFF, 0, 0xFF, 0];
@@ -50,12 +54,17 @@ class _ScriptedPn532 {
 }
 
 final idm = Uint8List.fromList([0x02, 0xFE, 1, 2, 3, 4, 5, 6]);
+final message = Uint8List.fromList([
+  0xD1, 0x01, 0x04, 0x55, 0x04, 0x61, 0x2E, 0x62, //
+]);
+
+EmulationTarget ndefTarget() => EmulationTarget(
+  kind: EmulationKind.ndef,
+  type4: Type4NdefTag(message, maxRead: HinataCardEmulator.hidMaxRead),
+  felica: Type3NdefTag(message, idm: idm),
+);
 
 void main() {
-  final message = Uint8List.fromList([
-    0xD1, 0x01, 0x04, 0x55, 0x04, 0x61, 0x2E, 0x62, //
-  ]);
-
   test('serves the message to a phone, then waits for the next one', () async {
     final apdus = Queue<List<int>>.of([
       [0x00, 0xA4, 0x04, 0x00, 0x07, 0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01],
@@ -64,7 +73,7 @@ void main() {
       [0x00, 0xB0, 0x00, 0x02, 0x08],
     ]);
     final responses = <List<int>>[];
-    final events = <NdefEmulationEvent>[];
+    final events = <CardEmulationEvent>[];
     final cancel = Completer<void>();
     var targets = 0;
 
@@ -87,15 +96,15 @@ void main() {
       }
     });
 
-    await HinataNdefEmulator(
+    await HinataCardEmulator(
       pn532.api,
-    ).run(message, cancel: cancel.future, onEvent: events.add, idm: idm);
+    ).run(ndefTarget(), cancel: cancel.future, onEvent: events.add);
 
     expect(events, [
-      NdefEmulationEvent.waitingForPhone,
-      NdefEmulationEvent.phoneConnected,
-      NdefEmulationEvent.messageRead,
-      NdefEmulationEvent.waitingForPhone,
+      CardEmulationEvent.waitingForReader,
+      CardEmulationEvent.readerConnected,
+      CardEmulationEvent.dataRead,
+      CardEmulationEvent.waitingForReader,
     ]);
     expect(responses, [
       [0x90, 0x00],
@@ -155,7 +164,7 @@ void main() {
       check([1]),
     ]);
     final responses = <List<int>>[];
-    final events = <NdefEmulationEvent>[];
+    final events = <CardEmulationEvent>[];
     final cancel = Completer<void>();
     var targets = 0;
 
@@ -184,15 +193,15 @@ void main() {
       }
     });
 
-    await HinataNdefEmulator(
+    await HinataCardEmulator(
       pn532.api,
-    ).run(message, cancel: cancel.future, onEvent: events.add, idm: idm);
+    ).run(ndefTarget(), cancel: cancel.future, onEvent: events.add);
 
     expect(events, [
-      NdefEmulationEvent.waitingForPhone,
-      NdefEmulationEvent.phoneConnected,
-      NdefEmulationEvent.messageRead,
-      NdefEmulationEvent.waitingForPhone,
+      CardEmulationEvent.waitingForReader,
+      CardEmulationEvent.readerConnected,
+      CardEmulationEvent.dataRead,
+      CardEmulationEvent.waitingForReader,
     ]);
     expect(responses, hasLength(2));
     expect(responses[0].sublist(0, 13), [29, 0x07, ...idm, 0, 0, 1]);
@@ -213,9 +222,44 @@ void main() {
     expect(
       idle.map((r) => r.$2),
       everyElement(
-        const Duration(milliseconds: HinataNdefEmulator.felicaIdleTimeoutMs),
+        const Duration(milliseconds: HinataCardEmulator.felicaIdleTimeoutMs),
       ),
     );
     expect(pn532.requests.last.$2, [0x14]);
+  });
+
+  test('a FeliCa card ignores Type A readers', () async {
+    final cardIdm = Uint8List.fromList([0x01, 0x2E, 1, 2, 3, 4, 5, 6]);
+    final pmm = Uint8List.fromList([0x00, 0xF1, 0, 0, 0, 0x01, 0x43, 0]);
+    final target = EmulationTarget(
+      kind: EmulationKind.felica,
+      felica: FelicaTag(idm: cardIdm, pmm: pmm, systemCodes: const [0x88B4]),
+    );
+    final events = <CardEmulationEvent>[];
+    final cancel = Completer<void>();
+    var targets = 0;
+
+    final pn532 = _ScriptedPn532((command, payload) {
+      switch (command) {
+        case 0x8C:
+          // A Type A reader activates ISO-DEP, then nobody else comes.
+          if (++targets == 1) return [0x08, 0xE0, 0x80];
+          Timer(Duration.zero, cancel.complete);
+          return null;
+        case 0x02:
+          return [0x32, 0x01, 0x06, 0x07];
+        default:
+          return [];
+      }
+    });
+
+    await HinataCardEmulator(
+      pn532.api,
+    ).run(target, cancel: cancel.future, onEvent: events.add);
+
+    expect(events, [CardEmulationEvent.waitingForReader]);
+    expect(pn532.commands.where((c) => c == 0x86), isEmpty);
+    final params = pn532.requests.firstWhere((r) => r.$1 == 0x8C).$2;
+    expect(params.sublist(7, 25), [...cardIdm, ...pmm, 0x88, 0xB4]);
   });
 }

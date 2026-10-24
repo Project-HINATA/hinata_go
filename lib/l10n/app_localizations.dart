@@ -1976,11 +1976,11 @@ abstract class AppLocalizations {
   /// **'Emulate NDEF tag'**
   String get ndefEmulateTitle;
 
-  /// No description provided for @ndefEmulatePreparing.
+  /// No description provided for @cardEmulatePreparing.
   ///
   /// In en, this message translates to:
   /// **'Preparing the reader'**
-  String get ndefEmulatePreparing;
+  String get cardEmulatePreparing;
 
   /// No description provided for @ndefEmulateWaiting.
   ///
@@ -1994,29 +1994,29 @@ abstract class AppLocalizations {
   /// **'Phone connected, reading'**
   String get ndefEmulateConnected;
 
-  /// No description provided for @ndefEmulateStopping.
+  /// No description provided for @cardEmulateStopping.
   ///
   /// In en, this message translates to:
   /// **'Stopping'**
-  String get ndefEmulateStopping;
+  String get cardEmulateStopping;
 
-  /// No description provided for @ndefEmulateStopped.
+  /// No description provided for @cardEmulateStopped.
   ///
   /// In en, this message translates to:
   /// **'Emulation stopped'**
-  String get ndefEmulateStopped;
+  String get cardEmulateStopped;
 
-  /// No description provided for @ndefEmulateReadCount.
+  /// No description provided for @cardEmulateReadCount.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{Read once} other{Read {count} times}}'**
-  String ndefEmulateReadCount(int count);
+  String cardEmulateReadCount(int count);
 
-  /// No description provided for @ndefEmulateStop.
+  /// No description provided for @cardEmulateStop.
   ///
   /// In en, this message translates to:
   /// **'Stop'**
-  String get ndefEmulateStop;
+  String get cardEmulateStop;
 
   /// No description provided for @ndefEmulateReadOnly.
   ///
@@ -2024,11 +2024,11 @@ abstract class AppLocalizations {
   /// **'Phones read it as a read-only tag and cannot write to it.'**
   String get ndefEmulateReadOnly;
 
-  /// No description provided for @ndefEmulatePollingPaused.
+  /// No description provided for @cardEmulatePollingPaused.
   ///
   /// In en, this message translates to:
   /// **'The reader stops reading cards while emulating.'**
-  String get ndefEmulatePollingPaused;
+  String get cardEmulatePollingPaused;
 
   /// No description provided for @ndefEmulateIosLimit.
   ///
@@ -2036,35 +2036,83 @@ abstract class AppLocalizations {
   /// **'iPhone background reading mainly handles links; other records may need an NFC app.'**
   String get ndefEmulateIosLimit;
 
-  /// No description provided for @ndefEmulateFirmware.
+  /// No description provided for @cardEmulateFirmware.
   ///
   /// In en, this message translates to:
-  /// **'Requires reader firmware with NDEF emulation support.'**
-  String get ndefEmulateFirmware;
+  /// **'Requires reader firmware with emulation support.'**
+  String get cardEmulateFirmware;
 
-  /// No description provided for @ndefEmulateFailed.
+  /// No description provided for @cardEmulateFailed.
   ///
   /// In en, this message translates to:
-  /// **'Emulation failed. Check that the reader firmware supports NDEF emulation.'**
-  String get ndefEmulateFailed;
+  /// **'Emulation failed. Check that the reader firmware supports emulation.'**
+  String get cardEmulateFailed;
 
-  /// No description provided for @ndefEmulateNoReader.
+  /// No description provided for @cardEmulateNoReader.
   ///
   /// In en, this message translates to:
-  /// **'NDEF emulation requires a connected HINATA reader'**
-  String get ndefEmulateNoReader;
+  /// **'Emulation requires a connected HINATA reader'**
+  String get cardEmulateNoReader;
 
-  /// No description provided for @ndefEmulateReaderDisconnected.
+  /// No description provided for @cardEmulateReaderDisconnected.
   ///
   /// In en, this message translates to:
   /// **'The reader was disconnected'**
-  String get ndefEmulateReaderDisconnected;
+  String get cardEmulateReaderDisconnected;
 
   /// No description provided for @ndefEmulateUnsupported.
   ///
   /// In en, this message translates to:
   /// **'This dataset cannot be emulated'**
   String get ndefEmulateUnsupported;
+
+  /// No description provided for @cardEmulateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Emulate card'**
+  String get cardEmulateTitle;
+
+  /// No description provided for @cardEmulateWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a reader'**
+  String get cardEmulateWaiting;
+
+  /// No description provided for @cardEmulateConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'A reader is reading the card'**
+  String get cardEmulateConnected;
+
+  /// No description provided for @cardEmulateOfficialWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Emulated cards cannot be used with official servers.'**
+  String get cardEmulateOfficialWarning;
+
+  /// No description provided for @cardEmulateFelicaData.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the saved IDm, PMm and system codes are emulated.'**
+  String get cardEmulateFelicaData;
+
+  /// No description provided for @cardEmulateAicData.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the saved IDm, PMm, system codes and access code (S_PAD0) are emulated, not data that needs authentication.'**
+  String get cardEmulateAicData;
+
+  /// No description provided for @cardEmulatePollOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'A reader that only reads the card number is not shown here.'**
+  String get cardEmulatePollOnly;
+
+  /// No description provided for @cardEmulateUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This card cannot be emulated'**
+  String get cardEmulateUnsupported;
 
   /// No description provided for @ndefRecordCount.
   ///
