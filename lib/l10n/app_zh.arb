@@ -1064,6 +1064,10 @@
       }
     }
   },
+  "nesicaSerial": "NESiCA 卡号",
+  "@nesicaSerial": {
+    "description": "NESiCA 卡号字段标签"
+  },
   "cardWrite": "写入",
   "cardWriteTitle": "写入 MIFARE 卡片",
   "cardWriteWarningWritable": "并非所有卡片都可以写入，请以实际写入结果为准。",

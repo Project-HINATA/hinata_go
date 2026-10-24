@@ -1067,6 +1067,10 @@
       }
     }
   },
+  "nesicaSerial": "NESiCA Serial",
+  "@nesicaSerial": {
+    "description": "NESiCA card serial number field label"
+  },
   "cardWrite": "Write",
   "cardWriteTitle": "Write to MIFARE card",
   "cardWriteWarningWritable": "Not every card can be written. The actual result depends on the target card.",

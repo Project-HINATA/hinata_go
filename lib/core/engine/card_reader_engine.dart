@@ -10,6 +10,7 @@ import 'package:hinata_go/models/card/card_tag.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
+import 'package:hinata_go/models/card/nesica.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/suica.dart';
 import 'package:hinata_go/models/card/tunion.dart';
@@ -357,6 +358,9 @@ class CardReaderEngine {
         return tunion;
       }
 
+      final nesica = await _tryReadNesica(rawTag, source: source);
+      if (nesica != null) return CardReadResult.recognized(nesica);
+
       return _unsupported(rawTag, source);
     }
 
@@ -374,6 +378,65 @@ class CardReaderEngine {
     return CardReadResult.confirmedUnsupported(
       ScannedCard(card: tag, source: source, isUsable: false),
     );
+  }
+
+  /// Reads an old NESiCA card, which is a MIFARE Ultralight.
+  ///
+  /// The card does not authenticate, so it is read with raw READ commands
+  /// ([0x30, page]). Returns null for MIFARE Classic, ISO-DEP and NDEF-formatted
+  /// tags, and for any tag that does not carry the NESiCA marker, so the caller
+  /// can fall back to [_unsupported].
+  Future<ScannedCard?> _tryReadNesica(
+    Iso14443 tag, {
+    required String source,
+  }) async {
+    // Skip MIFARE Classic (SAK bit 3) and ISO-DEP (SAK bit 5) cards.
+    if ((tag.sak & 0x08) != 0 || (tag.sak & 0x20) != 0 || tag.id.length < 7) {
+      return null;
+    }
+
+    var serial = '';
+    try {
+      final pages = <int>[];
+      for (final pageStart in const [0x00, 0x04, 0x08]) {
+        final response = await transceiver.transceive(
+          Uint8List.fromList([0x30, pageStart]),
+        );
+        if (response.length < 16) break;
+        pages.addAll(response.take(16));
+      }
+      if (pages.length < 36) return null;
+      // Reject NFC Forum Type 2 (NDEF) tags by their capability container.
+      if (pages[12] == 0xE1) return null;
+      // NESiCA cards start page 4 with 'T'.
+      if (pages[16] != 0x54) return null;
+      serial = _decodeAscii(pages.sublist(20, 36));
+    } catch (e) {
+      debugPrint('[CardReaderEngine] NESiCA read failed: $e');
+      return null;
+    }
+
+    return ScannedCard(
+      card: Nesica(
+        tag.id,
+        tag.sak,
+        tag.atqa,
+        serial: serial,
+        tags: const [CardTag.nesica],
+      ),
+      source: source,
+    );
+  }
+
+  /// Decodes a run of printable ASCII bytes, stopping at the first
+  /// non-printable byte.
+  String _decodeAscii(List<int> bytes) {
+    final buffer = StringBuffer();
+    for (final byte in bytes) {
+      if (byte < 0x20 || byte > 0x7E) break;
+      buffer.writeCharCode(byte);
+    }
+    return buffer.toString();
   }
 
   Future<ScannedCard?> _tryReadSuica(

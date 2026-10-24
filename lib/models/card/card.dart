@@ -8,6 +8,7 @@ import 'card_tag.dart';
 import 'felica.dart';
 import 'iso15693.dart';
 import 'iso14443a.dart';
+import 'nesica.dart';
 import 'suica.dart';
 import 'tunion.dart';
 
@@ -87,6 +88,8 @@ class ICCard {
         return Iso14443.fromJson(json);
       case 'iso15693':
         return Iso15693.fromJson(json);
+      case 'nesica':
+        return Nesica.fromJson(json);
       case 'suica':
         return Suica.fromJson(json);
       case 'tunion':
@@ -105,6 +108,9 @@ class ICCard {
 
   /// Reconstruct from flat type + value strings (e.g. from [ScanLog]).
   static ICCard fromTypeAndValue(String type, String value) {
+    if (type == 'nesica') {
+      return Nesica.fromJson({'type': type, 'id': '', 'serial': value});
+    }
     if (type == 'banapass' && RegExp(r'^\d{20}$').hasMatch(value)) {
       return Banapass.fromAccessCode(accessCode: value, dualKey: true);
     }
