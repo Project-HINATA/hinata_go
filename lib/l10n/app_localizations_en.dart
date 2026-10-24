@@ -1040,7 +1040,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ndefEmulateTitle => 'Emulate NDEF tag';
 
   @override
-  String get ndefEmulatePreparing => 'Preparing the reader';
+  String get cardEmulatePreparing => 'Preparing the reader';
 
   @override
   String get ndefEmulateWaiting => 'Hold a phone to the reader';
@@ -1049,13 +1049,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ndefEmulateConnected => 'Phone connected, reading';
 
   @override
-  String get ndefEmulateStopping => 'Stopping';
+  String get cardEmulateStopping => 'Stopping';
 
   @override
-  String get ndefEmulateStopped => 'Emulation stopped';
+  String get cardEmulateStopped => 'Emulation stopped';
 
   @override
-  String ndefEmulateReadCount(int count) {
+  String cardEmulateReadCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -1066,14 +1066,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get ndefEmulateStop => 'Stop';
+  String get cardEmulateStop => 'Stop';
 
   @override
   String get ndefEmulateReadOnly =>
       'Phones read it as a read-only tag and cannot write to it.';
 
   @override
-  String get ndefEmulatePollingPaused =>
+  String get cardEmulatePollingPaused =>
       'The reader stops reading cards while emulating.';
 
   @override
@@ -1081,22 +1081,50 @@ class AppLocalizationsEn extends AppLocalizations {
       'iPhone background reading mainly handles links; other records may need an NFC app.';
 
   @override
-  String get ndefEmulateFirmware =>
-      'Requires reader firmware with NDEF emulation support.';
+  String get cardEmulateFirmware =>
+      'Requires reader firmware with emulation support.';
 
   @override
-  String get ndefEmulateFailed =>
-      'Emulation failed. Check that the reader firmware supports NDEF emulation.';
+  String get cardEmulateFailed =>
+      'Emulation failed. Check that the reader firmware supports emulation.';
 
   @override
-  String get ndefEmulateNoReader =>
-      'NDEF emulation requires a connected HINATA reader';
+  String get cardEmulateNoReader =>
+      'Emulation requires a connected HINATA reader';
 
   @override
-  String get ndefEmulateReaderDisconnected => 'The reader was disconnected';
+  String get cardEmulateReaderDisconnected => 'The reader was disconnected';
 
   @override
   String get ndefEmulateUnsupported => 'This dataset cannot be emulated';
+
+  @override
+  String get cardEmulateTitle => 'Emulate card';
+
+  @override
+  String get cardEmulateWaiting => 'Waiting for a reader';
+
+  @override
+  String get cardEmulateConnected => 'A reader is reading the card';
+
+  @override
+  String get cardEmulateOfficialWarning =>
+      'Emulated cards cannot be used with official servers.';
+
+  @override
+  String get cardEmulateFelicaData =>
+      'Only the saved IDm, PMm and system codes are emulated.';
+
+  @override
+  String get cardEmulateAicData =>
+      'Only the saved IDm, PMm, system codes and access code (S_PAD0) are emulated, not data that needs authentication.';
+
+  @override
+  String get cardEmulatePollOnly =>
+      'A reader that only reads the card number is not shown here.';
+
+  @override
+  String get cardEmulateUnsupported => 'This card cannot be emulated';
 
   @override
   String get ndefRecordCount => 'NDEF record count';

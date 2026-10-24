@@ -5,17 +5,16 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../core/engine/type4_ndef_tag.dart';
-import '../models/card/ndef.dart';
+import '../core/engine/card_emulation.dart';
 import '../models/card/saved_card.dart';
-import '../services/reader/hinata_ndef_emulator.dart';
+import '../services/reader/hinata_card_emulator.dart';
 import 'hardware_device_provider.dart';
 
 enum CardEmulatorStatus {
   idle,
   starting,
-  waitingForPhone,
-  phoneConnected,
+  waitingForReader,
+  readerConnected,
   stopping,
   stopped,
   failed,
@@ -30,19 +29,21 @@ enum CardEmulatorFailure {
 
 class CardEmulatorState {
   final CardEmulatorStatus status;
+  final EmulationKind? kind;
   final int readCount;
   final CardEmulatorFailure? failure;
 
   const CardEmulatorState({
     this.status = CardEmulatorStatus.idle,
+    this.kind,
     this.readCount = 0,
     this.failure,
   });
 
   bool get isEmulating => switch (status) {
     CardEmulatorStatus.starting ||
-    CardEmulatorStatus.waitingForPhone ||
-    CardEmulatorStatus.phoneConnected ||
+    CardEmulatorStatus.waitingForReader ||
+    CardEmulatorStatus.readerConnected ||
     CardEmulatorStatus.stopping => true,
     _ => false,
   };
@@ -55,12 +56,13 @@ class CardEmulatorState {
     CardEmulatorFailure? failure,
   }) => CardEmulatorState(
     status: status ?? this.status,
+    kind: kind,
     readCount: readCount ?? this.readCount,
     failure: failure ?? this.failure,
   );
 }
 
-/// The PN532 can emulate a tag only through a connected HINATA reader, and
+/// The PN532 can emulate a card only through a connected HINATA reader, and
 /// iOS cannot drive one.
 final cardEmulatorAvailableProvider = Provider<bool>((ref) {
   if (!kIsWeb && Platform.isIOS) return false;
@@ -82,14 +84,13 @@ class CardEmulator extends Notifier<CardEmulatorState> {
   /// Emulates [card] until [stop]; returns whether it ended without failure.
   Future<bool> emulate(SavedCard card) async {
     if (state.isEmulating) return false;
-    state = const CardEmulatorState();
-
-    final ndef = card.card;
-    if (ndef is! NdefCard ||
-        ndef.message.isEmpty ||
-        ndef.message.length > Type4NdefTag.maxMessageSize) {
-      return _fail(CardEmulatorFailure.unsupportedCard);
-    }
+    final kind = emulationKindOf(card.card);
+    state = CardEmulatorState(kind: kind);
+    if (kind == null) return _fail(CardEmulatorFailure.unsupportedCard);
+    final target = emulationTargetFor(
+      card.card,
+      type4MaxRead: HinataCardEmulator.hidMaxRead,
+    );
     if (!ref.read(cardEmulatorAvailableProvider)) {
       return _fail(CardEmulatorFailure.noReader);
     }
@@ -97,7 +98,7 @@ class CardEmulator extends Notifier<CardEmulatorState> {
     _stopRequested = false;
     final cancel = Completer<void>();
     _cancel = cancel;
-    state = const CardEmulatorState(status: CardEmulatorStatus.starting);
+    state = CardEmulatorState(status: CardEmulatorStatus.starting, kind: kind);
     final session = Completer<void>();
     _session = session.future;
     final hardware = ref.read(hardwareDeviceProvider.notifier);
@@ -107,7 +108,7 @@ class CardEmulator extends Notifier<CardEmulatorState> {
       if (reader == null) return _fail(CardEmulatorFailure.noReader);
       if (_stopRequested) return _finish();
 
-      // Emulation waits for a phone without a time limit, so losing the
+      // Emulation waits for a reader without a time limit, so losing the
       // reader has to end it.
       connection = ref.listen(hardwareDeviceProvider, (_, next) {
         if (next.connectedDevice != reader && !cancel.isCompleted) {
@@ -117,8 +118,8 @@ class CardEmulator extends Notifier<CardEmulatorState> {
       if (ref.read(hardwareDeviceProvider).connectedDevice != reader) {
         return _fail(CardEmulatorFailure.readerDisconnected);
       }
-      await reader.emulateNdef(
-        ndef.message,
+      await reader.emulateCard(
+        target,
         cancel: cancel.future,
         onEvent: _onEvent,
       );
@@ -127,7 +128,7 @@ class CardEmulator extends Notifier<CardEmulatorState> {
       }
       return _finish();
     } catch (error, stackTrace) {
-      log('NDEF emulation failed', error: error, stackTrace: stackTrace);
+      log('Card emulation failed', error: error, stackTrace: stackTrace);
       if (_stopRequested) return _finish();
       return _fail(
         ref.read(hardwareDeviceProvider).connectedDevice == null
@@ -154,16 +155,16 @@ class CardEmulator extends Notifier<CardEmulatorState> {
     await _session;
   }
 
-  void _onEvent(NdefEmulationEvent event) {
+  void _onEvent(CardEmulationEvent event) {
     if (_stopRequested) return;
     state = switch (event) {
-      NdefEmulationEvent.waitingForPhone => state.copyWith(
-        status: CardEmulatorStatus.waitingForPhone,
+      CardEmulationEvent.waitingForReader => state.copyWith(
+        status: CardEmulatorStatus.waitingForReader,
       ),
-      NdefEmulationEvent.phoneConnected => state.copyWith(
-        status: CardEmulatorStatus.phoneConnected,
+      CardEmulationEvent.readerConnected => state.copyWith(
+        status: CardEmulatorStatus.readerConnected,
       ),
-      NdefEmulationEvent.messageRead => state.copyWith(
+      CardEmulationEvent.dataRead => state.copyWith(
         readCount: state.readCount + 1,
       ),
     };
@@ -172,6 +173,7 @@ class CardEmulator extends Notifier<CardEmulatorState> {
   bool _finish() {
     state = CardEmulatorState(
       status: CardEmulatorStatus.stopped,
+      kind: state.kind,
       readCount: state.readCount,
     );
     return true;
@@ -180,6 +182,7 @@ class CardEmulator extends Notifier<CardEmulatorState> {
   bool _fail(CardEmulatorFailure failure) {
     state = CardEmulatorState(
       status: CardEmulatorStatus.failed,
+      kind: state.kind,
       readCount: state.readCount,
       failure: failure,
     );

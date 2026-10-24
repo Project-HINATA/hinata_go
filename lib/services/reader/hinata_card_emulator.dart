@@ -4,19 +4,19 @@ import 'dart:typed_data';
 
 import 'package:hinata_nfc/hinata_nfc.dart';
 
-import '../../core/engine/type3_ndef_tag.dart';
+import '../../core/engine/card_emulation.dart';
+import '../../core/engine/felica_tag.dart';
 import '../../core/engine/type4_ndef_tag.dart';
 import 'usb_hinata_impl.dart';
 
-enum NdefEmulationEvent { waitingForPhone, phoneConnected, messageRead }
+enum CardEmulationEvent { waitingForReader, readerConnected, dataRead }
 
-/// Presents a HINATA reader's PN532 as a read-only NDEF tag, both as a
-/// Type 4 tag over Type A and as a Type 3 tag over FeliCa, whichever the
-/// phone polls first.
+/// Presents a HINATA reader's PN532 as an [EmulationTarget]: a FeliCa card,
+/// and for NDEF also a Type 4 tag over Type A.
 ///
 /// Needs firmware that lets a new PN532 request replace a pending
 /// `TgInitAsTarget`, and keeps card polling paused while one waits.
-class HinataNdefEmulator {
+class HinataCardEmulator {
   /// A HID report carries 62 PN532 bytes: `TgSetData` takes 9 of them, the
   /// status word 2 more.
   static const hidMaxRead = 51;
@@ -24,7 +24,7 @@ class HinataNdefEmulator {
   static const ackTimeoutMs = 500;
   static const sendTimeoutMs = 500;
 
-  /// The PN532 reports neither a FeliCa phone leaving nor its field going
+  /// The PN532 reports neither a FeliCa reader leaving nor its field going
   /// away, so a FeliCa session ends after this long without a command.
   static const felicaIdleTimeoutMs = 500;
 
@@ -39,26 +39,28 @@ class HinataNdefEmulator {
 
   final Pn532Api _api;
 
-  HinataNdefEmulator(this._api);
+  HinataCardEmulator(this._api);
 
-  /// Serves [message] until [cancel] completes. Waits for a phone without a
+  /// Serves [target] until [cancel] completes. Waits for a reader without a
   /// time limit.
+  ///
+  /// The PN532 answers FeliCa polling by itself, so a reader that only polls
+  /// reads the IDm without this ever reporting a connection.
   Future<void> run(
-    Uint8List message, {
+    EmulationTarget target, {
     required Future<void> cancel,
-    required void Function(NdefEmulationEvent event) onEvent,
-    Uint8List? idm,
+    required void Function(CardEmulationEvent event) onEvent,
   }) async {
-    final type4 = Type4NdefTag(message, maxRead: hidMaxRead);
-    final type3 = Type3NdefTag(message, idm: idm ?? Type3NdefTag.randomIdm());
+    final felica = target.felica;
+    final systemCode = felica.systemCodes.first;
     final targetMode = Uint8List.fromList([
       _passiveOnly,
       0x04, 0x00, // SENS_RES
       0x00, 0x00, 0x00, // NFCID1
       0x20, // SEL_RES: ISO 14443-4
-      ...type3.idm,
-      ...type3.pmm,
-      Type3NdefTag.ndefSystemCode >> 8, Type3NdefTag.ndefSystemCode & 0xFF,
+      ...felica.idm,
+      ...felica.pmm,
+      systemCode >> 8, systemCode & 0xFF,
       ...List.filled(10, 0), // NFCID3
       0x00, // no general bytes
       0x00, // no historical bytes
@@ -80,7 +82,7 @@ class HinataNdefEmulator {
       while (!cancelled) {
         if (!waiting) {
           waiting = true;
-          onEvent(NdefEmulationEvent.waitingForPhone);
+          onEvent(CardEmulationEvent.waitingForReader);
         }
         try {
           final activation = await _api.tgInitAsTarget(
@@ -90,13 +92,14 @@ class HinataNdefEmulator {
           );
           if (activation.isEmpty) continue;
           final mode = activation[0];
+          final type4 = target.type4;
           final Future<void> Function() serve;
-          if (mode & 0x08 != 0) {
+          if (mode & 0x08 != 0 && type4 != null) {
             // The PN532 has already answered RATS with ATS.
             serve = () => _serveType4(type4, () => cancelled, cancel, onEvent);
           } else if (mode & 0x07 == 0x02) {
-            serve = () => _serveType3(
-              type3,
+            serve = () => _serveFelica(
+              felica,
               activation.sublist(1),
               () => cancelled,
               cancel,
@@ -106,17 +109,17 @@ class HinataNdefEmulator {
             continue;
           }
           waiting = false;
-          onEvent(NdefEmulationEvent.phoneConnected);
+          onEvent(CardEmulationEvent.readerConnected);
           await serve();
         } on Pn532CancelledException {
           break;
         } on Pn532StatusException {
-          // The phone released the tag or the RF link broke.
+          // The reader released the card or the RF link broke.
         } on TimeoutException {
-          // The FeliCa phone went quiet, or the PN532 did not acknowledge.
+          // The FeliCa reader went quiet, or the PN532 did not acknowledge.
         } on Exception catch (error, stackTrace) {
           log(
-            'NDEF emulation session ended',
+            'Card emulation session ended',
             error: error,
             stackTrace: stackTrace,
           );
@@ -131,7 +134,7 @@ class HinataNdefEmulator {
     Type4NdefTag tag,
     bool Function() isCancelled,
     Future<void> cancel,
-    void Function(NdefEmulationEvent event) onEvent,
+    void Function(CardEmulationEvent event) onEvent,
   ) async {
     tag.reset();
     while (!isCancelled()) {
@@ -144,18 +147,18 @@ class HinataNdefEmulator {
         timeout: sendTimeoutMs,
         ackTimeout: ackTimeoutMs,
       );
-      if (tag.takeMessageRead()) onEvent(NdefEmulationEvent.messageRead);
+      if (tag.takeMessageRead()) onEvent(CardEmulationEvent.dataRead);
     }
   }
 
   /// [first] is the command that ended activation. FeliCa frames carry their
   /// own length byte, which the tag does not see.
-  Future<void> _serveType3(
-    Type3NdefTag tag,
+  Future<void> _serveFelica(
+    FelicaTag tag,
     List<int> first,
     bool Function() isCancelled,
     Future<void> cancel,
-    void Function(NdefEmulationEvent event) onEvent,
+    void Function(CardEmulationEvent event) onEvent,
   ) async {
     var frame = first;
     while (!isCancelled()) {
@@ -169,7 +172,7 @@ class HinataNdefEmulator {
             timeout: sendTimeoutMs,
             ackTimeout: ackTimeoutMs,
           );
-          if (tag.takeMessageRead()) onEvent(NdefEmulationEvent.messageRead);
+          if (tag.takeMarkerRead()) onEvent(CardEmulationEvent.dataRead);
         }
       }
       frame = await _api.tgGetInitiatorCommand(
@@ -187,7 +190,7 @@ class HinataNdefEmulator {
       await _api.setParameters(_defaultParameters);
     } catch (error, stackTrace) {
       log(
-        'Failed to restore the PN532 after NDEF emulation',
+        'Failed to restore the PN532 after card emulation',
         error: error,
         stackTrace: stackTrace,
       );

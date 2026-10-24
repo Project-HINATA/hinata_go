@@ -2411,20 +2411,25 @@ Uint8List rotateLeft(Uint8List data, int nBytes, int nBits) {
   return data;
 }
 
+/// The inverse of [spad0Decrypt]. The last byte stays readable: it selects
+/// the round count and the tables.
 Uint8List spad0Encrypt(Uint8List spad) {
   spad = Uint8List.fromList(spad); // Make a mutable copy
   int count = (spad[15] >> 4) + 7;
   int table = spad[15];
 
   for (int c = 0; c < count; c++) {
+    final t = table % nTables;
     for (int i = 0; i < 15; i++) {
-      spad[i] = sBox[table % nTables][spad[i]];
+      spad[i] = sBox[t][spad[i]] ^ sBoxKey[t];
     }
     rotateLeft(spad, 15, 5);
     table += hashAdd;
   }
 
-  return Uint8List.fromList(spad.map((b) => sBox[nTables][b]).toList());
+  return Uint8List.fromList(
+    spad.map((b) => sBox[nTables][b] ^ sBoxKey[nTables]).toList(),
+  );
 }
 
 Uint8List spad0Decrypt(Uint8List spad) {

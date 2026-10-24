@@ -1007,7 +1007,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ndefEmulateTitle => '模拟 NDEF 标签';
 
   @override
-  String get ndefEmulatePreparing => '正在准备读卡器';
+  String get cardEmulatePreparing => '正在准备读卡器';
 
   @override
   String get ndefEmulateWaiting => '请将手机靠近读卡器';
@@ -1016,42 +1016,67 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ndefEmulateConnected => '手机已连接，正在读取';
 
   @override
-  String get ndefEmulateStopping => '正在停止';
+  String get cardEmulateStopping => '正在停止';
 
   @override
-  String get ndefEmulateStopped => '模拟已停止';
+  String get cardEmulateStopped => '模拟已停止';
 
   @override
-  String ndefEmulateReadCount(int count) {
+  String cardEmulateReadCount(int count) {
     return '已被读取 $count 次';
   }
 
   @override
-  String get ndefEmulateStop => '停止模拟';
+  String get cardEmulateStop => '停止模拟';
 
   @override
   String get ndefEmulateReadOnly => '手机会读取到一张只读标签，无法向其写入。';
 
   @override
-  String get ndefEmulatePollingPaused => '模拟期间读卡器暂停读卡。';
+  String get cardEmulatePollingPaused => '模拟期间读卡器暂停读卡。';
 
   @override
   String get ndefEmulateIosLimit => 'iPhone 后台读取主要处理网址，其他记录可能需要 NFC 应用读取。';
 
   @override
-  String get ndefEmulateFirmware => '需要支持 NDEF 模拟的读卡器固件。';
+  String get cardEmulateFirmware => '需要支持模拟功能的读卡器固件。';
 
   @override
-  String get ndefEmulateFailed => '模拟失败，请确认读卡器固件支持 NDEF 模拟。';
+  String get cardEmulateFailed => '模拟失败，请确认读卡器固件支持模拟功能。';
 
   @override
-  String get ndefEmulateNoReader => 'NDEF 模拟需要连接 HINATA 读卡器';
+  String get cardEmulateNoReader => '模拟需要连接 HINATA 读卡器';
 
   @override
-  String get ndefEmulateReaderDisconnected => '读卡器已断开';
+  String get cardEmulateReaderDisconnected => '读卡器已断开';
 
   @override
   String get ndefEmulateUnsupported => '该数据集无法模拟';
+
+  @override
+  String get cardEmulateTitle => '模拟卡片';
+
+  @override
+  String get cardEmulateWaiting => '等待读卡设备读取';
+
+  @override
+  String get cardEmulateConnected => '读卡设备正在读取';
+
+  @override
+  String get cardEmulateOfficialWarning => '模拟的卡片无法用于官方服务器。';
+
+  @override
+  String get cardEmulateFelicaData => '只模拟已保存的 IDm、PMm 和系统码。';
+
+  @override
+  String get cardEmulateAicData =>
+      '只模拟已保存的 IDm、PMm、系统码和访问码（S_PAD0），不包含需要认证才能读取的数据。';
+
+  @override
+  String get cardEmulatePollOnly => '读卡设备只读取卡号时，这里不会显示正在读取。';
+
+  @override
+  String get cardEmulateUnsupported => '该卡片无法模拟';
 
   @override
   String get ndefRecordCount => 'NDEF 条目数量';
