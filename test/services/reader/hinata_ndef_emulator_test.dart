@@ -49,6 +49,8 @@ class _ScriptedPn532 {
   Iterable<int> get commands => requests.map((r) => r.$1);
 }
 
+final idm = Uint8List.fromList([0x02, 0xFE, 1, 2, 3, 4, 5, 6]);
+
 void main() {
   final message = Uint8List.fromList([
     0xD1, 0x01, 0x04, 0x55, 0x04, 0x61, 0x2E, 0x62, //
@@ -87,7 +89,7 @@ void main() {
 
     await HinataNdefEmulator(
       pn532.api,
-    ).run(message, cancel: cancel.future, onEvent: events.add);
+    ).run(message, cancel: cancel.future, onEvent: events.add, idm: idm);
 
     expect(events, [
       NdefEmulationEvent.waitingForPhone,
@@ -113,7 +115,14 @@ void main() {
 
     final target = pn532.requests.firstWhere((r) => r.$1 == 0x8C).$2;
     expect(target.length, 37);
-    expect(target.sublist(0, 7), [0x05, 0x04, 0x00, 0x00, 0x00, 0x00, 0x20]);
+    expect(target.sublist(0, 7), [0x01, 0x04, 0x00, 0x00, 0x00, 0x00, 0x20]);
+    // FeliCa polling gets a Type 3 NDEF tag rather than an all-zero card.
+    expect(target.sublist(7, 25), [
+      ...idm,
+      ...List.filled(8, 0xFF),
+      0x12,
+      0xFC,
+    ]);
 
     // Waiting for the phone, and for its next command, has no time limit.
     final waits = pn532.responseTimeouts.where(
@@ -125,6 +134,88 @@ void main() {
     // A plain request replaces the pending Target before parameters return
     // to the PN532 defaults.
     expect(pn532.commands.toList().reversed.take(3), [0x12, 0x02, 0x8C]);
+    expect(pn532.requests.last.$2, [0x14]);
+  });
+
+  test('serves the message to a FeliCa phone as a Type 3 tag', () async {
+    List<int> check(List<int> blocks) {
+      final body = [
+        0x06,
+        ...idm,
+        0x01,
+        0x0B,
+        0x00,
+        blocks.length,
+        for (final block in blocks) ...[0x80, block],
+      ];
+      return [body.length + 1, ...body];
+    }
+
+    final commands = Queue<List<int>>.of([
+      check([1]),
+    ]);
+    final responses = <List<int>>[];
+    final events = <NdefEmulationEvent>[];
+    final cancel = Completer<void>();
+    var targets = 0;
+
+    final pn532 = _ScriptedPn532((command, payload) {
+      switch (command) {
+        case 0x02:
+          return [0x32, 0x01, 0x06, 0x07];
+        case 0x8C:
+          // Activated at 212 kbps with FeliCa framing.
+          if (++targets == 1) {
+            return [
+              0x12,
+              ...check([0]),
+            ];
+          }
+          Timer(Duration.zero, cancel.complete);
+          return null;
+        case 0x88:
+          // After the last command the phone goes quiet.
+          return commands.isEmpty ? null : [0x00, ...commands.removeFirst()];
+        case 0x90:
+          responses.add(payload);
+          return [0x00];
+        default:
+          return [];
+      }
+    });
+
+    await HinataNdefEmulator(
+      pn532.api,
+    ).run(message, cancel: cancel.future, onEvent: events.add, idm: idm);
+
+    expect(events, [
+      NdefEmulationEvent.waitingForPhone,
+      NdefEmulationEvent.phoneConnected,
+      NdefEmulationEvent.messageRead,
+      NdefEmulationEvent.waitingForPhone,
+    ]);
+    expect(responses, hasLength(2));
+    expect(responses[0].sublist(0, 13), [29, 0x07, ...idm, 0, 0, 1]);
+    expect(responses[0].sublist(13, 15), [0x10, 2]);
+    expect(responses[1], [
+      29,
+      0x07,
+      ...idm,
+      0,
+      0,
+      1,
+      ...message,
+      ...List.filled(8, 0),
+    ]);
+
+    // The FeliCa session ends when the phone stays quiet for a while.
+    final idle = pn532.responseTimeouts.where((r) => r.$1 == 0x88);
+    expect(
+      idle.map((r) => r.$2),
+      everyElement(
+        const Duration(milliseconds: HinataNdefEmulator.felicaIdleTimeoutMs),
+      ),
+    );
     expect(pn532.requests.last.$2, [0x14]);
   });
 }
