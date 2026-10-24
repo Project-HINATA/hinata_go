@@ -613,6 +613,40 @@ class Pn532Api extends IoBase {
     _checkTargetStatus(res.payload);
   }
 
+  /// Returns the next raw frame from the initiator, for target modes the
+  /// PN532 does not handle itself, such as FeliCa. Waits as [tgInitAsTarget]
+  /// does.
+  Future<List<int>> tgGetInitiatorCommand({
+    int? timeout,
+    int ackTimeout = 1000,
+    Future<void>? cancel,
+  }) async {
+    final res = await _sendAndReceive(
+      Pn532Command.tgGetInitiatorCommand,
+      const [],
+      timeout: timeout,
+      ackTimeout: ackTimeout,
+      cancel: cancel,
+    );
+    _checkTargetStatus(res.payload);
+    return res.payload.sublist(1);
+  }
+
+  /// Sends [data] as a raw frame to the initiator.
+  Future<void> tgResponseToInitiator(
+    List<int> data, {
+    int timeout = 1000,
+    int ackTimeout = 1000,
+  }) async {
+    final res = await _sendAndReceive(
+      Pn532Command.tgResponseToInitiator,
+      data,
+      timeout: timeout,
+      ackTimeout: ackTimeout,
+    );
+    _checkTargetStatus(res.payload);
+  }
+
   void _checkTargetStatus(List<int> payload) {
     if (payload.isEmpty) {
       throw const FormatException('PN532 target response has no status');
