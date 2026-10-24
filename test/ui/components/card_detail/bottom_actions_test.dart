@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hinata_go/ui/components/card_detail/bottom_actions.dart';
 
 void main() {
+  emulateTests();
   for (final width in [320.0, 600.0]) {
     testWidgets('lays out save, write, and send actions at width $width', (
       tester,
@@ -49,6 +50,54 @@ void main() {
         expect(writeX, lessThan(sendX));
         expect(saveY, sendY);
       }
+    });
+  }
+}
+
+void emulateTests() {
+  for (final width in [320.0, 600.0]) {
+    testWidgets('lays out save, write, and emulate actions at width $width', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: CardDetailBottomActions(
+              onSave: () {},
+              onWrite: () {},
+              onEmulate: () {},
+              isSaving: false,
+              isWriting: false,
+              isSending: false,
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      final write = tester.getCenter(find.byIcon(Icons.nfc));
+      final emulate = tester.getCenter(find.byIcon(Icons.contactless_outlined));
+      if (width < 388) {
+        expect(emulate.dy, greaterThan(write.dy));
+      } else {
+        expect(emulate.dy, write.dy);
+        expect(emulate.dx, greaterThan(write.dx));
+      }
+      expect(
+        tester.getSize(find.byType(CardDetailBottomActions)).height,
+        CardDetailBottomActions.heightFor(
+          width: width - 32,
+          padding: EdgeInsets.zero,
+          hasWrite: true,
+          hasSend: false,
+          hasEmulate: true,
+        ),
+      );
     });
   }
 }

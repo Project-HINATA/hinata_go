@@ -1034,6 +1034,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ndefWriteVerifying => 'Reading back to verify';
 
   @override
+  String get cardEmulate => 'Emulate';
+
+  @override
+  String get ndefEmulateTitle => 'Emulate NDEF tag';
+
+  @override
+  String get ndefEmulatePreparing => 'Preparing the reader';
+
+  @override
+  String get ndefEmulateWaiting => 'Hold a phone to the reader';
+
+  @override
+  String get ndefEmulateConnected => 'Phone connected, reading';
+
+  @override
+  String get ndefEmulateStopping => 'Stopping';
+
+  @override
+  String get ndefEmulateStopped => 'Emulation stopped';
+
+  @override
+  String ndefEmulateReadCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Read $count times',
+      one: 'Read once',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ndefEmulateStop => 'Stop';
+
+  @override
+  String get ndefEmulateReadOnly =>
+      'Phones read it as a read-only tag and cannot write to it.';
+
+  @override
+  String get ndefEmulatePollingPaused =>
+      'The reader stops reading cards while emulating.';
+
+  @override
+  String get ndefEmulateIosLimit =>
+      'iPhone background reading mainly handles links; other records may need an NFC app.';
+
+  @override
+  String get ndefEmulateFirmware =>
+      'Requires reader firmware with NDEF emulation support.';
+
+  @override
+  String get ndefEmulateFailed =>
+      'Emulation failed. Check that the reader firmware supports NDEF emulation.';
+
+  @override
+  String get ndefEmulateNoReader =>
+      'NDEF emulation requires a connected HINATA reader';
+
+  @override
+  String get ndefEmulateReaderDisconnected => 'The reader was disconnected';
+
+  @override
+  String get ndefEmulateUnsupported => 'This dataset cannot be emulated';
+
+  @override
   String get ndefRecordCount => 'NDEF record count';
 
   @override
