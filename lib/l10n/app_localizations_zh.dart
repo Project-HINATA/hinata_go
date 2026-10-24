@@ -1001,6 +1001,59 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ndefWriteVerifying => '正在回读验证';
 
   @override
+  String get cardEmulate => '模拟';
+
+  @override
+  String get ndefEmulateTitle => '模拟 NDEF 标签';
+
+  @override
+  String get ndefEmulatePreparing => '正在准备读卡器';
+
+  @override
+  String get ndefEmulateWaiting => '请将手机靠近读卡器';
+
+  @override
+  String get ndefEmulateConnected => '手机已连接，正在读取';
+
+  @override
+  String get ndefEmulateStopping => '正在停止';
+
+  @override
+  String get ndefEmulateStopped => '模拟已停止';
+
+  @override
+  String ndefEmulateReadCount(int count) {
+    return '已被读取 $count 次';
+  }
+
+  @override
+  String get ndefEmulateStop => '停止模拟';
+
+  @override
+  String get ndefEmulateReadOnly => '手机会读取到一张只读标签，无法向其写入。';
+
+  @override
+  String get ndefEmulatePollingPaused => '模拟期间读卡器暂停读卡。';
+
+  @override
+  String get ndefEmulateIosLimit => 'iPhone 后台读取主要处理网址，其他记录可能需要 NFC 应用读取。';
+
+  @override
+  String get ndefEmulateFirmware => '需要支持 NDEF 模拟的读卡器固件。';
+
+  @override
+  String get ndefEmulateFailed => '模拟失败，请确认读卡器固件支持 NDEF 模拟。';
+
+  @override
+  String get ndefEmulateNoReader => 'NDEF 模拟需要连接 HINATA 读卡器';
+
+  @override
+  String get ndefEmulateReaderDisconnected => '读卡器已断开';
+
+  @override
+  String get ndefEmulateUnsupported => '该数据集无法模拟';
+
+  @override
   String get ndefRecordCount => 'NDEF 条目数量';
 
   @override

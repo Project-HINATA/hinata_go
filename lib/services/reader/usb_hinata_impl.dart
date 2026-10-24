@@ -10,6 +10,7 @@ import 'package:hinata_go/models/card/iso14443a.dart';
 import '../../core/engine/card_reader_engine.dart';
 import '../nfc/ndef_tag_service.dart';
 import '../../models/card/card.dart';
+import 'hinata_ndef_emulator.dart';
 
 enum DeviceConnectionState { disconnected, connecting, connected, error }
 
@@ -267,6 +268,17 @@ class UsbHinataDeviceImpl {
         expectedUid: Uint8List.fromList(tag.id),
       ),
     );
+  }
+
+  /// Emulates a Type 4 tag holding [message] until [cancel] completes.
+  Future<void> emulateNdef(
+    Uint8List message, {
+    required Future<void> cancel,
+    required void Function(NdefEmulationEvent event) onEvent,
+  }) {
+    return HinataNdefEmulator(
+      _hinata.pn532Api,
+    ).run(message, cancel: cancel, onEvent: onEvent);
   }
 
   CardReadResult _resolvePollResult(CardReadResult result) {

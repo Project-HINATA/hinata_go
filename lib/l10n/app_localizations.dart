@@ -1964,6 +1964,108 @@ abstract class AppLocalizations {
   /// **'Reading back to verify'**
   String get ndefWriteVerifying;
 
+  /// No description provided for @cardEmulate.
+  ///
+  /// In en, this message translates to:
+  /// **'Emulate'**
+  String get cardEmulate;
+
+  /// No description provided for @ndefEmulateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Emulate NDEF tag'**
+  String get ndefEmulateTitle;
+
+  /// No description provided for @ndefEmulatePreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the reader'**
+  String get ndefEmulatePreparing;
+
+  /// No description provided for @ndefEmulateWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold a phone to the reader'**
+  String get ndefEmulateWaiting;
+
+  /// No description provided for @ndefEmulateConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone connected, reading'**
+  String get ndefEmulateConnected;
+
+  /// No description provided for @ndefEmulateStopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping'**
+  String get ndefEmulateStopping;
+
+  /// No description provided for @ndefEmulateStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Emulation stopped'**
+  String get ndefEmulateStopped;
+
+  /// No description provided for @ndefEmulateReadCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Read once} other{Read {count} times}}'**
+  String ndefEmulateReadCount(int count);
+
+  /// No description provided for @ndefEmulateStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get ndefEmulateStop;
+
+  /// No description provided for @ndefEmulateReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Phones read it as a read-only tag and cannot write to it.'**
+  String get ndefEmulateReadOnly;
+
+  /// No description provided for @ndefEmulatePollingPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'The reader stops reading cards while emulating.'**
+  String get ndefEmulatePollingPaused;
+
+  /// No description provided for @ndefEmulateIosLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'iPhone background reading mainly handles links; other records may need an NFC app.'**
+  String get ndefEmulateIosLimit;
+
+  /// No description provided for @ndefEmulateFirmware.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires reader firmware with NDEF emulation support.'**
+  String get ndefEmulateFirmware;
+
+  /// No description provided for @ndefEmulateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Emulation failed. Check that the reader firmware supports NDEF emulation.'**
+  String get ndefEmulateFailed;
+
+  /// No description provided for @ndefEmulateNoReader.
+  ///
+  /// In en, this message translates to:
+  /// **'NDEF emulation requires a connected HINATA reader'**
+  String get ndefEmulateNoReader;
+
+  /// No description provided for @ndefEmulateReaderDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'The reader was disconnected'**
+  String get ndefEmulateReaderDisconnected;
+
+  /// No description provided for @ndefEmulateUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This dataset cannot be emulated'**
+  String get ndefEmulateUnsupported;
+
   /// No description provided for @ndefRecordCount.
   ///
   /// In en, this message translates to:

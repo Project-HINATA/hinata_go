@@ -10,6 +10,7 @@ class CardDetailBottomActions extends StatelessWidget {
   final VoidCallback onSave;
   final String? saveLabel;
   final VoidCallback? onWrite;
+  final VoidCallback? onEmulate;
   final bool isSending;
   final bool isSaving;
   final bool isWriting;
@@ -20,6 +21,7 @@ class CardDetailBottomActions extends StatelessWidget {
     required this.onSave,
     this.saveLabel,
     this.onWrite,
+    this.onEmulate,
     required this.isSending,
     required this.isSaving,
     this.isWriting = false,
@@ -42,11 +44,17 @@ class CardDetailBottomActions extends StatelessWidget {
     required EdgeInsets padding,
     required bool hasWrite,
     required bool hasSend,
+    bool hasEmulate = false,
   }) {
-    final rows = hasWrite && hasSend && width < _twoRowWidth ? 2 : 1;
+    final count = 1 + [hasWrite, hasEmulate, hasSend].where((b) => b).length;
+    final rows = _rowsFor(count, width);
     final buttons = rows * _buttonHeight + (rows - 1) * 8;
     return _buildPadding(padding).vertical + buttons;
   }
+
+  /// Three buttons share a row only when wide enough; four never do.
+  static int _rowsFor(int count, double width) =>
+      count > 3 || (count == 3 && width < _twoRowWidth) ? 2 : 1;
 
   static EdgeInsets _buildPadding(EdgeInsets padding) {
     return EdgeInsets.only(
@@ -57,6 +65,8 @@ class CardDetailBottomActions extends StatelessWidget {
     );
   }
 
+  bool get _isBusy => isSaving || isSending || isWriting;
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -66,42 +76,36 @@ class CardDetailBottomActions extends StatelessWidget {
       padding: _buildPadding(padding),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useTwoRows =
-              onWrite != null &&
-              onSend != null &&
-              constraints.maxWidth < _twoRowWidth;
-          if (useTwoRows) {
+          final buttons = [
+            _buildSaveButton(context, colorScheme),
+            if (onWrite != null) _buildWriteButton(context),
+            if (onEmulate != null) _buildEmulateButton(),
+            if (onSend != null) _buildSendButton(context, colorScheme),
+          ];
+          if (_rowsFor(buttons.length, constraints.maxWidth) == 2) {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    _buildSaveButton(context, colorScheme),
-                    const SizedBox(width: 8),
-                    _buildWriteButton(context),
-                  ],
-                ),
+                _buildRow(buttons.take(2)),
                 const SizedBox(height: 8),
-                Row(children: [_buildSendButton(context, colorScheme)]),
+                _buildRow(buttons.skip(2)),
               ],
             );
           }
-
-          return Row(
-            children: [
-              _buildSaveButton(context, colorScheme),
-              if (onWrite != null) ...[
-                const SizedBox(width: 8),
-                _buildWriteButton(context),
-              ],
-              if (onSend != null) ...[
-                const SizedBox(width: 8),
-                _buildSendButton(context, colorScheme),
-              ],
-            ],
-          );
+          return _buildRow(buttons);
         },
       ),
+    );
+  }
+
+  Widget _buildRow(Iterable<Widget> buttons) {
+    return Row(
+      children: [
+        for (final (index, button) in buttons.indexed) ...[
+          if (index > 0) const SizedBox(width: 8),
+          button,
+        ],
+      ],
     );
   }
 
@@ -169,6 +173,25 @@ class CardDetailBottomActions extends StatelessWidget {
         ),
         icon: isWriting ? _buildSpinner() : const Icon(Icons.nfc),
         label: Text(l10n.cardWrite),
+      ),
+    );
+  }
+
+  /// Emulation needs a HINATA reader, which iOS cannot drive, so this button
+  /// has no native iOS form.
+  Widget _buildEmulateButton() {
+    return Expanded(
+      child: FilledButton.tonalIcon(
+        onPressed: _isBusy ? null : onEmulate,
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          minimumSize: const Size(double.infinity, 56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        icon: const Icon(Icons.contactless_outlined),
+        label: Text(l10n.cardEmulate),
       ),
     );
   }

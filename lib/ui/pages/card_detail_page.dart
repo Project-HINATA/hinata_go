@@ -11,10 +11,12 @@ import '../../models/card/transit.dart';
 import '../../models/card/saved_card.dart';
 import '../../models/remote_instance.dart';
 import '../../providers/app_state_provider.dart';
+import '../../providers/card_emulator_provider.dart';
 import '../../providers/card_sender.dart';
 import '../../providers/card_writer_provider.dart';
 import '../../services/notification_service.dart';
 import '../components/card_detail/bottom_actions.dart';
+import '../components/card_detail/emulate_card_dialog.dart';
 import '../components/card_detail/write_card_dialog.dart';
 import '../components/instances/select_instance_dialog.dart';
 import '../components/reader/scanned_card_detail_v2.dart';
@@ -167,6 +169,7 @@ class CardDetailPage extends HookConsumerWidget {
     final writerState = ref.watch(cardWriterProvider);
     final writerAvailable = ref.watch(cardWriterAvailableProvider);
     final ndefWriterAvailable = ref.watch(ndefWriterAvailableProvider);
+    final emulatorAvailable = ref.watch(cardEmulatorAvailableProvider);
     final savedCards = ref.watch(savedCardsProvider);
 
     SavedCard? activeSavedCard;
@@ -206,6 +209,7 @@ class CardDetailPage extends HookConsumerWidget {
           (activeSavedCard?.card ?? card) is NdefCard
               ? ndefWriterAvailable
               : writerAvailable,
+          emulatorAvailable,
           activeSavedCard,
           activeCard,
         ),
@@ -253,6 +257,7 @@ class CardDetailPage extends HookConsumerWidget {
     CardSenderState senderState,
     CardWriterState writerState,
     bool writerAvailable,
+    bool emulatorAvailable,
     SavedCard? activeSavedCard,
     ICCard activeCard,
   ) {
@@ -260,6 +265,8 @@ class CardDetailPage extends HookConsumerWidget {
         activeSavedCard != null &&
         writerAvailable &&
         (activeCard is NdefCard || MifareCardWritePayload.canBuild(activeCard));
+    final canEmulate =
+        activeSavedCard != null && emulatorAvailable && activeCard is NdefCard;
     final canSend = activeCard.gamePayload != null;
     // The actions' height comes from the width they will get and the buttons
     // they will show, so the detail can reserve it in the same layout pass.
@@ -269,6 +276,7 @@ class CardDetailPage extends HookConsumerWidget {
       padding: media.padding,
       hasWrite: canWrite,
       hasSend: canSend,
+      hasEmulate: canEmulate,
     );
 
     return _CardDetailBody(
@@ -303,6 +311,9 @@ class CardDetailPage extends HookConsumerWidget {
             : null,
         onWrite: canWrite
             ? () => showCardWriteFlow(context, ref, activeSavedCard)
+            : null,
+        onEmulate: canEmulate
+            ? () => showCardEmulateFlow(context, ref, activeSavedCard)
             : null,
         isSending: senderState.isSending,
         isSaving: false,

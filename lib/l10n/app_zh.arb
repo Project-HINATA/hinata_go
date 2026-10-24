@@ -1141,6 +1141,30 @@
   "ndefWriteChecking": "正在检查标签",
   "ndefWriteData": "正在写入 NDEF 内容",
   "ndefWriteVerifying": "正在回读验证",
+  "cardEmulate": "模拟",
+  "ndefEmulateTitle": "模拟 NDEF 标签",
+  "ndefEmulatePreparing": "正在准备读卡器",
+  "ndefEmulateWaiting": "请将手机靠近读卡器",
+  "ndefEmulateConnected": "手机已连接，正在读取",
+  "ndefEmulateStopping": "正在停止",
+  "ndefEmulateStopped": "模拟已停止",
+  "ndefEmulateReadCount": "已被读取 {count} 次",
+  "@ndefEmulateReadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ndefEmulateStop": "停止模拟",
+  "ndefEmulateReadOnly": "手机会读取到一张只读标签，无法向其写入。",
+  "ndefEmulatePollingPaused": "模拟期间读卡器暂停读卡。",
+  "ndefEmulateIosLimit": "iPhone 后台读取主要处理网址，其他记录可能需要 NFC 应用读取。",
+  "ndefEmulateFirmware": "需要支持 NDEF 模拟的读卡器固件。",
+  "ndefEmulateFailed": "模拟失败，请确认读卡器固件支持 NDEF 模拟。",
+  "ndefEmulateNoReader": "NDEF 模拟需要连接 HINATA 读卡器",
+  "ndefEmulateReaderDisconnected": "读卡器已断开",
+  "ndefEmulateUnsupported": "该数据集无法模拟",
   "ndefRecordCount": "NDEF 条目数量",
   "ndefDataSize": "NDEF 数据集大小",
   "ndefTagCapacity": "NDEF 容量",

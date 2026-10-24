@@ -50,6 +50,27 @@ enum Pn532Error {
   int toInt() => value;
 }
 
+class Pn532StatusException implements Exception {
+  final int status;
+
+  const Pn532StatusException(this.status);
+
+  Pn532Error get error => Pn532Error.fromValue(status);
+
+  @override
+  String toString() =>
+      'Pn532StatusException: ${error.name} '
+      '(0x${status.toRadixString(16).padLeft(2, '0')})';
+}
+
+/// A wait for the PN532 was cancelled before it answered.
+class Pn532CancelledException implements Exception {
+  const Pn532CancelledException();
+
+  @override
+  String toString() => 'Pn532CancelledException';
+}
+
 enum Pn532Command {
   diagnose(0x00),
   getFirmwareVersion(0x02),
@@ -217,10 +238,15 @@ const standardAck = [0, 0, 0xFF, 0, 0xFF, 0];
 class Pn532Api extends IoBase {
   final FutureOr<void> Function()? _onRequestComplete;
 
+  /// [ackTimeout] bounds the wait for the ACK frame; [timeout] bounds every
+  /// later frame, and a null [timeout] waits until [cancel] completes.
+  /// Without [ackTimeout], [timeout] bounds the ACK too.
   Future<Pn532Packet> _sendAndReceive(
     Pn532Command command,
     List<int> payload, {
-    int timeout = 1000,
+    int? timeout = 1000,
+    int? ackTimeout,
+    Future<void>? cancel,
     String? context,
   }) async {
     try {
@@ -231,13 +257,27 @@ class Pn532Api extends IoBase {
       );
       await write(packet.toList());
 
-      final effectiveTimeout = Duration(milliseconds: timeout);
+      final responseTimeout = timeout == null
+          ? null
+          : Duration(milliseconds: timeout);
+      var acknowledged = ackTimeout == null;
       var count = 0;
 
       while (true) {
+        final effectiveTimeout = acknowledged
+            ? responseTimeout
+            : Duration(milliseconds: ackTimeout!);
         late final List<int> res;
         try {
-          res = await read(timeout: effectiveTimeout);
+          final frame = read(timeout: effectiveTimeout);
+          res = cancel == null
+              ? await frame
+              : await Future.any([
+                  frame,
+                  cancel.then<List<int>>(
+                    (_) => throw const Pn532CancelledException(),
+                  ),
+                ]);
         } on TimeoutException catch (error) {
           final contextSuffix = context == null ? '' : ' ($context)';
           throw TimeoutException(
@@ -252,6 +292,7 @@ class Pn532Api extends IoBase {
           throw FormatException('PN532 response is shorter than its header');
         }
         if (res[3] == 0 && res[4] == 0xFF) {
+          acknowledged = true;
           continue;
         }
         if (((res[3] + res[4]) & 0xFF) != 0) {
@@ -512,6 +553,71 @@ class Pn532Api extends IoBase {
     if (res.payload.length < 2) return -1;
     log("firmware version: ${res.payload[0]} ${res.payload[1]}");
     return (res.payload[0] << 8) | res.payload[1];
+  }
+
+  Future<void> setParameters(int flags) async {
+    await _sendAndReceive(Pn532Command.setParameters, [flags]);
+  }
+
+  /// Waits, after the ACK, for an initiator to activate the PN532 as a
+  /// target, and returns the mode byte followed by the initiator's first
+  /// command. A null [timeout] waits until [cancel] completes, which throws
+  /// [Pn532CancelledException]; the PN532 keeps waiting until the next
+  /// request replaces this one.
+  Future<List<int>> tgInitAsTarget(
+    List<int> parameters, {
+    int? timeout,
+    int ackTimeout = 1000,
+    Future<void>? cancel,
+  }) async {
+    final res = await _sendAndReceive(
+      Pn532Command.tgInitAsTarget,
+      parameters,
+      timeout: timeout,
+      ackTimeout: ackTimeout,
+      cancel: cancel,
+    );
+    return res.payload;
+  }
+
+  /// Returns the next command from the initiator, waiting as
+  /// [tgInitAsTarget] does.
+  Future<List<int>> tgGetData({
+    int? timeout,
+    int ackTimeout = 1000,
+    Future<void>? cancel,
+  }) async {
+    final res = await _sendAndReceive(
+      Pn532Command.tgGetData,
+      const [],
+      timeout: timeout,
+      ackTimeout: ackTimeout,
+      cancel: cancel,
+    );
+    _checkTargetStatus(res.payload);
+    return res.payload.sublist(1);
+  }
+
+  /// Sends [data] as the response to the initiator's last command.
+  Future<void> tgSetData(
+    List<int> data, {
+    int timeout = 1000,
+    int ackTimeout = 1000,
+  }) async {
+    final res = await _sendAndReceive(
+      Pn532Command.tgSetData,
+      data,
+      timeout: timeout,
+      ackTimeout: ackTimeout,
+    );
+    _checkTargetStatus(res.payload);
+  }
+
+  void _checkTargetStatus(List<int> payload) {
+    if (payload.isEmpty) {
+      throw const FormatException('PN532 target response has no status');
+    }
+    if (payload[0] != 0) throw Pn532StatusException(payload[0]);
   }
 
   Uint8List uint16ListToUint8List(Uint16List uint16List) {

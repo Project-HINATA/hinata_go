@@ -1144,6 +1144,30 @@
   "ndefWriteChecking": "Checking the tag",
   "ndefWriteData": "Writing NDEF content",
   "ndefWriteVerifying": "Reading back to verify",
+  "cardEmulate": "Emulate",
+  "ndefEmulateTitle": "Emulate NDEF tag",
+  "ndefEmulatePreparing": "Preparing the reader",
+  "ndefEmulateWaiting": "Hold a phone to the reader",
+  "ndefEmulateConnected": "Phone connected, reading",
+  "ndefEmulateStopping": "Stopping",
+  "ndefEmulateStopped": "Emulation stopped",
+  "ndefEmulateReadCount": "{count, plural, =1{Read once} other{Read {count} times}}",
+  "@ndefEmulateReadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ndefEmulateStop": "Stop",
+  "ndefEmulateReadOnly": "Phones read it as a read-only tag and cannot write to it.",
+  "ndefEmulatePollingPaused": "The reader stops reading cards while emulating.",
+  "ndefEmulateIosLimit": "iPhone background reading mainly handles links; other records may need an NFC app.",
+  "ndefEmulateFirmware": "Requires reader firmware with NDEF emulation support.",
+  "ndefEmulateFailed": "Emulation failed. Check that the reader firmware supports NDEF emulation.",
+  "ndefEmulateNoReader": "NDEF emulation requires a connected HINATA reader",
+  "ndefEmulateReaderDisconnected": "The reader was disconnected",
+  "ndefEmulateUnsupported": "This dataset cannot be emulated",
   "ndefRecordCount": "NDEF record count",
   "ndefDataSize": "NDEF dataset size",
   "ndefTagCapacity": "NDEF capacity",

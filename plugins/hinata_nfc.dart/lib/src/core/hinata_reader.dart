@@ -88,9 +88,8 @@ class HinataReader {
       await sendReqWithoutRes(0xE2, data);
     },
     ({timeout}) async {
-      var res = await _pn532Sub!.receive().timeout(
-        timeout ?? const Duration(milliseconds: 2000),
-      );
+      final frame = _pn532Sub!.receive();
+      var res = await (timeout == null ? frame : frame.timeout(timeout));
       return res.sublist(1);
     },
     onComplete: _clearPn532Subscription,
