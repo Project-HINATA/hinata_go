@@ -60,6 +60,47 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  testWidgets('a menu item may also answer a long press', (tester) async {
+    final calls = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: const SizedBox(),
+          floatingActionButton: Builder(
+            builder: (context) => buildAppActionButton(
+              context,
+              config: AppActionConfig(
+                id: 'menu',
+                icon: Icons.add,
+                tooltip: 'Add',
+                menuItems: [
+                  AppActionItem(
+                    id: 'card',
+                    label: 'Add card',
+                    onPressed: () => calls.add('card tap'),
+                    onLongPress: () => calls.add('card long press'),
+                  ),
+                  AppActionItem(
+                    id: 'folder',
+                    label: 'New folder',
+                    onPressed: () => calls.add('folder tap'),
+                  ),
+                ],
+              ),
+            )!,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Add card'));
+    await tester.longPress(find.text('Add card'));
+    await tester.longPress(find.text('New folder'));
+    await tester.pumpAndSettle();
+
+    expect(calls, ['card tap', 'card long press']);
+  });
+
   testWidgets('a hidden action builds no FAB', (tester) async {
     Widget? button;
     await tester.pumpWidget(

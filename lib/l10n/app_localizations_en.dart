@@ -899,6 +899,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addAimeBanapass => 'Add Aime/Banapass';
 
   @override
+  String get addFelicaCard => 'Add FeliCa card';
+
+  @override
+  String get felicaBytesHint => '8 bytes as 16 hex digits';
+
+  @override
+  String get felicaInvalidBytes => 'Enter exactly 16 hex digits';
+
+  @override
+  String get felicaSystemCodesHint =>
+      '4 hex digits each, separated by commas, e.g. 0003, FE00';
+
+  @override
+  String felicaInvalidSystemCodes(int count) {
+    return 'Each system code needs 4 hex digits; up to $count, without repeats';
+  }
+
+  @override
   String get ndefAddRecord => 'Add record';
 
   @override

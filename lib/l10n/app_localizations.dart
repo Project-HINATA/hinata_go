@@ -1712,6 +1712,36 @@ abstract class AppLocalizations {
   /// **'Add Aime/Banapass'**
   String get addAimeBanapass;
 
+  /// No description provided for @addFelicaCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Add FeliCa card'**
+  String get addFelicaCard;
+
+  /// No description provided for @felicaBytesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'8 bytes as 16 hex digits'**
+  String get felicaBytesHint;
+
+  /// No description provided for @felicaInvalidBytes.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter exactly 16 hex digits'**
+  String get felicaInvalidBytes;
+
+  /// No description provided for @felicaSystemCodesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'4 hex digits each, separated by commas, e.g. 0003, FE00'**
+  String get felicaSystemCodesHint;
+
+  /// No description provided for @felicaInvalidSystemCodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Each system code needs 4 hex digits; up to {count}, without repeats'**
+  String felicaInvalidSystemCodes(int count);
+
   /// No description provided for @ndefAddRecord.
   ///
   /// In en, this message translates to:

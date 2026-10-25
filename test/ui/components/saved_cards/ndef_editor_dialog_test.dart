@@ -16,6 +16,8 @@ import 'package:hinata_go/ui/components/card_detail/bottom_actions.dart';
 import 'package:hinata_go/ui/components/reader/scanned_card_detail_v2.dart';
 import 'package:hinata_go/ui/components/reader/ndef_records_card.dart';
 import 'package:hinata_go/ui/components/reader/current_scan_result_panel.dart';
+import 'package:hinata_go/ui/components/saved_cards/add_card_dialog.dart';
+import 'package:hinata_go/ui/components/saved_cards/add_felica_dialog.dart';
 import 'package:hinata_go/ui/components/saved_cards/ndef_editor_dialog.dart';
 import 'package:hinata_go/ui/pages/card_detail_page.dart';
 import 'package:hinata_go/ui/pages/saved_cards_page.dart';
@@ -404,6 +406,24 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+  testWidgets('tapping Aime/Banapass adds an access code, long press FeliCa', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app(const SavedCardsPage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip(l10n.addAimeBanapass));
+    await tester.pumpAndSettle();
+    expect(find.byType(AddCardDialog), findsOneWidget);
+    await tester.tap(find.text(l10n.cancel));
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.byTooltip(l10n.addAimeBanapass));
+    await tester.pumpAndSettle();
+    expect(find.byType(AddFelicaDialog), findsOneWidget);
+    expect(find.byType(AddCardDialog), findsNothing);
+  });
+
   for (final locale in [const Locale('en'), const Locale('zh')]) {
     testWidgets(
       'new card actions and editor fit narrow screen with large text in $locale',

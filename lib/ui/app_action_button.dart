@@ -78,11 +78,14 @@ class _FlutterMenuAction extends StatelessWidget {
     final items = config.menuItems!;
     if (items.length == 1) {
       final item = items.first;
-      return FloatingActionButton(
-        heroTag: item.id,
-        onPressed: item.onPressed,
-        tooltip: item.label,
-        child: Icon(item.icon ?? config.icon),
+      return _LongPressable(
+        item: item,
+        child: FloatingActionButton(
+          heroTag: item.id,
+          onPressed: item.onPressed,
+          tooltip: item.label,
+          child: Icon(item.icon ?? config.icon),
+        ),
       );
     }
 
@@ -92,25 +95,51 @@ class _FlutterMenuAction extends StatelessWidget {
       children: [
         for (final item in items.reversed) ...[
           if (item != items.last) const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: item.id,
-            onPressed: item.onPressed,
-            tooltip: item.label,
-            icon: Icon(item.icon ?? config.icon),
-            extendedTextStyle: Theme.of(context).textTheme.labelLarge,
-            label: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.sizeOf(context).width - 112,
-              ),
-              child: Text(
-                item.label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+          _LongPressable(
+            item: item,
+            child: FloatingActionButton.extended(
+              heroTag: item.id,
+              onPressed: item.onPressed,
+              tooltip: item.label,
+              icon: Icon(item.icon ?? config.icon),
+              extendedTextStyle: Theme.of(context).textTheme.labelLarge,
+              label: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width - 112,
+                ),
+                child: Text(
+                  item.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ),
         ],
       ],
+    );
+  }
+}
+
+class _LongPressable extends StatelessWidget {
+  final AppActionItem item;
+  final Widget child;
+
+  const _LongPressable({required this.item, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final onLongPress = item.onLongPress;
+    if (onLongPress == null) return child;
+    return GestureDetector(
+      onLongPress: onLongPress,
+      // The button's tooltip would otherwise take the long press for itself.
+      child: TooltipTheme(
+        data: TooltipTheme.of(
+          context,
+        ).copyWith(triggerMode: TooltipTriggerMode.manual),
+        child: child,
+      ),
     );
   }
 }

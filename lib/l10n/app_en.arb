@@ -1102,6 +1102,18 @@
   "ndefCreate": "New NDEF dataset",
   "ndefEdit": "Edit NDEF dataset",
   "addAimeBanapass": "Add Aime/Banapass",
+  "addFelicaCard": "Add FeliCa card",
+  "felicaBytesHint": "8 bytes as 16 hex digits",
+  "felicaInvalidBytes": "Enter exactly 16 hex digits",
+  "felicaSystemCodesHint": "4 hex digits each, separated by commas, e.g. 0003, FE00",
+  "felicaInvalidSystemCodes": "Each system code needs 4 hex digits; up to {count}, without repeats",
+  "@felicaInvalidSystemCodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "ndefAddRecord": "Add record",
   "ndefRecord": "NDEF record",
   "ndefText": "Text",
