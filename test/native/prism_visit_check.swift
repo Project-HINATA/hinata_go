@@ -25,6 +25,13 @@ enum PersistentCookieCheck {
   }
 }
 
+/// Waits for a reply the fixture server sends from another thread. A number of yields is not a wait:
+/// a fast run gets through them before the reply arrives.
+@MainActor func waitUntil(_ done: () -> Bool, seconds: Double = 5) async {
+  let deadline = Date().addingTimeInterval(seconds)
+  while !done() && Date() < deadline { try? await Task.sleep(nanoseconds: 1_000_000) }
+}
+
 @main struct PrismVisitCheck {
   @MainActor static func main() async throws {
     let wholeSeconds = prismParsedDate("2026-09-12T00:00:00Z")!
@@ -348,8 +355,8 @@ enum PersistentCookieCheck {
     await model.start(shopCode:"store",publicId:"device")
     precondition(model.showDeviceControls && !model.showNoDeviceActions)
     // The air conditioner's state is asked for once, without holding the page back.
-    for _ in 0..<10000 where model.deviceState?.climate == nil { await Task.yield() }
-    precondition(model.deviceState?.climate?.isOn == false && model.deviceState?.climate?.choosableModes.first == "cool")
+    await waitUntil { model.deviceState?.climate != nil }
+    precondition(model.deviceState?.climate?.isOn == false && model.deviceState?.climate?.choosableModes.first == "cool", "climate \(String(describing: model.deviceState?.climate))")
     await model.climate("climate.on")
     precondition(model.deviceState?.climate?.mode == "cool")
     await model.climate("climate.set_mode", ["mode":"heat"])
@@ -365,10 +372,10 @@ enum PersistentCookieCheck {
     // A power-only device has an action while off, then explains why no controls remain.
     capabilities = ["power":true]; power = "off"
     await model.start(shopCode: "store", publicId: "device")
-    for _ in 0..<10000 where model.deviceState?.power != "off" { await Task.yield() }
+    await waitUntil { model.deviceState?.power == "off" }
     precondition(!model.showNoDeviceActions && model.showDeviceControls)
     await model.device("power.on")
-    for _ in 0..<10000 where model.deviceState?.power != "on" { await Task.yield() }
+    await waitUntil { model.deviceState?.power == "on" }
     precondition(model.deviceState?.power == "on" && !model.waitingPower && model.showNoDeviceActions)
     power = "unknown"
     await model.refreshVisit()
@@ -443,7 +450,7 @@ enum PersistentCookieCheck {
     await shopOnly.api.invalidateReads()
     FixtureProtocol.holdNextShopResponse = true
     let outstandingRead = Task { await shopOnly.refreshVisit(silent: true) }
-    for _ in 0..<10000 where FixtureProtocol.heldReply == nil { await Task.yield() }
+    await waitUntil { FixtureProtocol.heldReply != nil }
     precondition(FixtureProtocol.heldReply != nil)
     let beforeConcurrentEvents = statusReads
     await shopOnly.refreshVisit(silent: true)
@@ -468,15 +475,16 @@ enum PersistentCookieCheck {
     precondition(bindingRequests == requestsBeforeRenewal + 1 && shopOnly.binding?.expiresAt == bindingExpiry)
     await shopOnly.refreshVisit()
     precondition(bindingRequests == requestsBeforeRenewal + 1)
-    // Existing unbound members are polled, and an HTTP outage cannot break the loop.
+    // Existing unbound members are polled, and an HTTP outage cannot break the loop. The poll after
+    // the outage waits out a jittered backoff, so the check waits for it rather than a fixed time.
     let beforeOutage = bindingStatusReads
     await shopOnly.api.invalidateReads()
     shopStatus = 503
     await shopOnly.refreshVisit(silent: true)
     precondition(shopOnly.errorMessage == nil && shopOnly.binding != nil)
     shopStatus = 200; identityBound = true
-    try await Task.sleep(nanoseconds: 6_300_000_000)
-    precondition(bindingStatusReads > beforeOutage)
+    await waitUntil(seconds: 20) { bindingStatusReads > beforeOutage && !shopOnly.needsPlatformBinding && shopOnly.binding == nil }
+    precondition(bindingStatusReads > beforeOutage, "Polling resumes after an outage")
     precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil,
                  "A verified identity on any platform completes binding")
     let afterBinding = statusReads

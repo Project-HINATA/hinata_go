@@ -695,8 +695,12 @@ final class MachineLoginViewModel: ObservableObject {
       if isShopOnly { checkoutPreview = currentPreview; settlement = latest; billLoaded = true }
       if userId != me.user!.id { assets = []; history = []; historyNextOffset = nil }
       userId = me.user!.id
-      // Power may have completed while metadata was loading; retain that independent result.
-      if var value = currentDevice { value.power = deviceState?.power ?? value.power; deviceState = value }
+      // Power and the air conditioner may have been read while metadata was loading; retain those independent results.
+      if var value = currentDevice {
+        value.power = deviceState?.power ?? value.power
+        value.climate = deviceState?.climate ?? value.climate
+        deviceState = value
+      }
       summary = currentSummary; user = me.user
       StoreVisitLiveActivityManager.shared.startPushToStartTracking(api: api)
       if let shopCode = self.shopCode {
