@@ -1,0 +1,548 @@
+{
+  "name": "preview-two-overlapping-caps",
+  "kind": "preview",
+  "input": {
+    "snapshot": {
+      "version": 1,
+      "capturedAt": "2026-09-13T23:40:00.000Z",
+      "assetDefinitions": [],
+      "currentPricingConfigs": [
+        {
+          "id": "pool",
+          "kind": "time.priority",
+          "name": "台球",
+          "enabled": true,
+          "status": "active",
+          "versionId": "pool-v1",
+          "version": 1,
+          "provider": {
+            "id": "pool-provider",
+            "rules": [
+              {
+                "id": "all-day",
+                "label": "全天",
+                "priority": 1,
+                "timeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "pricing": {
+                  "unitPrice": 12,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 5,
+                  "priceCap": 0
+                }
+              }
+            ]
+          },
+          "relations": {
+            "requires": [],
+            "conflicts": []
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        },
+        {
+          "id": "mahjong",
+          "kind": "time.priority",
+          "name": "麻将",
+          "enabled": true,
+          "status": "active",
+          "versionId": "mahjong-v1",
+          "version": 1,
+          "provider": {
+            "id": "mahjong-provider",
+            "rules": [
+              {
+                "id": "day",
+                "label": "日间",
+                "priority": 1,
+                "timeRange": {
+                  "start": "08:00",
+                  "end": "20:00"
+                },
+                "pricing": {
+                  "unitPrice": 6,
+                  "unitMinutes": 30,
+                  "roundGraceMinutes": 5,
+                  "priceCap": 0
+                }
+              },
+              {
+                "id": "night",
+                "label": "夜间",
+                "priority": 1,
+                "timeRange": {
+                  "start": "20:00",
+                  "end": "08:00"
+                },
+                "pricing": {
+                  "unitPrice": 9,
+                  "unitMinutes": 30,
+                  "roundGraceMinutes": 5,
+                  "priceCap": 50
+                }
+              }
+            ]
+          },
+          "relations": {
+            "requires": [],
+            "conflicts": []
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        },
+        {
+          "id": "daily-cap",
+          "kind": "time.cap",
+          "name": "每日封顶",
+          "enabled": true,
+          "status": "active",
+          "versionId": "daily-cap-v1",
+          "version": 1,
+          "provider": {
+            "id": "daily-cap-provider",
+            "includedPricingConfigIds": [],
+            "rules": [
+              {
+                "id": "all",
+                "label": "全天",
+                "priority": 1,
+                "timeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "priceCap": 70
+              }
+            ]
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        },
+        {
+          "id": "evening-cap",
+          "kind": "time.cap",
+          "name": "晚间封顶",
+          "enabled": true,
+          "status": "active",
+          "versionId": "evening-cap-v1",
+          "version": 1,
+          "provider": {
+            "id": "evening-cap-provider",
+            "includedPricingConfigIds": [],
+            "rules": [
+              {
+                "id": "evening",
+                "label": "晚间",
+                "priority": 1,
+                "timeRange": {
+                  "start": "18:00",
+                  "end": "22:00"
+                },
+                "priceCap": 25
+              }
+            ]
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "pricingReleases": [],
+      "players": [
+        {
+          "playerId": "player-1",
+          "sessions": [
+            {
+              "id": "s-a",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T16:00:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              }
+            },
+            {
+              "id": "s-b",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T17:45:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "mahjong"
+              ],
+              "pricingConfigId": "mahjong",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              }
+            }
+          ],
+          "holdings": [],
+          "pastAppliedAdjustments": [],
+          "pricingPaidHistory": {},
+          "capPaidHistory": {}
+        }
+      ]
+    },
+    "playerId": "player-1"
+  },
+  "expected": {
+    "timeline": {
+      "totals": [
+        {
+          "name": "台球",
+          "amount": 49
+        },
+        {
+          "name": "麻将",
+          "amount": 21
+        }
+      ],
+      "tracks": [
+        {
+          "id": "s-a:pool",
+          "name": "台球",
+          "lane": 0,
+          "color": 0,
+          "startedAt": "2026-09-13T16:00:00.000Z",
+          "endedAt": "2026-09-13T23:40:00.000Z",
+          "capped": [
+            {
+              "startedAt": "2026-09-13T19:00:00.000Z",
+              "endedAt": "2026-09-13T23:40:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "s-b:mahjong",
+          "name": "麻将",
+          "lane": 1,
+          "color": 1,
+          "startedAt": "2026-09-13T17:45:00.000Z",
+          "endedAt": "2026-09-13T23:40:00.000Z",
+          "capped": [
+            {
+              "startedAt": "2026-09-13T19:00:00.000Z",
+              "endedAt": "2026-09-13T23:40:00.000Z"
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "at": "2026-09-13T23:40:00.000Z",
+          "time": "23:40",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-a:pool",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "台球",
+              "capped": true
+            },
+            {
+              "trackId": "s-b:mahjong",
+              "periodLabel": null,
+              "rule": "夜间",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "麻将",
+              "capped": true
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T22:00:00.000Z",
+          "time": "22:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": null,
+              "periodLabel": null,
+              "rule": null,
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "每日封顶（全天）",
+              "trackIds": [
+                "s-a:pool",
+                "s-b:mahjong"
+              ],
+              "until": "2026-09-14T00:00:00.000Z"
+            },
+            {
+              "trackId": "s-a:pool",
+              "periodLabel": "19:00 – 22:00",
+              "rule": "全天",
+              "nextRule": null,
+              "amount": 12,
+              "startedAt": "2026-09-13T19:00:00.000Z",
+              "endedAt": "2026-09-13T22:00:00.000Z",
+              "unitMinutes": 60,
+              "unitPrice": 12,
+              "units": 1,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "台球",
+              "unitFills": [
+                1
+              ],
+              "pending": null
+            },
+            {
+              "trackId": "s-b:mahjong",
+              "periodLabel": "20:00 – 22:00",
+              "rule": "夜间",
+              "nextRule": null,
+              "amount": 3,
+              "startedAt": "2026-09-13T20:00:00.000Z",
+              "endedAt": "2026-09-13T22:00:00.000Z",
+              "unitMinutes": 30,
+              "unitPrice": 9,
+              "units": 1,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "麻将",
+              "unitFills": [
+                0.3333333333333333
+              ],
+              "pending": null
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T20:00:00.000Z",
+          "time": "20:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-b:mahjong",
+              "periodLabel": null,
+              "rule": "日间",
+              "nextRule": "夜间",
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "switch",
+              "name": "麻将",
+              "capped": true
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T19:00:00.000Z",
+          "time": "19:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": null,
+              "periodLabel": null,
+              "rule": null,
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "晚间封顶（晚间）",
+              "trackIds": [
+                "s-a:pool",
+                "s-b:mahjong"
+              ],
+              "until": "2026-09-13T22:00:00.000Z"
+            },
+            {
+              "trackId": "s-a:pool",
+              "periodLabel": "16:00 – 19:00",
+              "rule": "全天",
+              "nextRule": null,
+              "amount": 37,
+              "startedAt": "2026-09-13T16:00:00.000Z",
+              "endedAt": "2026-09-13T19:00:00.000Z",
+              "unitMinutes": 60,
+              "unitPrice": 12,
+              "units": 4,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "台球",
+              "unitFills": [
+                1,
+                1,
+                1,
+                0.08333333333333333
+              ],
+              "pending": null
+            },
+            {
+              "trackId": "s-b:mahjong",
+              "periodLabel": "17:45 – 19:00",
+              "rule": "日间",
+              "nextRule": null,
+              "amount": 18,
+              "startedAt": "2026-09-13T17:45:00.000Z",
+              "endedAt": "2026-09-13T19:00:00.000Z",
+              "unitMinutes": 30,
+              "unitPrice": 6,
+              "units": 3,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "麻将",
+              "unitFills": [
+                1,
+                1,
+                1
+              ],
+              "pending": null
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T17:45:00.000Z",
+          "time": "17:45",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-b:mahjong",
+              "periodLabel": null,
+              "rule": "日间",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "麻将"
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T16:00:00.000Z",
+          "time": "16:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-a:pool",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "台球"
+            }
+          ]
+        }
+      ]
+    },
+    "settlementPreview": {
+      "playerId": "player-1",
+      "sessionIds": [
+        "s-a",
+        "s-b"
+      ],
+      "subtotal": 176,
+      "total": 70,
+      "status": "preview",
+      "previewedAt": "2026-09-13T23:40:00.000Z"
+    },
+    "chargeItems": [
+      {
+        "id": "s-a:pool-provider:all-day:2026-09-13T16:00:00.000Z",
+        "label": "全天",
+        "amount": 96
+      },
+      {
+        "id": "s-b:mahjong-provider:day:2026-09-13T17:45:00.000Z",
+        "label": "日间",
+        "amount": 30
+      },
+      {
+        "id": "s-b:mahjong-provider:night:2026-09-13T20:00:00.000Z",
+        "label": "夜间",
+        "amount": 50
+      }
+    ],
+    "adjustments": [
+      {
+        "id": "time-cap:daily-cap:all:2026-09-13T00:00:00.000Z",
+        "label": "全天",
+        "amount": -37.27
+      },
+      {
+        "id": "time-cap:evening-cap:evening:2026-09-13T18:00:00.000Z",
+        "label": "晚间",
+        "amount": -68.73
+      }
+    ],
+    "wallet": {
+      "balanceBefore": 0,
+      "balanceAfter": -70
+    }
+  }
+}

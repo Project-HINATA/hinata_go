@@ -1,0 +1,25 @@
+{
+  "name": "segments-fixed-charge",
+  "kind": "segments",
+  "input": {
+    "config": {
+      "id": "ticket",
+      "versionId": "ticket-v1",
+      "version": 1,
+      "kind": "charge.fixed",
+      "name": "门票",
+      "enabled": true,
+      "status": "active",
+      "provider": {
+        "id": "ticket-provider",
+        "label": "入场门票",
+        "amount": 25
+      },
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "localDate": "2026-09-13",
+    "displayTimeZone": "Asia/Shanghai"
+  },
+  "expected": []
+}

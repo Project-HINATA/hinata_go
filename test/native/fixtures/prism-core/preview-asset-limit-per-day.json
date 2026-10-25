@@ -1,0 +1,298 @@
+{
+  "name": "preview-asset-limit-per-day",
+  "kind": "preview",
+  "input": {
+    "snapshot": {
+      "version": 1,
+      "capturedAt": "2026-09-14T16:00:00.000Z",
+      "assetDefinitions": [
+        {
+          "type": "currency",
+          "code": "paid",
+          "name": "余额",
+          "stackable": true,
+          "status": "active",
+          "pricingEffectId": null,
+          "pricingEffect": null,
+          "activeAt": null,
+          "expiresAt": null,
+          "metadata": null
+        },
+        {
+          "type": "coupon",
+          "code": "daily",
+          "name": "每日一券",
+          "stackable": true,
+          "status": "active",
+          "pricingEffectId": "eff-daily",
+          "pricingEffect": {
+            "scope": "session",
+            "value": 3,
+            "consumable": false,
+            "limitPerDay": 1,
+            "activeAt": null,
+            "expiresAt": null,
+            "status": "active",
+            "config": null,
+            "id": "eff-daily",
+            "name": "减 3 元",
+            "type": "discount"
+          },
+          "activeAt": null,
+          "expiresAt": null,
+          "metadata": null
+        },
+        {
+          "type": "membership",
+          "code": "gold",
+          "name": "金卡",
+          "stackable": true,
+          "status": "active",
+          "pricingEffectId": "eff-gold",
+          "pricingEffect": {
+            "scope": "unified",
+            "value": 15,
+            "consumable": false,
+            "limitPerDay": 2,
+            "activeAt": null,
+            "expiresAt": null,
+            "status": "active",
+            "config": null,
+            "id": "eff-gold",
+            "name": "八五折",
+            "type": "percentage-discount"
+          },
+          "activeAt": null,
+          "expiresAt": null,
+          "metadata": null
+        }
+      ],
+      "currentPricingConfigs": [
+        {
+          "id": "pool",
+          "kind": "time.priority",
+          "name": "台球",
+          "enabled": true,
+          "status": "active",
+          "versionId": "pool-v1",
+          "version": 1,
+          "provider": {
+            "id": "pool-provider",
+            "rules": [
+              {
+                "id": "all-day",
+                "label": "全天",
+                "priority": 1,
+                "timeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "pricing": {
+                  "unitPrice": 12,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 5,
+                  "priceCap": 0
+                }
+              }
+            ]
+          },
+          "relations": {
+            "requires": [],
+            "conflicts": []
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "pricingReleases": [],
+      "players": [
+        {
+          "playerId": "player-1",
+          "sessions": [
+            {
+              "id": "s-a",
+              "playerId": "player-1",
+              "startedAt": "2026-09-14T12:00:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              }
+            }
+          ],
+          "holdings": [
+            {
+              "id": "h-paid",
+              "assetType": "currency",
+              "assetCode": "paid",
+              "quantity": 1000,
+              "activeAt": null,
+              "expiresAt": null
+            },
+            {
+              "id": "h-daily",
+              "assetType": "coupon",
+              "assetCode": "daily",
+              "quantity": 3,
+              "activeAt": null,
+              "expiresAt": null
+            },
+            {
+              "id": "h-gold",
+              "assetType": "membership",
+              "assetCode": "gold",
+              "quantity": 1,
+              "activeAt": null,
+              "expiresAt": null
+            }
+          ],
+          "pastAppliedAdjustments": [
+            {
+              "source": "coupon.daily",
+              "sessionStartedAt": "2026-09-14T08:00:00.000Z"
+            },
+            {
+              "source": "membership.gold",
+              "sessionStartedAt": "2026-09-14T09:00:00.000Z"
+            }
+          ],
+          "pricingPaidHistory": {},
+          "capPaidHistory": {}
+        }
+      ]
+    },
+    "playerId": "player-1"
+  },
+  "expected": {
+    "timeline": {
+      "totals": [
+        {
+          "name": "台球",
+          "amount": 48
+        },
+        {
+          "name": "金卡",
+          "amount": -7.2
+        }
+      ],
+      "tracks": [
+        {
+          "id": "s-a:pool",
+          "name": "台球",
+          "lane": 0,
+          "color": 0,
+          "startedAt": "2026-09-14T12:00:00.000Z",
+          "endedAt": "2026-09-14T16:00:00.000Z",
+          "capped": []
+        }
+      ],
+      "events": [
+        {
+          "at": "2026-09-14T16:00:00.000Z",
+          "time": "16:00",
+          "date": "2026-09-14",
+          "entries": [
+            {
+              "trackId": "s-a:pool",
+              "periodLabel": "12:00 – 16:00",
+              "rule": "全天",
+              "nextRule": null,
+              "amount": 48,
+              "startedAt": "2026-09-14T12:00:00.000Z",
+              "endedAt": "2026-09-14T16:00:00.000Z",
+              "unitMinutes": 60,
+              "unitPrice": 12,
+              "units": 4,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "台球",
+              "unitFills": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "pending": null
+            },
+            {
+              "trackId": null,
+              "periodLabel": null,
+              "rule": null,
+              "nextRule": null,
+              "amount": -7.2,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "adjustment",
+              "name": "金卡"
+            }
+          ]
+        },
+        {
+          "at": "2026-09-14T12:00:00.000Z",
+          "time": "12:00",
+          "date": "2026-09-14",
+          "entries": [
+            {
+              "trackId": "s-a:pool",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "台球"
+            }
+          ]
+        }
+      ]
+    },
+    "settlementPreview": {
+      "playerId": "player-1",
+      "sessionIds": [
+        "s-a"
+      ],
+      "subtotal": 48,
+      "total": 40.8,
+      "status": "preview",
+      "previewedAt": "2026-09-14T16:00:00.000Z"
+    },
+    "chargeItems": [
+      {
+        "id": "s-a:pool-provider:all-day:2026-09-14T12:00:00.000Z",
+        "label": "全天",
+        "amount": 48
+      }
+    ],
+    "adjustments": [
+      {
+        "id": "s-a:asset-definition:membership:gold:h-gold:percentage-discount",
+        "label": "金卡",
+        "amount": -7.2
+      }
+    ],
+    "wallet": {
+      "balanceBefore": 10,
+      "balanceAfter": -30.8
+    }
+  }
+}

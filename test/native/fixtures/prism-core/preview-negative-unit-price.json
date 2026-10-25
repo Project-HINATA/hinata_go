@@ -1,0 +1,487 @@
+{
+  "name": "preview-negative-unit-price",
+  "kind": "preview",
+  "input": {
+    "snapshot": {
+      "version": 1,
+      "capturedAt": "2026-09-13T12:00:00.000Z",
+      "assetDefinitions": [],
+      "currentPricingConfigs": [
+        {
+          "id": "pool",
+          "kind": "time.priority",
+          "name": "台球",
+          "enabled": true,
+          "status": "active",
+          "versionId": "pool-v1",
+          "version": 1,
+          "provider": {
+            "id": "pool-provider",
+            "rules": [
+              {
+                "id": "all-day",
+                "label": "全天",
+                "priority": 1,
+                "timeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "pricing": {
+                  "unitPrice": 6,
+                  "unitMinutes": 30,
+                  "roundGraceMinutes": 2,
+                  "priceCap": 100
+                }
+              }
+            ]
+          },
+          "relations": {
+            "requires": [],
+            "conflicts": []
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        },
+        {
+          "id": "member-discount",
+          "kind": "time.priority",
+          "name": "会员立减",
+          "enabled": true,
+          "status": "active",
+          "versionId": "member-discount-v1",
+          "version": 1,
+          "provider": {
+            "id": "member-discount-provider",
+            "rules": [
+              {
+                "id": "all-day",
+                "label": "全天",
+                "priority": 1,
+                "timeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "pricing": {
+                  "unitPrice": -1,
+                  "unitMinutes": 30,
+                  "roundGraceMinutes": 2,
+                  "priceCap": 100
+                }
+              }
+            ]
+          },
+          "relations": {
+            "requires": [],
+            "conflicts": []
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        },
+        {
+          "id": "cap",
+          "kind": "time.cap",
+          "name": "全天优惠",
+          "enabled": true,
+          "status": "active",
+          "versionId": "cap-v1",
+          "version": 1,
+          "provider": {
+            "id": "cap-provider",
+            "includedPricingConfigIds": [],
+            "rules": [
+              {
+                "id": "all",
+                "label": "Combined",
+                "priority": 1,
+                "timeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "priceCap": 20
+              }
+            ]
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "pricingReleases": [],
+      "players": [
+        {
+          "playerId": "player-1",
+          "sessions": [
+            {
+              "id": "s-one",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T08:00:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              }
+            },
+            {
+              "id": "s-two",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T08:30:00.000Z",
+              "endedAt": "2026-09-13T10:30:00.000Z",
+              "status": "closed",
+              "pricingConfigIds": [
+                "member-discount"
+              ],
+              "pricingConfigId": "member-discount",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              }
+            },
+            {
+              "id": "s-three",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T11:00:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              }
+            }
+          ],
+          "holdings": [],
+          "pastAppliedAdjustments": [],
+          "pricingPaidHistory": {},
+          "capPaidHistory": {}
+        }
+      ]
+    },
+    "playerId": "player-1"
+  },
+  "expected": {
+    "timeline": {
+      "totals": [
+        {
+          "name": "台球",
+          "amount": 24
+        },
+        {
+          "name": "会员立减",
+          "amount": -4
+        }
+      ],
+      "tracks": [
+        {
+          "id": "s-one:pool",
+          "name": "台球",
+          "lane": 0,
+          "color": 0,
+          "startedAt": "2026-09-13T08:00:00.000Z",
+          "endedAt": "2026-09-13T12:00:00.000Z",
+          "capped": [
+            {
+              "startedAt": "2026-09-13T10:00:00.000Z",
+              "endedAt": "2026-09-13T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "s-two:member-discount",
+          "name": "会员立减",
+          "lane": 1,
+          "color": 1,
+          "startedAt": "2026-09-13T08:30:00.000Z",
+          "endedAt": "2026-09-13T10:30:00.000Z",
+          "capped": [
+            {
+              "startedAt": "2026-09-13T10:00:00.000Z",
+              "endedAt": "2026-09-13T10:30:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "s-three:pool",
+          "name": "台球",
+          "lane": 1,
+          "color": 2,
+          "startedAt": "2026-09-13T11:00:00.000Z",
+          "endedAt": "2026-09-13T12:00:00.000Z",
+          "capped": [
+            {
+              "startedAt": "2026-09-13T11:00:00.000Z",
+              "endedAt": "2026-09-13T12:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "at": "2026-09-13T12:00:00.000Z",
+          "time": "12:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-one:pool",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "台球",
+              "capped": true
+            },
+            {
+              "trackId": "s-three:pool",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "台球",
+              "capped": true
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T11:00:00.000Z",
+          "time": "11:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-three:pool",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "台球"
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T10:30:00.000Z",
+          "time": "10:30",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-two:member-discount",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "end",
+              "name": "会员立减",
+              "capped": true
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T10:00:00.000Z",
+          "time": "10:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": null,
+              "periodLabel": null,
+              "rule": null,
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "全天优惠（Combined）",
+              "trackIds": [
+                "s-one:pool",
+                "s-two:member-discount",
+                "s-three:pool"
+              ],
+              "until": "2026-09-14T00:00:00.000Z"
+            },
+            {
+              "trackId": "s-one:pool",
+              "periodLabel": "08:00 – 10:00",
+              "rule": "全天",
+              "nextRule": null,
+              "amount": 24,
+              "startedAt": "2026-09-13T08:00:00.000Z",
+              "endedAt": "2026-09-13T10:00:00.000Z",
+              "unitMinutes": 30,
+              "unitPrice": 6,
+              "units": 4,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "台球",
+              "unitFills": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "pending": null
+            },
+            {
+              "trackId": "s-two:member-discount",
+              "periodLabel": "08:30 – 10:00",
+              "rule": "全天",
+              "nextRule": null,
+              "amount": -4,
+              "startedAt": "2026-09-13T08:30:00.000Z",
+              "endedAt": "2026-09-13T10:00:00.000Z",
+              "unitMinutes": 30,
+              "unitPrice": -1,
+              "units": 4,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "会员立减",
+              "unitFills": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "pending": null
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T08:30:00.000Z",
+          "time": "08:30",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-two:member-discount",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "会员立减"
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T08:00:00.000Z",
+          "time": "08:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-one:pool",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "台球"
+            }
+          ]
+        }
+      ]
+    },
+    "settlementPreview": {
+      "playerId": "player-1",
+      "sessionIds": [
+        "s-one",
+        "s-two",
+        "s-three"
+      ],
+      "subtotal": 56,
+      "total": 20,
+      "status": "preview",
+      "previewedAt": "2026-09-13T12:00:00.000Z"
+    },
+    "chargeItems": [
+      {
+        "id": "s-one:pool-provider:all-day:2026-09-13T08:00:00.000Z",
+        "label": "全天",
+        "amount": 48
+      },
+      {
+        "id": "s-two:member-discount-provider:all-day:2026-09-13T08:30:00.000Z",
+        "label": "全天",
+        "amount": -4
+      },
+      {
+        "id": "s-three:pool-provider:all-day:2026-09-13T11:00:00.000Z",
+        "label": "全天",
+        "amount": 12
+      }
+    ],
+    "adjustments": [
+      {
+        "id": "time-cap:cap:all:2026-09-13T00:00:00.000Z",
+        "label": "Combined",
+        "amount": -36
+      }
+    ],
+    "wallet": {
+      "balanceBefore": 0,
+      "balanceAfter": -20
+    }
+  }
+}

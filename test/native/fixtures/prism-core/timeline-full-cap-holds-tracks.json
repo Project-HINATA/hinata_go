@@ -1,0 +1,363 @@
+{
+  "name": "timeline-full-cap-holds-tracks",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-09-13T02:00:00.000Z",
+      "sessions": [
+        {
+          "sessionId": "entry",
+          "label": "entry",
+          "startedAt": "2026-09-12T22:00:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "entry:entry:night:2026-09-12T22:00:00.000Z",
+              "sessionId": "entry",
+              "source": "entry",
+              "label": "夜场",
+              "amount": 2400,
+              "period": {
+                "startedAt": "2026-09-12T22:00:00.000Z",
+                "endedAt": "2026-09-13T02:00:00.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "entry",
+                "providerId": "entry",
+                "ruleId": "night",
+                "ruleAnchorAt": "2026-09-12T22:00:00.000Z",
+                "amount": 2400
+              },
+              "pricingExplanation": {
+                "timeZone": "UTC",
+                "units": 4,
+                "planName": "entry",
+                "pricing": {
+                  "unitPrice": 6,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 0,
+                  "priceCap": 0
+                },
+                "paidBefore": 0,
+                "pricingConfigId": "entry",
+                "providerId": "entry",
+                "ruleId": "night",
+                "ruleLabel": "夜场",
+                "period": {
+                  "startedAt": "2026-09-12T22:00:00.000Z",
+                  "endedAt": "2026-09-13T02:00:00.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "22:00",
+                  "end": "10:00"
+                },
+                "intervalCap": 0,
+                "intervalCapReached": false
+              }
+            }
+          ]
+        },
+        {
+          "sessionId": "rhythm",
+          "label": "rhythm",
+          "startedAt": "2026-09-12T22:00:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "rhythm:rhythm:night:2026-09-12T22:00:00.000Z",
+              "sessionId": "rhythm",
+              "source": "rhythm",
+              "label": "夜场",
+              "amount": 1200,
+              "period": {
+                "startedAt": "2026-09-12T22:00:00.000Z",
+                "endedAt": "2026-09-13T02:00:00.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "rhythm",
+                "providerId": "rhythm",
+                "ruleId": "night",
+                "ruleAnchorAt": "2026-09-12T22:00:00.000Z",
+                "amount": 1200
+              },
+              "pricingExplanation": {
+                "timeZone": "UTC",
+                "units": 4,
+                "planName": "rhythm",
+                "pricing": {
+                  "unitPrice": 3,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 0,
+                  "priceCap": 0
+                },
+                "paidBefore": 0,
+                "pricingConfigId": "rhythm",
+                "providerId": "rhythm",
+                "ruleId": "night",
+                "ruleLabel": "夜场",
+                "period": {
+                  "startedAt": "2026-09-12T22:00:00.000Z",
+                  "endedAt": "2026-09-13T02:00:00.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "22:00",
+                  "end": "10:00"
+                },
+                "intervalCap": 0,
+                "intervalCapReached": false
+              }
+            }
+          ]
+        }
+      ],
+      "adjustments": [
+        {
+          "id": "time-cap:cap:night:2026-09-12T22:00:00.000Z",
+          "source": "time.cap:cap:night",
+          "label": "夜间",
+          "amount": -1600,
+          "pricingCapHistory": {
+            "capConfigId": "cap",
+            "capRuleId": "night",
+            "capAnchorAt": "2026-09-12T22:00:00.000Z",
+            "includedPricingConfigIds": [
+              "entry",
+              "rhythm"
+            ],
+            "amount": 2000
+          }
+        }
+      ],
+      "globalCapWindows": [
+        {
+          "key": "cap@night@2026-09-12T22:00:00.000Z",
+          "capName": "分段封顶",
+          "capConfigId": "cap",
+          "capRuleId": "night",
+          "ruleLabel": "夜间",
+          "windowStartedAt": "2026-09-12T22:00:00.000Z",
+          "windowEndedAt": "2026-09-13T10:00:00.000Z",
+          "priceCap": 3000,
+          "paidBefore": 1000,
+          "currentAmount": 3600,
+          "amountApplied": 2000,
+          "heldBack": 1600,
+          "contributions": [
+            {
+              "sessionId": "entry",
+              "pricingConfigId": "entry",
+              "amount": 1400
+            },
+            {
+              "sessionId": "rhythm",
+              "pricingConfigId": "rhythm",
+              "amount": 600
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expected": {
+    "totals": [
+      {
+        "name": "entry",
+        "amount": 14
+      },
+      {
+        "name": "rhythm",
+        "amount": 6
+      }
+    ],
+    "tracks": [
+      {
+        "id": "entry:entry",
+        "name": "entry",
+        "lane": 0,
+        "color": 0,
+        "startedAt": "2026-09-12T22:00:00.000Z",
+        "endedAt": "2026-09-13T02:00:00.000Z",
+        "capped": [
+          {
+            "startedAt": "2026-09-13T00:00:00.000Z",
+            "endedAt": "2026-09-13T02:00:00.000Z"
+          }
+        ]
+      },
+      {
+        "id": "rhythm:rhythm",
+        "name": "rhythm",
+        "lane": 1,
+        "color": 1,
+        "startedAt": "2026-09-12T22:00:00.000Z",
+        "endedAt": "2026-09-13T02:00:00.000Z",
+        "capped": [
+          {
+            "startedAt": "2026-09-13T00:00:00.000Z",
+            "endedAt": "2026-09-13T02:00:00.000Z"
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-09-13T02:00:00.000Z",
+        "time": "02:00",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "entry:entry",
+            "periodLabel": null,
+            "rule": "夜场",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "entry",
+            "capped": true
+          },
+          {
+            "trackId": "rhythm:rhythm",
+            "periodLabel": null,
+            "rule": "夜场",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "rhythm",
+            "capped": true
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T00:00:00.000Z",
+        "time": "00:00",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": null,
+            "periodLabel": null,
+            "rule": null,
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "full",
+            "name": "分段封顶（夜间）",
+            "trackIds": [
+              "entry:entry",
+              "rhythm:rhythm"
+            ],
+            "until": "2026-09-13T10:00:00.000Z"
+          },
+          {
+            "trackId": "entry:entry",
+            "periodLabel": "09-12 22:00 – 09-13 00:00",
+            "rule": "夜场",
+            "nextRule": null,
+            "amount": 14,
+            "startedAt": "2026-09-12T22:00:00.000Z",
+            "endedAt": "2026-09-13T00:00:00.000Z",
+            "unitMinutes": 60,
+            "unitPrice": 6,
+            "units": 3,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "full",
+            "name": "entry",
+            "unitFills": [
+              1,
+              1,
+              0.3333333333333333
+            ],
+            "pending": null
+          },
+          {
+            "trackId": "rhythm:rhythm",
+            "periodLabel": "09-12 22:00 – 09-13 00:00",
+            "rule": "夜场",
+            "nextRule": null,
+            "amount": 6,
+            "startedAt": "2026-09-12T22:00:00.000Z",
+            "endedAt": "2026-09-13T00:00:00.000Z",
+            "unitMinutes": 60,
+            "unitPrice": 3,
+            "units": 2,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "full",
+            "name": "rhythm",
+            "unitFills": [
+              1,
+              1
+            ],
+            "pending": null
+          }
+        ]
+      },
+      {
+        "at": "2026-09-12T22:00:00.000Z",
+        "time": "22:00",
+        "date": "2026-09-12",
+        "entries": [
+          {
+            "trackId": "entry:entry",
+            "periodLabel": null,
+            "rule": "夜场",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "entry"
+          },
+          {
+            "trackId": "rhythm:rhythm",
+            "periodLabel": null,
+            "rule": "夜场",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "rhythm"
+          }
+        ]
+      }
+    ]
+  }
+}

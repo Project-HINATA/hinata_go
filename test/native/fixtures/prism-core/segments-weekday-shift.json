@@ -1,0 +1,124 @@
+{
+  "name": "segments-weekday-shift",
+  "kind": "segments",
+  "input": {
+    "config": {
+      "id": "pool",
+      "versionId": "pool-v1",
+      "version": 1,
+      "kind": "time.priority",
+      "name": "台球",
+      "enabled": true,
+      "status": "active",
+      "provider": {
+        "id": "pool-provider",
+        "rules": [
+          {
+            "id": "weekday",
+            "label": "工作日早场",
+            "priority": 1,
+            "timeRange": {
+              "start": "20:00",
+              "end": "23:00"
+            },
+            "pricing": {
+              "unitPrice": 8,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 0,
+              "priceCap": 0
+            },
+            "weekdays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          {
+            "id": "base",
+            "label": "平时",
+            "priority": 1,
+            "timeRange": {
+              "start": "23:00",
+              "end": "20:00"
+            },
+            "pricing": {
+              "unitPrice": 12,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 0,
+              "priceCap": 0
+            }
+          }
+        ]
+      },
+      "relations": {
+        "requires": [],
+        "conflicts": []
+      },
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "localDate": "2026-09-12",
+    "displayTimeZone": "Asia/Shanghai"
+  },
+  "expected": [
+    {
+      "ruleId": "base",
+      "label": "平时",
+      "priority": 1,
+      "startMinute": 0,
+      "endMinute": 240,
+      "startLabel": "00:00",
+      "endLabel": "04:00",
+      "startedAt": "2026-09-11T16:00:00.000Z",
+      "endedAt": "2026-09-11T20:00:00.000Z",
+      "windowStartedAt": "2026-09-10T23:00:00.000Z",
+      "windowEndedAt": "2026-09-11T20:00:00.000Z",
+      "pricing": {
+        "unitPrice": 12,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    },
+    {
+      "ruleId": "weekday",
+      "label": "工作日早场",
+      "priority": 1,
+      "startMinute": 240,
+      "endMinute": 420,
+      "startLabel": "04:00",
+      "endLabel": "07:00",
+      "startedAt": "2026-09-11T20:00:00.000Z",
+      "endedAt": "2026-09-11T23:00:00.000Z",
+      "windowStartedAt": "2026-09-11T20:00:00.000Z",
+      "windowEndedAt": "2026-09-11T23:00:00.000Z",
+      "pricing": {
+        "unitPrice": 8,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    },
+    {
+      "ruleId": "base",
+      "label": "平时",
+      "priority": 1,
+      "startMinute": 420,
+      "endMinute": 1440,
+      "startLabel": "07:00",
+      "endLabel": "24:00",
+      "startedAt": "2026-09-11T23:00:00.000Z",
+      "endedAt": "2026-09-12T16:00:00.000Z",
+      "windowStartedAt": "2026-09-11T23:00:00.000Z",
+      "windowEndedAt": "2026-09-12T20:00:00.000Z",
+      "pricing": {
+        "unitPrice": 12,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "name": "timeline-rounded-active-tail",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-09-13T13:33:42.000Z",
+      "sessions": [
+        {
+          "sessionId": "active",
+          "label": "Plan",
+          "startedAt": "2026-09-13T12:45:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "item",
+              "sessionId": "active",
+              "source": "plan",
+              "label": "日间",
+              "amount": 200,
+              "period": {
+                "startedAt": "2026-09-13T12:45:00.000Z",
+                "endedAt": "2026-09-13T13:33:00.000Z"
+              }
+            }
+          ]
+        }
+      ],
+      "adjustments": [],
+      "globalCapWindows": []
+    }
+  },
+  "expected": {
+    "totals": [
+      {
+        "name": "Plan",
+        "amount": 2
+      }
+    ],
+    "tracks": [
+      {
+        "id": "active:plan",
+        "name": "Plan",
+        "lane": 0,
+        "color": 0,
+        "startedAt": "2026-09-13T12:45:00.000Z",
+        "endedAt": "2026-09-13T13:33:42.000Z",
+        "capped": []
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-09-13T13:33:42.000Z",
+        "time": "13:33",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "active:plan",
+            "periodLabel": "12:45 – 13:33",
+            "rule": "日间",
+            "nextRule": null,
+            "amount": 2,
+            "startedAt": "2026-09-13T12:45:00.000Z",
+            "endedAt": "2026-09-13T13:33:00.000Z",
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": 1,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "Plan",
+            "unitFills": [
+              1
+            ],
+            "pending": null
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T12:45:00.000Z",
+        "time": "12:45",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "active:plan",
+            "periodLabel": null,
+            "rule": "日间",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "Plan"
+          }
+        ]
+      }
+    ]
+  }
+}

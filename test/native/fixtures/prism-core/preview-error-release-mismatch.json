@@ -1,0 +1,144 @@
+{
+  "name": "preview-error-release-mismatch",
+  "kind": "preview",
+  "input": {
+    "snapshot": {
+      "version": 1,
+      "capturedAt": "2026-09-13T12:00:00.000Z",
+      "assetDefinitions": [],
+      "currentPricingConfigs": [],
+      "pricingReleases": [
+        {
+          "id": "r1",
+          "timeZone": "UTC",
+          "configs": [
+            {
+              "id": "pool",
+              "kind": "time.priority",
+              "name": "台球",
+              "enabled": true,
+              "status": "active",
+              "versionId": "pool-v1",
+              "version": 1,
+              "provider": {
+                "id": "pool-provider",
+                "rules": [
+                  {
+                    "id": "all-day",
+                    "label": "全天",
+                    "priority": 1,
+                    "timeRange": {
+                      "start": "00:00",
+                      "end": "00:00"
+                    },
+                    "pricing": {
+                      "unitPrice": 12,
+                      "unitMinutes": 60,
+                      "roundGraceMinutes": 0,
+                      "priceCap": 0
+                    }
+                  }
+                ]
+              },
+              "relations": {
+                "requires": [],
+                "conflicts": []
+              },
+              "createdAt": "2026-01-01T00:00:00.000Z",
+              "updatedAt": "2026-01-01T00:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "r2",
+          "timeZone": "UTC",
+          "configs": [
+            {
+              "id": "pool",
+              "kind": "time.priority",
+              "name": "台球",
+              "enabled": true,
+              "status": "active",
+              "versionId": "pool-v1",
+              "version": 1,
+              "provider": {
+                "id": "pool-provider",
+                "rules": [
+                  {
+                    "id": "all-day",
+                    "label": "全天",
+                    "priority": 1,
+                    "timeRange": {
+                      "start": "00:00",
+                      "end": "00:00"
+                    },
+                    "pricing": {
+                      "unitPrice": 14,
+                      "unitMinutes": 60,
+                      "roundGraceMinutes": 0,
+                      "priceCap": 0
+                    }
+                  }
+                ]
+              },
+              "relations": {
+                "requires": [],
+                "conflicts": []
+              },
+              "createdAt": "2026-01-01T00:00:00.000Z",
+              "updatedAt": "2026-01-01T00:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "players": [
+        {
+          "playerId": "player-1",
+          "sessions": [
+            {
+              "id": "s-1",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T08:00:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              },
+              "pricingReleaseId": "r1"
+            },
+            {
+              "id": "s-2",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T09:00:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              },
+              "pricingReleaseId": "r2"
+            }
+          ],
+          "holdings": [],
+          "pastAppliedAdjustments": [],
+          "pricingPaidHistory": {},
+          "capPaidHistory": {}
+        }
+      ]
+    },
+    "playerId": "player-1"
+  },
+  "expectedError": {
+    "code": "PRICING_RELEASE_MISMATCH",
+    "message": "Unsettled sessions use different pricing releases."
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "name": "preview-new-york-dst-spring",
+  "kind": "preview",
+  "input": {
+    "snapshot": {
+      "version": 1,
+      "capturedAt": "2026-03-08T08:10:00.000Z",
+      "assetDefinitions": [],
+      "currentPricingConfigs": [],
+      "pricingReleases": [
+        {
+          "id": "release-ny",
+          "timeZone": "America/New_York",
+          "configs": [
+            {
+              "id": "pool",
+              "kind": "time.priority",
+              "name": "Pool",
+              "enabled": true,
+              "status": "active",
+              "versionId": "pool-v1",
+              "version": 1,
+              "provider": {
+                "id": "pool-provider",
+                "rules": [
+                  {
+                    "id": "night",
+                    "label": "Night",
+                    "priority": 1,
+                    "timeRange": {
+                      "start": "22:00",
+                      "end": "06:00"
+                    },
+                    "pricing": {
+                      "unitPrice": 10,
+                      "unitMinutes": 30,
+                      "roundGraceMinutes": 5,
+                      "priceCap": 70
+                    }
+                  },
+                  {
+                    "id": "day",
+                    "label": "Day",
+                    "priority": 1,
+                    "timeRange": {
+                      "start": "06:00",
+                      "end": "22:00"
+                    },
+                    "pricing": {
+                      "unitPrice": 8,
+                      "unitMinutes": 30,
+                      "roundGraceMinutes": 5,
+                      "priceCap": 0
+                    }
+                  }
+                ]
+              },
+              "relations": {
+                "requires": [],
+                "conflicts": []
+              },
+              "createdAt": "2026-01-01T00:00:00.000Z",
+              "updatedAt": "2026-01-01T00:00:00.000Z"
+            },
+            {
+              "id": "daily-cap",
+              "kind": "time.cap",
+              "name": "Daily cap",
+              "enabled": true,
+              "status": "active",
+              "versionId": "daily-cap-v1",
+              "version": 1,
+              "provider": {
+                "id": "daily-cap-provider",
+                "includedPricingConfigIds": [],
+                "rules": [
+                  {
+                    "id": "all",
+                    "label": "All day",
+                    "priority": 1,
+                    "timeRange": {
+                      "start": "00:00",
+                      "end": "00:00"
+                    },
+                    "priceCap": 60
+                  }
+                ]
+              },
+              "createdAt": "2026-01-01T00:00:00.000Z",
+              "updatedAt": "2026-01-01T00:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "players": [
+        {
+          "playerId": "player-1",
+          "sessions": [
+            {
+              "id": "s-ny",
+              "playerId": "player-1",
+              "startedAt": "2026-03-08T05:30:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              },
+              "pricingReleaseId": "release-ny"
+            }
+          ],
+          "holdings": [],
+          "pastAppliedAdjustments": [],
+          "pricingPaidHistory": {},
+          "capPaidHistory": {}
+        }
+      ]
+    },
+    "playerId": "player-1"
+  },
+  "expected": {
+    "timeline": {
+      "totals": [
+        {
+          "name": "Pool",
+          "amount": 60
+        }
+      ],
+      "tracks": [
+        {
+          "id": "s-ny:pool",
+          "name": "Pool",
+          "lane": 0,
+          "color": 0,
+          "startedAt": "2026-03-08T05:30:00.000Z",
+          "endedAt": "2026-03-08T08:10:00.000Z",
+          "capped": []
+        }
+      ],
+      "events": [
+        {
+          "at": "2026-03-08T08:10:00.000Z",
+          "time": "04:10",
+          "date": "2026-03-08",
+          "entries": [
+            {
+              "trackId": "s-ny:pool",
+              "periodLabel": "00:30 – 04:10",
+              "rule": "Night",
+              "nextRule": null,
+              "amount": 60,
+              "startedAt": "2026-03-08T05:30:00.000Z",
+              "endedAt": "2026-03-08T08:10:00.000Z",
+              "unitMinutes": 30,
+              "unitPrice": 10,
+              "units": 6,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "Pool",
+              "unitFills": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              "pending": null
+            }
+          ]
+        },
+        {
+          "at": "2026-03-08T05:30:00.000Z",
+          "time": "00:30",
+          "date": "2026-03-08",
+          "entries": [
+            {
+              "trackId": "s-ny:pool",
+              "periodLabel": null,
+              "rule": "Night",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "Pool"
+            }
+          ]
+        }
+      ]
+    },
+    "settlementPreview": {
+      "playerId": "player-1",
+      "sessionIds": [
+        "s-ny"
+      ],
+      "subtotal": 60,
+      "total": 60,
+      "status": "preview",
+      "previewedAt": "2026-03-08T08:10:00.000Z"
+    },
+    "chargeItems": [
+      {
+        "id": "s-ny:pool-provider:night:2026-03-08T05:30:00.000Z",
+        "label": "Night",
+        "amount": 60
+      }
+    ],
+    "adjustments": [
+      {
+        "id": "time-cap:daily-cap:all:2026-03-08T05:00:00.000Z",
+        "label": "All day",
+        "amount": 0
+      }
+    ],
+    "wallet": {
+      "balanceBefore": 0,
+      "balanceAfter": -60
+    }
+  }
+}

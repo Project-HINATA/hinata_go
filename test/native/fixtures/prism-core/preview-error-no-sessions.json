@@ -1,0 +1,81 @@
+{
+  "name": "preview-error-no-sessions",
+  "kind": "preview",
+  "input": {
+    "snapshot": {
+      "version": 1,
+      "capturedAt": "2026-09-13T12:00:00.000Z",
+      "assetDefinitions": [],
+      "currentPricingConfigs": [
+        {
+          "id": "pool",
+          "kind": "time.priority",
+          "name": "台球",
+          "enabled": true,
+          "status": "active",
+          "versionId": "pool-v1",
+          "version": 1,
+          "provider": {
+            "id": "pool-provider",
+            "rules": [
+              {
+                "id": "all-day",
+                "label": "全天",
+                "priority": 1,
+                "timeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "pricing": {
+                  "unitPrice": 12,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 0,
+                  "priceCap": 0
+                }
+              }
+            ]
+          },
+          "relations": {
+            "requires": [],
+            "conflicts": []
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "pricingReleases": [],
+      "players": [
+        {
+          "playerId": "player-1",
+          "sessions": [
+            {
+              "id": "s-paid",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T08:00:00.000Z",
+              "endedAt": "2026-09-13T09:00:00.000Z",
+              "status": "closed",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "paid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              }
+            }
+          ],
+          "holdings": [],
+          "pastAppliedAdjustments": [],
+          "pricingPaidHistory": {},
+          "capPaidHistory": {}
+        }
+      ]
+    },
+    "playerId": "player-1"
+  },
+  "expectedError": {
+    "code": "PLAYER_HAS_NO_UNSETTLED_SESSIONS",
+    "message": "Player has no sessions to settle."
+  }
+}

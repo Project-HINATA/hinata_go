@@ -1,0 +1,117 @@
+{
+  "name": "segments-new-york-dst-spring",
+  "kind": "segments",
+  "input": {
+    "config": {
+      "id": "pool",
+      "versionId": "pool-v1",
+      "version": 1,
+      "kind": "time.priority",
+      "name": "Pool",
+      "enabled": true,
+      "status": "active",
+      "provider": {
+        "id": "pool-provider",
+        "rules": [
+          {
+            "id": "day",
+            "label": "Day",
+            "priority": 1,
+            "timeRange": {
+              "start": "11:00",
+              "end": "03:00"
+            },
+            "pricing": {
+              "unitPrice": 9.999,
+              "unitMinutes": 30,
+              "roundGraceMinutes": 3,
+              "priceCap": 33.333
+            }
+          },
+          {
+            "id": "night",
+            "label": "Night",
+            "priority": 1,
+            "timeRange": {
+              "start": "03:00",
+              "end": "11:00"
+            },
+            "pricing": {
+              "unitPrice": 6.666,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 0,
+              "priceCap": 0
+            }
+          }
+        ]
+      },
+      "relations": {
+        "requires": [],
+        "conflicts": []
+      },
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "localDate": "2026-03-08",
+    "displayTimeZone": "America/New_York"
+  },
+  "expected": [
+    {
+      "ruleId": "night",
+      "label": "Night",
+      "priority": 1,
+      "startMinute": 0,
+      "endMinute": 420,
+      "startLabel": "00:00",
+      "endLabel": "07:00",
+      "startedAt": "2026-03-08T05:00:00.000Z",
+      "endedAt": "2026-03-08T11:00:00.000Z",
+      "windowStartedAt": "2026-03-08T02:00:00.000Z",
+      "windowEndedAt": "2026-03-08T11:00:00.000Z",
+      "pricing": {
+        "unitPrice": 6.67,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    },
+    {
+      "ruleId": "day",
+      "label": "Day",
+      "priority": 1,
+      "startMinute": 420,
+      "endMinute": 1380,
+      "startLabel": "07:00",
+      "endLabel": "23:00",
+      "startedAt": "2026-03-08T11:00:00.000Z",
+      "endedAt": "2026-03-09T03:00:00.000Z",
+      "windowStartedAt": "2026-03-08T11:00:00.000Z",
+      "windowEndedAt": "2026-03-09T03:00:00.000Z",
+      "pricing": {
+        "unitPrice": 10,
+        "unitMinutes": 30,
+        "roundGraceMinutes": 3,
+        "priceCap": 33.33
+      }
+    },
+    {
+      "ruleId": "night",
+      "label": "Night",
+      "priority": 1,
+      "startMinute": 1380,
+      "endMinute": 1440,
+      "startLabel": "23:00",
+      "endLabel": "24:00",
+      "startedAt": "2026-03-09T03:00:00.000Z",
+      "endedAt": "2026-03-09T04:00:00.000Z",
+      "windowStartedAt": "2026-03-09T02:00:00.000Z",
+      "windowEndedAt": "2026-03-09T11:00:00.000Z",
+      "pricing": {
+        "unitPrice": 6.67,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    }
+  ]
+}

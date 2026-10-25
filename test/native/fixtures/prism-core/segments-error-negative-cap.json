@@ -1,0 +1,48 @@
+{
+  "name": "segments-error-negative-cap",
+  "kind": "segments",
+  "input": {
+    "config": {
+      "id": "pool",
+      "versionId": "pool-v1",
+      "version": 1,
+      "kind": "time.priority",
+      "name": "台球",
+      "enabled": true,
+      "status": "active",
+      "provider": {
+        "id": "pool-provider",
+        "rules": [
+          {
+            "id": "day",
+            "label": "日间",
+            "priority": 1,
+            "timeRange": {
+              "start": "02:00",
+              "end": "14:00"
+            },
+            "pricing": {
+              "unitPrice": 12,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 0,
+              "priceCap": -1
+            }
+          }
+        ]
+      },
+      "relations": {
+        "requires": [],
+        "conflicts": []
+      },
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "localDate": "2026-09-13",
+    "displayTimeZone": "Asia/Shanghai"
+  },
+  "expected": [],
+  "expectedError": {
+    "code": "INVALID_PRICING_AMOUNT",
+    "message": "Price must be a non-negative finite number."
+  }
+}

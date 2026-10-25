@@ -1,0 +1,121 @@
+{
+  "name": "segments-specific-dates",
+  "kind": "segments",
+  "input": {
+    "config": {
+      "id": "pool",
+      "versionId": "pool-v1",
+      "version": 1,
+      "kind": "time.priority",
+      "name": "台球",
+      "enabled": true,
+      "status": "active",
+      "provider": {
+        "id": "pool-provider",
+        "rules": [
+          {
+            "id": "holiday",
+            "label": "中秋",
+            "priority": 5,
+            "timeRange": {
+              "start": "10:00",
+              "end": "16:00"
+            },
+            "pricing": {
+              "unitPrice": 20,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 0,
+              "priceCap": 0
+            },
+            "specificDates": [
+              "2026-09-25",
+              "2026-09-26"
+            ]
+          },
+          {
+            "id": "base",
+            "label": "平时",
+            "priority": 1,
+            "timeRange": {
+              "start": "00:00",
+              "end": "00:00"
+            },
+            "pricing": {
+              "unitPrice": 12,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 0,
+              "priceCap": 0
+            }
+          }
+        ]
+      },
+      "relations": {
+        "requires": [],
+        "conflicts": []
+      },
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "localDate": "2026-09-25",
+    "displayTimeZone": "Asia/Tokyo"
+  },
+  "expected": [
+    {
+      "ruleId": "base",
+      "label": "平时",
+      "priority": 1,
+      "startMinute": 0,
+      "endMinute": 540,
+      "startLabel": "00:00",
+      "endLabel": "09:00",
+      "startedAt": "2026-09-24T15:00:00.000Z",
+      "endedAt": "2026-09-25T00:00:00.000Z",
+      "windowStartedAt": "2026-09-24T00:00:00.000Z",
+      "windowEndedAt": "2026-09-25T00:00:00.000Z",
+      "pricing": {
+        "unitPrice": 12,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    },
+    {
+      "ruleId": "base",
+      "label": "平时",
+      "priority": 1,
+      "startMinute": 540,
+      "endMinute": 1140,
+      "startLabel": "09:00",
+      "endLabel": "19:00",
+      "startedAt": "2026-09-25T00:00:00.000Z",
+      "endedAt": "2026-09-25T10:00:00.000Z",
+      "windowStartedAt": "2026-09-25T00:00:00.000Z",
+      "windowEndedAt": "2026-09-26T00:00:00.000Z",
+      "pricing": {
+        "unitPrice": 12,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    },
+    {
+      "ruleId": "holiday",
+      "label": "中秋",
+      "priority": 5,
+      "startMinute": 1140,
+      "endMinute": 1440,
+      "startLabel": "19:00",
+      "endLabel": "24:00",
+      "startedAt": "2026-09-25T10:00:00.000Z",
+      "endedAt": "2026-09-25T15:00:00.000Z",
+      "windowStartedAt": "2026-09-25T10:00:00.000Z",
+      "windowEndedAt": "2026-09-25T16:00:00.000Z",
+      "pricing": {
+        "unitPrice": 20,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    }
+  ]
+}

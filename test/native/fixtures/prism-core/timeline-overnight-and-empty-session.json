@@ -1,0 +1,191 @@
+{
+  "name": "timeline-overnight-and-empty-session",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-09-13T01:00:00.000Z",
+      "sessions": [
+        {
+          "sessionId": "night",
+          "label": null,
+          "startedAt": "2026-09-12T23:00:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "night:night:night:2026-09-12T23:00:00.000Z",
+              "sessionId": "night",
+              "source": "night",
+              "label": "Night",
+              "amount": 2400,
+              "period": {
+                "startedAt": "2026-09-12T23:00:00.000Z",
+                "endedAt": "2026-09-13T01:00:00.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "night",
+                "providerId": "night",
+                "ruleId": "night",
+                "ruleAnchorAt": "2026-09-12T22:00:00.000Z",
+                "amount": 2400
+              },
+              "pricingExplanation": {
+                "timeZone": "UTC",
+                "units": 4,
+                "pricing": {
+                  "unitPrice": 6,
+                  "unitMinutes": 30,
+                  "roundGraceMinutes": 2,
+                  "priceCap": 100
+                },
+                "paidBefore": 0,
+                "pricingConfigId": "night",
+                "providerId": "night",
+                "ruleId": "night",
+                "ruleLabel": "Night",
+                "period": {
+                  "startedAt": "2026-09-12T23:00:00.000Z",
+                  "endedAt": "2026-09-13T01:00:00.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "22:00",
+                  "end": "10:00"
+                },
+                "intervalCap": 100,
+                "intervalCapReached": false
+              }
+            }
+          ]
+        },
+        {
+          "sessionId": "empty",
+          "label": "Empty",
+          "startedAt": "2026-09-12T23:00:00.000Z",
+          "endedAt": "2026-09-13T01:00:00.000Z",
+          "chargeItems": []
+        }
+      ],
+      "adjustments": [],
+      "globalCapWindows": []
+    }
+  },
+  "expected": {
+    "totals": [
+      {
+        "name": "Night",
+        "amount": 24
+      }
+    ],
+    "tracks": [
+      {
+        "id": "night:night",
+        "name": "Night",
+        "lane": 1,
+        "color": 0,
+        "startedAt": "2026-09-12T23:00:00.000Z",
+        "endedAt": "2026-09-13T01:00:00.000Z",
+        "capped": []
+      },
+      {
+        "id": "empty:empty",
+        "name": "Empty",
+        "lane": 0,
+        "color": 1,
+        "startedAt": "2026-09-12T23:00:00.000Z",
+        "endedAt": "2026-09-13T01:00:00.000Z",
+        "capped": []
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-09-13T01:00:00.000Z",
+        "time": "01:00",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "night:night",
+            "periodLabel": "09-12 23:00 – 09-13 01:00",
+            "rule": "Night",
+            "nextRule": null,
+            "amount": 24,
+            "startedAt": "2026-09-12T23:00:00.000Z",
+            "endedAt": "2026-09-13T01:00:00.000Z",
+            "unitMinutes": 30,
+            "unitPrice": 6,
+            "units": 4,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "Night",
+            "unitFills": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "pending": null
+          },
+          {
+            "trackId": "empty:empty",
+            "periodLabel": null,
+            "rule": null,
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "end",
+            "name": "Empty",
+            "capped": false
+          }
+        ]
+      },
+      {
+        "at": "2026-09-12T23:00:00.000Z",
+        "time": "23:00",
+        "date": "2026-09-12",
+        "entries": [
+          {
+            "trackId": "night:night",
+            "periodLabel": null,
+            "rule": "Night",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "Night"
+          },
+          {
+            "trackId": "empty:empty",
+            "periodLabel": null,
+            "rule": null,
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "Empty"
+          }
+        ]
+      }
+    ]
+  }
+}

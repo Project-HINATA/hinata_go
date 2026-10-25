@@ -1,0 +1,162 @@
+{
+  "name": "timeline-from-preview-paid-history",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-09-13T13:20:00.000Z",
+      "sessions": [
+        {
+          "sessionId": "s-hist",
+          "label": null,
+          "startedAt": "2026-09-13T11:00:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "s-hist:pool-provider:day:2026-09-13T11:00:00.000Z",
+              "sessionId": "s-hist",
+              "source": "pool-provider",
+              "label": "日间",
+              "amount": 1000,
+              "period": {
+                "startedAt": "2026-09-13T11:00:00.000Z",
+                "endedAt": "2026-09-13T13:20:00.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "pool",
+                "providerId": "pool-provider",
+                "ruleId": "day",
+                "ruleAnchorAt": "2026-09-13T10:00:00.000Z",
+                "amount": 1000
+              },
+              "pricingExplanation": {
+                "timeZone": "UTC",
+                "units": 3,
+                "planName": "台球",
+                "pricing": {
+                  "unitPrice": 15,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 5,
+                  "priceCap": 40
+                },
+                "paidBefore": 30,
+                "pricingConfigId": "pool",
+                "providerId": "pool-provider",
+                "ruleId": "day",
+                "ruleLabel": "日间",
+                "period": {
+                  "startedAt": "2026-09-13T11:00:00.000Z",
+                  "endedAt": "2026-09-13T13:20:00.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "10:00",
+                  "end": "22:00"
+                },
+                "intervalCap": 40,
+                "intervalCapReached": true
+              }
+            }
+          ]
+        }
+      ],
+      "adjustments": [],
+      "globalCapWindows": []
+    },
+    "timeZone": "Asia/Shanghai"
+  },
+  "expected": {
+    "totals": [
+      {
+        "name": "台球",
+        "amount": 10
+      }
+    ],
+    "tracks": [
+      {
+        "id": "s-hist:pool",
+        "name": "台球",
+        "lane": 0,
+        "color": 0,
+        "startedAt": "2026-09-13T11:00:00.000Z",
+        "endedAt": "2026-09-13T13:20:00.000Z",
+        "capped": [
+          {
+            "startedAt": "2026-09-13T11:00:00.000Z",
+            "endedAt": "2026-09-13T13:20:00.000Z"
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-09-13T13:20:00.000Z",
+        "time": "13:20",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "s-hist:pool",
+            "periodLabel": null,
+            "rule": "日间",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "台球",
+            "capped": true
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T11:00:00.000Z",
+        "time": "11:00",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": null,
+            "periodLabel": null,
+            "rule": null,
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "full",
+            "name": "时段封顶（台球 日间）",
+            "trackIds": [
+              "s-hist:pool"
+            ],
+            "until": "2026-09-13T22:00:00.000Z"
+          },
+          {
+            "trackId": "s-hist:pool",
+            "periodLabel": null,
+            "rule": "日间",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "台球"
+          }
+        ]
+      }
+    ]
+  }
+}
