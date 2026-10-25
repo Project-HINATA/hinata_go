@@ -27,6 +27,16 @@ import SwiftUI
         case "/api/v1/me": return ok(["user": ["id": "u", "username": "test", "displayName": "测试玩家"]])
         case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": true, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": ["playerId": "p", "identityBound": true], "entryPricing": []])
         case "/api/v1/shops/store/player/me": return ok(["wallet": [], "activeSession": ["id": "visit", "startedAt": "2026-10-05T06:00:00Z"]])
+        // The phone computes the bill from these read-only inputs: an entry fee of 12.
+        case "/api/v1/shops/store/player/billing-inputs": return ok(["playerId": "p", "billingSnapshot": [
+          "version": 1, "capturedAt": "2026-10-05T07:00:00.000Z", "assetDefinitions": [], "pricingReleases": [],
+          "currentPricingConfigs": [["id": "fee", "kind": "charge.fixed", "name": "入场费", "enabled": true, "status": "active",
+            "versionId": "fee-v1", "version": 1, "provider": ["id": "fee", "label": "入场费", "amount": 12],
+            "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z"]],
+          "players": [["playerId": "p", "holdings": [], "pastAppliedAdjustments": [], "pricingPaidHistory": [:], "capPaidHistory": [:],
+            "sessions": [["id": "visit", "playerId": "p", "startedAt": "2026-10-05T06:00:00.000Z", "status": "active",
+              "pricingConfigIds": ["fee"], "pricingConfigId": "fee", "paymentStatus": "unpaid", "label": "entry"]]]],
+        ]])
         case "/api/v1/shops/store/player/checkout/preview": return ok(["settlementPreview": ["total": 12], "chargeItems": [], "adjustments": []])
         case "/api/v1/shops/store/player/checkout/confirm": return (409, ["error": ["code": "INSUFFICIENT_BALANCE", "message": "Insufficient currency holdings for this operation."]])
         default: return ok([:])
