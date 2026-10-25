@@ -50,6 +50,12 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var cardOutcome = "sent"
   /// A swipe's outcome, shown on its card row for a few seconds without holding the page.
   @Published private(set) var cardFeedback: CardFeedback?
+  /// Adding a card at this cabinet's reader: the page opens a short window and waits for the
+  /// reader to report the card. A newer attempt or a cancel makes an older one stop waiting.
+  enum CardCapture: Equatable { case starting, waiting, done(level: String, message: String) }
+  @Published private(set) var cardCapture: CardCapture?
+  private var captureRun = 0
+  var capturing: Bool { cardCapture == .starting || cardCapture == .waiting }
   private var cardFeedbackTask: Task<Void, Never>?
   /// A problem that needs the player: shown as an alert with the server's buttons.
   @Published private(set) var dialogNotice: PrismNotice?
@@ -98,12 +104,12 @@ final class MachineLoginViewModel: ObservableObject {
   /// surface (bill, redeem, history, wallet) with no machine behind it.
   @Published private(set) var isShopOnly = false
   var showDeviceControls: Bool {
-    guard machine?.capabilities != nil, machine?.empty != true else { return false }
+    guard machine?.capabilities != nil, machine?.idle != true else { return false }
     return deviceState == nil || deviceState?.gate != "ready" || deviceState?.power == "off" || machine?.has("door") == true || machine?.has("mahjong") == true || machine?.has("climate") == true
   }
   var showNoDeviceActions: Bool {
     guard !isShopOnly, let machine else { return false }
-    if machine.empty { return true }
+    if machine.idle { return true }
     guard let device = deviceState, device.gate == "ready" else { return false }
     if machine.has("door") || machine.has("climate") || (machine.has("power") && device.power == "off") { return false }
     if canUseCards || (device.power != "off" && machine.has("coin") && machine.coinAfterSwipe != true) { return false }
@@ -227,6 +233,7 @@ final class MachineLoginViewModel: ObservableObject {
     assets = []; history = []; historyNextOffset = nil
     visit = nil; deviceState = nil; summary = nil; binding = nil; doorPassword = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; checkoutCelebrating = false; user = nil; waitingPower = false
     powerWaitTask?.cancel(); inlineNotice = nil; cardFeedbackTask?.cancel(); cardFeedback = nil
+    captureRun += 1; cardCapture = nil
     self.shopCode = shopCode
     self.publicId = publicId
     isShopOnly = publicId == nil
@@ -259,7 +266,7 @@ final class MachineLoginViewModel: ObservableObject {
       guard version == invocationVersion else { return }
       user = me.user
       guard me.user != nil else {
-        state = machine?.empty == true ? .ready : .unauthenticated
+        state = machine?.idle == true ? .ready : .unauthenticated
         return
       }
       userId = me.user!.id
@@ -676,7 +683,7 @@ final class MachineLoginViewModel: ObservableObject {
       // another request when it appears or changes height.
       var currentPreview: PrismCheckout? = fullRead ? nil : checkoutPreview
       if fullRead, isShopOnly, currentSummary?.activeSession != nil {
-        currentPreview = try await api.request(shopPath("player/checkout/preview"), body: [:])
+        currentPreview = try await api.checkoutPreview(shopPath: shopPath())
       }
       var latest: PrismCheckoutResult? = fullRead ? nil : settlement
       if fullRead, isShopOnly, shop.membership != nil, shop.shop.billingEnabled, currentSummary?.activeSession == nil {
@@ -901,7 +908,49 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  func expire() { ticket = nil; state = .expired; activeCardId = nil; polling?.cancel(); cancelFactsRead(); closeLiveState(); errorMessage = nil }
+  func expire() { ticket = nil; state = .expired; activeCardId = nil; captureRun += 1; cardCapture = nil; polling?.cancel(); cancelFactsRead(); closeLiveState(); errorMessage = nil }
+
+  func startCardCapture() async {
+    guard let ticket, !deviceBusy, !capturing, ![.locating, .sending].contains(state) else { return }
+    captureRun += 1
+    let run = captureRun, version = invocationVersion, api = self.api
+    let current = { [weak self] in self?.captureRun == run && self?.invocationVersion == version }
+    cardCapture = .starting
+    do {
+      let position: LocationSample? = (machine?.shop.locationEnabled ?? machine?.shop.machineGeo) == true ? try await location.currentLocation() : nil
+      guard current() else { return }
+      let started = try await api.startCardCapture(ticket: ticket, location: position.map { ["lat": $0.latitude, "lng": $0.longitude, "accuracy": $0.accuracy] })
+      guard current() else { return }
+      cardCapture = .waiting
+      let deadline = (prismParsedDate(started.expiresAt) ?? Date()).addingTimeInterval(2)
+      var status = "waiting"
+      while status == "waiting" && Date() < deadline {
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+        guard current() else { return }
+        status = try await api.cardCaptureResult(captureId: started.captureId, ticket: ticket).status
+      }
+      guard current() else { return }
+      let added = ["added", "bound", "exists"].contains(status)
+      let message: String
+      if added { message = String(localized: "已添加卡片") }
+      else if status == "taken" { message = String(localized: "这张卡已绑定到本店的其他玩家") }
+      else if status == "unsupported" { message = String(localized: "不支持这种卡片") }
+      else { message = String(localized: "没有读到卡片") }
+      cardCapture = .done(level: added ? "success" : "error", message: message)
+      if added {
+        let response = try await api.cards()
+        guard current() else { return }
+        cards = response.cards.filter { $0.disabledAt == nil }
+      }
+    } catch {
+      guard current(), !(error is CancellationError) else { return }
+      if (error as? PrismAPIError)?.isSessionExpired == true { expire(); return }
+      cardCapture = .done(level: "error", message: friendlyMessage(error))
+    }
+  }
+
+  /// Stops waiting for the reader, or puts away the outcome.
+  func dismissCardCapture() { captureRun += 1; cardCapture = nil }
   func pricingDate(_ date: String) async throws -> PrismShopResponse { try await api.request(shopPath() + "?date=" + date) }
 
   func bindPlatformIdentity() async {
@@ -1010,7 +1059,7 @@ final class MachineLoginViewModel: ObservableObject {
     guard let ticket else { expire(); return }
     let requiresLocation = (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true
     await perform("door") {
-      let data = try await operation("entry.door.\(ticket)", path: shopPath("player/session/start"), body: ["ticket": ticket, "consent": true, "openDoor": true], requiresLocation: requiresLocation)
+      let data = try await operation("entry.door.\(ticket)", path: shopPath("player/session/start"), body: entryBody(ticket, ["openDoor": true]), requiresLocation: requiresLocation)
       struct Result: Decodable {
         struct Door: Decodable { let temporaryPassword: String?; let expiresAt: String?; let error: Failure?; let notice: PrismNotice? }
         struct Failure: Decodable { let message: String? }
@@ -1036,6 +1085,14 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
+  /// Confirming this resource. The server refuses a confirmation of what the page showed once
+  /// the player's billing has changed since, rather than starting something else.
+  private func entryBody(_ ticket: String, _ extra: [String: Any] = [:]) -> [String: Any] {
+    var body: [String: Any] = ["ticket": ticket, "consent": true]
+    if let revision = deviceState?.billing?.preview?.revision { body["expectedRevision"] = revision }
+    return body.merging(extra) { _, new in new }
+  }
+
   func enter() async {
     let requiresLocation = (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true
     // Shop-only mode has no ticket: the server accepts a ticket-free entry when the shop
@@ -1049,7 +1106,7 @@ final class MachineLoginViewModel: ObservableObject {
       return
     }
     await perform("entry") {
-      _ = try await operation("entry.\(ticket)", path: shopPath("player/session/start"), body: ["ticket": ticket, "consent": true], requiresLocation: requiresLocation)
+      _ = try await operation("entry.\(ticket)", path: shopPath("player/session/start"), body: entryBody(ticket), requiresLocation: requiresLocation)
       await refreshVisit(silent: true)
     }
   }
@@ -1072,7 +1129,7 @@ final class MachineLoginViewModel: ObservableObject {
       // is what the page shows as "暂无待结账单", so clearing it first made the bill blank out
       // and then reappear whenever this ran twice in a row.
       let current: PrismSummary = try await api.request(shopPath("player/me"))
-      let preview: PrismCheckout? = current.activeSession == nil ? nil : try await api.request(shopPath("player/checkout/preview"), body: [:])
+      let preview: PrismCheckout? = current.activeSession == nil ? nil : try await api.checkoutPreview(shopPath: shopPath())
       guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }
       summary = current; checkoutPreview = preview
       billLoaded = true
@@ -1091,7 +1148,7 @@ final class MachineLoginViewModel: ObservableObject {
     let api = self.api
     await perform("checkout") {
       let version = invocationVersion
-      let value: PrismCheckout = try await api.request(shopPath("player/checkout/preview"), body: [:])
+      let value = try await api.checkoutPreview(shopPath: shopPath())
       guard version == invocationVersion else { return }
       checkoutPreview = value
     }

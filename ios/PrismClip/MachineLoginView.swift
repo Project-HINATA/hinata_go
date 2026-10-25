@@ -240,7 +240,16 @@ private struct ClipSessionPage: View {
           ClipDeviceControls()
         }
         if !model.isShopOnly, model.canUseCards, [.ready, .locating, .sending].contains(model.state) {
-          Text("选择卡片").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.bottom, 2)
+          ZStack(alignment: .trailing) {
+            Text(model.cardCapture == nil ? "选择卡片" : "添加卡片").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
+            if model.machine?.cardCapture == true, model.cardCapture == nil {
+              Button { Task { await model.startCardCapture() } } label: {
+                Image(systemName: "plus").font(.title3.weight(.semibold)).frame(width: 44, height: 44)
+              }
+              .accessibilityLabel("添加卡片")
+              .disabled(model.deviceBusy || model.state != .ready)
+            }
+          }.padding(.bottom, 2)
         }
 
         switch model.state {
@@ -261,9 +270,12 @@ private struct ClipSessionPage: View {
           }
           .disabled(model.authenticating != nil)
         case .ready, .locating, .sending:
-          if !model.isShopOnly, model.canUseCards { cardsView.disabled(model.deviceBusy) }
+          if !model.isShopOnly, model.canUseCards {
+            if let capture = model.cardCapture { ClipCardCapture(capture: capture, machineName: model.machine?.name ?? "") }
+            else { cardsView.disabled(model.deviceBusy) }
+          }
           // Stays in place while a card is being sent, so the page does not jump.
-          if model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
+          if model.cardCapture == nil, model.deviceState?.gate == "ready", model.deviceState?.power != "off", model.machine?.has("coin") == true, model.machine?.coinAfterSwipe != true {
             // The press answers on the button itself (已投币, 请稍后再投币…) for a moment.
             let coinNote = model.inlineNoticeAnchor == "coin" ? model.inlineNotice : nil
             Button { Task { await model.device("coin") } } label: {
@@ -279,7 +291,7 @@ private struct ClipSessionPage: View {
           // A machine without its own controls shows other actions' outcomes here; the coin's is on its button.
           if !model.showDeviceControls { AnchoredNotice(AnchoredNotice.page.subtracting(["coin"])) }
           if model.showNoDeviceActions {
-            Text("当前设备没有可操作项").font(.subheadline).foregroundStyle(.secondary)
+            Text("这里没有可操作的设备").font(.subheadline).foregroundStyle(.secondary)
               .frame(maxWidth: .infinity).multilineTextAlignment(.center)
           }
         case .loadingCards:
@@ -591,7 +603,7 @@ private struct ClipShopControls: View {
             .font(.subheadline).foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
-            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
         }
       } else if model.errorMessage != nil {
         Button { Task { model.clearError(); await model.refreshVisit() } } label: {
@@ -753,7 +765,7 @@ private struct ClipPlatformBinding: View {
         if model.errorMessage != nil {
           Button("重试") { Task { await model.bindPlatformIdentity() } }.disabled(model.deviceBusy)
         } else if model.binding == nil { ProgressView() }
-      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
     }
   }
 }
@@ -761,6 +773,8 @@ private struct ClipPlatformBinding: View {
 private struct ClipDeviceControls: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   @State private var consent = false
+  /// Why this resource cannot bill now; confirming is not offered then.
+  private var billingError: PrismResourceBilling.Failure? { model.deviceState?.billing?.error }
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
       if let device = model.deviceState, let shop = model.visit {
@@ -769,8 +783,15 @@ private struct ClipDeviceControls: View {
         } else {
           if device.gate == "entry" {
             VStack(alignment: .leading, spacing: 24) {
-              Text("确认入场").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
-              ClipEntryPricing(shop: shop)
+              Text(billingError == nil ? "计费规则" : "暂时无法使用").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
+              if let billingError {
+                Text(billingError.message).font(.subheadline).foregroundStyle(.red)
+              } else if let rules = device.billing?.rules {
+                ClipResourcePricing(rules: rules, changes: device.billing?.preview)
+              } else {
+                if let preview = device.billing?.preview { ClipBillingChanges(preview: preview) }
+                ClipEntryPricing(shop: shop)
+              }
               Button { consent.toggle() } label: {
                 HStack(alignment: .top, spacing: 12) {
                   Image(systemName: consent ? "checkmark.square.fill" : "square").foregroundStyle(consent ? Color.blue : .secondary)
@@ -779,8 +800,8 @@ private struct ClipDeviceControls: View {
               }.buttonStyle(.plain).accessibilityValue(consent ? "✓" : "—")
               if model.machine?.has("door") != true {
                 Button { Task { await model.enter() } } label: {
-                  HStack { if model.deviceBusy { ProgressView() }; Text("确认入场") }.frame(maxWidth: .infinity).padding(.vertical, 12)
-                }.clipActionStyle(primary: true).disabled(!consent)
+                  HStack { if model.deviceBusy { ProgressView() }; Text("确认") }.frame(maxWidth: .infinity).padding(.vertical, 12)
+                }.clipActionStyle(primary: true).disabled(!consent || billingError != nil)
                 AnchoredNotice(["entry"])
               }
             }
@@ -802,7 +823,7 @@ private struct ClipDeviceControls: View {
             } label: {
               HStack(spacing: 10) { if model.deviceBusy { ProgressView() } else { Image(systemName: "door.left.hand.open") }; Text(model.doorPassword != nil ? "重新获取密码" : device.gate == "entry" ? "入场并获取开门密码" : "获取开门密码") }
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
-            }.clipActionStyle(primary: true).disabled(device.gate == "entry" && !consent)
+            }.clipActionStyle(primary: true).disabled(device.gate == "entry" && (!consent || billingError != nil))
             AnchoredNotice(["door"])
           }
           if device.gate == "ready", model.machine?.has("climate") == true {
@@ -834,7 +855,7 @@ private struct ClipDeviceControls: View {
                   }
                   .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
                   .padding(16)
-                  .background(seat == nil ? Color.clear : Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 18))
+                  .background(seat == nil ? Color.clear : Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
                   .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.primary.opacity(seat?.mine == true ? 0.3 : seat == nil ? 0.08 : 0), lineWidth: seat?.mine == true ? 1.5 : 1))
                 }
               }
@@ -1105,6 +1126,51 @@ private struct ClipEntryPricing: View {
   }
 }
 
+/// What confirming starts, ends and keeps, for a server that has no rules to show; a plan kept
+/// running keeps its timer.
+private struct ClipBillingChanges: View {
+  let preview: PrismResourceBilling.Preview
+  var body: some View {
+    let rows: [(LocalizedStringKey, [PrismResourceBilling.Change])] = [("新增方案", preview.started), ("结束方案", preview.stopped), ("保留方案", preview.kept)]
+    VStack(alignment: .leading, spacing: 8) {
+      ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+        if !row.1.isEmpty {
+          HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(row.0).foregroundStyle(.secondary)
+            Text(row.1.map(\.planName).joined(separator: "、")).fontWeight(.medium)
+          }
+        }
+      }
+    }.font(.subheadline)
+  }
+}
+
+/// Adding a card at the cabinet's reader: waiting for the card, then what came of it.
+private struct ClipCardCapture: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  let capture: MachineLoginViewModel.CardCapture
+  let machineName: String
+  var body: some View {
+    VStack(spacing: 16) {
+      switch capture {
+      case .starting, .waiting:
+        ProgressView().controlSize(.large)
+        Text(capture == .starting ? String(localized: "正在连接机台…") : String(format: String(localized: "请把卡片放在「%@」的读卡器上"), machineName))
+          .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+        Button { model.dismissCardCapture() } label: { Text("取消").frame(maxWidth: .infinity).padding(.vertical, 12) }.clipActionStyle()
+      case .done(let level, let message):
+        Image(systemName: noticeSymbol(level)).font(.largeTitle).foregroundStyle(noticeColor(level))
+        Text(message).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+        Button { model.dismissCardCapture() } label: { Text("完成").frame(maxWidth: .infinity).padding(.vertical, 12) }.clipActionStyle()
+      }
+    }
+    .frame(maxWidth: .infinity)
+    .padding(24)
+    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 28))
+    .accessibilityElement(children: .contain)
+  }
+}
+
 private struct ClipPricingRow: View {
   let rule: PrismShopResponse.Pricing.Rule
   let sourceZone: String
@@ -1155,7 +1221,8 @@ private struct ClipPricingRow: View {
         if let dates = rule.dateTimeRange { Text(prismRuleDateTime(dates.start) + " – " + prismRuleDateTime(dates.end)).font(.caption).foregroundStyle(.secondary) }
         Text(rateText).font(.subheadline)
         if let pricing = rule.pricing {
-          if pricing.priceCap < 9007199254740991 { Text(String(localized: "时段封顶") + " " + pricing.priceCap.formatted()).font(.caption).foregroundStyle(.secondary) }
+          // A cap of 0 leaves the period uncapped.
+          if pricing.priceCap > 0, pricing.priceCap < 9007199254740991 { Text(String(localized: "时段封顶") + " " + pricing.priceCap.formatted()).font(.caption).foregroundStyle(.secondary) }
           if pricing.roundGraceMinutes > 0 { Text(String(localized: "每计费单位宽限") + " " + pricing.roundGraceMinutes.formatted() + " " + String(localized: "分钟")).font(.caption).foregroundStyle(.secondary) }
         }
       }.frame(maxWidth: .infinity, alignment: .leading)
@@ -1278,30 +1345,14 @@ private struct ClipAccountContent: View {
 private struct ClipBillContent: View {
   let preview: PrismCheckout
   var balanceAfter: Double? = nil
-  @ViewBuilder private func billTotals(_ timeline: PrismBillTimeline) -> some View {
-    ForEach(Array(timeline.totals.enumerated()), id: \.offset) { _, item in
-      (Text(item.name + " ").foregroundColor(.secondary) + Text(item.amount.formatted(.number.precision(.fractionLength(2)))).foregroundColor(item.amount < 0 ? .green : .secondary)).font(.caption)
-    }
-  }
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
-      VStack(alignment: .leading, spacing: 4) {
-        Text("合计").font(.subheadline).foregroundStyle(.secondary)
-        Text(preview.settlementPreview.total.formatted(.number.precision(.fractionLength(2))))
-          .font(.largeTitle.bold()).monospacedDigit()
-        if let timeline = preview.timeline {
-          if #available(iOS 16.0, *) {
-            ViewThatFits(in: .horizontal) {
-              HStack(spacing: 12) { billTotals(timeline) }
-              VStack(alignment: .leading, spacing: 4) { billTotals(timeline) }
-            }.padding(.top, 6)
-          } else { VStack(alignment: .leading, spacing: 4) { billTotals(timeline) }.padding(.top, 6) }
-        }
-      }.frame(maxWidth: 480, alignment: .leading).padding(.bottom, 4)
+      ClipBillTotal(total: preview.settlementPreview.total, timeline: preview.timeline)
+        .frame(maxWidth: 480, alignment: .leading).padding(.bottom, 4)
       if let balanceAfter {
         PrismLabeledRow(String(localized: "结账后余额"), value: balanceAfter.formatted(.number.precision(.fractionLength(2))))
           .font(.subheadline).padding(.horizontal, 16)
-          .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 16))
+          .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
       }
       if let timeline = preview.timeline { ClipBillTimeline(timeline: timeline) }
       else {
@@ -1349,106 +1400,6 @@ private struct PrismLabeledRow: View {
   let title: String; let value: String
   init(_ title: String, value: String) { self.title = title; self.value = value }
   var body: some View { HStack(alignment: .firstTextBaseline) { Text(title); Spacer(); Text(value) }.padding(.vertical, 12) }
-}
-
-private func billEventLabel(_ kind: String) -> String {
-  switch kind {
-  case "start": return String(localized: "开始计费")
-  case "end": return String(localized: "结束计费")
-  case "switch": return String(localized: "切换计费规则")
-  case "current": return String(localized: "现在")
-  default: return ""
-  }
-}
-private struct ClipBillTimeline: View {
-  let timeline: PrismBillTimeline
-  var body: some View {
-    VStack(spacing: 0) {
-      ForEach(Array(timeline.events.enumerated()), id: \.offset) { index, event in
-        ClipBillEvent(event: event, tracks: timeline.tracks, hasNext: index + 1 < timeline.events.count)
-      }
-    }
-  }
-}
-private struct ClipBillEvent: View {
-  let event: PrismBillTimeline.Event
-  let tracks: [PrismBillTimeline.Track]
-  let hasNext: Bool
-  private let colors: [Color] = [.blue, .brown, .purple, .teal, .pink, .orange]
-  private var lanes: Int { max(1, (tracks.map(\.lane).max() ?? 0) + 1) }
-  private var kinds: Set<String> { Set(event.entries.filter { $0.trackId != nil }.map(\.kind)) }
-  var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      HStack(alignment: .firstTextBaseline) {
-        Text(prismDisplayClock(event.at) + (kinds.count == 1 ? " · " + billEventLabel(kinds.first!) : "")).font(.subheadline.bold())
-        Spacer(minLength: 8)
-        Text(prismDisplayDay(event.at)).font(.caption).foregroundStyle(.secondary)
-      }
-      ForEach(Array(event.entries.enumerated()), id: \.offset) { _, entry in
-        ClipBillEntry(entry: entry, showKind: kinds.count > 1, trackColor: tracks.first(where: { $0.id == entry.trackId }).map { colors[$0.color % colors.count] })
-      }
-    }
-    .padding(.leading, CGFloat(lanes * 14 + 18)).padding(.bottom, 28)
-    .background {
-      GeometryReader { proxy in
-        ForEach(tracks) { track in
-          let point = event.entries.contains { $0.trackId == track.id }
-          let above = (prismParsedDate(track.endedAt) ?? .distantPast) > (prismParsedDate(event.at) ?? .distantPast) && (prismParsedDate(track.startedAt) ?? .distantFuture) <= (prismParsedDate(event.at) ?? .distantPast)
-          let below = hasNext && (prismParsedDate(track.startedAt) ?? .distantFuture) < (prismParsedDate(event.at) ?? .distantPast) && (prismParsedDate(track.endedAt) ?? .distantPast) >= (prismParsedDate(event.at) ?? .distantPast)
-          let x = CGFloat(track.lane * 14 + 5)
-          Path { path in
-            if above { path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x, y: 11)) }
-            if below { path.move(to: CGPoint(x: x, y: 11)); path.addLine(to: CGPoint(x: x, y: proxy.size.height)) }
-          }.stroke(colors[track.color % colors.count].opacity(0.7), lineWidth: 3)
-          if point { Circle().fill(colors[track.color % colors.count]).frame(width: 9, height: 9).position(x: x, y: 11) }
-        }
-      }.accessibilityHidden(true)
-    }
-  }
-}
-private struct ClipBillEntry: View {
-  let entry: PrismBillTimeline.Entry
-  let showKind: Bool
-  let trackColor: Color?
-  private var period: String? {
-    guard let start = entry.startedAt, let end = entry.endedAt else { return nil }
-    guard let startDate = prismParsedDate(start), let endDate = prismParsedDate(end), let label = prismDisplayPeriod(start, end) else { return nil }
-    let minutes = Int(endDate.timeIntervalSince(startDate) / 60)
-    return label + " · " + minutes.formatted() + " " + String(localized: "分钟")
-  }
-  private var rate: String? {
-    guard let unit = entry.unitMinutes, let price = entry.unitPrice else { return nil }
-    return price.formatted() + " / " + unit.formatted() + " " + String(localized: "分钟") + (entry.units.map { " × " + $0.formatted() } ?? "")
-  }
-  private var cap: String? {
-    guard let cap = entry.cap else { return nil }
-    let name = entry.trackId == nil ? String(localized: "跨方案封顶") : String(localized: "时段封顶")
-    let history = (entry.paidBefore ?? 0) != 0 ? " · " + String(localized: "历史已计入") + " " + entry.paidBefore!.formatted() : ""
-    return name + " " + cap.formatted() + history
-  }
-  var body: some View {
-    VStack(alignment: .leading, spacing: 5) {
-      HStack(alignment: .firstTextBaseline) {
-        HStack(spacing: 8) {
-          if let trackColor { Circle().fill(trackColor).frame(width: 6, height: 6).accessibilityHidden(true) }
-          Text(entry.name + (entry.rule.map { "（" + $0 + "）" } ?? "")).font(.subheadline.weight(.medium))
-        }
-        Spacer(minLength: 8)
-        if let amount = entry.amount {
-          Text(amount.formatted(.number.precision(.fractionLength(2)))).font(.subheadline.bold()).monospacedDigit().foregroundStyle(amount < 0 ? Color.green : Color.primary)
-        }
-      }
-      Group {
-        if showKind, entry.trackId != nil { Text(billEventLabel(entry.kind)) }
-        if let next = entry.nextRule { Text((entry.rule ?? "") + " → " + next) }
-        if let period { Text(period) }
-        if let rate { Text(rate) }
-        if let cap { Text(cap) }
-      }.font(.caption).foregroundStyle(.secondary)
-    }.padding(entry.trackId == nil ? 0 : 12)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .background(entry.trackId == nil ? Color.clear : Color.primary.opacity(0.025), in: RoundedRectangle(cornerRadius: 14))
-  }
 }
 
 /// The symbol of a notice level, shared by the card row, the coin button and the controls.

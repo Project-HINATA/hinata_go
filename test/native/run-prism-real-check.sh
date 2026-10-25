@@ -30,5 +30,5 @@ for key, value in env.items():
 PY
 )"
 export PRISM_E2E_IO_BIN=${PRISM_E2E_IO_BIN:-$HOME/Projects/hinata-aimeio-rs/tools/mac-test/target/debug/io_sim}
-swiftc -parse-as-library ios/PrismClip/InvocationParser.swift ios/PrismClip/InvocationRouter.swift ios/PrismClip/Models.swift ios/PrismClip/PrismAPI.swift ios/PrismClip/MachineLoginViewModel.swift test/native/prism_visit_fixtures.swift test/native/prism_real_check.swift -o "$check_dir/prism-real-check"
+swiftc -parse-as-library ios/PrismClip/InvocationParser.swift ios/PrismClip/InvocationRouter.swift ios/PrismClip/Models.swift ios/PrismCore/*.swift ios/PrismClip/PrismAPI.swift ios/PrismClip/MachineLoginViewModel.swift test/native/prism_visit_fixtures.swift test/native/prism_real_check.swift -o "$check_dir/prism-real-check"
 "$check_dir/prism-real-check"

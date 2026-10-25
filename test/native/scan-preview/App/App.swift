@@ -2,7 +2,20 @@ import SwiftUI
 
 @main @MainActor struct ScanPreviewApp: App {
   @StateObject private var model: MachineLoginViewModel
+  /// Set to look at a real (local) server instead of fixtures: `PRISM_API_ORIGIN` (a loopback
+  /// origin), `PRISM_PREVIEW_SESSION` (a signed-in session token) and `PRISM_PREVIEW_LINK` (the
+  /// scanned or shop link to open).
+  private static let live = ProcessInfo.processInfo.environment["PRISM_PREVIEW_LINK"].flatMap(URL.init(string:))
+
   init() {
+    if let live = Self.live {
+      let environment = ProcessInfo.processInfo.environment
+      if let token = environment["PRISM_PREVIEW_SESSION"], let host = PrismAPI.defaultOrigin.host {
+        HTTPCookieStorage.shared.setCookie(HTTPCookie(properties: [.domain: host, .path: "/", .name: "arcadelink_session", .value: token])!)
+      }
+      _model = StateObject(wrappedValue: MachineLoginViewModel(api: .shared))
+      return
+    }
     let checkout = ProcessInfo.processInfo.arguments.contains("checkout-insufficient")
     let authHeld = ProcessInfo.processInfo.arguments.contains("auth-held")
     FixtureProtocol.holdNextIdentityResponse = authHeld
@@ -38,6 +51,7 @@ import SwiftUI
     WindowGroup {
       MachineLoginView(presentsAppClipNotice: true).environmentObject(model)
         .task {
+          if let live = Self.live { await model.handleResolvedInvocation(live); return }
           let path = ProcessInfo.processInfo.arguments.contains("checkout-insufficient") ? "store" : "store/device"
           await model.handleResolvedInvocation(URL(string: "https://link.neri.moe/t/\(path)")!)
         }

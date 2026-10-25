@@ -37,6 +37,25 @@ final class ScanScreenshots: XCTestCase {
     app.alerts.buttons[dismiss].tap()
     XCTAssertTrue(checkout.isEnabled)
   }
+  /// Pages from a real local server, when the runner is given one (see App.swift); each screen
+  /// of the page from the top, scrolling a screen at a time.
+  func testLivePages() throws {
+    let environment = ProcessInfo.processInfo.environment
+    guard let link = environment["PRISM_PREVIEW_LINK"] else { throw XCTSkip("No local server given") }
+    let app = XCUIApplication()
+    app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    for key in ["PRISM_API_ORIGIN", "PRISM_PREVIEW_SESSION", "PRISM_PREVIEW_LINK", "TZ"] { app.launchEnvironment[key] = environment[key] }
+    app.launch()
+    let ready = environment["PRISM_PREVIEW_WAIT_FOR"] ?? "合计"
+    XCTAssertTrue(app.staticTexts[ready].waitForExistence(timeout: 30), "\(link) did not show \(ready)")
+    sleep(2)
+    let screens = Int(environment["PRISM_PREVIEW_SCREENS"] ?? "3") ?? 3
+    for index in 1...screens {
+      attach(app, name: "\(environment["PRISM_PREVIEW_NAME"] ?? "live")-\(index)")
+      app.swipeUp(velocity: .slow)
+      sleep(1)
+    }
+  }
   private func attach(_ app: XCUIApplication, name: String) {
     let attachment = XCTAttachment(screenshot: app.screenshot())
     attachment.name = name; attachment.lifetime = .keepAlways

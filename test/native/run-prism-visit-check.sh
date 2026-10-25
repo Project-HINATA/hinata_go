@@ -42,5 +42,5 @@ while [ ! -s "$prism_check_dir/port" ]; do
   [ "$attempt" -lt 100 ] || { echo 'Cookie fixture server did not publish its port' >&2; exit 1; }
   sleep 0.1
 done
-swiftc -parse-as-library ios/PrismClip/InvocationParser.swift ios/PrismClip/InvocationRouter.swift ios/PrismClip/Models.swift ios/PrismClip/PrismAPI.swift ios/PrismClip/MachineLoginViewModel.swift test/native/prism_visit_fixtures.swift test/native/prism_visit_check.swift -o "$prism_check_dir/prism-visit-check"
+swiftc -parse-as-library ios/PrismClip/InvocationParser.swift ios/PrismClip/InvocationRouter.swift ios/PrismClip/Models.swift ios/PrismCore/*.swift ios/PrismClip/PrismAPI.swift ios/PrismClip/MachineLoginViewModel.swift test/native/prism_visit_fixtures.swift test/native/prism_visit_check.swift -o "$prism_check_dir/prism-visit-check"
 PRISM_COOKIE_TEST_PORT="$(cat "$prism_check_dir/port")" "$prism_check_dir/prism-visit-check"

@@ -7,7 +7,7 @@ Swift 实现位于 `ios/LiveActivityShared/StoreVisitActivityView.swift`，由�
 - leading：状态整体在摄像头左侧系统区域内居中，优先使用 14 pt。封顶明确显示「本时段已封顶」，空间不足时整组选择 12 pt，以圆点和实际字形的整体宽度居中，避免只缩放文字产生视觉偏移；更长的本地化文案保持单行省略。
 - trailing：金额在摄像头右侧系统区域内居中，32 pt，宽度 104 pt，大金额可缩小到 16 pt，避免侵占摄像头区域。
 - center：已停留时间，13 pt，不额外添加摄像头下方 padding。
-- bottom：入场 / 上一事件 / 服务端下一事件名称，14 pt；三个时间 16 pt。
+- bottom：入场 / 服务端上一事件名称 / 服务端下一事件名称，14 pt；三个时间 16 pt。
 - 上一事件固定在正中，左半段为压缩历史，右半段为上一事件到下一事件的时间进度。
 - 主轨道 7 pt；事件节点 12 pt；蓝色历史使用 6 pt 斜切断口。
 - 轨道独占 25 pt 行，居中于上方标签和下方时间之间，延续 V19 的上移结果。
@@ -47,7 +47,7 @@ Swift 实现位于 `ios/LiveActivityShared/StoreVisitActivityView.swift`，由�
 }
 ```
 
-同级 `PRiSM/packages/platform/src/live-activity-billing.ts` 已为快照接口和 APNs content-state 增加 **previousEvent**，通过共享计费引擎恢复最近收费、规则或会话节点，覆盖宽限、暂停与单方案/全局封顶；刷新时间不参与事件计算。需要发布后端修改才能在远端环境生效。旧后端或旧载荷缺少该字段时，上一事件时间显示「待更新」，右半轴不绘制比例，compact 显示时钟图标。禁止将 `asOfUnix`、本机刷新时间或未确认的过期 nextEvent 当成上一事件。
+同级 `PRiSM/packages/server/src/durable-objects/live-activity-billing.ts` 为快照接口和 APNs content-state 提供 **previousEvent** 与 **nextEvent**。两者就是账单时间轴的事件，名称与账单一致：开始计费、结束计费、切换计费规则、封顶结束、已封顶、新的一天；另加单位实际收费的节点「计费」/「下次计费」。封顶状态以联合结算后的实收为准，与账单画成虚线的方案一致；刷新时间不参与事件计算。中间列显示上一事件的名称，缺少名称时显示「上一事件」。需要发布后端修改才能在远端环境生效。旧后端或旧载荷缺少该字段时，上一事件时间显示「待更新」，右半轴不绘制比例，compact 显示时钟图标。禁止将 `asOfUnix`、本机刷新时间或未确认的过期 nextEvent 当成上一事件。
 
 只有 `入场 <= 上一事件 <= 当前 < 下一事件` 且数据未 stale 时才显示时间进度。没有匹配预载快照的过期数据不继续倒计时；金额只使用服务端快照（包括到点启用的 nextBill），不根据本机计时自行计算。
 
