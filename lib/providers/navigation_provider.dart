@@ -71,6 +71,7 @@ class AppActionItem {
   /// SF Symbol for the item in a native iOS menu.
   final String? nativeSymbol;
   final VoidCallback onPressed;
+  final VoidCallback? onLongPress;
 
   const AppActionItem({
     required this.id,
@@ -78,6 +79,7 @@ class AppActionItem {
     this.icon,
     this.nativeSymbol,
     required this.onPressed,
+    this.onLongPress,
   });
 }
 

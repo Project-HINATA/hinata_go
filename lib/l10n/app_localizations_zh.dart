@@ -875,6 +875,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addAimeBanapass => '添加 Aime/Banapass';
 
   @override
+  String get addFelicaCard => '添加 FeliCa 卡片';
+
+  @override
+  String get felicaBytesHint => '8 字节，填写 16 位十六进制';
+
+  @override
+  String get felicaInvalidBytes => '请输入 16 位十六进制数字';
+
+  @override
+  String get felicaSystemCodesHint => '每个 4 位十六进制，多个用逗号分隔，例如 0003, FE00';
+
+  @override
+  String felicaInvalidSystemCodes(int count) {
+    return '每个系统码需要 4 位十六进制，最多 $count 个且不能重复';
+  }
+
+  @override
   String get ndefAddRecord => '添加内容';
 
   @override

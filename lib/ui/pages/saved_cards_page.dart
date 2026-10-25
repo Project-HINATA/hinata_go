@@ -17,6 +17,7 @@ import '../ui_text.dart';
 import '../components/saved_cards/card_item.dart';
 import '../components/saved_cards/folder_selection_strip.dart';
 import '../components/saved_cards/add_card_dialog.dart';
+import '../components/saved_cards/add_felica_dialog.dart';
 import '../components/saved_cards/ndef_editor_dialog.dart';
 import '../components/saved_cards/add_folder_dialog.dart';
 import '../components/instances/select_instance_dialog.dart';
@@ -39,6 +40,21 @@ class SavedCardsPage extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AddCardDialog(
+        initialFolderId: selectedFolderId,
+        onAddFolderRequested: () =>
+            _showAddFolderDialog(context, onFolderCreated),
+      ),
+    );
+  }
+
+  void _showAddFelicaDialog(
+    BuildContext context,
+    String selectedFolderId,
+    ValueSetter<String> onFolderCreated,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AddFelicaDialog(
         initialFolderId: selectedFolderId,
         onAddFolderRequested: () =>
             _showAddFolderDialog(context, onFolderCreated),
@@ -208,6 +224,8 @@ class SavedCardsPage extends ConsumerWidget {
             nativeSymbol: 'creditcard',
             onPressed: () =>
                 _showAddCardDialog(context, selectedFolderId, selectFolder),
+            onLongPress: () =>
+                _showAddFelicaDialog(context, selectedFolderId, selectFolder),
           ),
           AppActionItem(
             id: 'addNdef',
