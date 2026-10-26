@@ -31,7 +31,11 @@ struct MachineLoginView: View {
     // A problem raised inside the sheet was shown there; it must not pop up once the sheet is gone.
     .sheet(isPresented: Binding(get: { section != nil }, set: { if !$0 { section = nil; model.dismissNotice(retrying: false) } })) {
       if let section {
-        if #available(iOS 16.0, *) { ClipAccountSheet(section: section).environmentObject(model).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) }
+        if #available(iOS 16.0, *) {
+          ClipAccountSheet(section: section).environmentObject(model)
+            .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+            .presentationBackground(Color(.systemGroupedBackground))
+        }
         else { ClipAccountSheet(section: section).environmentObject(model) }
       }
     }
