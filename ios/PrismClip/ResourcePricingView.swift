@@ -15,6 +15,10 @@ let prismAccent = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
   ? UIColor(red: 0x40 / 255, green: 0x9c / 255, blue: 1, alpha: 1)
   : UIColor(red: 0, green: 0x66 / 255, blue: 0xd6 / 255, alpha: 1) })
 
+/// Every card's fill, on a page or in a sheet. Translucent, so a card on a sheet's glass is the
+/// glass, a shade apart, rather than a solid panel set into it.
+let prismCardFill = Color(.tertiarySystemFill)
+
 /// Money as the pricing card writes it: always two decimals.
 func prismMoney(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(2))) }
 
@@ -114,7 +118,7 @@ struct ClipResourcePricing: View {
       }
     }
     .padding(16)
-    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    .background(prismCardFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     .accessibilityElement(children: .contain)
     .accessibilityLabel(Text("计费规则"))
     // Each plan's day is worked out here, from the plan's own rules, as the web page does.

@@ -40,6 +40,30 @@ final class ScanScreenshots: XCTestCase {
   /// Pages from a real local server, when the runner is given one (see App.swift); each screen
   /// of the page from the top, scrolling a screen at a time.
   func testLivePages() throws {
+    let (app, name) = try launchLive()
+    let screens = Int(ProcessInfo.processInfo.environment["PRISM_PREVIEW_SCREENS"] ?? "3") ?? 3
+    for index in 1...screens {
+      attach(app, name: "\(name ?? "live")-\(index)")
+      app.swipeUp(velocity: .slow)
+      sleep(1)
+    }
+  }
+  /// The bill a billing player opens from the account menu, at both sheet heights.
+  func testLiveBillSheet() throws {
+    let (app, name) = try launchLive()
+    let menu = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "计费中")).firstMatch
+    XCTAssertTrue(menu.waitForExistence(timeout: 30))
+    menu.tap()
+    app.buttons["账单"].firstMatch.tap()
+    XCTAssertTrue(app.staticTexts["合计"].waitForExistence(timeout: 30))
+    sleep(2)
+    attach(app, name: "\(name ?? "sheet")-medium")
+    let title = app.staticTexts["账单"].firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+    title.press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.05)))
+    sleep(2)
+    attach(app, name: "\(name ?? "sheet")-large")
+  }
+  private func launchLive() throws -> (XCUIApplication, String?) {
     let environment = ProcessInfo.processInfo.environment
     guard let link = environment["PRISM_PREVIEW_LINK"] else { throw XCTSkip("No local server given") }
     let app = XCUIApplication()
@@ -49,12 +73,7 @@ final class ScanScreenshots: XCTestCase {
     let ready = environment["PRISM_PREVIEW_WAIT_FOR"] ?? "合计"
     XCTAssertTrue(app.staticTexts[ready].waitForExistence(timeout: 30), "\(link) did not show \(ready)")
     sleep(2)
-    let screens = Int(environment["PRISM_PREVIEW_SCREENS"] ?? "3") ?? 3
-    for index in 1...screens {
-      attach(app, name: "\(environment["PRISM_PREVIEW_NAME"] ?? "live")-\(index)")
-      app.swipeUp(velocity: .slow)
-      sleep(1)
-    }
+    return (app, environment["PRISM_PREVIEW_NAME"])
   }
   private func attach(_ app: XCUIApplication, name: String) {
     let attachment = XCTAttachment(screenshot: app.screenshot())

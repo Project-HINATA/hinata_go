@@ -375,7 +375,7 @@ private struct ClipSessionPage: View {
             .opacity(model.state != .ready && !active ? 0.45 : 1)
           }
         }
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(prismCardFill)
         .clipShape(RoundedRectangle(cornerRadius: 28))
       }
     }
@@ -484,7 +484,7 @@ struct ClipShopHero: View {
     // cover's fixed frame set the width while the bill was absent, and the wider bill changed
     // it on arrival — which resized the cover exactly as the bill appeared.
     .frame(width: width)
-    .background(Color(.secondarySystemGroupedBackground))
+    .background(prismCardFill)
     .clipShape(RoundedRectangle(cornerRadius: 32))
     .overlay {
       RoundedRectangle(cornerRadius: 32).strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
@@ -603,7 +603,7 @@ private struct ClipShopControls: View {
             .font(.subheadline).foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+            .background(prismCardFill, in: RoundedRectangle(cornerRadius: 14))
         }
       } else if model.errorMessage != nil {
         Button { Task { model.clearError(); await model.refreshVisit() } } label: {
@@ -765,7 +765,7 @@ private struct ClipPlatformBinding: View {
         if model.errorMessage != nil {
           Button("重试") { Task { await model.bindPlatformIdentity() } }.disabled(model.deviceBusy)
         } else if model.binding == nil { ProgressView() }
-      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(prismCardFill, in: RoundedRectangle(cornerRadius: 14))
     }
   }
 }
@@ -855,7 +855,7 @@ private struct ClipDeviceControls: View {
                   }
                   .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
                   .padding(16)
-                  .background(seat == nil ? Color.clear : Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+                  .background(seat == nil ? Color.clear : prismCardFill, in: RoundedRectangle(cornerRadius: 18))
                   .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.primary.opacity(seat?.mine == true ? 0.3 : seat == nil ? 0.08 : 0), lineWidth: seat?.mine == true ? 1.5 : 1))
                 }
               }
@@ -1166,7 +1166,7 @@ private struct ClipCardCapture: View {
     }
     .frame(maxWidth: .infinity)
     .padding(24)
-    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 28))
+    .background(prismCardFill, in: RoundedRectangle(cornerRadius: 28))
     .accessibilityElement(children: .contain)
   }
 }
@@ -1352,7 +1352,7 @@ private struct ClipBillContent: View {
       if let balanceAfter {
         PrismLabeledRow(String(localized: "结账后余额"), value: balanceAfter.formatted(.number.precision(.fractionLength(2))))
           .font(.subheadline).padding(.horizontal, 16)
-          .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+          .background(prismCardFill, in: RoundedRectangle(cornerRadius: 16))
       }
       if let timeline = preview.timeline { ClipBillTimeline(timeline: timeline) }
       else {
