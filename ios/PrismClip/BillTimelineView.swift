@@ -8,62 +8,29 @@ private func cappedAt(_ track: Timeline.Track, _ at: TimeInterval) -> Bool {
   (track.capped ?? []).contains { at >= instant($0.startedAt) && at < instant($0.endedAt) }
 }
 
-/// The total. Where a cap kept any plan from charging, a key to the rails: a solid line charges,
-/// a dotted one is capped. Otherwise what the total is made of as one bar, each plan's share in
-/// its colour.
+/// The total, with the key to the rails under it: a solid rail charges, a dotted one is capped.
+/// Only a bill with a dotted rail needs the key.
 struct ClipBillTotal: View {
   let total: Double
   let timeline: PrismBillTimeline?
 
   var body: some View {
-    let anyCapped = timeline?.tracks.contains { !($0.capped ?? []).isEmpty } == true
-    let parts = (timeline?.totals ?? []).filter { $0.amount > 0 }
     VStack(alignment: .leading, spacing: 4) {
       Text("合计").font(.subheadline).foregroundStyle(.secondary)
       Text(total.formatted(.number.precision(.fractionLength(2)))).font(.largeTitle.bold()).monospacedDigit()
-      if anyCapped {
+      if timeline?.tracks.contains(where: { !($0.capped ?? []).isEmpty }) == true {
         HStack(spacing: 20) {
           legend("计费") { Capsule().fill(Color.secondary).frame(width: 3, height: 12) }
           legend("封顶中") { ClipRailLine(dotted: true).stroke(Color.secondary, style: ClipRailLine.style(dotted: true)).frame(width: 3, height: 12) }
         }
         .font(.caption).foregroundStyle(.secondary).padding(.top, 8)
         .accessibilityElement(children: .combine).accessibilityLabel(Text("图例"))
-      } else if parts.count > 1 {
-        // One part is the whole: the bar only says something when there are two.
-        VStack(alignment: .leading, spacing: 8) {
-          GeometryReader { geometry in
-            let sum = parts.reduce(0) { $0 + $1.amount }
-            let usable = max(0, geometry.size.width - 2 * CGFloat(parts.count - 1))
-            HStack(spacing: 2) {
-              ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
-                Capsule().fill(color(part.name)).frame(width: usable * part.amount / max(sum, 0.01))
-              }
-            }
-          }
-          .frame(height: 8)
-          .accessibilityHidden(true)
-          ClipFlowRow(spacing: 16) {
-            ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
-              HStack(spacing: 6) {
-                Circle().fill(color(part.name)).frame(width: 8, height: 8).accessibilityHidden(true)
-                Text(part.name).foregroundStyle(.secondary)
-                Text(prismMoney(part.amount)).fontWeight(.medium)
-              }.monospacedDigit()
-            }
-          }
-          .font(.caption)
-        }
-        .padding(.top, 8)
       }
     }
   }
 
   private func legend<Mark: View>(_ title: LocalizedStringKey, @ViewBuilder mark: () -> Mark) -> some View {
     HStack(spacing: 8) { mark().accessibilityHidden(true); Text(title) }
-  }
-
-  private func color(_ name: String) -> Color {
-    timeline?.tracks.first { $0.name == name }.map { prismPlanColor($0.color) } ?? Color.secondary
   }
 }
 
