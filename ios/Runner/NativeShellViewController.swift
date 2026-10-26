@@ -1146,6 +1146,9 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
     for nav in navigationControllers {
       nav.setNavigationBarHidden(!visible, animated: false)
     }
+    if visible {
+      for strip in chipStrips.values { strip.pinBelowBar() }
+    }
   }
 
   func setCovered(_ covered: Bool, animated: Bool = true) {
@@ -1876,20 +1879,38 @@ final class NativeTopBarChipStrip: UIView {
   /// Places the strip under [nav]'s bar, above its pages.
   func install(in nav: UINavigationController) {
     nav.view.insertSubview(self, belowSubview: nav.navigationBar)
-    let top = topAnchor.constraint(equalTo: nav.navigationBar.bottomAnchor)
-    topConstraint = top
+    bar = nav.navigationBar
     NSLayoutConstraint.activate([
       // Clear of the side strips, such as the iPhone Duo vertical bar.
       leadingAnchor.constraint(equalTo: nav.view.safeAreaLayoutGuide.leadingAnchor),
       trailingAnchor.constraint(equalTo: nav.view.safeAreaLayoutGuide.trailingAnchor),
       heightAnchor.constraint(equalToConstant: Self.height),
-      top,
     ])
+    pinBelowBar()
+  }
+
+  private weak var bar: UINavigationBar?
+
+  /// Keeps the strip's top on the bar's bottom edge.
+  ///
+  /// A hidden navigation bar leaves the view hierarchy (iPhone landscape has
+  /// no bar), and the system drops every constraint that held on to it. It
+  /// does not bring them back with the bar, so the strip would sit at the top
+  /// of the screen from then on; pin it again whenever the bar is back.
+  func pinBelowBar() {
+    guard topConstraint?.isActive != true, let bar, let superview,
+      bar.isDescendant(of: superview)
+    else { return }
+    let top = topAnchor.constraint(equalTo: bar.bottomAnchor)
+    top.constant = topConstraint?.constant ?? 0
+    top.isActive = true
+    topConstraint = top
   }
 
   /// Sits below [page]'s large title and moves with it: up as it collapses,
   /// down when the content is pulled past the top.
   func follow(page: NativeTopBarPageController) {
+    pinBelowBar()
     let band = page.largeTitleHeight
     topConstraint?.constant = band > 0 ? band - min(page.scrollOffset, band) : 0
     if #available(iOS 26.0, *) {
@@ -1905,18 +1926,21 @@ final class NativeTopBarChipStrip: UIView {
   func update(chips: [NativeTopBarChip], animated: Bool) {
     guard chips != self.chips else { return }
     let sameChips = chips.map(\.title) == self.chips.map(\.title)
+    let previous = self.chips
     self.chips = chips
     if sameChips {
-      let restyle = {
-        for (button, chip) in zip(self.buttons, chips) {
-          self.style(button, as: chip)
-        }
+      // A glass chip turned prominent after it was made draws its title the
+      // plain way and leaves the glass's copy of it out of step: each time
+      // the strip slides in, that copy trails the title as a ghost. A chip
+      // whose selection changed is made anew instead of restyled.
+      for index in chips.indices where chips[index] != previous[index] {
+        let old = buttons[index]
+        let button = makeButton(index: index, chip: chips[index])
+        stack.insertArrangedSubview(button, at: index)
+        old.removeFromSuperview()
+        buttons[index] = button
       }
-      if animated {
-        UIView.animate(withDuration: 0.2, animations: restyle)
-      } else {
-        restyle()
-      }
+      layoutIfNeeded()
     } else {
       rebuild()
     }
@@ -2114,24 +2138,29 @@ final class NativeTopBarChipStrip: UIView {
   private func rebuild() {
     buttons.forEach { $0.removeFromSuperview() }
     buttons = chips.enumerated().map { index, chip in
-      let button = UIButton(type: .system)
-      button.tag = index
-      // Each chip keeps its own title's width; the stack must not even them
-      // out.
-      button.setContentHuggingPriority(.required, for: .horizontal)
-      button.setContentCompressionResistancePriority(.required, for: .horizontal)
-      style(button, as: chip)
-      button.addAction(
-        UIAction { [weak self] _ in self?.onTap?(index) },
-        for: .primaryActionTriggered
-      )
-      button.addGestureRecognizer(
-        UILongPressGestureRecognizer(target: self, action: #selector(longPressed(_:)))
-      )
+      let button = makeButton(index: index, chip: chip)
       stack.addArrangedSubview(button)
       return button
     }
     layoutIfNeeded()
+  }
+
+  private func makeButton(index: Int, chip: NativeTopBarChip) -> UIButton {
+    let button = UIButton(type: .system)
+    button.tag = index
+    // Each chip keeps its own title's width; the stack must not even them
+    // out.
+    button.setContentHuggingPriority(.required, for: .horizontal)
+    button.setContentCompressionResistancePriority(.required, for: .horizontal)
+    style(button, as: chip)
+    button.addAction(
+      UIAction { [weak self] _ in self?.onTap?(index) },
+      for: .primaryActionTriggered
+    )
+    button.addGestureRecognizer(
+      UILongPressGestureRecognizer(target: self, action: #selector(longPressed(_:)))
+    )
+    return button
   }
 
   private func style(_ button: UIButton, as chip: NativeTopBarChip) {
