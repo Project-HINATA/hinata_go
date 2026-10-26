@@ -246,7 +246,7 @@ private struct ClipBillEntry: View {
       }
       .padding(.horizontal, 14).padding(.vertical, 12)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+      .background(prismCardFill, in: RoundedRectangle(cornerRadius: 14))
       .padding(.bottom, 6)
     }
   }
