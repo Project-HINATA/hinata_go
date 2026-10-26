@@ -350,6 +350,17 @@ class RunnerTests: XCTestCase {
     nav.view.layoutIfNeeded()
     XCTAssertEqual(strip.frame.minY, barBottom, accuracy: 0.5)
 
+    // A hidden bar leaves the hierarchy and takes the strip's constraints with
+    // it (iPhone landscape); once it is back the strip is under it again.
+    bar.setVisible(false)
+    nav.view.layoutIfNeeded()
+    bar.setVisible(true)
+    nav.view.layoutIfNeeded()
+    XCTAssertEqual(strip.frame.minY, nav.navigationBar.frame.maxY, accuracy: 0.5)
+    bar.scroll(token: 50, ["offset": 0, "titleVisible": false], animated: false)
+    nav.view.layoutIfNeeded()
+    XCTAssertEqual(strip.frame.minY, nav.navigationBar.frame.maxY + 52, accuracy: 0.5)
+
     // Covered by a Flutter modal it dims and stops taking touches.
     bar.setCovered(true, animated: false)
     XCTAssertEqual(strip.alpha, 0.45, accuracy: 0.001)
