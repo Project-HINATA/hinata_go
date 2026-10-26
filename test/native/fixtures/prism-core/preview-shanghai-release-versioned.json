@@ -1,0 +1,481 @@
+{
+  "name": "preview-shanghai-release-versioned",
+  "kind": "preview",
+  "input": {
+    "snapshot": {
+      "version": 1,
+      "capturedAt": "2026-09-13T14:30:00.000Z",
+      "assetDefinitions": [],
+      "currentPricingConfigs": [
+        {
+          "id": "pool",
+          "kind": "time.priority",
+          "name": "台球",
+          "enabled": true,
+          "status": "active",
+          "versionId": "pool-v1",
+          "version": 1,
+          "provider": {
+            "id": "pool-provider",
+            "rules": [
+              {
+                "id": "all-day",
+                "label": "全天",
+                "priority": 1,
+                "timeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "pricing": {
+                  "unitPrice": 99,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 0,
+                  "priceCap": 0
+                }
+              }
+            ]
+          },
+          "relations": {
+            "requires": [],
+            "conflicts": []
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "pricingReleases": [
+        {
+          "id": "release-sh",
+          "timeZone": "Asia/Shanghai",
+          "configs": [
+            {
+              "id": "pool",
+              "kind": "time.priority",
+              "name": "台球",
+              "enabled": true,
+              "status": "active",
+              "versionId": "pool-v3",
+              "version": 3,
+              "provider": {
+                "id": "pool-provider",
+                "rules": [
+                  {
+                    "id": "weekday",
+                    "label": "工作日",
+                    "priority": 1,
+                    "timeRange": {
+                      "start": "10:00",
+                      "end": "22:00"
+                    },
+                    "pricing": {
+                      "unitPrice": 12,
+                      "unitMinutes": 60,
+                      "roundGraceMinutes": 5,
+                      "priceCap": 60
+                    },
+                    "weekdays": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  {
+                    "id": "weekend",
+                    "label": "周末",
+                    "priority": 1,
+                    "timeRange": {
+                      "start": "10:00",
+                      "end": "22:00"
+                    },
+                    "pricing": {
+                      "unitPrice": 15,
+                      "unitMinutes": 60,
+                      "roundGraceMinutes": 5,
+                      "priceCap": 80
+                    },
+                    "weekdays": [
+                      0,
+                      6
+                    ]
+                  },
+                  {
+                    "id": "holiday",
+                    "label": "节日",
+                    "priority": 5,
+                    "timeRange": {
+                      "start": "18:00",
+                      "end": "23:00"
+                    },
+                    "pricing": {
+                      "unitPrice": 20,
+                      "unitMinutes": 30,
+                      "roundGraceMinutes": 5,
+                      "priceCap": 0
+                    },
+                    "specificDates": [
+                      "2026-09-13"
+                    ]
+                  },
+                  {
+                    "id": "late",
+                    "label": "夜场",
+                    "priority": 1,
+                    "timeRange": {
+                      "start": "22:00",
+                      "end": "02:00"
+                    },
+                    "pricing": {
+                      "unitPrice": 18,
+                      "unitMinutes": 60,
+                      "roundGraceMinutes": 5,
+                      "priceCap": 0
+                    }
+                  }
+                ]
+              },
+              "relations": {
+                "requires": [],
+                "conflicts": []
+              },
+              "createdAt": "2026-01-01T00:00:00.000Z",
+              "updatedAt": "2026-01-01T00:00:00.000Z"
+            },
+            {
+              "id": "legacy",
+              "kind": "time.priority",
+              "name": "旧台球",
+              "enabled": true,
+              "status": "active",
+              "versionId": "legacy-v1",
+              "version": 1,
+              "provider": {
+                "id": "legacy-provider",
+                "rules": [
+                  {
+                    "id": "all-day",
+                    "label": "全天",
+                    "priority": 1,
+                    "timeRange": {
+                      "start": "00:00",
+                      "end": "00:00"
+                    },
+                    "pricing": {
+                      "unitPrice": 10,
+                      "unitMinutes": 60,
+                      "roundGraceMinutes": 0,
+                      "priceCap": 30
+                    }
+                  }
+                ],
+                "historyProviderId": "legacy-original"
+              },
+              "relations": {
+                "requires": [],
+                "conflicts": []
+              },
+              "createdAt": "2026-01-01T00:00:00.000Z",
+              "updatedAt": "2026-01-01T00:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "players": [
+        {
+          "playerId": "player-1",
+          "sessions": [
+            {
+              "id": "s-sh",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T08:30:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              },
+              "pricingReleaseId": "release-sh"
+            },
+            {
+              "id": "s-legacy",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T09:00:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "legacy"
+              ],
+              "pricingConfigId": "legacy",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              },
+              "pricingReleaseId": "release-sh"
+            }
+          ],
+          "holdings": [],
+          "pastAppliedAdjustments": [],
+          "pricingPaidHistory": {
+            "pool@pool-v3@weekend@2026-09-13T02:00:00.000Z": 2000,
+            "legacy@legacy-original@all-day@2026-09-12T16:00:00.000Z": 1200
+          },
+          "capPaidHistory": {}
+        }
+      ]
+    },
+    "playerId": "player-1"
+  },
+  "expected": {
+    "timeline": {
+      "totals": [
+        {
+          "name": "台球",
+          "amount": 210
+        },
+        {
+          "name": "旧台球",
+          "amount": 18
+        }
+      ],
+      "tracks": [
+        {
+          "id": "s-sh:pool",
+          "name": "台球",
+          "lane": 0,
+          "color": 0,
+          "startedAt": "2026-09-13T08:30:00.000Z",
+          "endedAt": "2026-09-13T14:30:00.000Z",
+          "capped": []
+        },
+        {
+          "id": "s-legacy:legacy",
+          "name": "旧台球",
+          "lane": 1,
+          "color": 1,
+          "startedAt": "2026-09-13T09:00:00.000Z",
+          "endedAt": "2026-09-13T14:30:00.000Z",
+          "capped": [
+            {
+              "startedAt": "2026-09-13T10:00:00.000Z",
+              "endedAt": "2026-09-13T14:30:00.000Z"
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "at": "2026-09-13T14:30:00.000Z",
+          "time": "22:30",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-sh:pool",
+              "periodLabel": "18:00 – 22:30",
+              "rule": "节日",
+              "nextRule": null,
+              "amount": 180,
+              "startedAt": "2026-09-13T10:00:00.000Z",
+              "endedAt": "2026-09-13T14:30:00.000Z",
+              "unitMinutes": 30,
+              "unitPrice": 20,
+              "units": 9,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "台球",
+              "unitFills": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              "pending": null
+            },
+            {
+              "trackId": "s-legacy:legacy",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "旧台球",
+              "capped": true
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T10:00:00.000Z",
+          "time": "18:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": null,
+              "periodLabel": null,
+              "rule": null,
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "时段封顶（旧台球 全天）",
+              "trackIds": [
+                "s-legacy:legacy"
+              ],
+              "until": "2026-09-13T16:00:00.000Z"
+            },
+            {
+              "trackId": "s-sh:pool",
+              "periodLabel": "16:30 – 18:00",
+              "rule": "周末",
+              "nextRule": "节日",
+              "amount": 30,
+              "startedAt": "2026-09-13T08:30:00.000Z",
+              "endedAt": "2026-09-13T10:00:00.000Z",
+              "unitMinutes": 60,
+              "unitPrice": 15,
+              "units": 2,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "switch",
+              "name": "台球",
+              "unitFills": [
+                1,
+                1
+              ],
+              "pending": null
+            },
+            {
+              "trackId": "s-legacy:legacy",
+              "periodLabel": "17:00 – 18:00",
+              "rule": "全天",
+              "nextRule": null,
+              "amount": 18,
+              "startedAt": "2026-09-13T09:00:00.000Z",
+              "endedAt": "2026-09-13T10:00:00.000Z",
+              "unitMinutes": 60,
+              "unitPrice": 10,
+              "units": 2,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "旧台球",
+              "unitFills": [
+                1,
+                0.8
+              ],
+              "pending": null
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T09:00:00.000Z",
+          "time": "17:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-legacy:legacy",
+              "periodLabel": null,
+              "rule": "全天",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "旧台球"
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T08:30:00.000Z",
+          "time": "16:30",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-sh:pool",
+              "periodLabel": null,
+              "rule": "周末",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "台球"
+            }
+          ]
+        }
+      ]
+    },
+    "settlementPreview": {
+      "playerId": "player-1",
+      "sessionIds": [
+        "s-sh",
+        "s-legacy"
+      ],
+      "subtotal": 228,
+      "total": 228,
+      "status": "preview",
+      "previewedAt": "2026-09-13T14:30:00.000Z"
+    },
+    "chargeItems": [
+      {
+        "id": "s-sh:pool-v3:weekend:2026-09-13T08:30:00.000Z",
+        "label": "周末",
+        "amount": 30
+      },
+      {
+        "id": "s-sh:pool-v3:holiday:2026-09-13T10:00:00.000Z",
+        "label": "节日",
+        "amount": 180
+      },
+      {
+        "id": "s-legacy:legacy-original:all-day:2026-09-13T09:00:00.000Z",
+        "label": "全天",
+        "amount": 18
+      }
+    ],
+    "adjustments": [],
+    "wallet": {
+      "balanceBefore": 0,
+      "balanceAfter": -228
+    }
+  }
+}

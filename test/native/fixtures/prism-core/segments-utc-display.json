@@ -1,0 +1,88 @@
+{
+  "name": "segments-utc-display",
+  "kind": "segments",
+  "input": {
+    "config": {
+      "id": "pool",
+      "versionId": "pool-v1",
+      "version": 1,
+      "kind": "time.priority",
+      "name": "台球",
+      "enabled": true,
+      "status": "active",
+      "provider": {
+        "id": "pool-provider",
+        "rules": [
+          {
+            "id": "day",
+            "label": "日间",
+            "priority": 1,
+            "timeRange": {
+              "start": "02:00",
+              "end": "14:00"
+            },
+            "pricing": {
+              "unitPrice": 12.345,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 5,
+              "priceCap": 0
+            }
+          }
+        ]
+      },
+      "relations": {
+        "requires": [],
+        "conflicts": []
+      },
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "localDate": "2026-09-13",
+    "displayTimeZone": "UTC"
+  },
+  "expected": [
+    {
+      "ruleId": "__closed__",
+      "label": "非营业",
+      "priority": null,
+      "startMinute": 0,
+      "endMinute": 120,
+      "startLabel": "00:00",
+      "endLabel": "02:00",
+      "startedAt": "2026-09-13T00:00:00.000Z",
+      "endedAt": "2026-09-13T02:00:00.000Z",
+      "isClosed": true
+    },
+    {
+      "ruleId": "day",
+      "label": "日间",
+      "priority": 1,
+      "startMinute": 120,
+      "endMinute": 840,
+      "startLabel": "02:00",
+      "endLabel": "14:00",
+      "startedAt": "2026-09-13T02:00:00.000Z",
+      "endedAt": "2026-09-13T14:00:00.000Z",
+      "windowStartedAt": "2026-09-13T02:00:00.000Z",
+      "windowEndedAt": "2026-09-13T14:00:00.000Z",
+      "pricing": {
+        "unitPrice": 12.35,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 5,
+        "priceCap": 0
+      }
+    },
+    {
+      "ruleId": "__closed__",
+      "label": "非营业",
+      "priority": null,
+      "startMinute": 840,
+      "endMinute": 1440,
+      "startLabel": "14:00",
+      "endLabel": "24:00",
+      "startedAt": "2026-09-13T14:00:00.000Z",
+      "endedAt": "2026-09-14T00:00:00.000Z",
+      "isClosed": true
+    }
+  ]
+}

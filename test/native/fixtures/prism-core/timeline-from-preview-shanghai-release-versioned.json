@@ -1,0 +1,375 @@
+{
+  "name": "timeline-from-preview-shanghai-release-versioned",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-09-13T14:30:00.000Z",
+      "sessions": [
+        {
+          "sessionId": "s-sh",
+          "label": null,
+          "startedAt": "2026-09-13T08:30:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "s-sh:pool-v3:weekend:2026-09-13T08:30:00.000Z",
+              "sessionId": "s-sh",
+              "source": "pool-v3",
+              "label": "周末",
+              "amount": 3000,
+              "period": {
+                "startedAt": "2026-09-13T08:30:00.000Z",
+                "endedAt": "2026-09-13T10:00:00.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "pool",
+                "providerId": "pool-v3",
+                "ruleId": "weekend",
+                "ruleAnchorAt": "2026-09-13T02:00:00.000Z",
+                "amount": 3000
+              },
+              "pricingExplanation": {
+                "timeZone": "Asia/Shanghai",
+                "units": 2,
+                "planName": "台球",
+                "pricing": {
+                  "unitPrice": 15,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 5,
+                  "priceCap": 80
+                },
+                "paidBefore": 20,
+                "pricingConfigId": "pool",
+                "providerId": "pool-v3",
+                "ruleId": "weekend",
+                "ruleLabel": "周末",
+                "period": {
+                  "startedAt": "2026-09-13T08:30:00.000Z",
+                  "endedAt": "2026-09-13T10:00:00.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "10:00",
+                  "end": "22:00"
+                },
+                "intervalCap": 80,
+                "intervalCapReached": false
+              }
+            },
+            {
+              "id": "s-sh:pool-v3:holiday:2026-09-13T10:00:00.000Z",
+              "sessionId": "s-sh",
+              "source": "pool-v3",
+              "label": "节日",
+              "amount": 18000,
+              "period": {
+                "startedAt": "2026-09-13T10:00:00.000Z",
+                "endedAt": "2026-09-13T14:30:00.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "pool",
+                "providerId": "pool-v3",
+                "ruleId": "holiday",
+                "ruleAnchorAt": "2026-09-13T10:00:00.000Z",
+                "amount": 18000
+              },
+              "pricingExplanation": {
+                "timeZone": "Asia/Shanghai",
+                "units": 9,
+                "planName": "台球",
+                "pricing": {
+                  "unitPrice": 20,
+                  "unitMinutes": 30,
+                  "roundGraceMinutes": 5,
+                  "priceCap": 0
+                },
+                "paidBefore": 0,
+                "pricingConfigId": "pool",
+                "providerId": "pool-v3",
+                "ruleId": "holiday",
+                "ruleLabel": "节日",
+                "period": {
+                  "startedAt": "2026-09-13T10:00:00.000Z",
+                  "endedAt": "2026-09-13T14:30:00.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "18:00",
+                  "end": "23:00"
+                },
+                "intervalCap": 0,
+                "intervalCapReached": false
+              }
+            }
+          ]
+        },
+        {
+          "sessionId": "s-legacy",
+          "label": null,
+          "startedAt": "2026-09-13T09:00:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "s-legacy:legacy-original:all-day:2026-09-13T09:00:00.000Z",
+              "sessionId": "s-legacy",
+              "source": "legacy-original",
+              "label": "全天",
+              "amount": 1800,
+              "period": {
+                "startedAt": "2026-09-13T09:00:00.000Z",
+                "endedAt": "2026-09-13T14:30:00.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "legacy",
+                "providerId": "legacy-original",
+                "ruleId": "all-day",
+                "ruleAnchorAt": "2026-09-12T16:00:00.000Z",
+                "amount": 1800
+              },
+              "pricingExplanation": {
+                "timeZone": "Asia/Shanghai",
+                "units": 6,
+                "planName": "旧台球",
+                "pricing": {
+                  "unitPrice": 10,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 0,
+                  "priceCap": 30
+                },
+                "paidBefore": 12,
+                "pricingConfigId": "legacy",
+                "providerId": "legacy-original",
+                "ruleId": "all-day",
+                "ruleLabel": "全天",
+                "period": {
+                  "startedAt": "2026-09-13T09:00:00.000Z",
+                  "endedAt": "2026-09-13T14:30:00.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "intervalCap": 30,
+                "intervalCapReached": true
+              }
+            }
+          ]
+        }
+      ],
+      "adjustments": [],
+      "globalCapWindows": []
+    },
+    "timeZone": "Asia/Shanghai"
+  },
+  "expected": {
+    "totals": [
+      {
+        "name": "台球",
+        "amount": 210
+      },
+      {
+        "name": "旧台球",
+        "amount": 18
+      }
+    ],
+    "tracks": [
+      {
+        "id": "s-sh:pool",
+        "name": "台球",
+        "lane": 0,
+        "color": 0,
+        "startedAt": "2026-09-13T08:30:00.000Z",
+        "endedAt": "2026-09-13T14:30:00.000Z",
+        "capped": []
+      },
+      {
+        "id": "s-legacy:legacy",
+        "name": "旧台球",
+        "lane": 1,
+        "color": 1,
+        "startedAt": "2026-09-13T09:00:00.000Z",
+        "endedAt": "2026-09-13T14:30:00.000Z",
+        "capped": [
+          {
+            "startedAt": "2026-09-13T10:00:00.000Z",
+            "endedAt": "2026-09-13T14:30:00.000Z"
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-09-13T14:30:00.000Z",
+        "time": "22:30",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "s-sh:pool",
+            "periodLabel": "18:00 – 22:30",
+            "rule": "节日",
+            "nextRule": null,
+            "amount": 180,
+            "startedAt": "2026-09-13T10:00:00.000Z",
+            "endedAt": "2026-09-13T14:30:00.000Z",
+            "unitMinutes": 30,
+            "unitPrice": 20,
+            "units": 9,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "台球",
+            "unitFills": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "pending": null
+          },
+          {
+            "trackId": "s-legacy:legacy",
+            "periodLabel": null,
+            "rule": "全天",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "旧台球",
+            "capped": true
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T10:00:00.000Z",
+        "time": "18:00",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": null,
+            "periodLabel": null,
+            "rule": null,
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "full",
+            "name": "时段封顶（旧台球 全天）",
+            "trackIds": [
+              "s-legacy:legacy"
+            ],
+            "until": "2026-09-13T16:00:00.000Z"
+          },
+          {
+            "trackId": "s-sh:pool",
+            "periodLabel": "16:30 – 18:00",
+            "rule": "周末",
+            "nextRule": "节日",
+            "amount": 30,
+            "startedAt": "2026-09-13T08:30:00.000Z",
+            "endedAt": "2026-09-13T10:00:00.000Z",
+            "unitMinutes": 60,
+            "unitPrice": 15,
+            "units": 2,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "switch",
+            "name": "台球",
+            "unitFills": [
+              1,
+              1
+            ],
+            "pending": null
+          },
+          {
+            "trackId": "s-legacy:legacy",
+            "periodLabel": "17:00 – 18:00",
+            "rule": "全天",
+            "nextRule": null,
+            "amount": 18,
+            "startedAt": "2026-09-13T09:00:00.000Z",
+            "endedAt": "2026-09-13T10:00:00.000Z",
+            "unitMinutes": 60,
+            "unitPrice": 10,
+            "units": 2,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "full",
+            "name": "旧台球",
+            "unitFills": [
+              1,
+              0.8
+            ],
+            "pending": null
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T09:00:00.000Z",
+        "time": "17:00",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "s-legacy:legacy",
+            "periodLabel": null,
+            "rule": "全天",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "旧台球"
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T08:30:00.000Z",
+        "time": "16:30",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "s-sh:pool",
+            "periodLabel": null,
+            "rule": "周末",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "台球"
+          }
+        ]
+      }
+    ]
+  }
+}

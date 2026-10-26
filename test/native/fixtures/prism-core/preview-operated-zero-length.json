@@ -1,0 +1,253 @@
+{
+  "name": "preview-operated-zero-length",
+  "kind": "preview",
+  "input": {
+    "snapshot": {
+      "version": 1,
+      "capturedAt": "2026-09-13T15:00:00.000Z",
+      "assetDefinitions": [],
+      "currentPricingConfigs": [
+        {
+          "id": "pool",
+          "kind": "time.priority",
+          "name": "台球",
+          "enabled": true,
+          "status": "active",
+          "versionId": "pool-v1",
+          "version": 1,
+          "provider": {
+            "id": "pool-provider",
+            "rules": [
+              {
+                "id": "day",
+                "label": "日间",
+                "priority": 1,
+                "timeRange": {
+                  "start": "10:00",
+                  "end": "22:00"
+                },
+                "pricing": {
+                  "unitPrice": 12,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 10,
+                  "priceCap": 30
+                }
+              }
+            ]
+          },
+          "relations": {
+            "requires": [],
+            "conflicts": []
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "pricingReleases": [],
+      "players": [
+        {
+          "playerId": "player-1",
+          "sessions": [
+            {
+              "id": "s-zero",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T14:00:00.000Z",
+              "endedAt": "2026-09-13T14:00:00.000Z",
+              "status": "closed",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": true
+              }
+            },
+            {
+              "id": "s-after",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T14:10:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "pool"
+              ],
+              "pricingConfigId": "pool",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              }
+            }
+          ],
+          "holdings": [],
+          "pastAppliedAdjustments": [],
+          "pricingPaidHistory": {
+            "pool@pool-provider@day@2026-09-13T10:00:00.000Z": 2500
+          },
+          "capPaidHistory": {}
+        }
+      ]
+    },
+    "playerId": "player-1"
+  },
+  "expected": {
+    "timeline": {
+      "totals": [
+        {
+          "name": "台球",
+          "amount": 17
+        }
+      ],
+      "tracks": [
+        {
+          "id": "s-zero:pool",
+          "name": "台球",
+          "lane": 0,
+          "color": 0,
+          "startedAt": "2026-09-13T14:00:00.000Z",
+          "endedAt": "2026-09-13T14:00:00.000Z",
+          "capped": []
+        },
+        {
+          "id": "s-after:pool",
+          "name": "台球",
+          "lane": 0,
+          "color": 1,
+          "startedAt": "2026-09-13T14:10:00.000Z",
+          "endedAt": "2026-09-13T15:00:00.000Z",
+          "capped": [
+            {
+              "startedAt": "2026-09-13T14:10:00.000Z",
+              "endedAt": "2026-09-13T15:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "at": "2026-09-13T15:00:00.000Z",
+          "time": "15:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-after:pool",
+              "periodLabel": null,
+              "rule": "日间",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "台球",
+              "capped": true
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T14:10:00.000Z",
+          "time": "14:10",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": null,
+              "periodLabel": null,
+              "rule": null,
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "时段封顶（台球 日间）",
+              "trackIds": [
+                "s-after:pool"
+              ],
+              "until": "2026-09-13T22:00:00.000Z"
+            },
+            {
+              "trackId": "s-after:pool",
+              "periodLabel": null,
+              "rule": "日间",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "台球"
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T14:00:00.000Z",
+          "time": "14:00",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-zero:pool",
+              "periodLabel": null,
+              "rule": "日间",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "台球"
+            }
+          ]
+        }
+      ]
+    },
+    "settlementPreview": {
+      "playerId": "player-1",
+      "sessionIds": [
+        "s-zero",
+        "s-after"
+      ],
+      "subtotal": 17,
+      "total": 17,
+      "status": "preview",
+      "previewedAt": "2026-09-13T15:00:00.000Z"
+    },
+    "chargeItems": [
+      {
+        "id": "s-zero:pool-provider:day:2026-09-13T14:00:00.000Z",
+        "label": "日间",
+        "amount": 12
+      },
+      {
+        "id": "s-after:pool-provider:day:2026-09-13T14:10:00.000Z",
+        "label": "日间",
+        "amount": 5
+      }
+    ],
+    "adjustments": [],
+    "wallet": {
+      "balanceBefore": 0,
+      "balanceAfter": -17
+    }
+  }
+}

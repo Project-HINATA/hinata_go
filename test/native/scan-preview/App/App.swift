@@ -2,7 +2,20 @@ import SwiftUI
 
 @main @MainActor struct ScanPreviewApp: App {
   @StateObject private var model: MachineLoginViewModel
+  /// Set to look at a real (local) server instead of fixtures: `PRISM_API_ORIGIN` (a loopback
+  /// origin), `PRISM_PREVIEW_SESSION` (a signed-in session token) and `PRISM_PREVIEW_LINK` (the
+  /// scanned or shop link to open).
+  private static let live = ProcessInfo.processInfo.environment["PRISM_PREVIEW_LINK"].flatMap(URL.init(string:))
+
   init() {
+    if let live = Self.live {
+      let environment = ProcessInfo.processInfo.environment
+      if let token = environment["PRISM_PREVIEW_SESSION"], let host = PrismAPI.defaultOrigin.host {
+        HTTPCookieStorage.shared.setCookie(HTTPCookie(properties: [.domain: host, .path: "/", .name: "arcadelink_session", .value: token])!)
+      }
+      _model = StateObject(wrappedValue: MachineLoginViewModel(api: .shared))
+      return
+    }
     let checkout = ProcessInfo.processInfo.arguments.contains("checkout-insufficient")
     let authHeld = ProcessInfo.processInfo.arguments.contains("auth-held")
     FixtureProtocol.holdNextIdentityResponse = authHeld
@@ -14,6 +27,16 @@ import SwiftUI
         case "/api/v1/me": return ok(["user": ["id": "u", "username": "test", "displayName": "测试玩家"]])
         case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": true, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": ["playerId": "p", "identityBound": true], "entryPricing": []])
         case "/api/v1/shops/store/player/me": return ok(["wallet": [], "activeSession": ["id": "visit", "startedAt": "2026-10-05T06:00:00Z"]])
+        // The phone computes the bill from these read-only inputs: an entry fee of 12.
+        case "/api/v1/shops/store/player/billing-inputs": return ok(["playerId": "p", "billingSnapshot": [
+          "version": 1, "capturedAt": "2026-10-05T07:00:00.000Z", "assetDefinitions": [], "pricingReleases": [],
+          "currentPricingConfigs": [["id": "fee", "kind": "charge.fixed", "name": "入场费", "enabled": true, "status": "active",
+            "versionId": "fee-v1", "version": 1, "provider": ["id": "fee", "label": "入场费", "amount": 12],
+            "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z"]],
+          "players": [["playerId": "p", "holdings": [], "pastAppliedAdjustments": [], "pricingPaidHistory": [:], "capPaidHistory": [:],
+            "sessions": [["id": "visit", "playerId": "p", "startedAt": "2026-10-05T06:00:00.000Z", "status": "active",
+              "pricingConfigIds": ["fee"], "pricingConfigId": "fee", "paymentStatus": "unpaid", "label": "entry"]]]],
+        ]])
         case "/api/v1/shops/store/player/checkout/preview": return ok(["settlementPreview": ["total": 12], "chargeItems": [], "adjustments": []])
         case "/api/v1/shops/store/player/checkout/confirm": return (409, ["error": ["code": "INSUFFICIENT_BALANCE", "message": "Insufficient currency holdings for this operation."]])
         default: return ok([:])
@@ -38,6 +61,7 @@ import SwiftUI
     WindowGroup {
       MachineLoginView(presentsAppClipNotice: true).environmentObject(model)
         .task {
+          if let live = Self.live { await model.handleResolvedInvocation(live); return }
           let path = ProcessInfo.processInfo.arguments.contains("checkout-insufficient") ? "store" : "store/device"
           await model.handleResolvedInvocation(URL(string: "https://link.neri.moe/t/\(path)")!)
         }

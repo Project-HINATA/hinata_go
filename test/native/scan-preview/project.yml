@@ -21,6 +21,9 @@ targets:
       - ../../../ios/PrismClip/PrismAPI.swift
       - ../../../ios/PrismClip/MachineLoginViewModel.swift
       - ../../../ios/PrismClip/MachineLoginView.swift
+      - ../../../ios/PrismClip/ResourcePricingView.swift
+      - ../../../ios/PrismClip/BillTimelineView.swift
+      - ../../../ios/PrismCore
       - ../../../ios/PrismClip/Localizable.xcstrings
     settings:
       base:

@@ -25,6 +25,13 @@ enum PersistentCookieCheck {
   }
 }
 
+/// Waits for a reply the fixture server sends from another thread. A number of yields is not a wait:
+/// a fast run gets through them before the reply arrives.
+@MainActor func waitUntil(_ done: () -> Bool, seconds: Double = 5) async {
+  let deadline = Date().addingTimeInterval(seconds)
+  while !done() && Date() < deadline { try? await Task.sleep(nanoseconds: 1_000_000) }
+}
+
 @main struct PrismVisitCheck {
   @MainActor static func main() async throws {
     let wholeSeconds = prismParsedDate("2026-09-12T00:00:00Z")!
@@ -72,8 +79,10 @@ enum PersistentCookieCheck {
     var capabilities = ["power":true,"coin":true,"card":true,"door":true]
     var historyReads = 0, assetReads = 0
     var failBillRead = true
-    var cardReads = 0, previewReads = 0
+    var cardReads = 0, previewReads = 0, serverPreviewReads = 0
     var shopStatus = 200, previewStatus = 200
+    /// A shop whose billing only the server can compute: the phone falls back to the server's preview.
+    var clientBillingUnavailable = false
     var htmlOutage = false
     var statusReads = 0, deviceReads = 0, identityReads = 0, bindingStatusReads = 0, deviceFactReads = 0
     var failNextStatusRead = false
@@ -147,7 +156,10 @@ enum PersistentCookieCheck {
         precondition(query.contains("includePower=0") && query.contains("includeClimate=0"))
         let gated = billing || capabilities["door"] == true || capabilities["mahjong"] == true
         let gate = !gated ? "ready" : identityBindingRequired && (!member || !identityBound) ? "binding" : !billing ? "ready" : member && active ? "ready" : "entry"
+        // At the entry gate the page is told what confirming would start, under a revision it must send back.
         return ok(["gate":gate, "power":"unmanaged","mahjong":["capacity":4,"seats":mahjongSeats],"climate":NSNull(),
+                   "billing": gate == "entry" ? ["preview": ["pricingConfigId": "fee", "planName": "入场费", "changed": true,
+                     "started": [["planId": "fee", "planName": "入场费", "reason": "resource"]], "stopped": [], "kept": [], "revision": "rev-1"]] as Any : NSNull(),
                    "device":["watching":watching,
                              "power":watching && power != "unknown" ? power as Any : NSNull(),
                              "climate":watching && capabilities["climate"] == true ? climate as Any : NSNull()]])
@@ -207,13 +219,27 @@ enum PersistentCookieCheck {
       // A server from before entry-with-door: it enters, ignores openDoor and sends no door.
       case "/api/v1/shops/store/player/session/start":
         precondition(body["openDoor"] as? Bool == true && body["consent"] as? Bool == true)
+        precondition(body["expectedRevision"] as? String == "rev-1", "Confirming sends back the revision the page showed")
         legacyEntries += 1
         return ok(["session": ["id": "entry", "startedAt": "2026-09-12T00:00:00.123Z"]])
       case "/api/v1/machines/login": return ok(["ok":true,"coin":["status":"unknown"]])
-      case "/api/v1/shops/store/player/checkout/preview":
+      // The bill is computed on the phone from these read-only inputs: an entry fee of 12.
+      case "/api/v1/shops/store/player/billing-inputs":
         previewReads += 1
         if previewStatus != 200 { return (previewStatus, ["error": ["code": "PREVIEW_UNAVAILABLE", "message": "账单暂不可用"]]) }
         if failBillRead { failBillRead = false; throw URLError(.networkConnectionLost) }
+        if clientBillingUnavailable { return (503, ["error": ["code": "CLIENT_BILLING_UNAVAILABLE", "message": "Client billing is unavailable for this runtime."]]) }
+        return ok(["playerId": "player", "billingSnapshot": [
+          "version": 1, "capturedAt": "2026-09-12T01:00:00.000Z", "assetDefinitions": [], "pricingReleases": [],
+          "currentPricingConfigs": [["id": "fee", "kind": "charge.fixed", "name": "入场费", "enabled": true, "status": "active",
+            "versionId": "fee-v1", "version": 1, "provider": ["id": "fee", "label": "入场费", "amount": 12],
+            "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z"]],
+          "players": [["playerId": "player", "holdings": [], "pastAppliedAdjustments": [], "pricingPaidHistory": [:], "capPaidHistory": [:],
+            "sessions": [["id": "entry", "playerId": "player", "startedAt": "2026-09-12T00:00:00.123Z", "status": "active",
+              "pricingConfigIds": ["fee"], "pricingConfigId": "fee", "paymentStatus": "unpaid", "label": "entry"]]]],
+        ]])
+      case "/api/v1/shops/store/player/checkout/preview":
+        serverPreviewReads += 1
         return ok(["settlementPreview":["total":12],"chargeItems":[],"adjustments":[]])
       case "/api/v1/shops/store/player/checkout/latest": return ok(["receipt": lastReceipt ?? NSNull()])
       case "/api/v1/shops/store/player/checkout/confirm":
@@ -294,6 +320,11 @@ enum PersistentCookieCheck {
     let oldReceipt = try await model.loadCheckoutReceipt("bill:old")
     precondition(oldReceipt.wallet == nil && oldReceipt.timeline == nil && oldReceipt.playerSettlement.total == 12)
     await model.previewCheckout(); precondition(model.checkoutPreview?.settlementPreview.total == 12)
+    precondition(serverPreviewReads == 0 && model.checkoutPreview?.timeline?.totals.first?.name == "入场计费", "The phone computes the bill from the billing inputs")
+    clientBillingUnavailable = true
+    await model.previewCheckout()
+    precondition(serverPreviewReads == 1 && model.checkoutPreview?.settlementPreview.total == 12, "A shop the phone cannot bill falls back to the server's preview")
+    clientBillingUnavailable = false
     await model.checkout()
     precondition(model.errorMessage == "余额不足，请充值后重试")
     precondition(model.summary?.activeSession != nil && model.checkoutPreview?.settlementPreview.total == 12)
@@ -324,8 +355,8 @@ enum PersistentCookieCheck {
     await model.start(shopCode:"store",publicId:"device")
     precondition(model.showDeviceControls && !model.showNoDeviceActions)
     // The air conditioner's state is asked for once, without holding the page back.
-    for _ in 0..<10000 where model.deviceState?.climate == nil { await Task.yield() }
-    precondition(model.deviceState?.climate?.isOn == false && model.deviceState?.climate?.choosableModes.first == "cool")
+    await waitUntil { model.deviceState?.climate != nil }
+    precondition(model.deviceState?.climate?.isOn == false && model.deviceState?.climate?.choosableModes.first == "cool", "climate \(String(describing: model.deviceState?.climate))")
     await model.climate("climate.on")
     precondition(model.deviceState?.climate?.mode == "cool")
     await model.climate("climate.set_mode", ["mode":"heat"])
@@ -341,10 +372,10 @@ enum PersistentCookieCheck {
     // A power-only device has an action while off, then explains why no controls remain.
     capabilities = ["power":true]; power = "off"
     await model.start(shopCode: "store", publicId: "device")
-    for _ in 0..<10000 where model.deviceState?.power != "off" { await Task.yield() }
+    await waitUntil { model.deviceState?.power == "off" }
     precondition(!model.showNoDeviceActions && model.showDeviceControls)
     await model.device("power.on")
-    for _ in 0..<10000 where model.deviceState?.power != "on" { await Task.yield() }
+    await waitUntil { model.deviceState?.power == "on" }
     precondition(model.deviceState?.power == "on" && !model.waitingPower && model.showNoDeviceActions)
     power = "unknown"
     await model.refreshVisit()
@@ -419,7 +450,7 @@ enum PersistentCookieCheck {
     await shopOnly.api.invalidateReads()
     FixtureProtocol.holdNextShopResponse = true
     let outstandingRead = Task { await shopOnly.refreshVisit(silent: true) }
-    for _ in 0..<10000 where FixtureProtocol.heldReply == nil { await Task.yield() }
+    await waitUntil { FixtureProtocol.heldReply != nil }
     precondition(FixtureProtocol.heldReply != nil)
     let beforeConcurrentEvents = statusReads
     await shopOnly.refreshVisit(silent: true)
@@ -444,15 +475,16 @@ enum PersistentCookieCheck {
     precondition(bindingRequests == requestsBeforeRenewal + 1 && shopOnly.binding?.expiresAt == bindingExpiry)
     await shopOnly.refreshVisit()
     precondition(bindingRequests == requestsBeforeRenewal + 1)
-    // Existing unbound members are polled, and an HTTP outage cannot break the loop.
+    // Existing unbound members are polled, and an HTTP outage cannot break the loop. The poll after
+    // the outage waits out a jittered backoff, so the check waits for it rather than a fixed time.
     let beforeOutage = bindingStatusReads
     await shopOnly.api.invalidateReads()
     shopStatus = 503
     await shopOnly.refreshVisit(silent: true)
     precondition(shopOnly.errorMessage == nil && shopOnly.binding != nil)
     shopStatus = 200; identityBound = true
-    try await Task.sleep(nanoseconds: 6_300_000_000)
-    precondition(bindingStatusReads > beforeOutage)
+    await waitUntil(seconds: 20) { bindingStatusReads > beforeOutage && !shopOnly.needsPlatformBinding && shopOnly.binding == nil }
+    precondition(bindingStatusReads > beforeOutage, "Polling resumes after an outage")
     precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil,
                  "A verified identity on any platform completes binding")
     let afterBinding = statusReads

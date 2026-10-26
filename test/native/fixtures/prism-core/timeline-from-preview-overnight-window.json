@@ -1,0 +1,193 @@
+{
+  "name": "timeline-from-preview-overnight-window",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-09-14T02:05:00.000Z",
+      "sessions": [
+        {
+          "sessionId": "s-night",
+          "label": null,
+          "startedAt": "2026-09-13T21:40:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "s-night:night-provider:night:2026-09-13T22:00:00.000Z",
+              "sessionId": "s-night",
+              "source": "night-provider",
+              "label": "夜间",
+              "amount": 3000,
+              "period": {
+                "startedAt": "2026-09-13T22:00:00.000Z",
+                "endedAt": "2026-09-14T02:05:00.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "night",
+                "providerId": "night-provider",
+                "ruleId": "night",
+                "ruleAnchorAt": "2026-09-13T22:00:00.000Z",
+                "amount": 3000
+              },
+              "pricingExplanation": {
+                "timeZone": "UTC",
+                "units": 5,
+                "planName": "夜场",
+                "pricing": {
+                  "unitPrice": 8,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 5,
+                  "priceCap": 30
+                },
+                "paidBefore": 0,
+                "pricingConfigId": "night",
+                "providerId": "night-provider",
+                "ruleId": "night",
+                "ruleLabel": "夜间",
+                "period": {
+                  "startedAt": "2026-09-13T22:00:00.000Z",
+                  "endedAt": "2026-09-14T02:05:00.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "22:00",
+                  "end": "10:00"
+                },
+                "intervalCap": 30,
+                "intervalCapReached": true
+              }
+            }
+          ]
+        }
+      ],
+      "adjustments": [],
+      "globalCapWindows": []
+    },
+    "timeZone": "UTC"
+  },
+  "expected": {
+    "totals": [
+      {
+        "name": "夜场",
+        "amount": 30
+      }
+    ],
+    "tracks": [
+      {
+        "id": "s-night:night",
+        "name": "夜场",
+        "lane": 0,
+        "color": 0,
+        "startedAt": "2026-09-13T21:40:00.000Z",
+        "endedAt": "2026-09-14T02:05:00.000Z",
+        "capped": [
+          {
+            "startedAt": "2026-09-14T01:00:00.000Z",
+            "endedAt": "2026-09-14T02:05:00.000Z"
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-09-14T02:05:00.000Z",
+        "time": "02:05",
+        "date": "2026-09-14",
+        "entries": [
+          {
+            "trackId": "s-night:night",
+            "periodLabel": null,
+            "rule": "夜间",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "夜场",
+            "capped": true
+          }
+        ]
+      },
+      {
+        "at": "2026-09-14T01:00:00.000Z",
+        "time": "01:00",
+        "date": "2026-09-14",
+        "entries": [
+          {
+            "trackId": null,
+            "periodLabel": null,
+            "rule": null,
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "full",
+            "name": "时段封顶（夜场 夜间）",
+            "trackIds": [
+              "s-night:night"
+            ],
+            "until": "2026-09-14T10:00:00.000Z"
+          },
+          {
+            "trackId": "s-night:night",
+            "periodLabel": "09-13 21:40 – 09-14 01:00",
+            "rule": null,
+            "nextRule": null,
+            "amount": 30,
+            "startedAt": "2026-09-13T21:40:00.000Z",
+            "endedAt": "2026-09-14T01:00:00.000Z",
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": 4,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "full",
+            "name": "夜场",
+            "unitFills": [
+              1,
+              1,
+              1,
+              0.75
+            ],
+            "pending": null
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T21:40:00.000Z",
+        "time": "21:40",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "s-night:night",
+            "periodLabel": null,
+            "rule": "夜间",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "夜场"
+          }
+        ]
+      }
+    ]
+  }
+}

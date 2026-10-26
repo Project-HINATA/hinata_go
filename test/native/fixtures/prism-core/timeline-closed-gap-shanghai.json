@@ -1,0 +1,140 @@
+{
+  "name": "timeline-closed-gap-shanghai",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-09-13T03:54:00.000Z",
+      "sessions": [
+        {
+          "sessionId": "gap",
+          "label": null,
+          "startedAt": "2026-09-13T02:08:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "gap:night:night:2026-09-13T02:08:00.000Z",
+              "sessionId": "gap",
+              "source": "night",
+              "label": "Night",
+              "amount": 7200,
+              "period": {
+                "startedAt": "2026-09-13T02:08:00.000Z",
+                "endedAt": "2026-09-13T03:54:00.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "night",
+                "providerId": "night",
+                "ruleId": "night",
+                "ruleAnchorAt": "2026-09-13T02:00:00.000Z",
+                "amount": 7200
+              },
+              "pricingExplanation": {
+                "timeZone": "Asia/Shanghai",
+                "units": 4,
+                "pricing": {
+                  "unitPrice": 18,
+                  "unitMinutes": 30,
+                  "roundGraceMinutes": 2,
+                  "priceCap": 100
+                },
+                "paidBefore": 0,
+                "pricingConfigId": "night",
+                "providerId": "night",
+                "ruleId": "night",
+                "ruleLabel": "Night",
+                "period": {
+                  "startedAt": "2026-09-13T02:08:00.000Z",
+                  "endedAt": "2026-09-13T03:54:00.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "10:00",
+                  "end": "03:00"
+                },
+                "intervalCap": 100,
+                "intervalCapReached": false
+              }
+            }
+          ]
+        }
+      ],
+      "adjustments": [],
+      "globalCapWindows": []
+    }
+  },
+  "expected": {
+    "totals": [
+      {
+        "name": "Night",
+        "amount": 72
+      }
+    ],
+    "tracks": [
+      {
+        "id": "gap:night",
+        "name": "Night",
+        "lane": 0,
+        "color": 0,
+        "startedAt": "2026-09-13T02:08:00.000Z",
+        "endedAt": "2026-09-13T03:54:00.000Z",
+        "capped": []
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-09-13T03:54:00.000Z",
+        "time": "11:54",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "gap:night",
+            "periodLabel": "10:08 – 11:54",
+            "rule": "Night",
+            "nextRule": null,
+            "amount": 72,
+            "startedAt": "2026-09-13T02:08:00.000Z",
+            "endedAt": "2026-09-13T03:54:00.000Z",
+            "unitMinutes": 30,
+            "unitPrice": 18,
+            "units": 4,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "Night",
+            "unitFills": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "pending": null
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T02:08:00.000Z",
+        "time": "10:08",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "gap:night",
+            "periodLabel": null,
+            "rule": "Night",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "Night"
+          }
+        ]
+      }
+    ]
+  }
+}

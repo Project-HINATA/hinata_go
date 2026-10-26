@@ -30,6 +30,13 @@ func prismDisplayDay(_ value: String, timeZone: TimeZone = .current) -> String {
   formatter.setLocalizedDateFormatFromTemplate("MMMd")
   return formatter.string(from: date)
 }
+/// The calendar day an instant falls on in the phone's zone, as `yyyy-MM-dd`.
+func prismLocalDay(_ value: String, timeZone: TimeZone = .current) -> String {
+  guard let date = prismParsedDate(value) else { return "" }
+  let formatter = DateFormatter()
+  formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = timeZone; formatter.dateFormat = "yyyy-MM-dd"
+  return formatter.string(from: date)
+}
 func prismDisplayPeriod(_ start: String, _ end: String, timeZone: TimeZone = .current) -> String? {
   guard let startDate = prismParsedDate(start), let endDate = prismParsedDate(end), endDate >= startDate else { return nil }
   let formatter = DateFormatter()
@@ -82,8 +89,12 @@ struct PublicMachine: Decodable {
   let webOnly: Bool?
   let capabilities: [String: Bool]?
   let coinAfterSwipe: Bool?
+  /// A card can be added at this cabinet's reader.
+  var cardCapture: Bool? = nil
   func has(_ capability: String) -> Bool { capabilities == nil ? capability == "card" : capabilities?[capability] == true }
   var empty: Bool { capabilities != nil && !capabilities!.values.contains(true) }
+  /// Nothing to operate here and nothing to confirm: a resource without hardware still bills in a shop that bills.
+  var idle: Bool { empty && shop.billingEnabled != true }
 }
 
 struct Shop: Decodable {
@@ -233,6 +244,49 @@ struct PrismDeviceState: Decodable {
   var climate: PrismClimate? = nil
   /// What the platform knows of the device's Home Assistant state. Absent from an older server.
   var device: PrismDeviceFacts? = nil
+  /// Set while `gate` is `entry` in a shop that bills. Absent from an older server.
+  var billing: PrismResourceBilling? = nil
+}
+
+/// What confirming this resource would do to the player's billing, or why it cannot bill.
+struct PrismResourceBilling: Decodable {
+  var preview: Preview? = nil
+  var error: Failure? = nil
+  /// The plans this resource bills, shown as its pricing rules.
+  var rules: Rules? = nil
+
+  struct Change: Decodable { let planId: String; let planName: String }
+  struct Preview: Decodable {
+    let pricingConfigId: String; let planName: String; let changed: Bool
+    let started: [Change]; let stopped: [Change]; let kept: [Change]
+    /// Sent back with the confirmation: the server refuses one made against a state that has since changed.
+    let revision: String
+  }
+  struct Failure: Decodable { let code: String; let message: String }
+
+  /// The plans a scanned resource bills, as the server resolved them for this player. Each
+  /// plan's day is computed on the phone, as the web page computes it.
+  struct Rules: Decodable {
+    let plans: [Plan]
+    /// Read before confirming: the unsettled bill so far, each plan's cap for the period it
+    /// is in (none for an uncapped period), and the caps across plans. Money in yuan.
+    var caps: Caps? = nil
+    /// The shop's zone; rules are stored in UTC.
+    let timeZone: String
+    struct Plan: Decodable { let config: PrismPricingConfig; let role: String }
+    struct Caps: Decodable { let unsettled: Double; let plans: [CapProgress]; let shared: [SharedCap] }
+    struct CapProgress: Decodable {
+      let pricingConfigId: String; let ruleId: String; let ruleLabel: String
+      let priceCap: Double; let paidBefore: Double
+      /// The window the cap is counting now.
+      let startsAt: String; let endsAt: String
+    }
+    struct SharedCap: Decodable {
+      let pricingConfigId: String; let ruleId: String; let ruleLabel: String
+      let priceCap: Double; let paidBefore: Double; let startsAt: String; let endsAt: String
+      let name: String; let config: PrismPricingConfig
+    }
+  }
 }
 
 /// The device's power and air conditioner as the platform knows them. While `watching`, a
@@ -411,6 +465,18 @@ struct PrismCheckout: Decodable {
   struct Settlement: Decodable { let total: Double }
   struct Item: Decodable, Identifiable { let id: String; let label: String; let amount: Double }
 }
+extension PrismCheckout {
+  /// A bill the phone computed, as the server's preview would have sent it.
+  init(_ view: PrismCheckoutPreviewView) {
+    self.init(timeline: view.timeline, settlementPreview: .init(total: view.settlementPreview.total),
+      chargeItems: view.chargeItems.map { .init(id: $0.id, label: $0.label, amount: $0.amount) },
+      adjustments: view.adjustments.map { .init(id: $0.id, label: $0.label, amount: $0.amount) })
+  }
+}
+struct PrismCardCapture: Decodable { let captureId: String; let expiresAt: String }
+/// `waiting` until the reader reports a card or the window ends (`expired`); `added`, `bound` and
+/// `exists` all leave the card on the account.
+struct PrismCardCaptureResult: Decodable { let status: String; var cardType: String? = nil }
 /// Shared receipt from `player/checkout/confirm` and `player/checkout/latest`.
 struct PrismCheckoutResult: Decodable {
   let timeline: PrismBillTimeline?
@@ -460,24 +526,4 @@ struct PrismMahjong: Decodable {
   let capacity: Int
   let seats: [Seat]
   struct Seat: Decodable { let name: String; let mine: Bool; let playing: Bool }
-}
-
-struct PrismBillTimeline: Decodable {
-  let totals: [Total]
-  struct Total: Decodable { let name: String; let amount: Double }
-  let tracks: [Track]
-  let events: [Event]
-  struct Track: Decodable, Identifiable {
-    let id: String; let name: String; let lane: Int; let color: Int
-    let startedAt: String; let endedAt: String
-  }
-  struct Event: Decodable { let at: String; let time: String; let date: String; let entries: [Entry] }
-  struct Entry: Decodable {
-    let trackId: String?; let kind: String; let name: String
-    let periodLabel: String?
-    let rule: String?; let nextRule: String?; let amount: Double?
-    let startedAt: String?; let endedAt: String?
-    let unitMinutes: Double?; let unitPrice: Double?; let units: Double?
-    let cap: Double?; let paidBefore: Double?
-  }
 }

@@ -137,6 +137,14 @@ struct StoreVisitDisplayModel {
     bill?.previousEventDate(startedAt: startedAt, now: .now)
   }
 
+  /// What the bill calls the last event (开始计费, 切换计费规则, 已封顶…), or a charge.
+  var previousEventTitle: String {
+    guard previousEventDate != nil, let label = bill?.previousEvent?.label, !label.isEmpty else {
+      return String(localized: "上一事件")
+    }
+    return label
+  }
+
   var statusText: String {
     if isStale && phase == .billing { return String(localized: "待更新") }
     switch phase {
@@ -408,7 +416,7 @@ private struct StoreVisitTimelineContent: View {
     VStack(spacing: 0) {
       columns {
         Text("入场")
-        Text("上一事件")
+        Text(model.previousEventTitle)
         Text(model.lastScheduledEvent?.title ?? String(localized: "下一事件"))
           .foregroundStyle(model.isStale ? .gray : model.accent)
       }
@@ -592,8 +600,8 @@ private enum StoreVisitTimelinePreview {
       bill: .init(amountCents: capped ? 10000 : 6000, planLabel: "", asOfUnix: now,
         remainingToCapCents: capped ? 0 : nil, billable: billable,
         nextEvent: .init(atUnix: now + (billable && !capped ? 12 : 48) * 60,
-          label: !billable ? "恢复计费" : capped ? "规则切换" : "下次计费"),
-        previousEvent: includesPrevious ? .init(atUnix: now - 18 * 60) : nil))
+          label: !billable ? "切换计费规则" : capped ? "封顶结束" : "下次计费"),
+        previousEvent: includesPrevious ? .init(atUnix: now - 18 * 60, label: capped ? "已封顶" : "计费") : nil))
   }
 }
 

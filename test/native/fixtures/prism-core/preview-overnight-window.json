@@ -1,0 +1,227 @@
+{
+  "name": "preview-overnight-window",
+  "kind": "preview",
+  "input": {
+    "snapshot": {
+      "version": 1,
+      "capturedAt": "2026-09-14T02:05:00.000Z",
+      "assetDefinitions": [],
+      "currentPricingConfigs": [
+        {
+          "id": "night",
+          "kind": "time.priority",
+          "name": "夜场",
+          "enabled": true,
+          "status": "active",
+          "versionId": "night-v1",
+          "version": 1,
+          "provider": {
+            "id": "night-provider",
+            "rules": [
+              {
+                "id": "night",
+                "label": "夜间",
+                "priority": 1,
+                "timeRange": {
+                  "start": "22:00",
+                  "end": "10:00"
+                },
+                "pricing": {
+                  "unitPrice": 8,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 5,
+                  "priceCap": 30
+                }
+              }
+            ]
+          },
+          "relations": {
+            "requires": [],
+            "conflicts": []
+          },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "pricingReleases": [],
+      "players": [
+        {
+          "playerId": "player-1",
+          "sessions": [
+            {
+              "id": "s-night",
+              "playerId": "player-1",
+              "startedAt": "2026-09-13T21:40:00.000Z",
+              "status": "active",
+              "pricingConfigIds": [
+                "night"
+              ],
+              "pricingConfigId": "night",
+              "paymentStatus": "unpaid",
+              "metadata": {
+                "deviceOperated": false,
+                "hasDeviceActivity": false
+              }
+            }
+          ],
+          "holdings": [],
+          "pastAppliedAdjustments": [],
+          "pricingPaidHistory": {},
+          "capPaidHistory": {}
+        }
+      ]
+    },
+    "playerId": "player-1"
+  },
+  "expected": {
+    "timeline": {
+      "totals": [
+        {
+          "name": "夜场",
+          "amount": 30
+        }
+      ],
+      "tracks": [
+        {
+          "id": "s-night:night",
+          "name": "夜场",
+          "lane": 0,
+          "color": 0,
+          "startedAt": "2026-09-13T21:40:00.000Z",
+          "endedAt": "2026-09-14T02:05:00.000Z",
+          "capped": [
+            {
+              "startedAt": "2026-09-14T01:00:00.000Z",
+              "endedAt": "2026-09-14T02:05:00.000Z"
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "at": "2026-09-14T02:05:00.000Z",
+          "time": "02:05",
+          "date": "2026-09-14",
+          "entries": [
+            {
+              "trackId": "s-night:night",
+              "periodLabel": null,
+              "rule": "夜间",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "current",
+              "name": "夜场",
+              "capped": true
+            }
+          ]
+        },
+        {
+          "at": "2026-09-14T01:00:00.000Z",
+          "time": "01:00",
+          "date": "2026-09-14",
+          "entries": [
+            {
+              "trackId": null,
+              "periodLabel": null,
+              "rule": null,
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "时段封顶（夜场 夜间）",
+              "trackIds": [
+                "s-night:night"
+              ],
+              "until": "2026-09-14T10:00:00.000Z"
+            },
+            {
+              "trackId": "s-night:night",
+              "periodLabel": "09-13 21:40 – 09-14 01:00",
+              "rule": null,
+              "nextRule": null,
+              "amount": 30,
+              "startedAt": "2026-09-13T21:40:00.000Z",
+              "endedAt": "2026-09-14T01:00:00.000Z",
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": 4,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "full",
+              "name": "夜场",
+              "unitFills": [
+                1,
+                1,
+                1,
+                0.75
+              ],
+              "pending": null
+            }
+          ]
+        },
+        {
+          "at": "2026-09-13T21:40:00.000Z",
+          "time": "21:40",
+          "date": "2026-09-13",
+          "entries": [
+            {
+              "trackId": "s-night:night",
+              "periodLabel": null,
+              "rule": "夜间",
+              "nextRule": null,
+              "amount": null,
+              "startedAt": null,
+              "endedAt": null,
+              "unitMinutes": null,
+              "unitPrice": null,
+              "units": null,
+              "cap": null,
+              "paidBefore": null,
+              "counted": null,
+              "kind": "start",
+              "name": "夜场"
+            }
+          ]
+        }
+      ]
+    },
+    "settlementPreview": {
+      "playerId": "player-1",
+      "sessionIds": [
+        "s-night"
+      ],
+      "subtotal": 30,
+      "total": 30,
+      "status": "preview",
+      "previewedAt": "2026-09-14T02:05:00.000Z"
+    },
+    "chargeItems": [
+      {
+        "id": "s-night:night-provider:night:2026-09-13T22:00:00.000Z",
+        "label": "夜间",
+        "amount": 30
+      }
+    ],
+    "adjustments": [],
+    "wallet": {
+      "balanceBefore": 0,
+      "balanceAfter": -30
+    }
+  }
+}

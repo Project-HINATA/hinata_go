@@ -1,0 +1,64 @@
+{
+  "name": "segments-allday-shanghai",
+  "kind": "segments",
+  "input": {
+    "config": {
+      "id": "pool",
+      "versionId": "pool-v1",
+      "version": 1,
+      "kind": "time.priority",
+      "name": "台球",
+      "enabled": true,
+      "status": "active",
+      "provider": {
+        "id": "pool-provider",
+        "rules": [
+          {
+            "id": "all",
+            "label": "全天",
+            "priority": 1,
+            "timeRange": {
+              "start": "16:00",
+              "end": "16:00"
+            },
+            "pricing": {
+              "unitPrice": 10,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 0,
+              "priceCap": 88
+            }
+          }
+        ]
+      },
+      "relations": {
+        "requires": [],
+        "conflicts": []
+      },
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "localDate": "2026-09-13",
+    "displayTimeZone": "Asia/Shanghai"
+  },
+  "expected": [
+    {
+      "ruleId": "all",
+      "label": "全天",
+      "priority": 1,
+      "startMinute": 0,
+      "endMinute": 1440,
+      "startLabel": "00:00",
+      "endLabel": "24:00",
+      "startedAt": "2026-09-12T16:00:00.000Z",
+      "endedAt": "2026-09-13T16:00:00.000Z",
+      "windowStartedAt": "2026-09-12T16:00:00.000Z",
+      "windowEndedAt": "2026-09-13T16:00:00.000Z",
+      "pricing": {
+        "unitPrice": 10,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 88
+      }
+    }
+  ]
+}

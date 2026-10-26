@@ -1,0 +1,131 @@
+{
+  "name": "timeline-fixed-only-new-york-fallback",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-03-08T07:30:00.000Z",
+      "sessions": [
+        {
+          "sessionId": "ticket",
+          "label": "entry",
+          "startedAt": "2026-03-08T06:45:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "ticket:fixed",
+              "source": "fixed",
+              "label": "门票",
+              "amount": 3000
+            }
+          ]
+        }
+      ],
+      "adjustments": [
+        {
+          "id": "ticket:asset-definition:coupon:c:discount",
+          "source": "coupon.c",
+          "label": "优惠券",
+          "amount": -500
+        },
+        {
+          "id": "zero",
+          "source": "x",
+          "label": "零",
+          "amount": 0
+        }
+      ],
+      "globalCapWindows": []
+    },
+    "timeZone": "America/New_York"
+  },
+  "expected": {
+    "totals": [
+      {
+        "name": "入场计费",
+        "amount": 30
+      },
+      {
+        "name": "优惠券",
+        "amount": -5
+      }
+    ],
+    "tracks": [
+      {
+        "id": "ticket:fixed",
+        "name": "入场计费",
+        "lane": 0,
+        "color": 0,
+        "startedAt": "2026-03-08T06:45:00.000Z",
+        "endedAt": "2026-03-08T07:30:00.000Z",
+        "capped": []
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-03-08T07:30:00.000Z",
+        "time": "03:30",
+        "date": "2026-03-08",
+        "entries": [
+          {
+            "trackId": "ticket:fixed",
+            "periodLabel": null,
+            "rule": "门票",
+            "nextRule": null,
+            "amount": 30,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "入场计费"
+          },
+          {
+            "trackId": null,
+            "periodLabel": null,
+            "rule": null,
+            "nextRule": null,
+            "amount": -5,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "adjustment",
+            "name": "优惠券"
+          }
+        ]
+      },
+      {
+        "at": "2026-03-08T06:45:00.000Z",
+        "time": "01:45",
+        "date": "2026-03-08",
+        "entries": [
+          {
+            "trackId": "ticket:fixed",
+            "periodLabel": null,
+            "rule": "门票",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "入场计费"
+          }
+        ]
+      }
+    ]
+  }
+}

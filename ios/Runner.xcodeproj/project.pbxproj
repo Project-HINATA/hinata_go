@@ -7,6 +7,34 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CF44B6BF5A3C93FD3DA91D03 /* Zones.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99693259DCEB734E2AA130AF /* Zones.swift */; };
+		A0985C523F29D541ADD01867 /* Zones.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99693259DCEB734E2AA130AF /* Zones.swift */; };
+		E2711C1D31B337E550A4C597 /* Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEB21CE46EB762237FDF84DB /* Support.swift */; };
+		0175731EC19CB9547BBA8509 /* Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEB21CE46EB762237FDF84DB /* Support.swift */; };
+		BFE9B344CA9D580F62D190AA /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B7753BC5493E20EBFC39F9A /* Snapshot.swift */; };
+		BAF3E4B6C35B65DA540B07CE /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B7753BC5493E20EBFC39F9A /* Snapshot.swift */; };
+		513CA5C32B13CFE7B95532F2 /* Settlement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0721AADB273ABBEBA27D971C /* Settlement.swift */; };
+		52CE25F7252888A5D4721851 /* Settlement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0721AADB273ABBEBA27D971C /* Settlement.swift */; };
+		92E5618380FE6142AC4A53B1 /* PricingTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69BB366901A50885EB43209E /* PricingTime.swift */; };
+		B2608C1005666C3EA036A26F /* PricingTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69BB366901A50885EB43209E /* PricingTime.swift */; };
+		8C4FE0D3FAB57B1689069EA0 /* PricingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E3AB1041F986DF234531D9 /* PricingConfig.swift */; };
+		15E8317C63730255E60823BA /* PricingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E3AB1041F986DF234531D9 /* PricingConfig.swift */; };
+		34806ABB0416AAE957F77D4E /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4629A41260379FA706716AF1 /* Money.swift */; };
+		C2D9428DFB7697C9475504D8 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4629A41260379FA706716AF1 /* Money.swift */; };
+		1B566BE8343BBA279E90A124 /* DaySegments.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDCE8C8E3E2A54DF27DAFB4E /* DaySegments.swift */; };
+		644EAA11759C1D7B07537C7C /* DaySegments.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDCE8C8E3E2A54DF27DAFB4E /* DaySegments.swift */; };
+		D16B161FDBE6B0D1FA389991 /* CheckoutPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD99E71E3E1D8630F1BC9F7 /* CheckoutPreview.swift */; };
+		778A058676E0A10AE9D77410 /* CheckoutPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD99E71E3E1D8630F1BC9F7 /* CheckoutPreview.swift */; };
+		76379253643F0B75FC2BE2B2 /* CheckoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5229558CEB80B816D38EB83 /* CheckoutEngine.swift */; };
+		C9359EFE4D173DF80FB5ED1F /* CheckoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5229558CEB80B816D38EB83 /* CheckoutEngine.swift */; };
+		67AA22F53B86F8E231AF3F2B /* BillTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D27D87A097288780B739B3 /* BillTimeline.swift */; };
+		2DF8CAD9A796FC998AFEFD5C /* BillTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D27D87A097288780B739B3 /* BillTimeline.swift */; };
+		B8C9620F825557B5407FB303 /* Assets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4BEA0C9838D98115315DDA /* Assets.swift */; };
+		050AFAD70E4C7B8208343FBA /* Assets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4BEA0C9838D98115315DDA /* Assets.swift */; };
+		B2C734B2DFE1D8ED5636E6A4 /* BillTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E8701D9AE4F80CEDA38D70 /* BillTimelineView.swift */; };
+		FF2578D3F371B4918E44EE77 /* BillTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E8701D9AE4F80CEDA38D70 /* BillTimelineView.swift */; };
+		7242FC9E0B7339A27F3CE9EC /* ResourcePricingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FD60C866B1FF0D110DE6F1 /* ResourcePricingView.swift */; };
+		B5E00C9262DDD4D9684A927D /* ResourcePricingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FD60C866B1FF0D110DE6F1 /* ResourcePricingView.swift */; };
 		10688FCDEB235C5D7D61F84D /* PRiSM Link.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = FA100BF03C7C425DBFABB85A /* PRiSM Link.app */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
@@ -124,6 +152,20 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		99693259DCEB734E2AA130AF /* Zones.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Zones.swift; sourceTree = "<group>"; };
+		FEB21CE46EB762237FDF84DB /* Support.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support.swift; sourceTree = "<group>"; };
+		0B7753BC5493E20EBFC39F9A /* Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
+		0721AADB273ABBEBA27D971C /* Settlement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settlement.swift; sourceTree = "<group>"; };
+		69BB366901A50885EB43209E /* PricingTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingTime.swift; sourceTree = "<group>"; };
+		F2E3AB1041F986DF234531D9 /* PricingConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingConfig.swift; sourceTree = "<group>"; };
+		4629A41260379FA706716AF1 /* Money.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Money.swift; sourceTree = "<group>"; };
+		FDCE8C8E3E2A54DF27DAFB4E /* DaySegments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaySegments.swift; sourceTree = "<group>"; };
+		3AD99E71E3E1D8630F1BC9F7 /* CheckoutPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutPreview.swift; sourceTree = "<group>"; };
+		C5229558CEB80B816D38EB83 /* CheckoutEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutEngine.swift; sourceTree = "<group>"; };
+		A9D27D87A097288780B739B3 /* BillTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BillTimeline.swift; sourceTree = "<group>"; };
+		9D4BEA0C9838D98115315DDA /* Assets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Assets.swift; sourceTree = "<group>"; };
+		A6E8701D9AE4F80CEDA38D70 /* BillTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BillTimelineView.swift; sourceTree = "<group>"; };
+		13FD60C866B1FF0D110DE6F1 /* ResourcePricingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourcePricingView.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		1CE5A12DC74545CC94497385 /* InvocationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationParser.swift; sourceTree = "<group>"; };
@@ -220,6 +262,25 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		70696FD0B07D5DC340FBEE18 /* PrismCore */ = {
+			isa = PBXGroup;
+			children = (
+				9D4BEA0C9838D98115315DDA /* Assets.swift */,
+				A9D27D87A097288780B739B3 /* BillTimeline.swift */,
+				C5229558CEB80B816D38EB83 /* CheckoutEngine.swift */,
+				3AD99E71E3E1D8630F1BC9F7 /* CheckoutPreview.swift */,
+				FDCE8C8E3E2A54DF27DAFB4E /* DaySegments.swift */,
+				4629A41260379FA706716AF1 /* Money.swift */,
+				F2E3AB1041F986DF234531D9 /* PricingConfig.swift */,
+				69BB366901A50885EB43209E /* PricingTime.swift */,
+				0721AADB273ABBEBA27D971C /* Settlement.swift */,
+				0B7753BC5493E20EBFC39F9A /* Snapshot.swift */,
+				FEB21CE46EB762237FDF84DB /* Support.swift */,
+				99693259DCEB734E2AA130AF /* Zones.swift */,
+			);
+			path = PrismCore;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -231,6 +292,8 @@
 		5E2F2F514F92411DB9A621D6 /* PrismClip */ = {
 			isa = PBXGroup;
 			children = (
+				13FD60C866B1FF0D110DE6F1 /* ResourcePricingView.swift */,
+				A6E8701D9AE4F80CEDA38D70 /* BillTimelineView.swift */,
 				C2C00000000000000000000B /* ../LiveActivityShared/StoreVisitAttributes.swift */,
 				C2C00000000000000000000C /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift */,
 				95064489658D45939E5DA68D /* PrismClipApp.swift */,
@@ -282,6 +345,7 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
+				70696FD0B07D5DC340FBEE18 /* PrismCore */,
 				C3C00000000000000000001 /* HINATALiveActivityExtension */,
 				C3C00000000000000000002 /* PrismClipLiveActivityExtension */,
 				9740EEB11CF90186004384FC /* Flutter */,
@@ -596,6 +660,20 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0985C523F29D541ADD01867 /* Zones.swift in Sources */,
+				0175731EC19CB9547BBA8509 /* Support.swift in Sources */,
+				BAF3E4B6C35B65DA540B07CE /* Snapshot.swift in Sources */,
+				52CE25F7252888A5D4721851 /* Settlement.swift in Sources */,
+				B2608C1005666C3EA036A26F /* PricingTime.swift in Sources */,
+				15E8317C63730255E60823BA /* PricingConfig.swift in Sources */,
+				C2D9428DFB7697C9475504D8 /* Money.swift in Sources */,
+				644EAA11759C1D7B07537C7C /* DaySegments.swift in Sources */,
+				778A058676E0A10AE9D77410 /* CheckoutPreview.swift in Sources */,
+				C9359EFE4D173DF80FB5ED1F /* CheckoutEngine.swift in Sources */,
+				2DF8CAD9A796FC998AFEFD5C /* BillTimeline.swift in Sources */,
+				050AFAD70E4C7B8208343FBA /* Assets.swift in Sources */,
+				FF2578D3F371B4918E44EE77 /* BillTimelineView.swift in Sources */,
+				B5E00C9262DDD4D9684A927D /* ResourcePricingView.swift in Sources */,
 				C1C00000000000000000000B /* ../LiveActivityShared/StoreVisitAttributes.swift in Sources */,
 				C1C00000000000000000000C /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift in Sources */,
 				8DDEA6470F304D2E85B819AD /* PrismClipApp.swift in Sources */,
@@ -615,6 +693,20 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CF44B6BF5A3C93FD3DA91D03 /* Zones.swift in Sources */,
+				E2711C1D31B337E550A4C597 /* Support.swift in Sources */,
+				BFE9B344CA9D580F62D190AA /* Snapshot.swift in Sources */,
+				513CA5C32B13CFE7B95532F2 /* Settlement.swift in Sources */,
+				92E5618380FE6142AC4A53B1 /* PricingTime.swift in Sources */,
+				8C4FE0D3FAB57B1689069EA0 /* PricingConfig.swift in Sources */,
+				34806ABB0416AAE957F77D4E /* Money.swift in Sources */,
+				1B566BE8343BBA279E90A124 /* DaySegments.swift in Sources */,
+				D16B161FDBE6B0D1FA389991 /* CheckoutPreview.swift in Sources */,
+				76379253643F0B75FC2BE2B2 /* CheckoutEngine.swift in Sources */,
+				67AA22F53B86F8E231AF3F2B /* BillTimeline.swift in Sources */,
+				B8C9620F825557B5407FB303 /* Assets.swift in Sources */,
+				B2C734B2DFE1D8ED5636E6A4 /* BillTimelineView.swift in Sources */,
+				7242FC9E0B7339A27F3CE9EC /* ResourcePricingView.swift in Sources */,
 				73B2D78D30849B6300249196 /* ../LiveActivityShared/StoreVisitAttributes.swift in Sources */,
 				73B2D78E30849B6300249196 /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift in Sources */,
 				B1C000000000000000000008 /* InvocationParser.swift in Sources */,

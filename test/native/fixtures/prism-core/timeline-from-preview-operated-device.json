@@ -1,0 +1,139 @@
+{
+  "name": "timeline-from-preview-operated-device",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-09-13T12:03:20.000Z",
+      "sessions": [
+        {
+          "sessionId": "s-op",
+          "label": null,
+          "startedAt": "2026-09-13T12:00:00.000Z",
+          "endedAt": null,
+          "chargeItems": [
+            {
+              "id": "s-op:pool-provider:all-day:2026-09-13T12:00:00.000Z",
+              "sessionId": "s-op",
+              "source": "pool-provider",
+              "label": "全天",
+              "amount": 1200,
+              "period": {
+                "startedAt": "2026-09-13T12:00:00.000Z",
+                "endedAt": "2026-09-13T12:03:20.000Z"
+              },
+              "pricingHistory": {
+                "pricingConfigId": "pool",
+                "providerId": "pool-provider",
+                "ruleId": "all-day",
+                "ruleAnchorAt": "2026-09-13T00:00:00.000Z",
+                "amount": 1200
+              },
+              "pricingExplanation": {
+                "timeZone": "UTC",
+                "units": 1,
+                "planName": "台球",
+                "pricing": {
+                  "unitPrice": 12,
+                  "unitMinutes": 60,
+                  "roundGraceMinutes": 15,
+                  "priceCap": 0
+                },
+                "paidBefore": 0,
+                "pricingConfigId": "pool",
+                "providerId": "pool-provider",
+                "ruleId": "all-day",
+                "ruleLabel": "全天",
+                "period": {
+                  "startedAt": "2026-09-13T12:00:00.000Z",
+                  "endedAt": "2026-09-13T12:03:20.000Z"
+                },
+                "ruleTimeRange": {
+                  "start": "00:00",
+                  "end": "00:00"
+                },
+                "intervalCap": 0,
+                "intervalCapReached": false
+              }
+            }
+          ]
+        }
+      ],
+      "adjustments": [],
+      "globalCapWindows": []
+    },
+    "timeZone": "UTC"
+  },
+  "expected": {
+    "totals": [
+      {
+        "name": "台球",
+        "amount": 12
+      }
+    ],
+    "tracks": [
+      {
+        "id": "s-op:pool",
+        "name": "台球",
+        "lane": 0,
+        "color": 0,
+        "startedAt": "2026-09-13T12:00:00.000Z",
+        "endedAt": "2026-09-13T12:03:20.000Z",
+        "capped": []
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-09-13T12:03:20.000Z",
+        "time": "12:03",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "s-op:pool",
+            "periodLabel": "12:00 – 12:03",
+            "rule": "全天",
+            "nextRule": null,
+            "amount": 12,
+            "startedAt": "2026-09-13T12:00:00.000Z",
+            "endedAt": "2026-09-13T12:03:20.000Z",
+            "unitMinutes": 60,
+            "unitPrice": 12,
+            "units": 1,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "台球",
+            "unitFills": [
+              1
+            ],
+            "pending": null
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T12:00:00.000Z",
+        "time": "12:00",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "s-op:pool",
+            "periodLabel": null,
+            "rule": "全天",
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "台球"
+          }
+        ]
+      }
+    ]
+  }
+}

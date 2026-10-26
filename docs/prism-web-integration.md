@@ -92,7 +92,7 @@ History rows show the start and end date/time on two lines with only the amount 
 
 History groups sessions by checkout and loads 30 receipts at a time from `/player/checkouts/history`. Each row shows settlement time, total and session count; native navigation opens `/player/checkouts/:checkoutId` and reuses the settled bill timeline. Both native and web display the saved post-checkout balance when present. Legacy records show only their saved facts, without missing-data notices or substituting the current wallet balance. Signing out or switching invocation clears history and pagination; stale detail responses are discarded.
 
-App Clip and Flutter render the server's checkout `timeline`: grouped timestamp events, parallel start/stop rails, signed stage amounts and independent cap adjustments. Rail identity survives pricing rule changes; boundary times are entirely engine-driven. Personal timestamps are rendered from absolute event instants in the phone's time zone; store hours and pricing rules remain in the shop's geographic time zone. Totals and the timeline scroll together. App Clip uses a blue prominent Liquid Glass checkout button at the bottom safe area with no extra bottom gap; the scroll content has end padding so the last event remains reachable. Flutter uses its Material filled action. Older responses without timeline metadata retain the simple item list.
+The App Clip (also presented by the main app) computes the open bill on the phone (see “On-device billing” below) and renders settled receipts from the timeline the server persisted at checkout: grouped timestamp events, parallel start/stop rails, signed stage amounts and independent cap adjustments. Rail identity survives pricing rule changes; boundary times are entirely engine-driven. Personal timestamps are rendered from absolute event instants in the phone's time zone; store hours and pricing rules remain in the shop's geographic time zone. Totals and the timeline scroll together. App Clip uses a blue prominent Liquid Glass checkout button at the bottom safe area with no extra bottom gap; the scroll content has end padding so the last event remains reachable. Flutter uses its Material filled action. Older responses without timeline metadata retain the simple item list.
 
 ### Platform ownership
 
@@ -160,3 +160,32 @@ The persistent-cookie regression starts its real loopback HTTP fixture and waits
 ### 余额不足提示
 
 Web 与 Swift（主 App / App Clip 共用 API 层）按 `INSUFFICIENT_BALANCE` 错误码显示本地化提示：中文“余额不足，请充值后重试”，英文“Insufficient balance. Please top up and try again.”。内部诊断文本变化不影响提示；HTTP 状态与错误码保留，余额不足不视为会话失效。结账被拒绝后保留当前账单和计费状态，不自动重发结账；充值后可手动重试，并使用新的操作 ID。
+
+## 2026-10-25 Resource entry, on-device billing and the bill timeline
+
+Swift follows the PRiSM refactor (resources, pricing sessions, joint caps) and the web player pages as they are now.
+
+### On-device billing (`ios/PrismCore`)
+
+The App Clip computes what the web browser computes, and the server stays authoritative only at settlement. `ios/PrismCore` is a Swift port of the client-side part of PRiSM's billing engine: money in cents, shop zones and rule clocks, priority time rules and their day segments, period caps and caps across plans settled jointly unit by unit, asset discount effects, the checkout preview orchestration, and the bill timeline builder. Server-only code (writes, wallet debits, ledgers, locks, session transitions, live-activity alarms) is not ported. `PrismAPI.checkoutPreview` reads `player/billing-inputs` (the read-only `LiveBillingSnapshot`) and runs `PrismCheckoutEngine.preview` off the main actor, exactly as the web's `browserCheckoutPreview` runs the TypeScript engine in a worker; a shop that answers `CLIENT_BILLING_UNAVAILABLE` gets the server's `player/checkout/preview` instead. Settled receipts (`checkout/confirm`, `checkout/latest`, `checkouts/:id`) keep the timeline the server persisted with the settlement: it is the record, and older receipts lack the cap windows needed to rebuild it.
+
+Parity with TypeScript is the acceptance bar. `bun scripts/swift-core-fixtures.ts <dir>` in PRiSM writes synthetic scenarios (previews, timelines, day segments) computed by the real TS engine into `test/native/fixtures/prism-core/`; `sh test/native/run-prism-core-check.sh` runs the Swift engine over them and fails on any difference. Regenerate the fixtures whenever the TS engine changes.
+
+### Scan page
+
+At the entry gate the state carries `billing` (preview of what confirming starts, keeps and ends, with its `revision`; an `error` when the resource cannot bill; the `rules` it bills). With rules, `ClipResourcePricing` shows one card of lanes on a shared 0–24 axis: each plan a strip of its periods computed on the phone (`PrismDaySegments`), dearer periods drawn stronger, a knob for now, tapping a piece to state it; each cap across plans a thin strip filled as far as its current window is used up (`rules.caps`, read from settled history by the server); 已计 at the bottom. The heading is 计费规则, or 暂时无法使用 with the server's message, which disables confirming. The confirmation (确认, or entering with the door) sends `expectedRevision`, so a state changed since the page was read is refused rather than applied. Without rules (older server) the changes list and the shop's entry pricing show as before. A resource without hardware still bills in a shop that bills, so it shows the confirmation; only where nothing can be confirmed or operated does the page say 这里没有可操作的设备. A period cap of 0 means uncapped and is not listed.
+
+A cabinet whose reader can capture cards (`machine.cardCapture`) offers + beside 选择卡片: the page opens a short window (`devices/session/cards/capture`), asks the player to put the card on that cabinet's reader, polls the result, and reloads the cards once one is added.
+
+### Bill timeline
+
+Same design as the web bill: one rail per plan, newest event first; every point ends the stretch below it. A stretch that charged is a card with the plan, its rule, the amount, a block per unit (filled as far as the unit was charged; the unit still inside its grace outlined) and the unit price — no times or durations, the rail says those. A stretch a full cap kept from charging is a dotted rail with no amount; the cap filling is a blue mark on the rails it holds and a line “X已满 · 封顶到 HH:MM”; 封顶结束 heads the point where charging resumes. Under the total, a legend (solid 计费, dotted 封顶中) where anything was capped, else the plans' shares as one bar when there are two or more. The date is written only on a day's first event. Plan colours are the web palette (`prismPlanColor`). Cards (bill stretches, the pricing card, the balance row, hints, occupied mahjong seats) use `secondarySystemGroupedBackground` on the grouped page background, as the shop card does: the web's translucent ink tint disappears on iOS's pure-black dark page, while the semantic colour matches the web panel (#1C1C1E) in dark and gives white cards in light.
+
+### Live Activity
+
+The activity's events are the bill's events (see `live-activity-timeline.md`); the middle column names the previous one.
+
+### Screenshots against a local server
+
+`test/native/scan-preview` normally runs on fixtures. Given `TEST_RUNNER_PRISM_API_ORIGIN` (a loopback origin), `TEST_RUNNER_PRISM_PREVIEW_SESSION` (a signed-in session token, set as the `arcadelink_session` cookie), `TEST_RUNNER_PRISM_PREVIEW_LINK` (the shop or scanned link to open), and optionally `TEST_RUNNER_PRISM_PREVIEW_WAIT_FOR`, `TEST_RUNNER_PRISM_PREVIEW_SCREENS` and `TEST_RUNNER_PRISM_PREVIEW_NAME`, `ScanScreenshots/testLivePages` opens that link against the server and attaches one screenshot per screen while scrolling. Tokens are passed at run time only and never committed. After adding sources to the App Clip, add them to `project.yml` too and run `xcodegen generate`.
+

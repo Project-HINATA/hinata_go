@@ -1,0 +1,118 @@
+{
+  "name": "segments-new-york-shop-clock-on-dst-day",
+  "kind": "segments",
+  "input": {
+    "config": {
+      "id": "pool",
+      "versionId": "pool-v1",
+      "version": 1,
+      "kind": "time.priority",
+      "name": "Pool",
+      "enabled": true,
+      "status": "active",
+      "provider": {
+        "id": "pool-provider",
+        "rules": [
+          {
+            "id": "late",
+            "label": "Late",
+            "priority": 2,
+            "timeRange": {
+              "start": "05:00",
+              "end": "07:00"
+            },
+            "pricing": {
+              "unitPrice": 7,
+              "unitMinutes": 30,
+              "roundGraceMinutes": 0,
+              "priceCap": 0
+            }
+          },
+          {
+            "id": "base",
+            "label": "All day",
+            "priority": 1,
+            "timeRange": {
+              "start": "00:00",
+              "end": "00:00"
+            },
+            "pricing": {
+              "unitPrice": 5,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 0,
+              "priceCap": 0
+            }
+          }
+        ],
+        "timeZone": "America/New_York"
+      },
+      "relations": {
+        "requires": [],
+        "conflicts": []
+      },
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "localDate": "2026-03-08",
+    "displayTimeZone": "America/New_York"
+  },
+  "expected": [
+    {
+      "ruleId": "base",
+      "label": "All day",
+      "priority": 1,
+      "startMinute": 0,
+      "endMinute": 300,
+      "startLabel": "00:00",
+      "endLabel": "05:00",
+      "startedAt": "2026-03-08T05:00:00.000Z",
+      "endedAt": "2026-03-08T09:00:00.000Z",
+      "windowStartedAt": "2026-03-08T05:00:00.000Z",
+      "windowEndedAt": "2026-03-09T05:00:00.000Z",
+      "pricing": {
+        "unitPrice": 5,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    },
+    {
+      "ruleId": "late",
+      "label": "Late",
+      "priority": 2,
+      "startMinute": 300,
+      "endMinute": 420,
+      "startLabel": "05:00",
+      "endLabel": "07:00",
+      "startedAt": "2026-03-08T09:00:00.000Z",
+      "endedAt": "2026-03-08T11:00:00.000Z",
+      "windowStartedAt": "2026-03-08T09:00:00.000Z",
+      "windowEndedAt": "2026-03-08T11:00:00.000Z",
+      "pricing": {
+        "unitPrice": 7,
+        "unitMinutes": 30,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    },
+    {
+      "ruleId": "base",
+      "label": "All day",
+      "priority": 1,
+      "startMinute": 420,
+      "endMinute": 1440,
+      "startLabel": "07:00",
+      "endLabel": "24:00",
+      "startedAt": "2026-03-08T11:00:00.000Z",
+      "endedAt": "2026-03-09T04:00:00.000Z",
+      "windowStartedAt": "2026-03-08T05:00:00.000Z",
+      "windowEndedAt": "2026-03-09T05:00:00.000Z",
+      "pricing": {
+        "unitPrice": 5,
+        "unitMinutes": 60,
+        "roundGraceMinutes": 0,
+        "priceCap": 0
+      }
+    }
+  ]
+}

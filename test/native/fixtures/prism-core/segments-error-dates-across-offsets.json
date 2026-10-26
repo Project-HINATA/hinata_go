@@ -1,0 +1,52 @@
+{
+  "name": "segments-error-dates-across-offsets",
+  "kind": "segments",
+  "input": {
+    "config": {
+      "id": "pool",
+      "versionId": "pool-v1",
+      "version": 1,
+      "kind": "time.priority",
+      "name": "Pool",
+      "enabled": true,
+      "status": "active",
+      "provider": {
+        "id": "pool-provider",
+        "rules": [
+          {
+            "id": "special",
+            "label": "Special",
+            "priority": 1,
+            "timeRange": {
+              "start": "15:00",
+              "end": "18:00"
+            },
+            "pricing": {
+              "unitPrice": 9,
+              "unitMinutes": 60,
+              "roundGraceMinutes": 0,
+              "priceCap": 0
+            },
+            "specificDates": [
+              "2026-03-07",
+              "2026-03-09"
+            ]
+          }
+        ]
+      },
+      "relations": {
+        "requires": [],
+        "conflicts": []
+      },
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "localDate": "2026-03-07",
+    "displayTimeZone": "America/New_York"
+  },
+  "expected": [],
+  "expectedError": {
+    "code": "PRICING_DATES_REQUIRE_SEPARATE_UTC_RULES",
+    "message": "Dates with different UTC offsets require separate pricing rules."
+  }
+}

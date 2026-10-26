@@ -1,0 +1,85 @@
+{
+  "name": "timeline-entry-marker",
+  "kind": "timeline",
+  "input": {
+    "billInputs": {
+      "at": "2026-09-13T12:00:00.000Z",
+      "sessions": [
+        {
+          "sessionId": "visit",
+          "label": "entry",
+          "startedAt": "2026-09-13T11:00:00.000Z",
+          "endedAt": null,
+          "chargeItems": []
+        }
+      ],
+      "adjustments": [],
+      "globalCapWindows": []
+    }
+  },
+  "expected": {
+    "totals": [],
+    "tracks": [
+      {
+        "id": "visit:visit",
+        "name": "入场计费",
+        "lane": 0,
+        "color": 0,
+        "startedAt": "2026-09-13T11:00:00.000Z",
+        "endedAt": "2026-09-13T12:00:00.000Z",
+        "capped": []
+      }
+    ],
+    "events": [
+      {
+        "at": "2026-09-13T12:00:00.000Z",
+        "time": "12:00",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "visit:visit",
+            "periodLabel": null,
+            "rule": null,
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "current",
+            "name": "入场计费",
+            "capped": false
+          }
+        ]
+      },
+      {
+        "at": "2026-09-13T11:00:00.000Z",
+        "time": "11:00",
+        "date": "2026-09-13",
+        "entries": [
+          {
+            "trackId": "visit:visit",
+            "periodLabel": null,
+            "rule": null,
+            "nextRule": null,
+            "amount": null,
+            "startedAt": null,
+            "endedAt": null,
+            "unitMinutes": null,
+            "unitPrice": null,
+            "units": null,
+            "cap": null,
+            "paidBefore": null,
+            "counted": null,
+            "kind": "start",
+            "name": "入场计费"
+          }
+        ]
+      }
+    ]
+  }
+}
