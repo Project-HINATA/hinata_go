@@ -4885,6 +4885,23 @@
           }
         }
       }
+    },
+    "单次收取" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flat fee"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单次收取"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

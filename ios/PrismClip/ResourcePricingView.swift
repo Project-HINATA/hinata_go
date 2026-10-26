@@ -69,6 +69,7 @@ struct ClipResourcePricing: View {
       ForEach(Array(rules.plans.enumerated()), id: \.offset) { index, plan in
         ClipPlanLane(
           name: plan.config.name,
+          fixedAmount: plan.config.kind == "charge.fixed" ? plan.config.provider.amount ?? 0 : nil,
           tag: tag(plan.config.id),
           color: prismPlanColor(index),
           segments: index < segments.count ? segments[index] : [],
@@ -166,6 +167,8 @@ private func prismPriceText(_ s: PrismDaySegment) -> String {
 /// One plan: name and price, its day with dearer periods drawn stronger, and the stated period in a line.
 private struct ClipPlanLane: View {
   let name: String
+  /// A fixed charge has no day to draw: it is billed once for the visit.
+  var fixedAmount: Double? = nil
   let tag: LocalizedStringKey?
   let color: Color
   let segments: [PrismDaySegment]
@@ -183,7 +186,7 @@ private struct ClipPlanLane: View {
     }
     let top = segments.map(rate).max() ?? 0
     VStack(alignment: .leading, spacing: 8) {
-      ClipLaneHeader(value: first.map(prismPriceText) ?? "") {
+      ClipLaneHeader(value: fixedAmount.map(prismMoney) ?? first.map(prismPriceText) ?? "") {
         Circle().fill(color).frame(width: 10, height: 10).accessibilityHidden(true)
         Text(name).fontWeight(.semibold).lineLimit(1)
         if let tag {
@@ -192,6 +195,9 @@ private struct ClipPlanLane: View {
             .background(Color.primary.opacity(0.06), in: Capsule())
         }
       }
+      if fixedAmount != nil {
+        Text("单次收取").font(.caption).foregroundStyle(.secondary)
+      } else {
       ClipDayStrip(segments: segments, rows: rows, nowMinute: nowMinute, height: 10, accent: color,
                    picked: tapped ? row : nil, pick: { pick($0, rows: rows, tapped: tapped ? row : nil) }) { s in
         s.isClosed == true ? AnyShapeStyle(Color.primary.opacity(0.1))
@@ -207,6 +213,7 @@ private struct ClipPlanLane: View {
         }()
         Text((first.isClosed == true ? String(localized: "不计费") : first.label) + " " + row.startLabel + "–" + row.endLabel + capLine)
           .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+      }
       }
     }
   }
