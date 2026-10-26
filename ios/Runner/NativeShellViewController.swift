@@ -1926,21 +1926,18 @@ final class NativeTopBarChipStrip: UIView {
   func update(chips: [NativeTopBarChip], animated: Bool) {
     guard chips != self.chips else { return }
     let sameChips = chips.map(\.title) == self.chips.map(\.title)
-    let previous = self.chips
     self.chips = chips
     if sameChips {
-      // A glass chip turned prominent after it was made draws its title the
-      // plain way and leaves the glass's copy of it out of step: each time
-      // the strip slides in, that copy trails the title as a ghost. A chip
-      // whose selection changed is made anew instead of restyled.
-      for index in chips.indices where chips[index] != previous[index] {
-        let old = buttons[index]
-        let button = makeButton(index: index, chip: chips[index])
-        stack.insertArrangedSubview(button, at: index)
-        old.removeFromSuperview()
-        buttons[index] = button
+      let restyle = {
+        for (button, chip) in zip(self.buttons, chips) {
+          self.style(button, as: chip)
+        }
       }
-      layoutIfNeeded()
+      if animated {
+        UIView.animate(withDuration: 0.2, animations: restyle)
+      } else {
+        restyle()
+      }
     } else {
       rebuild()
     }
@@ -2012,8 +2009,23 @@ final class NativeTopBarChipStrip: UIView {
   /// Brings a strip that is already shown in with its tab.
   func playEntrance(shift: CGPoint) {
     guard shown else { return }
+    settleChipTitles()
     isHidden = false
     animate(toAlpha: targetAlpha, translation: .zero, from: (0, shift), .enter(shift: shift))
+  }
+
+  /// A glass chip that has been pressed cross-fades its title whenever UIKit
+  /// next updates its look, which it does as the tab comes back on screen.
+  /// Run while the strip slides in, the fade drew the old title offset from
+  /// the new one, a ghost on every entrance. The chips take that update here,
+  /// before the strip moves, without the fade.
+  private func settleChipTitles() {
+    UIView.performWithoutAnimation {
+      for button in buttons {
+        button.updateConfiguration()
+        button.layoutIfNeeded()
+      }
+    }
   }
 
   private func appear(_ transition: Transition) {
@@ -2138,29 +2150,24 @@ final class NativeTopBarChipStrip: UIView {
   private func rebuild() {
     buttons.forEach { $0.removeFromSuperview() }
     buttons = chips.enumerated().map { index, chip in
-      let button = makeButton(index: index, chip: chip)
+      let button = UIButton(type: .system)
+      button.tag = index
+      // Each chip keeps its own title's width; the stack must not even them
+      // out.
+      button.setContentHuggingPriority(.required, for: .horizontal)
+      button.setContentCompressionResistancePriority(.required, for: .horizontal)
+      style(button, as: chip)
+      button.addAction(
+        UIAction { [weak self] _ in self?.onTap?(index) },
+        for: .primaryActionTriggered
+      )
+      button.addGestureRecognizer(
+        UILongPressGestureRecognizer(target: self, action: #selector(longPressed(_:)))
+      )
       stack.addArrangedSubview(button)
       return button
     }
     layoutIfNeeded()
-  }
-
-  private func makeButton(index: Int, chip: NativeTopBarChip) -> UIButton {
-    let button = UIButton(type: .system)
-    button.tag = index
-    // Each chip keeps its own title's width; the stack must not even them
-    // out.
-    button.setContentHuggingPriority(.required, for: .horizontal)
-    button.setContentCompressionResistancePriority(.required, for: .horizontal)
-    style(button, as: chip)
-    button.addAction(
-      UIAction { [weak self] _ in self?.onTap?(index) },
-      for: .primaryActionTriggered
-    )
-    button.addGestureRecognizer(
-      UILongPressGestureRecognizer(target: self, action: #selector(longPressed(_:)))
-    )
-    return button
   }
 
   private func style(_ button: UIButton, as chip: NativeTopBarChip) {
