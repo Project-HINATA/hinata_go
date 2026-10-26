@@ -2,18 +2,6 @@ import SwiftUI
 
 private typealias Timeline = PrismBillTimeline
 
-/// A card's fill. Pages are grouped, so their cards are grouped cards; a sheet keeps the system
-/// background (glass, or white at full height), where only a translucent fill reads as a card.
-private struct PrismCardFillKey: EnvironmentKey {
-  static let defaultValue = Color(.secondarySystemGroupedBackground)
-}
-extension EnvironmentValues {
-  var prismCardFill: Color {
-    get { self[PrismCardFillKey.self] }
-    set { self[PrismCardFillKey.self] = newValue }
-  }
-}
-
 private func instant(_ value: String) -> TimeInterval { prismParsedDate(value)?.timeIntervalSince1970 ?? 0 }
 
 private func cappedAt(_ track: Timeline.Track, _ at: TimeInterval) -> Bool {
@@ -204,7 +192,6 @@ private struct ClipPlanDot: View {
 private struct ClipBillEntry: View {
   let entry: Timeline.Entry
   let color: Color?
-  @Environment(\.prismCardFill) private var cardFill
 
   var body: some View {
     if entry.kind == "start" {
@@ -259,7 +246,7 @@ private struct ClipBillEntry: View {
       }
       .padding(.horizontal, 14).padding(.vertical, 12)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(cardFill, in: RoundedRectangle(cornerRadius: 14))
+      .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
       .padding(.bottom, 6)
     }
   }

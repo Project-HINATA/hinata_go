@@ -31,7 +31,11 @@ struct MachineLoginView: View {
     // A problem raised inside the sheet was shown there; it must not pop up once the sheet is gone.
     .sheet(isPresented: Binding(get: { section != nil }, set: { if !$0 { section = nil; model.dismissNotice(retrying: false) } })) {
       if let section {
-        if #available(iOS 16.0, *) { ClipAccountSheet(section: section).environmentObject(model).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) }
+        if #available(iOS 16.0, *) {
+          ClipAccountSheet(section: section).environmentObject(model)
+            .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+            .presentationBackground(Color(.systemGroupedBackground))
+        }
         else { ClipAccountSheet(section: section).environmentObject(model) }
       }
     }
@@ -1258,7 +1262,6 @@ private struct ClipAccountSheet: View {
   }
   private var content: some View {
     ClipAccountContent(section: section)
-      .environment(\.prismCardFill, Color(.tertiarySystemFill))
       .overlay { if model.checkoutCelebrating { ClipCheckoutSuccess() } }
       .interactiveDismissDisabled(model.deviceBusy || model.checkoutCelebrating)
       .navigationTitle(title)
@@ -1346,7 +1349,6 @@ private struct ClipAccountContent: View {
 private struct ClipBillContent: View {
   let preview: PrismCheckout
   var balanceAfter: Double? = nil
-  @Environment(\.prismCardFill) private var cardFill
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
       ClipBillTotal(total: preview.settlementPreview.total, timeline: preview.timeline)
@@ -1354,7 +1356,7 @@ private struct ClipBillContent: View {
       if let balanceAfter {
         PrismLabeledRow(String(localized: "结账后余额"), value: balanceAfter.formatted(.number.precision(.fractionLength(2))))
           .font(.subheadline).padding(.horizontal, 16)
-          .background(cardFill, in: RoundedRectangle(cornerRadius: 16))
+          .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
       }
       if let timeline = preview.timeline { ClipBillTimeline(timeline: timeline) }
       else {
