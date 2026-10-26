@@ -68,24 +68,20 @@
         "entries": [
           {
             "trackId": "ticket:fixed",
-            "periodLabel": "01:45 – 03:30",
-            "rule": null,
+            "periodLabel": null,
+            "rule": "门票",
             "nextRule": null,
             "amount": 30,
-            "startedAt": "2026-03-08T06:45:00.000Z",
-            "endedAt": "2026-03-08T07:30:00.000Z",
+            "startedAt": null,
+            "endedAt": null,
             "unitMinutes": null,
             "unitPrice": null,
-            "units": 1,
+            "units": null,
             "cap": null,
             "paidBefore": null,
             "counted": null,
             "kind": "current",
-            "name": "入场计费",
-            "unitFills": [
-              1
-            ],
-            "pending": null
+            "name": "入场计费"
           },
           {
             "trackId": null,
@@ -114,7 +110,7 @@
           {
             "trackId": "ticket:fixed",
             "periodLabel": null,
-            "rule": null,
+            "rule": "门票",
             "nextRule": null,
             "amount": null,
             "startedAt": null,

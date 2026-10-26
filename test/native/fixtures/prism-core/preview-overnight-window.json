@@ -183,7 +183,7 @@
             {
               "trackId": "s-night:night",
               "periodLabel": null,
-              "rule": null,
+              "rule": "夜间",
               "nextRule": null,
               "amount": null,
               "startedAt": null,

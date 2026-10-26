@@ -116,24 +116,20 @@
         "entries": [
           {
             "trackId": "s-ticket:ticket-provider",
-            "periodLabel": "13:00 – 15:00",
-            "rule": null,
+            "periodLabel": null,
+            "rule": "入场门票",
             "nextRule": null,
             "amount": 25.5,
-            "startedAt": "2026-09-13T13:00:00.000Z",
-            "endedAt": "2026-09-13T15:00:00.000Z",
+            "startedAt": null,
+            "endedAt": null,
             "unitMinutes": null,
             "unitPrice": null,
-            "units": 1,
+            "units": null,
             "cap": null,
             "paidBefore": null,
             "counted": null,
             "kind": "current",
-            "name": "入场计费",
-            "unitFills": [
-              1
-            ],
-            "pending": null
+            "name": "入场计费"
           },
           {
             "trackId": "s-pool:pool",
@@ -191,7 +187,7 @@
           {
             "trackId": "s-ticket:ticket-provider",
             "periodLabel": null,
-            "rule": null,
+            "rule": "入场门票",
             "nextRule": null,
             "amount": null,
             "startedAt": null,

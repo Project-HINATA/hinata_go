@@ -382,14 +382,9 @@ private struct PrismBillTimelineBuilder {
       }
     }
     func trackOf(_ item: Int) -> Int { tracks.firstIndex { $0.items.contains(item) }! }
-    // A charge without units (a fixed charge, one with no period) counts whole at its track's end.
-    for track in tracks {
-      for index in track.items where !unitsOf.has(index) && items[index].amount != 0 {
-        let amount = items[index].amount
-        unitsOf[index] = [PrismPricingTime.CapUnit(item: index, index: 0, at: max(track.from, track.to - 1), nominal: amount,
-                                                   price: amount, charged: amount, heldBy: nil)]
-      }
-    }
+    // A charge with no period (a fixed charge, a charge saved before periods were) is not
+    // laid along the track: it is a line of its own where the track ends.
+    func timeless(_ track: Track) -> [Int] { track.items.filter { items[$0].period == nil } }
 
     // Caps filling: a cap across plans at the first unit it stopped, over every track it holds;
     // a period cap at the first unit it stopped, over its own track until its rule's window ends.
@@ -484,14 +479,23 @@ private struct PrismBillTimelineBuilder {
       for unit in units { sum = try PrismMoney.add(sum, unit.charged) }
       totals[name] = sum
     }
+    for track in tracks {
+      for index in timeless(track) { totals[track.name] = try PrismMoney.add(totals[track.name] ?? 0, items[index].amount) }
+    }
     let order: [Role] = [.current, .end, .switch, .split, .full, .over]
     for (t, track) in tracks.enumerated() {
       let points = pointsOf(t)
       for (position, point) in points.enumerated() {
         let here = roles[t][point]!
         if position == 0 {
-          try add(point, Row(trackId: track.id, kind: "start", name: track.name, rule: ruleAt(track, point).map { items[$0].label }))
+          try add(point, Row(trackId: track.id, kind: "start", name: track.name, rule: (ruleAt(track, point) ?? track.items.first).map { items[$0].label }))
           continue
+        }
+        let lines = point == track.to ? timeless(track) : []
+        func listLines() throws {
+          for index in lines {
+            try add(point, Row(trackId: track.id, kind: track.live ? "current" : "end", name: track.name, rule: items[index].label, amount: items[index].amount))
+          }
         }
         let from = points[position - 1]
         let kind = order.first { here.contains($0) }?.rawValue ?? ""
@@ -502,8 +506,11 @@ private struct PrismBillTimelineBuilder {
         let priced = rule?.period.map { $0.startedAtMs < point && $0.endedAtMs > from } ?? false
         let cappedHere = isCapped(track, (from + point) / 2)
         if units.isEmpty && (cappedHere || !priced) {
-          // A capped stretch, or one with no rule charging, states only where its rule changes, ends or is now.
+          // A capped stretch, or one with no rule charging, states only where its rule changes, ends or is now;
+          // where the track ends with charges of no period, those say it.
+          if !lines.isEmpty && rule == nil { try listLines(); continue }
           try add(point, Row(trackId: track.id, kind: kind, name: track.name, rule: rule?.label, nextRule: next, capped: cappedHere))
+          try listLines()
           continue
         }
         var amount = 0
@@ -523,6 +530,7 @@ private struct PrismBillTimelineBuilder {
           unitMinutes: pricing?.unitMinutes, unitPrice: pricing?.unitPrice, units: Double(units.count),
           unitFills: units.map { $0.nominal > 0 ? min(1, Double($0.charged) / Double($0.nominal)) : 1 },
           pending: pending))
+        try listLines()
       }
     }
     // Adjustments other than caps across plans (offers, price overrides) stay lines of their own.
