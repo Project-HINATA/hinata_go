@@ -118,14 +118,53 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           MANUAL_CHANNEL: ${{ inputs.channel }}
+          PUSH_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "value=${MANUAL_CHANNEL:-beta}" >> "$GITHUB_OUTPUT"
+            # Keep the explicit destination override for manually started builds.
+            case "${MANUAL_CHANNEL:-beta}" in
+              beta|production) channel="${MANUAL_CHANNEL:-beta}" ;;
+              *) echo "Unsupported iOS channel: $MANUAL_CHANNEL" >&2; exit 1 ;;
+            esac
           else
-            # Pushes are TestFlight-only; App Store review is an explicit dispatch.
-            echo "value=beta" >> "$GITHUB_OUTPUT"
+            # Compare against the last stable tag reachable BEFORE this push.
+            # Android may create the new version tag while this workflow runs,
+            # so looking at HEAD (or the live release list) would race it.
+            if [[ ! "$PUSH_BEFORE" =~ ^[0-9a-f]{40}$ || "$PUSH_BEFORE" == "0000000000000000000000000000000000000000" ]]; then
+              echo "Missing previous push commit" >&2
+              exit 1
+            fi
+            git cat-file -e "$PUSH_BEFORE^{commit}"
+            version="$(sed -n 's/^version: \\([^+]*\\).*/\\1/p' pubspec.yaml | head -1)"
+            if [[ ! "$version" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; then
+              echo "Unsupported iOS version: $version" >&2
+              exit 1
+            fi
+            stable_tag="$(git describe --first-parent --tags --abbrev=0 --match 'v[0-9]*' "$PUSH_BEFORE" 2>/dev/null || true)"
+            if [[ -z "$stable_tag" ]]; then
+              # First release, before any stable version has been tagged.
+              channel=production
+            elif [[ ! "$stable_tag" =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; then
+              echo "Unsupported stable tag: $stable_tag" >&2
+              exit 1
+            else
+              IFS=. read -r major minor patch <<< "$version"
+              IFS=. read -r old_major old_minor old_patch <<< "${stable_tag#v}"
+              if (( 10#$major > 10#$old_major ||
+                    (10#$major == 10#$old_major && 10#$minor > 10#$old_minor) ||
+                    (10#$major == 10#$old_major && 10#$minor == 10#$old_minor && 10#$patch > 10#$old_patch) )); then
+                channel=production
+              elif (( 10#$major == 10#$old_major && 10#$minor == 10#$old_minor && 10#$patch == 10#$old_patch )); then
+                channel=beta
+              else
+                echo "Project version $version is older than $stable_tag" >&2
+                exit 1
+              fi
+            fi
+            echo "iOS $channel: project $version, previous stable tag ${stable_tag:-none}"
           fi
+          echo "value=$channel" >> "$GITHUB_OUTPUT"
 
       - name: Flutter Pub Get
         run: flutter pub get
