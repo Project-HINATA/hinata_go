@@ -6,6 +6,13 @@ permissions:
 env:
   DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
 jobs:
+  ios-version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check iOS beta and production versioning
+        run: ruby .github/scripts/test_ios_version.rb
   swift:
     runs-on: xcode-27
     timeout-minutes: 20
