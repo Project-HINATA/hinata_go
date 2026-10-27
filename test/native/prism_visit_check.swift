@@ -661,7 +661,8 @@ enum PersistentCookieCheck {
     billing = false; member = false
     await freshShop.refreshVisit()
     precondition(freshShop.playerStateLoaded && freshShop.checkoutPreview == nil)
-    precondition(freshShop.shopBillingState == "本店未启用计费")
+    // No shop-wide billing switch: a player with nothing running is simply not checked in.
+    precondition(freshShop.shopBillingState == "未入场")
     billing = true; member = true
 
     // Signing out on a shop page keeps the shop card: the shop is public data, and the

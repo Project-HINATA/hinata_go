@@ -132,8 +132,6 @@ final class MachineLoginViewModel: ObservableObject {
     guard isShopOnly else { return "" }
     if summary?.activeSession != nil { return String(localized: "计费中") }
     if settlement != nil { return String(localized: "结账成功") }
-    // A shop that does not bill has no session to wait for, so it is answered straight away.
-    if visit?.shop.billingEnabled != true { return String(localized: "本店未启用计费") }
     // "未入场" is only claimed once the player's own state has been read; reporting an unread
     // state as "未入场" is what flashed the wrong subtitle before the bill arrived.
     if state == .unauthenticated { return "" }

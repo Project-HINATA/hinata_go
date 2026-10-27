@@ -581,7 +581,8 @@ private extension View {
 
 /// What replaces the device controls on a shop link. Admission is not offered here: entry
 /// proves physical presence, and only a scanned machine ticket does that, so a player who has
-/// not checked in is pointed at the machine QR instead.
+/// not checked in is pointed at the machine QR instead. A shop no longer has a billing switch
+/// (each resource group bills or not), so the pointer shows whenever no bill is running.
 private struct ClipShopControls: View {
   @EnvironmentObject private var model: MachineLoginViewModel
 
@@ -598,8 +599,8 @@ private struct ClipShopControls: View {
           }.clipActionStyle()
         } else if !model.playerStateLoaded {
           ProgressView().frame(maxWidth: .infinity).accessibilityLabel("正在加载")
-        } else if shop.shop.billingEnabled {
-          Text("请碰一下 NFC 或扫描机台上的二维码入场")
+        } else {
+          Text("请碰一下 NFC 或扫描机台上的二维码")
             .font(.subheadline).foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
