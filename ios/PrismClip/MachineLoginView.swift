@@ -466,9 +466,11 @@ struct ClipShopHero: View {
       .padding(.horizontal, 24).padding(.vertical, 22)
       .frame(maxWidth: .infinity, alignment: .leading)
       .background {
-        if let image {
+        // The cover's own colours, blurred, under the name: drawn from `cover` so a cover shown
+        // from the decoded cache gets its colours at once too, not after the reload task runs.
+        if let cover {
           GeometryReader { geometry in
-            Image(uiImage: image).resizable().scaledToFill()
+            Image(uiImage: cover).resizable().scaledToFill()
               .frame(width: geometry.size.width + 128, height: geometry.size.height + 128)
               .clipped()
               .blur(radius: 64)
@@ -484,7 +486,10 @@ struct ClipShopHero: View {
     // cover's fixed frame set the width while the bill was absent, and the wider bill changed
     // it on arrival — which resized the cover exactly as the bill appeared.
     .frame(width: width)
-    .background(prismCardFill)
+    // Opaque, unlike every other card's translucent `prismCardFill`: the blurred cover under the
+    // name is a faint 22% wash, which shows on a solid card but vanished into the page through a
+    // translucent one.
+    .background(Color(.secondarySystemGroupedBackground))
     .clipShape(RoundedRectangle(cornerRadius: 32))
     .overlay {
       RoundedRectangle(cornerRadius: 32).strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
