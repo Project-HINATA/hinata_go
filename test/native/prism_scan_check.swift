@@ -61,9 +61,10 @@ final class ScanCounts {
         if stateLimited { return (429, ["error": ["code": "RATE_LIMITED", "message": "稍后重试"], "headers": ["Retry-After": "60"]]) }
         let query = request.url!.query!
         precondition(query.contains("includePower=0") && query.contains("includeClimate=0"))
+        // The device is not live, so the first read says nothing of its power: no key, not null.
         return ok(["gate": "ready", "power": "unmanaged", "mahjong": ["capacity": 4, "seats": []], "climate": NSNull(),
-                   "device": ["watching": false, "power": NSNull(), "climate": NSNull()]])
-      // An unwatched device's state is asked for once; Home Assistant can be slow, so cards must not wait for it.
+                   "device": ["watching": false]])
+      // With no hub channel the page reads the state once after a moment; Home Assistant can be slow, so cards must not wait for it.
       case "/api/v1/devices/session/device": return ok(["watching": false, "power": "on", "climate": NSNull()])
       // A server without live state: the page keeps polling.
       case "/api/v1/devices/session/ws": return (404, ["error": ["code": "NOT_FOUND", "message": "Not found"]])
@@ -128,7 +129,7 @@ final class ScanCounts {
     precondition(counts.read("/api/v1/devices/session/power") == 0, "The old power polling endpoint is no longer used")
     let powerReply = FixtureProtocol.heldPowerReply!; FixtureProtocol.heldPowerReply = nil; powerReply()
     try await waitUntil { model.deviceState?.power == "on" && !model.checkingPower }
-    // Once asked, the state is not polled: a device with nothing pushing is not kept live.
+    // Once asked, the state is not polled: the page is not kept live by reading.
     try await Task.sleep(nanoseconds: 3_500_000_000)
     precondition(counts.read("/api/v1/devices/session/device") == 1, "The power is asked for once")
     await model.setSceneActive(false)

@@ -242,8 +242,8 @@ struct PrismDeviceState: Decodable {
   var coinUsed: Bool? = nil
   var mahjong: PrismMahjong? = nil
   var climate: PrismClimate? = nil
-  /// What the platform knows of the device's Home Assistant state. Absent from an older server.
-  var device: PrismDeviceFacts? = nil
+  /// The device's power and air conditioner as far as this read knows them. Absent from an older server.
+  var device: PrismDeviceView? = nil
   /// Set while `gate` is `entry` in a shop that bills. Absent from an older server.
   var billing: PrismResourceBilling? = nil
 }
@@ -289,20 +289,41 @@ struct PrismResourceBilling: Decodable {
   }
 }
 
-/// The device's power and air conditioner as the platform knows them. While `watching`, a
-/// HINATA IO in the shop reports every change, so the values are current and pushed; otherwise
-/// nothing is known and the page asks for the state once.
-struct PrismDeviceFacts: Decodable, Equatable {
-  var watching: Bool
+/// The device's power and air conditioner as the backend tells them, from whichever channel carried
+/// them (a read, the shop hub, an action's answer). A key that is absent was not said, which is not
+/// the same as one said as null (the backend could not read it). Where a value came from (stored
+/// events or Home Assistant asked now) is the backend's business: the page shows the latest it was told.
+struct PrismDeviceView: Decodable, Equatable {
+  var hasPower = false
+  /// "on" or "off"; nil when said as unknown, or not said.
   var power: String? = nil
+  var hasClimate = false
   var climate: PrismClimate? = nil
+
+  init(hasPower: Bool = false, power: String? = nil, hasClimate: Bool = false, climate: PrismClimate? = nil) {
+    self.hasPower = hasPower; self.power = power; self.hasClimate = hasClimate; self.climate = climate
+  }
+
+  private enum CodingKeys: String, CodingKey { case power, climate }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    hasPower = container.contains(.power)
+    // Only "on" and "off" are a power state; anything else is unknown.
+    let raw = (try? container.decodeIfPresent(String.self, forKey: .power)) ?? nil
+    power = raw == "on" || raw == "off" ? raw : nil
+    hasClimate = container.contains(.climate)
+    climate = (try? container.decodeIfPresent(PrismClimate.self, forKey: .climate)) ?? nil
+  }
+
+  var isEmpty: Bool { !hasPower && !hasClimate }
 }
 
 /// A frame the shop hub pushes to a device page. A key that is absent was not said, which is
-/// not the same as one that was said as null (the source reports the device unavailable).
+/// not the same as one that was said as null (the backend could not read it). The `watching` the hub
+/// still sends is for older builds; this one treats `hello`, `watching` and `state` alike as state.
 struct PrismLiveFrame {
   let type: String
-  let watching: Bool?
   let hasPower: Bool
   let power: String?
   let hasClimate: Bool
@@ -313,7 +334,6 @@ struct PrismLiveFrame {
           let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           let type = object["type"] as? String else { return nil }
     self.type = type
-    watching = object["watching"] as? Bool
     hasPower = object.keys.contains("power")
     // Only "on" and "off" are a power state; anything else is unknown.
     power = (object["power"] as? String).flatMap { $0 == "on" || $0 == "off" ? $0 : nil }
@@ -324,6 +344,8 @@ struct PrismLiveFrame {
       climate = nil
     }
   }
+
+  var view: PrismDeviceView { PrismDeviceView(hasPower: hasPower, power: power, hasClimate: hasClimate, climate: climate) }
 }
 
 /// A Home Assistant air conditioner as the device state reports it. The modes, fan speeds
@@ -347,21 +369,6 @@ struct PrismClimate: Decodable, Equatable {
     let step = temperatureStep ?? 0.5
     let next = (current + Double(steps) * step).clamped(minTemperature ?? 16, maxTemperature ?? 30)
     return (next / step).rounded() * step
-  }
-
-  /// What the controls show once Home Assistant accepted `action` while nothing pushes the state:
-  /// the setting that was asked for. A watched device reports the real state as an event instead.
-  func settled(by action: String, _ extra: [String: Any] = [:]) -> PrismClimate {
-    var next = self
-    switch action {
-    case "climate.off": next.mode = "off"
-    case "climate.on": if !isOn { next.mode = choosableModes.first ?? "auto" }
-    case "climate.set_mode": if let mode = extra["mode"] as? String { next.mode = mode }
-    case "climate.set_temperature": if let value = extra["temperature"] as? Double { next.temperature = value }
-    case "climate.set_fan_mode": if let fan = extra["fanMode"] as? String { next.fanMode = fan }
-    default: break
-    }
-    return next
   }
 }
 

@@ -138,7 +138,7 @@ private func platformIsWatching() -> Bool {
       await model.start(shopCode: shop, publicId: setting("PRISM_E2E_LOUNGE"))
       check(model.state == .ready && model.ticket != nil && model.errorMessage == nil, "扫码进入页面", detail: "\(model.state) \(String(describing: model.errorMessage))")
       await waitUntil("the one read") { !model.checkingPower && model.deviceState?.power == "off" }
-      check(model.deviceState?.device?.watching == false, "页面知道设备没有被监听")
+      check(model.deviceState?.device?.hasPower == false, "首屏不等 HA：没人监听的设备不带电源，由 Hub 随后补发")
       check(model.deviceState?.climate?.mode == "heat" && model.deviceState?.climate?.temperature == 20, "空调状态来自 HA（制热 20°）", detail: "\(String(describing: model.deviceState?.climate))")
       try await Task.sleep(nanoseconds: 500_000_000)
       let reads = HA.platformReads(since: since)
@@ -147,13 +147,13 @@ private func platformIsWatching() -> Bool {
       let beforeAction = Date()
       await model.device("power.on")
       let on = try await HA.state("input_boolean.lounge_power").state
-      check(on == "on" && model.deviceState?.power == "on" && !model.waitingPower, "开机：HA 真的打开了，HA 回 200 页面就继续（不等推送）", detail: "\(on) \(String(describing: model.deviceState?.power))")
+      check(on == "on" && model.deviceState?.power == "on" && !model.waitingPower, "开机：HA 真的打开了，页面按后端的读回继续", detail: "\(on) \(String(describing: model.deviceState?.power))")
       await model.climate("climate.set_temperature", ["temperature": 22.0])
       try await Task.sleep(nanoseconds: 800_000_000)
       let temperature = try await HA.state("climate.heatpump").attributes["temperature"] as? Double
-      check(temperature == 22 && model.deviceState?.climate?.temperature == 22, "调温：HA 的温度变成 22°，页面显示被请求的值", detail: "HA=\(String(describing: temperature)) page=\(String(describing: model.deviceState?.climate))")
+      check(temperature == 22 && model.deviceState?.climate?.temperature == 22, "调温：HA 的温度变成 22°，页面显示后端读回的值", detail: "HA=\(String(describing: temperature)) page=\(String(describing: model.deviceState?.climate))")
       let after = HA.platformReads(since: beforeAction)
-      check(after.isEmpty, "开机和调温之后平台没有向 HA 回读任何东西", detail: "\(after)")
+      check(!after.isEmpty && Set(after).isSubset(of: ["climate.heatpump", "input_boolean.lounge_power"]), "开机和调温之后后端只回读这台设备", detail: "\(after)")
     }
 
     print("\n== 机台A：IO 在监听（事件驱动，真实 WebSocket）")
@@ -167,12 +167,12 @@ private func platformIsWatching() -> Bool {
       let model = player(origin)
       await model.start(shopCode: shop, publicId: setting("PRISM_E2E_A"))
       check(model.state == .ready && model.errorMessage == nil, "扫码进入页面", detail: "\(model.state) \(String(describing: model.errorMessage))")
-      check(model.deviceState?.device?.watching == true && model.deviceState?.power == "off", "bootstrap 就带着已监听的当前电源（关）", detail: "\(String(describing: model.deviceState))")
+      check(model.deviceState?.device?.hasPower == true && model.deviceState?.power == "off", "bootstrap 就带着已监听的当前电源（关）", detail: "\(String(describing: model.deviceState))")
       check(!model.checkingPower, "已监听的设备不会去读电源")
       try await Task.sleep(nanoseconds: 1_500_000_000)
 
       await model.device("power.on")
-      check(model.waitingPower, "开机后等待机台上报（不是 HA 回 200 就算数）")
+      check(model.waitingPower || model.deviceState?.power == "on", "开机后以后端读回或推送为准（不是 HA 回 200 就算数）")
       await waitUntil("the push that says it is on") { !model.waitingPower && model.deviceState?.power == "on" }
       check(try await HA.state("switch.decorative_lights").state == "on", "收到推送后页面才往下走，HA 里确实已开")
 

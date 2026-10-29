@@ -160,9 +160,12 @@ enum PersistentCookieCheck {
         return ok(["gate":gate, "power":"unmanaged","mahjong":["capacity":4,"seats":mahjongSeats],"climate":NSNull(),
                    "billing": gate == "entry" ? ["preview": ["pricingConfigId": "fee", "planName": "入场费", "changed": true,
                      "started": [["planId": "fee", "planName": "入场费", "reason": "resource"]], "stopped": [], "kept": [], "revision": "rev-1"]] as Any : NSNull(),
-                   "device":["watching":watching,
-                             "power":watching && power != "unknown" ? power as Any : NSNull(),
-                             "climate":watching && capabilities["climate"] == true ? climate as Any : NSNull()]])
+                   // A live device's stored state comes with the first read; a device that is not live says
+                   // nothing of it (no key, which is not the same as null).
+                   "device": watching
+                     ? ["watching": true, "power": power != "unknown" ? power as Any : NSNull(),
+                        "climate": capabilities["climate"] == true ? climate as Any : NSNull()]
+                     : ["watching": false]])
       case "/api/v1/shops/store/platform-binding":
         if request.httpMethod == "GET" {
           bindingStatusReads += 1
@@ -188,7 +191,8 @@ enum PersistentCookieCheck {
         if body["action"] as? String == "power.on" {
           precondition(body["ticket"] != nil && body["operationId"] != nil)
           power = "on"
-          return ok([:])
+          // The answer carries what the backend read back after the action.
+          return ok(["device": ["power": "on"]])
         }
         if body["action"] as? String == "mahjong.join" {
           precondition(body["ticket"] != nil && body["operationId"] != nil)
@@ -204,8 +208,8 @@ enum PersistentCookieCheck {
           if let mode = body["mode"] as? String { climate["mode"] = mode }
           if let value = body["temperature"] as? Double { climate["temperature"] = value }
           if let fan = body["fanMode"] as? String { climate["fanMode"] = fan }
-          // Home Assistant accepting it is the whole answer; the state is not read back.
-          return ok([:])
+          // The answer carries what the backend read back after the action.
+          return ok(["device": ["climate": climate]])
         }
 
         if body["action"] as? String == "coin" {
@@ -380,17 +384,16 @@ enum PersistentCookieCheck {
     power = "unknown"
     await model.refreshVisit()
     precondition(model.showNoDeviceActions)
-    // A watched device arrives with its power in the first read, so nothing is asked of Home
-    // Assistant: a machine found off shows its power page at once, and the press is finished when
-    // Home Assistant answers (no push is connected here to say more).
+    // A live device arrives with its power in the first read: a machine found off shows its power
+    // page at once without asking, and the press is finished by the backend's read-back in the answer.
     watching = true; capabilities = ["power":true]; power = "off"
     let factReadsBefore = deviceFactReads
     await model.start(shopCode: "store", publicId: "device")
     precondition(model.deviceState?.power == "off", "power: \(String(describing: model.deviceState?.power)) device: \(String(describing: model.deviceState?.device))")
-    precondition(!model.checkingPower, "A watched device is not asked for its power")
+    precondition(!model.checkingPower, "A device whose first read carries its power is not shown as reading it")
     precondition(!model.showNoDeviceActions, "A machine found off offers its power button")
     try await Task.sleep(nanoseconds: 300_000_000)
-    precondition(deviceFactReads == factReadsBefore, "A watched device is never asked for its state")
+    precondition(deviceFactReads == factReadsBefore, "The page does not read a device it was just told about")
     await model.device("power.on")
     precondition(model.deviceState?.power == "on" && !model.waitingPower)
     watching = false
