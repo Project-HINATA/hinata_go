@@ -15,9 +15,30 @@ let prismAccent = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
   ? UIColor(red: 0x40 / 255, green: 0x9c / 255, blue: 1, alpha: 1)
   : UIColor(red: 0, green: 0x66 / 255, blue: 0xd6 / 255, alpha: 1) })
 
-/// Every card's fill, on a page or in a sheet. Translucent, so a card on a sheet's glass is the
-/// glass, a shade apart, rather than a solid panel set into it.
-let prismCardFill = Color(.tertiarySystemFill)
+/// Every card's fill. On a page it is the solid grouped card colour, the white (or raised dark)
+/// panel on the grey grouped background, as Settings and Wallet draw content on iOS 26: Liquid
+/// Glass belongs to the controls floating above content, not to the content itself. Inside a
+/// sheet, whose background is the system glass at the medium detent, it is translucent instead,
+/// so the card reads as a shade of that glass rather than a solid panel set into it.
+struct PrismCardFill: ShapeStyle {
+  func resolve(in environment: EnvironmentValues) -> Color {
+    environment.prismInSheet ? Color(.tertiarySystemFill) : Color(.secondarySystemGroupedBackground)
+  }
+}
+
+let prismCardFill = PrismCardFill()
+
+private struct PrismInSheetKey: EnvironmentKey {
+  static let defaultValue = false
+}
+
+extension EnvironmentValues {
+  /// Set on a sheet's content, so cards there take the translucent fill.
+  var prismInSheet: Bool {
+    get { self[PrismInSheetKey.self] }
+    set { self[PrismInSheetKey.self] = newValue }
+  }
+}
 
 /// Money as the pricing card writes it: always two decimals.
 func prismMoney(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(2))) }

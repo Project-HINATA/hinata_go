@@ -376,7 +376,7 @@ private struct ClipSessionPage: View {
           }
         }
         .background(prismCardFill)
-        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
       }
     }
   }
@@ -486,13 +486,12 @@ struct ClipShopHero: View {
     // cover's fixed frame set the width while the bill was absent, and the wider bill changed
     // it on arrival — which resized the cover exactly as the bill appeared.
     .frame(width: width)
-    // Opaque, unlike every other card's translucent `prismCardFill`: the blurred cover under the
-    // name is a faint 22% wash, which shows on a solid card but vanished into the page through a
-    // translucent one.
+    // Always opaque, even where `prismCardFill` would turn translucent in a sheet: the blurred
+    // cover under the name is a faint 22% wash, which only shows on a solid card.
     .background(Color(.secondarySystemGroupedBackground))
-    .clipShape(RoundedRectangle(cornerRadius: 32))
+    .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     .overlay {
-      RoundedRectangle(cornerRadius: 32).strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
+      RoundedRectangle(cornerRadius: 32, style: .continuous).strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
     }
     .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
     .task(id: url) {
@@ -609,7 +608,7 @@ private struct ClipShopControls: View {
             .font(.subheadline).foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
-            .background(prismCardFill, in: RoundedRectangle(cornerRadius: 14))
+            .background(prismCardFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
       } else if model.errorMessage != nil {
         Button { Task { model.clearError(); await model.refreshVisit() } } label: {
@@ -771,7 +770,7 @@ private struct ClipPlatformBinding: View {
         if model.errorMessage != nil {
           Button("重试") { Task { await model.bindPlatformIdentity() } }.disabled(model.deviceBusy)
         } else if model.binding == nil { ProgressView() }
-      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(prismCardFill, in: RoundedRectangle(cornerRadius: 14))
+      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(prismCardFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
   }
 }
@@ -861,7 +860,7 @@ private struct ClipDeviceControls: View {
                   }
                   .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
                   .padding(16)
-                  .background(seat == nil ? Color.clear : prismCardFill, in: RoundedRectangle(cornerRadius: 18))
+                  .background(prismCardFill.opacity(seat == nil ? 0 : 1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                   .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.primary.opacity(seat?.mine == true ? 0.3 : seat == nil ? 0.08 : 0), lineWidth: seat?.mine == true ? 1.5 : 1))
                 }
               }
@@ -1172,7 +1171,7 @@ private struct ClipCardCapture: View {
     }
     .frame(maxWidth: .infinity)
     .padding(24)
-    .background(prismCardFill, in: RoundedRectangle(cornerRadius: 28))
+    .background(prismCardFill, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
     .accessibilityElement(children: .contain)
   }
 }
@@ -1253,14 +1252,18 @@ private struct ClipAccountSheet: View {
     }
   }
   var body: some View {
-    if #available(iOS 26.0, *) {
-      NavigationStack { content }
-        .presentationCornerRadius(nil)
-    } else if #available(iOS 16.0, *) {
-      NavigationStack { content }
-    } else {
-      NavigationView { content }.navigationViewStyle(.stack)
+    Group {
+      if #available(iOS 26.0, *) {
+        NavigationStack { content }
+          .presentationCornerRadius(nil)
+      } else if #available(iOS 16.0, *) {
+        NavigationStack { content }
+      } else {
+        NavigationView { content }.navigationViewStyle(.stack)
+      }
     }
+    // Set outside the navigation stack, so pushed pages such as a bill's detail are in it too.
+    .environment(\.prismInSheet, true)
   }
   private var content: some View {
     ClipAccountContent(section: section)
@@ -1358,7 +1361,7 @@ private struct ClipBillContent: View {
       if let balanceAfter {
         PrismLabeledRow(String(localized: "结账后余额"), value: balanceAfter.formatted(.number.precision(.fractionLength(2))))
           .font(.subheadline).padding(.horizontal, 16)
-          .background(prismCardFill, in: RoundedRectangle(cornerRadius: 16))
+          .background(prismCardFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
       }
       if let timeline = preview.timeline { ClipBillTimeline(timeline: timeline) }
       else {
