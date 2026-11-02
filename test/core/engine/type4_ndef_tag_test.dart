@@ -50,6 +50,19 @@ void main() {
     expect(tag.process(_readBinary(0, 0)).length, 53);
   });
 
+  test('advertises and serves a larger MLe', () {
+    final long = Uint8List.fromList(List.generate(600, (i) => i & 0xFF));
+    final tag = Type4NdefTag(long, maxRead: 251);
+    tag.process(_selectApplication);
+    tag.process(_selectFile(0x03));
+    expect(tag.process(_readBinary(0, 15))[4], 251);
+    tag.process(_selectFile(0x04));
+    final response = tag.process(_readBinary(2, 0));
+    expect(response.length, 253);
+    expect(response.sublist(0, 251), long.sublist(0, 251));
+    expect(() => Type4NdefTag(long, maxRead: 256), throwsRangeError);
+  });
+
   test('rejects writes, unselected reads and short EF addressing', () {
     final tag = Type4NdefTag(message);
     expect(tag.process(_readBinary(0, 2)), [0x69, 0x86]);

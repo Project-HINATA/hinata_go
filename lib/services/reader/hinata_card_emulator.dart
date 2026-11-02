@@ -21,6 +21,10 @@ class HinataCardEmulator {
   /// status word 2 more.
   static const hidMaxRead = 51;
 
+  /// With firmware that splits PN532 frames over HID reports, one frame
+  /// carries 253 `TgSetData` bytes, the status word 2 of them.
+  static const longFrameMaxRead = 251;
+
   static const ackTimeoutMs = 500;
   static const sendTimeoutMs = 500;
 

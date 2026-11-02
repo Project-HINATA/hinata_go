@@ -99,6 +99,27 @@ void main() {
     );
   });
 
+  test('announces and answers a larger read as Nbr', () {
+    final long = _bytes(List.generate(240, (i) => i & 0xFF));
+    final tag = Type3NdefTag(long, idm: idm, maxBlocksPerRead: 15);
+    final response = tag.process(
+      check([
+        for (var i = 0; i < 14; i++) [0x80, i],
+      ]),
+    )!;
+    expect(response.sublist(0, 12), [0x07, ...idm, 0x00, 0x00, 14]);
+    expect(response[12 + 1], 15);
+    expect(response.sublist(28), long.sublist(0, 13 * 16));
+    expect(
+      tag.process(
+        check([
+          for (var i = 0; i < 16; i++) [0x80, 0],
+        ]),
+      ),
+      [0x07, ...idm, 0x01, 0xA2],
+    );
+  });
+
   test('ignores commands for another IDm', () {
     final tag = Type3NdefTag(message, idm: idm);
     final other = _bytes([0x06, ...List.filled(8, 0), 1, 0x0B, 0, 1, 0x80, 0]);

@@ -82,6 +82,11 @@ class UsbHinataDeviceImpl {
   int get emulatedFelicaBlocks =>
       _hinata.pn532LongFrames ? 15 : FelicaTag.defaultMaxBlocksPerRead;
 
+  /// Bytes one `READ BINARY` of an emulated Type 4 tag answers.
+  int get emulatedType4MaxRead => _hinata.pn532LongFrames
+      ? HinataCardEmulator.longFrameMaxRead
+      : HinataCardEmulator.hidMaxRead;
+
   UsbHinataDeviceImpl(this._hinata) {
     _hinata.subscribeCardioInput((data) {
       if (!_cardioStreamController.isClosed) {

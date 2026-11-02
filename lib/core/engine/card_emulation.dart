@@ -67,7 +67,11 @@ EmulationTarget emulationTargetFor(
       return EmulationTarget(
         kind: EmulationKind.ndef,
         type4: Type4NdefTag(message, maxRead: type4MaxRead),
-        felica: Type3NdefTag(message, idm: Type3NdefTag.randomIdm()),
+        felica: Type3NdefTag(
+          message,
+          idm: Type3NdefTag.randomIdm(),
+          maxBlocksPerRead: felicaMaxBlocks,
+        ),
       );
     case final EmulationKind kind:
       final felica = card as Felica;

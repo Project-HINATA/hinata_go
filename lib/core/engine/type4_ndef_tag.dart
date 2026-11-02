@@ -13,6 +13,9 @@ class Type4NdefTag {
   /// MLe for a PN532 bridged by CDC: 53 data bytes plus the status word.
   static const maxReadLength = 53;
 
+  /// Largest MLe the capability container's low byte holds.
+  static const maxMle = 0xFF;
+
   static const _aid = [0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01];
 
   final int maxRead;
@@ -47,8 +50,8 @@ class Type4NdefTag {
         'Must be 1–$maxMessageSize bytes',
       );
     }
-    if (maxRead < 1 || maxRead > maxReadLength) {
-      throw RangeError.range(maxRead, 1, maxReadLength, 'maxRead');
+    if (maxRead < 1 || maxRead > maxMle) {
+      throw RangeError.range(maxRead, 1, maxMle, 'maxRead');
     }
   }
 

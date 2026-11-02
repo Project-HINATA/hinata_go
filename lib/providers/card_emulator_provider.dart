@@ -116,7 +116,7 @@ class CardEmulator extends Notifier<CardEmulatorState> {
       }
       final target = emulationTargetFor(
         card.card,
-        type4MaxRead: HinataCardEmulator.hidMaxRead,
+        type4MaxRead: reader.emulatedType4MaxRead,
         felicaMaxBlocks: reader.emulatedFelicaBlocks,
       );
       await reader.emulateCard(

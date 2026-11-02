@@ -20,38 +20,57 @@ class Type3NdefTag extends FelicaTag {
     Uint8List message,
     Uint8List idm,
     Uint8List pmm,
+    int maxBlocksPerRead,
   ) : super(
         idm: idm,
         pmm: pmm,
         systemCodes: const [ndefSystemCode],
-        services: _servicesFor(_blocksFor(message, dataBlocks)),
+        services: _servicesFor(
+          _blocksFor(message, dataBlocks, maxBlocksPerRead),
+        ),
         markerBlock: dataBlocks,
+        maxBlocksPerRead: maxBlocksPerRead,
       );
 
   static Map<int, Map<int, Uint8List>> _servicesFor(
     Map<int, Uint8List> blocks,
   ) => {_readOnlyService: blocks, _readWriteService: blocks};
 
+  /// [maxBlocksPerRead] is announced to readers as Nbr.
   factory Type3NdefTag(
     Uint8List message, {
     required Uint8List idm,
     Uint8List? pmm,
+    int maxBlocksPerRead = FelicaTag.defaultMaxBlocksPerRead,
   }) {
     final dataBlocks = (message.length + 15) ~/ 16;
     if (message.isEmpty || dataBlocks > 0xFFFF) {
       throw ArgumentError.value(message.length, 'message.length');
     }
-    return Type3NdefTag._(dataBlocks, message, idm, pmm ?? defaultPmm);
+    if (maxBlocksPerRead < 1 || maxBlocksPerRead > 0xFF) {
+      throw ArgumentError.value(maxBlocksPerRead, 'maxBlocksPerRead');
+    }
+    return Type3NdefTag._(
+      dataBlocks,
+      message,
+      idm,
+      pmm ?? defaultPmm,
+      maxBlocksPerRead,
+    );
   }
 
   /// Whether the last data block was read since the previous call.
   bool takeMessageRead() => takeMarkerRead();
 
-  static Map<int, Uint8List> _blocksFor(Uint8List message, int dataBlocks) {
+  static Map<int, Uint8List> _blocksFor(
+    Uint8List message,
+    int dataBlocks,
+    int maxBlocksPerRead,
+  ) {
     final attribute = Uint8List(16)
       ..setAll(0, [
         0x10, // mapping version 1.0
-        FelicaTag.defaultMaxBlocksPerRead, // Nbr
+        maxBlocksPerRead, // Nbr
         0x01, // Nbw
         dataBlocks >> 8, dataBlocks & 0xFF, // Nmaxb
         0x00, 0x00, 0x00, 0x00,
