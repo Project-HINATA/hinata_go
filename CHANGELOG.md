@@ -6,9 +6,9 @@ HINATA Go for Android, iOS and the web (<https://go.neri.moe>).
 
 ### 中文
 
-- 现在读 Felica 卡片会读取所有系统，并且会保存所有未加密的块，模拟的时候也会用上这些数据
-- 读 Suica 的时候会优先读取交易记录，同一张卡重新扫描的话会合并进之前的交易记录里
-- 读卡器固件更新到 2026110220 及以上之后，用读卡器读 Felica 卡片会快很多，模拟 NDEF 标签的时候一次也能传更多数据了
+- 现在扫描 Felica 卡片时会读取所有系统，并且会保存所有未加密的块，模拟的时候也会用上这些数据
+- 扫描 Suica 的时候会优先读取交易记录，同一张卡重新扫描的话会合并进之前的交易记录里
+- 读卡器固件更新到 2026110220 及以上之后，用读卡器扫描 Felica 卡片会快很多，模拟 NDEF 标签的时候一次也能传更多数据了
 
 ### English
 
@@ -20,8 +20,8 @@ HINATA Go for Android, iOS and the web (<https://go.neri.moe>).
 
 ### 中文
 
-- 现在可以在项目内读取 NDEF 标签和添加 NDEF 数据集
-- 现在支持了 NESiCA 的读取和保存，贡献来自社区 PR
+- 现在可以在项目内扫描 NDEF 标签和添加 NDEF 数据集
+- 现在支持了 NESiCA 的扫描和保存，贡献来自社区 PR
 - 现在可以直接使用读卡器模拟在卡包内保存的 NDEF 数据集和 Felica / Amusement IC 卡片
   - 需要读卡器固件更新至 2026102022-8e2ac084
   - 但是要注意模拟出来的 Felica 与 Amusement IC 卡片无法用于 SEGA 游戏官方服务器，可以用于私服以及 Konami 游戏
@@ -62,7 +62,7 @@ HINATA Go for Android, iOS and the web (<https://go.neri.moe>).
 
 ### 中文
 
-- 优化了扫描流程，现在 HINATA Lite 不需要贴铜箔也可以稳定读取兼容卡和交通联合等卡片
+- 优化了扫描流程，现在 HINATA Lite 不需要贴铜箔也可以稳定扫描兼容卡和交通联合等卡片
 - 适配了 HINATA IO 的端到端加密功能
 
 ### English
@@ -74,7 +74,7 @@ HINATA Go for Android, iOS and the web (<https://go.neri.moe>).
 
 ### 中文
 
-- 优化了扫描流程，现在 HINATA Lite 不需要贴铜箔也可以稳定读取兼容卡和交通联合等卡片
+- 优化了扫描流程，现在 HINATA Lite 不需要贴铜箔也可以稳定扫描兼容卡和交通联合等卡片
 - 适配了 HINATA IO 的端到端加密功能
 
 ### English
@@ -86,7 +86,7 @@ HINATA Go for Android, iOS and the web (<https://go.neri.moe>).
 
 ### 中文
 
-- iOS：修复了部分情况下读取后不显示的问题
+- iOS：修复了部分情况下扫描后不显示的问题
 - iOS：增加了启动画面
 
 ### English
@@ -110,8 +110,8 @@ HINATA Go for Android, iOS and the web (<https://go.neri.moe>).
 
 ### 中文
 
-- 支持读取中国的交通联合卡片和日本的交通系卡片的内容，可以显示余额和交易记录
-- 修复了安卓手机 NFC 在读取 iPhone 的 Suica 时会读不到卡的问题
+- 支持扫描中国的交通联合卡片和日本的交通系卡片，可以显示余额和交易记录
+- 修复了安卓手机 NFC 在扫描 iPhone 的 Suica 时会扫不到卡的问题
 - 一些 UI 优化
 
 ### English
@@ -140,8 +140,8 @@ HINATA Go for Android, iOS and the web (<https://go.neri.moe>).
 
 本次更新着重于重新思考整个应用的用途，把 HINATA 控制中心的功能给合并进来，并重新设计了主页 UI
 
-- 现在你可以在安卓设备上连接 HINATA 读卡器了，在手机上就可以轻易修改设备的设置以及为设备更新固件，或者使用设备来读取卡片
-- 将读卡模式分为了信息查看模式和发送卡号模式，前者可以很方便的查看一张卡的信息，后者则是向远程设备发送卡号登录
+- 现在你可以在安卓设备上连接 HINATA 读卡器了，在手机上就可以轻易修改设备的设置以及为设备更新固件，或者使用设备来扫描卡片
+- 将扫描模式分为了信息查看模式和发送卡号模式，前者可以很方便的查看一张卡的信息，后者则是向远程设备发送卡号登录
 - 移除了二维码扫描器
 - 优化了横屏和大屏布局，并同时支持 Web 版本，后续会逐步替代掉 HINATA 控制中心（cc.neri.moe）
 
@@ -223,7 +223,7 @@ This update rethinks what the whole app is for: HINATA Control Center's features
 - 被保存的卡片可以无需介质直接传入游戏
 - 完善的卡片管理，可以保存卡片到卡包
 - 与 HINATA IO 深度融合，实现手机与读卡器协同使用
-- 非常正确的卡片读取流程
+- 非常正确的卡片扫描流程
 - 完整支持所有 Material Design 3 特性，现代化的 UI
 
 ### English
