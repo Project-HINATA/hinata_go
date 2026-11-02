@@ -7,7 +7,6 @@ import 'package:hinata_nfc/hinata_nfc.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../models/card/card_read_result.dart';
-import '../models/card/transit.dart';
 import '../services/reader/usb_hinata_impl.dart';
 import 'current_scan_session_provider.dart';
 import 'firmware_provider.dart';
@@ -286,14 +285,14 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
               );
           debugPrint('[_startPollLoop] recordScan result: $recordResult');
 
-          // 2. If it is a transit card, read extended info sequentially if not yet loaded
+          // 2. Read transit history and FeliCa blocks if not yet loaded
           final sessionState = ref.read(currentScanSessionProvider);
           debugPrint(
-            '[_startPollLoop] duplicate card check: isTransit=${scannedCard.card is TransitCard}, '
+            '[_startPollLoop] duplicate card check: hasExtendedInfo=${scannedCard.hasExtendedInfo}, '
             'isReading=${sessionState.isReadingExtendedInfo}, '
             'isLoaded=${sessionState.isExtendedInfoLoaded}',
           );
-          if (scannedCard.card is TransitCard &&
+          if (scannedCard.hasExtendedInfo &&
               !sessionState.isReadingExtendedInfo &&
               !sessionState.isExtendedInfoLoaded) {
             ref
@@ -314,32 +313,22 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
               debugPrint(
                 '[_startPollLoop] Phase 2 read finished. extendedCard: ${extendedCard != null ? "found" : "null"}',
               );
-              if (extendedCard != null) {
-                final extendedTransitCard = extendedCard.card;
-                if (extendedTransitCard is TransitCard) {
-                  debugPrint(
-                    '[_startPollLoop] extendedCard transactions: ${extendedTransitCard.transactions.length}',
-                  );
-                  ref
-                      .read(currentScanSessionProvider.notifier)
-                      .updateCard(extendedCard);
-                  await ref
-                      .read(nfcProvider.notifier)
-                      .updateExternalScan(extendedCard);
-                } else {
-                  debugPrint(
-                    '[_startPollLoop] Ignoring non-transit extended result: ${extendedCard.card.runtimeType}',
-                  );
-                }
+              if (extendedCard != null && extendedCard.hasExtendedInfo) {
+                ref
+                    .read(currentScanSessionProvider.notifier)
+                    .updateCard(extendedCard);
+                await ref
+                    .read(nfcProvider.notifier)
+                    .updateExternalScan(extendedCard);
               }
             } catch (e) {
               debugPrint(
-                '[_startPollLoop] Error reading extended transit history via USB: $e',
+                '[_startPollLoop] Error reading extended card info via USB: $e',
               );
             } finally {
               ref
                   .read(currentScanSessionProvider.notifier)
-                  .setReadingExtendedInfo(false);
+                  .finishExtendedRead();
             }
           }
         } else if (pollResult.status == CardReadStatus.noTarget) {

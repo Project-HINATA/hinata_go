@@ -6,11 +6,20 @@ import 'package:intl/intl.dart';
 import '../../../models/card/transit.dart';
 import '../../../models/card/suica.dart';
 import '../../../l10n/l10n.dart';
+import '../../widgets/incomplete_read_badge.dart';
 
 class TransitHistoryCard extends HookWidget {
   final TransitCard card;
 
-  const TransitHistoryCard({required this.card, super.key});
+  /// Mark a history that was not read in full. Off while it is still being
+  /// read.
+  final bool showReadState;
+
+  const TransitHistoryCard({
+    required this.card,
+    this.showReadState = true,
+    super.key,
+  });
 
   String _localizeType(String type) {
     switch (type) {
@@ -130,6 +139,10 @@ class TransitHistoryCard extends HookWidget {
                         ),
                       ),
                     ),
+                    if (showReadState && !card.isHistoryComplete) ...[
+                      const IncompleteReadBadge(),
+                      const SizedBox(width: 8),
+                    ],
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,

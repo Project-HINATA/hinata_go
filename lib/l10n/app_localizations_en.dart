@@ -1134,11 +1134,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cardEmulateFelicaData =>
-      'Only the saved IDm, PMm and system codes are emulated.';
+      'The saved IDm, PMm, system codes and blocks are emulated. Blocks without saved data read as zeros.';
 
   @override
   String get cardEmulateAicData =>
-      'Only the saved IDm, PMm, system codes and access code (S_PAD0) are emulated, not data that needs authentication.';
+      'The saved IDm, PMm, system codes and Lite-S blocks, with the access code in S_PAD0, are emulated. Blocks without saved data read as zeros.';
 
   @override
   String get cardEmulatePollOnly =>
@@ -1167,4 +1167,55 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get banapassAccessCodeCannotCreate =>
       'This Banapass access code cannot be used to create a card.';
+
+  @override
+  String get cardEmulatePartial =>
+      'This card was not fully read, so the emulation is incomplete: blocks that were not read return zeros.';
+
+  @override
+  String get cardEmulateNoChallenge =>
+      'A reader\'s challenge (MAC, MAC_A) cannot be answered, so readers that authenticate the card reject it.';
+
+  @override
+  String get cardReadIncomplete =>
+      'This card was not fully read. Blocks are missing, so emulating it is incomplete.';
+
+  @override
+  String get rawData => 'Raw data';
+
+  @override
+  String rawDataBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count blocks',
+      one: '1 block',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rawDataComplete =>
+      'Every block that reads without encryption was read.';
+
+  @override
+  String get rawDataNoBlocks =>
+      'No blocks were saved with this card. Scan it again to save them.';
+
+  @override
+  String rawDataService(String code) {
+    return 'Service $code';
+  }
+
+  @override
+  String get rawDataNoServiceBlocks => 'No blocks';
+
+  @override
+  String get rawDataCopyAll => 'Copy all';
+
+  @override
+  String get rawDataCopied => 'Raw data copied to clipboard';
+
+  @override
+  String get cardNotFullyRead => 'Not fully read';
 }

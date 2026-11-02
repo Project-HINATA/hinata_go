@@ -25,6 +25,9 @@ class TUnion extends Iso14443 with TransitCard {
 
   final List<Uint8List?> rawBlocks;
 
+  @override
+  final bool isHistoryComplete;
+
   TUnion(
     super.id,
     super.sak,
@@ -39,6 +42,7 @@ class TUnion extends Iso14443 with TransitCard {
     this.isInterchangeEnabled,
     super.tags,
     this.rawBlocks = const [],
+    this.isHistoryComplete = true,
   });
 
   @override
@@ -148,6 +152,7 @@ class TUnion extends Iso14443 with TransitCard {
       if (cardType != null) 'cardType': cardType,
       if (isInterchangeEnabled != null)
         'isInterchangeEnabled': isInterchangeEnabled,
+      'historyComplete': isHistoryComplete,
     };
   }
 
@@ -170,6 +175,8 @@ class TUnion extends Iso14443 with TransitCard {
       expiryDate: json['expiryDate'] as String?,
       cardType: json['cardType'] as String?,
       isInterchangeEnabled: json['isInterchangeEnabled'] as bool?,
+      // Cards saved before this was kept are taken as read in full.
+      isHistoryComplete: json['historyComplete'] as bool? ?? true,
       tags: iso.tags,
     );
   }

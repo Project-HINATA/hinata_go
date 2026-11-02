@@ -5,12 +5,14 @@ import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 
 import '../core/app_host_mode.dart';
 import '../models/card/card.dart';
+import '../models/card/felica.dart';
 import '../models/card/saved_card.dart';
 import '../providers/navigation_bar_provider.dart';
 import '../ui/native_hosted_scaffold.dart';
 import '../ui/pages/camera_page.dart';
 import '../ui/pages/card_detail_page.dart';
 import '../ui/pages/device_control_page.dart';
+import '../ui/pages/felica_raw_data_page.dart';
 import '../ui/pages/firmware_update_page.dart';
 import '../ui/pages/instances_page.dart';
 import '../ui/pages/saved_cards_page.dart';
@@ -51,6 +53,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             return CardDetailPage(card: extra);
           }
           throw ArgumentError('Invalid extra for /card_detail: $extra');
+        },
+      ),
+      GoRoute(
+        path: '/card_raw',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is Felica) return FelicaRawDataPage(card: extra);
+          throw ArgumentError('Invalid extra for /card_raw: $extra');
         },
       ),
       GoRoute(

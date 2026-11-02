@@ -6,8 +6,9 @@ import 'package:hinata_go/models/card/aic.dart';
 import 'package:hinata_go/models/card/aime.dart';
 import 'package:hinata_go/models/card/banapass.dart';
 import 'package:hinata_go/models/card/card_read_result.dart';
-import 'package:hinata_go/models/card/card_tag.dart';
+import 'package:hinata_go/models/card/card.dart';
 import 'package:hinata_go/models/card/felica.dart';
+import 'package:hinata_go/models/card/felica_dump.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hinata_go/models/card/nesica.dart';
@@ -18,8 +19,8 @@ import 'package:hinata_go/models/card/transit.dart';
 
 import '../crypto/mifare_key.dart';
 import '../validators/access_code_validator.dart';
-import '../crypto/spad0.dart';
 import '../data/tunion_data.dart';
+import 'felica_dump_reader.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 class CardReaderEngine {
@@ -30,85 +31,114 @@ class CardReaderEngine {
 
   CardReaderEngine(this.transceiver);
 
-  /// Standard AIC Service Code for Reading
-  static const int aicServiceCode = 0x000B;
   static const int _aimeAccessCodeStart = 6;
   static const int _aimeAccessCodeEnd = 16;
 
-  /// High-level logic for handling FeliCa tags (AIC Detection)
+  /// Resolves a FeliCa tag to an Amusement IC, a Suica or a plain FeliCa
+  /// card. With [readExtended] every block that reads without encryption is
+  /// saved with it; without, only what tells the kind of card apart.
   Future<ScannedCard?> handleFelica({
     required Felica tag,
     String source = 'NFC',
     bool readExtended = true,
     ScannedCard? existingCard,
   }) async {
-    log(tag.id.toString());
-    final defaultReturn = ScannedCard(card: tag, source: source);
+    final reader = FelicaDumpReader(transceiver);
 
-    // 1. Quick filter: only process if IDm starts with 0x00 or 0x01
-    if ((tag.id[0] & 0xF0) != 0x00) {
-      return defaultReturn;
-    }
-
-    // 2. Check PMm and IDm specific bytes for Amusement IC
-    if (!_mayAic(tag.id, tag.pmm, tag.systemCode)) {
-      if (tag.systemCode.contains(0x0003)) {
-        final suica = await _tryReadSuica(
-          tag,
-          source: source,
-          readExtended: readExtended,
-          existingCard: existingCard,
+    if (_mayAic(tag.id, tag.pmm, tag.systemCode)) {
+      final Uint8List? spad0;
+      try {
+        spad0 = await reader.readBlock(tag.id, Aic.service, Aic.spad0Block);
+      } catch (e) {
+        log('CardReaderEngine Felica error: $e');
+        throw NfcException(
+          type: NfcErrorType.readError,
+          message: 'Failed to read FeliCa data',
+          originalError: e,
         );
-        if (suica != null) return suica;
       }
-      return defaultReturn;
+      if (spad0 != null && Aic.holdsAccessCode(spad0)) {
+        final dump = readExtended
+            ? _withBlock(
+                await reader.read(tag),
+                Aic.service,
+                Aic.spad0Block,
+                spad0,
+              )
+            : FelicaDump(
+                complete: false,
+                services: {
+                  Aic.service: {Aic.spad0Block: spad0},
+                },
+              );
+        final manufacturer = Aic(
+          tag.id,
+          tag.pmm,
+          tag.systemCode,
+          dump: dump,
+        ).manufacturer;
+        return ScannedCard(
+          card: Aic(
+            tag.id,
+            tag.pmm,
+            tag.systemCode,
+            dump: dump,
+            tags: [
+              CardTag.amusementIc,
+              if (manufacturer != 'Unknown')
+                CardTag.fromRawString(manufacturer),
+              CardTag.felica,
+            ],
+          ),
+          source: source,
+          isExtendedInfoFullyLoaded: dump.complete,
+        );
+      }
+    } else if (!readExtended && tag.systemCode.contains(0x0003)) {
+      final suica = await _readSuicaBalance(tag, reader, source: source);
+      if (suica != null) return suica;
     }
 
-    try {
-      final response = await felicaReadWithoutEncryption(tag.id, [0]);
+    if (!readExtended) return ScannedCard(card: tag, source: source);
+    final dump = await reader.read(tag);
+    final ICCard card =
+        tag.systemCode.contains(0x0003) &&
+            dump.services[Suica.historyService]?.isNotEmpty == true
+        ? Suica.fromDump(
+            tag.id,
+            tag.pmm,
+            tag.systemCode,
+            dump,
+            snapshotTime: DateTime.now(),
+            tags: _suicaTags,
+          )
+        : Felica(tag.id, tag.pmm, tag.systemCode, tags: tag.tags, dump: dump);
+    return ScannedCard(
+      card: card,
+      source: source,
+      isExtendedInfoFullyLoaded: dump.complete,
+    );
+  }
 
-      // Check response length (minimum 13 bytes to contain Status Flags)
-      if (response.length < 12) {
-        return null; // Unexpected response format
-      }
-
-      final blockData = response.sublist(13, 13 + 16);
-
-      if (blockData.every((byte) => byte == 0)) {
-        return defaultReturn;
-      }
-
-      // Decrypt block using spad0
-      final dec = spad0Decrypt(blockData);
-
-      // Validate Amusement IC format (5th byte must be 0)
-      if (dec[5] != 0) {
-        return defaultReturn;
-      }
-
-      // Checking high 4 bits of 7th byte for 0x50 (AIC Header)
-      final prefix = dec[6] & 0xF0;
-      if (prefix == 0x50) {
-        final accessCodeBytes = Uint8List.fromList(dec.sublist(6, 16));
-        final tempAic = tag.toAic(accessCodeBytes);
-        final aicTags = [
-          CardTag.amusementIc,
-          if (tempAic.manufacturer != 'Unknown')
-            CardTag.fromRawString(tempAic.manufacturer),
-          CardTag.felica,
-        ];
-        final aic = tag.toAic(accessCodeBytes, tags: aicTags);
-        return ScannedCard(card: aic, source: source);
-      }
-    } catch (e) {
-      log('CardReaderEngine Felica error: $e');
-      throw NfcException(
-        type: NfcErrorType.readError,
-        message: 'Failed to read FeliCa data',
-        originalError: e,
-      );
-    }
-    return defaultReturn;
+  /// [dump] with block [number] of [service] set to [data] when the dump
+  /// lacks it, as when the card left before it was read again.
+  FelicaDump _withBlock(
+    FelicaDump dump,
+    int service,
+    int number,
+    Uint8List data,
+  ) {
+    if (dump.block(service, number) != null) return dump;
+    return FelicaDump(
+      complete: dump.complete,
+      services: {
+        service: {number: data},
+        ...dump.services.map(
+          (code, blocks) =>
+              MapEntry(code, {...blocks, if (code == service) number: data}),
+        ),
+      },
+    );
   }
 
   Future<CardReadResult> readMifareWithBanaKey({
@@ -208,35 +238,6 @@ class CardReaderEngine {
         )
         ? banapass
         : null;
-  }
-
-  /// Helper for FeliCa Read Without Encryption logic
-  Future<Uint8List> felicaReadWithoutEncryption(
-    Uint8List idm,
-    List<int> blocks, {
-    int serviceCode = aicServiceCode,
-  }) async {
-    final command = BytesBuilder();
-
-    command.addByte(0); // Placeholder for length
-    command.addByte(0x06); // FeliCa Read Without Encryption Command
-    command.add(idm);
-
-    command.addByte(1); // One service
-
-    command.addByte(serviceCode & 0xFF);
-    command.addByte((serviceCode >> 8) & 0xFF);
-    command.addByte(blocks.length);
-
-    for (var block in blocks) {
-      command.addByte(0x80); // Block list element (2-byte, 1-byte addr)
-      command.addByte(block & 0xFF);
-    }
-
-    Uint8List fullPayload = command.toBytes();
-    fullPayload[0] = fullPayload.length;
-
-    return await transceiver.transceive(fullPayload);
   }
 
   /// AIC potential check
@@ -439,122 +440,43 @@ class CardReaderEngine {
     return buffer.toString();
   }
 
-  Future<ScannedCard?> _tryReadSuica(
-    Felica tag, {
+  static const _suicaTags = [
+    CardTag.suica,
+    CardTag.japanTransit,
+    CardTag.felica,
+  ];
+
+  /// [tag] as a Suica when its history service reads, with only the newest
+  /// record read, for the balance.
+  Future<ScannedCard?> _readSuicaBalance(
+    Felica tag,
+    FelicaDumpReader reader, {
     required String source,
-    bool readExtended = true,
-    ScannedCard? existingCard,
   }) async {
+    final Uint8List? newest;
     try {
-      final List<Uint8List?> blocksData = List.filled(20, null);
-      final List<double?> blockBalances = List.filled(20, null);
-      double balance = 0.0;
-
-      if (existingCard != null && existingCard.card is Suica) {
-        final existingSuica = existingCard.card as Suica;
-        for (int i = 0; i < 20; i++) {
-          if (i < existingSuica.rawBlocks.length) {
-            blocksData[i] = existingSuica.rawBlocks[i];
-          }
-          if (i < existingSuica.rawBalances.length) {
-            blockBalances[i] = existingSuica.rawBalances[i];
-          }
-        }
-        balance = existingSuica.balance;
-      }
-
-      // Suica history service code is 0x090F
-      const int suicaServiceCode = 0x090F;
-
-      final int blocksToRead = readExtended ? 20 : 1;
-      bool fullyLoaded = readExtended;
-      for (int blockIndex = 0; blockIndex < blocksToRead; blockIndex++) {
-        if (blocksData[blockIndex] != null) {
-          continue; // Already read!
-        }
-
-        // Read block using FeliCa Read Without Encryption
-        final response = await felicaReadWithoutEncryption(tag.id, [
-          blockIndex,
-        ], serviceCode: suicaServiceCode);
-
-        debugPrint(
-          '[_tryReadSuica] Block $blockIndex response len=${response.length}: ${response.map((b) => b.toRadixString(16).padLeft(2, "0")).join(" ")}',
-        );
-
-        // Response should contain length, response code, IDm, status flags, block count, block data
-        // status flags are at index 10 and 11, block data starts at index 13
-        if (response.length < 29) {
-          fullyLoaded = false;
-          break; // Response too short or read finished
-        }
-
-        final status1 = response[10];
-        final status2 = response[11];
-        if (status1 != 0 || status2 != 0) {
-          fullyLoaded = false;
-          break; // Non-zero status flags indicate end of records or error
-        }
-
-        final blockData = response.sublist(13, 29);
-        final blockBalance = blockData[10] | (blockData[11] << 8);
-
-        if (blockIndex == 0) {
-          balance = blockBalance.toDouble();
-        }
-
-        blocksData[blockIndex] = blockData;
-        blockBalances[blockIndex] = blockBalance.toDouble();
-      }
-
-      final List<TransitTransaction> transactions = [];
-      for (int i = 0; i < 20; i++) {
-        final blockData = blocksData[i];
-        if (blockData == null) continue;
-
-        // Filter out empty transaction records (all zeros or all 0xFF, common on new cards)
-        if (blockData.every((b) => b == 0 || b == 0xFF)) {
-          continue;
-        }
-
-        // Bytes 13-14: Sequence Number (big-endian)
-        final seq = (blockData[13] << 8) | blockData[14];
-
-        // Filter out empty transaction records (sequence number is 0)
-        if (seq == 0) {
-          continue;
-        }
-
-        double amt = 0.0;
-        if (i + 1 < 20 && blockBalances[i + 1] != null) {
-          amt = blockBalances[i]! - blockBalances[i + 1]!;
-        }
-
-        final tx = Suica.parseTransaction(blockData, amt);
-        transactions.add(tx);
-      }
-
-      final suica = Suica(
-        tag.id,
-        tag.pmm,
-        tag.systemCode,
-        balance: balance,
-        transactions: transactions,
-        snapshotTime: DateTime.now(),
-        rawBlocks: blocksData,
-        rawBalances: blockBalances,
-        tags: const [CardTag.suica, CardTag.japanTransit, CardTag.felica],
-      );
-
-      return ScannedCard(
-        card: suica,
-        source: source,
-        isExtendedInfoFullyLoaded: fullyLoaded,
-      );
+      newest = await reader.readBlock(tag.id, Suica.historyService, 0);
     } catch (e) {
       log('CardReaderEngine Suica read error: $e');
       return null;
     }
+    if (newest == null) return null;
+    return ScannedCard(
+      card: Suica.fromDump(
+        tag.id,
+        tag.pmm,
+        tag.systemCode,
+        FelicaDump(
+          complete: false,
+          services: {
+            Suica.historyService: {0: newest},
+          },
+        ),
+        snapshotTime: DateTime.now(),
+        tags: _suicaTags,
+      ),
+      source: source,
+    );
   }
 
   /// Try to read ISO14443-4 T-Union card info, balance, and transaction history
@@ -998,6 +920,7 @@ class CardReaderEngine {
         isInterchangeEnabled: isInterchangeEnabled,
         tags: tags,
         rawBlocks: blocksData,
+        isHistoryComplete: fullyLoaded,
       );
 
       debugPrint(

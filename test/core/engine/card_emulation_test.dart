@@ -5,21 +5,33 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hinata_go/core/crypto/spad0.dart';
 import 'package:hinata_go/core/engine/card_emulation.dart';
 import 'package:hinata_go/core/engine/card_reader_engine.dart';
+import 'package:hinata_go/core/engine/felica_dump_reader.dart';
 import 'package:hinata_go/core/engine/felica_tag.dart';
 import 'package:hinata_go/models/card/aic.dart';
+import 'package:hinata_go/models/card/card.dart';
 import 'package:hinata_go/models/card/felica.dart';
+import 'package:hinata_go/models/card/felica_dump.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/ndef.dart';
+import 'package:hinata_go/models/card/suica.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
 /// Hands length-prefixed FeliCa frames to an emulated card.
 class _FelicaTagChannel implements NfcCardChannel {
   final FelicaTag tag;
 
-  _FelicaTagChannel(this.tag);
+  /// How many commands are answered before the card leaves the field.
+  int? answers;
+
+  _FelicaTagChannel(this.tag, {this.answers});
 
   @override
   Future<Uint8List> transceive(Uint8List data, {Duration? timeout}) async {
+    final left = answers;
+    if (left != null) {
+      if (left == 0) throw StateError('Card left');
+      answers = left - 1;
+    }
     expect(data[0], data.length);
     final response = tag.process(Uint8List.sublistView(data, 1));
     if (response == null) throw StateError('No response');
@@ -52,7 +64,7 @@ void main() {
   });
 
   test('an emulated Amusement IC reads back as the saved card', () async {
-    final saved = Aic(idm, pmm, systemCodes, accessCode);
+    final saved = Aic.fromAccessCode(idm, pmm, systemCodes, accessCode);
     expect(emulationKindOf(saved), EmulationKind.amusementIc);
     final target = emulationTargetFor(saved, type4MaxRead: 51);
     expect(target.type4, isNull);
@@ -99,13 +111,150 @@ void main() {
       0xFE,
       0x00,
     ]);
-    // Nothing was saved beyond the identity, so no block reads.
+    // No blocks were saved, so every block reads as zeros.
     expect(
       tag.process(
         Uint8List.fromList([0x06, ...idm, 1, 0x0B, 0x00, 1, 0x80, 0]),
       ),
-      [0x07, ...idm, 0x01, 0xA6],
+      [0x07, ...idm, 0x00, 0x00, 1, ...Uint8List(16)],
     );
+  });
+
+  test('a fully read card answers only the blocks it had', () {
+    final block = _hex('00112233445566778899AABBCCDDEEFF');
+    final felica = Felica(
+      idm,
+      _hex('0120220427674EFF'),
+      systemCodes,
+      dump: FelicaDump(
+        complete: true,
+        services: {
+          0x090F: {0: block},
+        },
+      ),
+    );
+    final tag = emulationTargetFor(felica, type4MaxRead: 51).felica;
+    Uint8List? check(int service, int block) => tag.process(
+      Uint8List.fromList([
+        0x06,
+        ...idm,
+        1,
+        service & 0xFF,
+        service >> 8,
+        1,
+        0x80,
+        block,
+      ]),
+    );
+
+    expect(check(0x090F, 0), [0x07, ...idm, 0, 0, 1, ...block]);
+    // Past the end of the service, and a service the card did not have.
+    expect(check(0x090F, 1), [0x07, ...idm, 0x01, 0xA8]);
+    expect(check(0x000B, 0), [0x07, ...idm, 0x01, 0xA6]);
+  });
+
+  test('a FeliCa card reads back with every block it saved', () async {
+    final history = _hex('1602000033A0E3420000E80300000100');
+    final saved = Felica(
+      idm,
+      _hex('0120220427674EFF'),
+      Uint16List.fromList([0x0003]),
+      dump: FelicaDump(
+        complete: true,
+        services: {
+          0x008B: {0: Uint8List(16)},
+          0x090F: {0: history, 1: Uint8List(16)},
+        },
+      ),
+    );
+    final target = emulationTargetFor(saved, type4MaxRead: 51);
+    final engine = CardReaderEngine(_FelicaTagChannel(target.felica));
+
+    final read = await engine.handleFelica(
+      tag: Felica(idm, saved.pmm, saved.systemCode),
+    );
+
+    final card = read!.card;
+    expect(card, isA<Suica>());
+    expect(read.isExtendedInfoFullyLoaded, isTrue);
+    expect((card as Suica).balance, 1000);
+    expect(card.dump!.services.keys, [0x008B, 0x090F]);
+    expect(card.dump!.blockCount, 3);
+    expect(card.dump!.block(0x090F, 0), history);
+
+    final decoded = ICCard.fromJson(card.toJson()) as Suica;
+    expect(decoded.balance, 1000);
+    expect(decoded.transactions.length, card.transactions.length);
+    expect(decoded.isFullyRead, isTrue);
+    expect(card.toRemoteJson().containsKey('dump'), isFalse);
+  });
+
+  test('a read that stops early keeps its blocks, marked incomplete', () async {
+    final saved = Felica(
+      idm,
+      _hex('0120220427674EFF'),
+      systemCodes,
+      dump: FelicaDump(
+        complete: true,
+        services: {
+          0x100B: {for (var i = 0; i < 4; i++) i: Uint8List(16)..[0] = i},
+        },
+      ),
+    );
+    final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
+    // Two service searches, then two block reads before the card leaves.
+    final channel = _FelicaTagChannel(tag, answers: 4);
+
+    final dump = await FelicaDumpReader(channel).read(saved);
+
+    expect(dump.complete, isFalse);
+    expect(dump.services[0x100B]!.keys, [0, 1]);
+  });
+
+  test('a Lite-S keeps every readable block of its one service', () async {
+    final saved = Aic.fromAccessCode(idm, pmm, systemCodes, accessCode);
+    final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
+
+    final dump = await FelicaDumpReader(_FelicaTagChannel(tag)).read(saved);
+
+    expect(dump.complete, isTrue);
+    expect(dump.services.keys, [0x000B]);
+    expect(dump.services[0x000B]!.keys, FelicaDumpReader.liteBlocks);
+    expect(dump.block(0x000B, 0), saved.dump!.block(0x000B, 0));
+    // The Lite-S read/write service reads the same blocks.
+    expect(
+      tag.process(
+        Uint8List.fromList([0x06, ...idm, 1, 0x09, 0x00, 1, 0x80, 0]),
+      ),
+      [0x07, ...idm, 0, 0, 1, ...saved.dump!.block(0x000B, 0)!],
+    );
+    expect(emulationIsPartial(saved), isTrue);
+    expect(emulatesLite(saved), isTrue);
+  });
+
+  test('a Lite-S emulates its saved MAC and MAC_A as they were read', () {
+    final mac = Uint8List(16)..fillRange(0, 16, 0xAB);
+    final macA = Uint8List(16)..fillRange(0, 16, 0xCD);
+    final saved = Felica(
+      idm,
+      pmm,
+      systemCodes,
+      dump: FelicaDump(
+        complete: true,
+        services: {
+          0x000B: {0x81: mac, 0x91: macA},
+        },
+      ),
+    );
+    final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
+    Uint8List? read(int block) => tag.process(
+      Uint8List.fromList([0x06, ...idm, 1, 0x0B, 0x00, 1, 0x80, block]),
+    );
+
+    expect(read(0x81), [0x07, ...idm, 0, 0, 1, ...mac]);
+    expect(read(0x91), [0x07, ...idm, 0, 0, 1, ...macA]);
+    // A Lite-S block that was not saved reads as zeros.
+    expect(read(0x82), [0x07, ...idm, 0, 0, 1, ...Uint8List(16)]);
   });
 
   test('only cards with complete saved data are emulated', () {
@@ -116,7 +265,10 @@ void main() {
     );
     expect(emulationKindOf(Felica(idm, Uint8List(0), systemCodes)), isNull);
     expect(emulationKindOf(Felica(idm, pmm, Uint16List(0))), isNull);
-    expect(emulationKindOf(Aic(idm, pmm, systemCodes, Uint8List(4))), isNull);
+    expect(
+      emulationKindOf(Aic.fromAccessCode(idm, pmm, systemCodes, Uint8List(4))),
+      isNull,
+    );
     expect(emulationKindOf(Iso14443(_hex('01020304'), 0x08, 0x0004)), isNull);
   });
 }

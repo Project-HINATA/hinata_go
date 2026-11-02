@@ -1,9 +1,14 @@
 import 'dart:typed_data';
 import 'package:hinata_go/core/data/ekicode_data.dart';
+import 'card.dart';
 import 'felica.dart';
+import 'felica_dump.dart';
 import 'transit.dart';
 
 class Suica extends Felica with TransitCard {
+  /// The history service, one 16-byte record per block, newest first.
+  static const historyService = 0x090F;
+
   @override
   final double balance;
 
@@ -13,9 +18,6 @@ class Suica extends Felica with TransitCard {
   @override
   final DateTime? snapshotTime;
 
-  final List<Uint8List?> rawBlocks;
-  final List<double?> rawBalances;
-
   Suica(
     super.id,
     super.pmm,
@@ -24,9 +26,49 @@ class Suica extends Felica with TransitCard {
     required this.transactions,
     this.snapshotTime,
     super.tags,
-    this.rawBlocks = const [],
-    this.rawBalances = const [],
+    super.dump,
   });
+
+  /// A card whose balance and history come from [dump]'s history service.
+  factory Suica.fromDump(
+    Uint8List id,
+    Uint8List pmm,
+    Uint16List systemCode,
+    FelicaDump dump, {
+    DateTime? snapshotTime,
+    List<CardTag> tags = const [],
+  }) {
+    final history = dump.services[historyService] ?? const {};
+    double? balanceOf(int block) {
+      final data = history[block];
+      return data == null ? null : (data[10] | data[11] << 8).toDouble();
+    }
+
+    final transactions = <TransitTransaction>[];
+    for (final MapEntry(key: number, value: data) in history.entries) {
+      // Unused records are all zeros or all 0xFF, or have no sequence number.
+      if (data.every((b) => b == 0 || b == 0xFF)) continue;
+      if ((data[13] << 8 | data[14]) == 0) continue;
+      // A record's amount is the balance change since the record before it.
+      final previous = balanceOf(number + 1);
+      final amount = previous == null ? 0.0 : balanceOf(number)! - previous;
+      transactions.add(parseTransaction(data, amount));
+    }
+
+    return Suica(
+      id,
+      pmm,
+      systemCode,
+      balance: balanceOf(0) ?? 0,
+      transactions: transactions,
+      snapshotTime: snapshotTime,
+      tags: tags,
+      dump: dump,
+    );
+  }
+
+  @override
+  bool get isHistoryComplete => isFullyRead;
 
   @override
   String get balanceFormatted => "${balance.toInt()} JPY";
@@ -163,6 +205,21 @@ class Suica extends Felica with TransitCard {
 
   factory Suica.fromJson(Map<String, dynamic> json) {
     final felica = Felica.fromJson(json);
+    final snapshotTime = json['snapshotTime'] != null
+        ? DateTime.tryParse(json['snapshotTime'] as String)
+        : null;
+    final dump = felica.dump;
+    if (dump != null && dump.services[historyService]?.isNotEmpty == true) {
+      return Suica.fromDump(
+        felica.id,
+        felica.pmm,
+        felica.systemCode,
+        dump,
+        snapshotTime: snapshotTime,
+        tags: felica.tags,
+      );
+    }
+    // Saved before cards kept their blocks.
     final transactionsJson = json['transactions'] as List<dynamic>? ?? [];
     return Suica(
       felica.id,
@@ -172,10 +229,9 @@ class Suica extends Felica with TransitCard {
       transactions: transactionsJson
           .map((e) => TransitTransaction.fromJson(e as Map<String, dynamic>))
           .toList(),
-      snapshotTime: json['snapshotTime'] != null
-          ? DateTime.tryParse(json['snapshotTime'] as String)
-          : null,
+      snapshotTime: snapshotTime,
       tags: felica.tags,
+      dump: dump,
     );
   }
 }

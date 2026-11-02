@@ -155,6 +155,16 @@ class CurrentScanSessionNotifier extends Notifier<CurrentScanSessionState> {
     state = state.copyWith(isReadingExtendedInfo: value);
   }
 
+  /// Ends the extended read of the card in the field. It is not read again
+  /// while it stays, even when the read ended early; whether everything was
+  /// read stays with the card.
+  void finishExtendedRead() {
+    state = state.copyWith(
+      isReadingExtendedInfo: false,
+      isExtendedInfoLoaded: true,
+    );
+  }
+
   void updateCard(ScannedCard updatedCard) {
     if (state.hasScan &&
         state.scannedCard!.card.idString == updatedCard.card.idString) {

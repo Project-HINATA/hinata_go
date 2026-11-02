@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../core/engine/card_emulation.dart';
 import '../../core/engine/mifare_write_payload.dart';
 import '../../l10n/l10n.dart';
 import '../../models/card/card.dart';
+import '../../models/card/felica.dart';
 import '../../models/card/ndef.dart';
 import '../components/saved_cards/ndef_editor_dialog.dart';
 import '../../models/card/transit.dart';
@@ -24,6 +26,7 @@ import '../components/reader/scanned_card_detail_v2.dart';
 import '../components/reader/transit_history_card.dart';
 import '../components/reader/ndef_records_card.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/incomplete_read_badge.dart';
 import '../widgets/native_alert.dart';
 import '../widgets/save_card_dialog.dart';
 
@@ -300,6 +303,10 @@ class CardDetailPage extends HookConsumerWidget {
             const SizedBox(height: 16),
             TransitHistoryCard(card: activeCard),
           ],
+          if (activeCard is Felica) ...[
+            const SizedBox(height: 16),
+            _RawDataTile(card: activeCard),
+          ],
         ],
       ),
       actions: CardDetailBottomActions(
@@ -321,6 +328,86 @@ class CardDetailPage extends HookConsumerWidget {
         isSending: senderState.isSending,
         isSaving: false,
         isWriting: writerState.isWriting,
+      ),
+    );
+  }
+}
+
+/// Opens the blocks saved with [card]. Styled as the transaction history
+/// card it sits beside.
+class _RawDataTile extends StatelessWidget {
+  const _RawDataTile({required this.card});
+
+  final Felica card;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final blockCount = card.dump?.blockCount ?? 0;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.push('/card_raw', extra: card),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                Icon(Icons.data_object, color: colorScheme.primary, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    l10n.rawData,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                if (!card.isFullyRead) ...[
+                  const IncompleteReadBadge(),
+                  const SizedBox(width: 8),
+                ],
+                // The block count, in the pill the transaction history uses.
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$blockCount',
+                    style: textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -2129,13 +2129,13 @@ abstract class AppLocalizations {
   /// No description provided for @cardEmulateFelicaData.
   ///
   /// In en, this message translates to:
-  /// **'Only the saved IDm, PMm and system codes are emulated.'**
+  /// **'The saved IDm, PMm, system codes and blocks are emulated. Blocks without saved data read as zeros.'**
   String get cardEmulateFelicaData;
 
   /// No description provided for @cardEmulateAicData.
   ///
   /// In en, this message translates to:
-  /// **'Only the saved IDm, PMm, system codes and access code (S_PAD0) are emulated, not data that needs authentication.'**
+  /// **'The saved IDm, PMm, system codes and Lite-S blocks, with the access code in S_PAD0, are emulated. Blocks without saved data read as zeros.'**
   String get cardEmulateAicData;
 
   /// No description provided for @cardEmulatePollOnly.
@@ -2185,6 +2185,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This Banapass access code cannot be used to create a card.'**
   String get banapassAccessCodeCannotCreate;
+
+  /// No description provided for @cardEmulatePartial.
+  ///
+  /// In en, this message translates to:
+  /// **'This card was not fully read, so the emulation is incomplete: blocks that were not read return zeros.'**
+  String get cardEmulatePartial;
+
+  /// No description provided for @cardEmulateNoChallenge.
+  ///
+  /// In en, this message translates to:
+  /// **'A reader\'s challenge (MAC, MAC_A) cannot be answered, so readers that authenticate the card reject it.'**
+  String get cardEmulateNoChallenge;
+
+  /// No description provided for @cardReadIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'This card was not fully read. Blocks are missing, so emulating it is incomplete.'**
+  String get cardReadIncomplete;
+
+  /// No description provided for @rawData.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw data'**
+  String get rawData;
+
+  /// No description provided for @rawDataBlockCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 block} other{{count} blocks}}'**
+  String rawDataBlockCount(int count);
+
+  /// No description provided for @rawDataComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Every block that reads without encryption was read.'**
+  String get rawDataComplete;
+
+  /// No description provided for @rawDataNoBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocks were saved with this card. Scan it again to save them.'**
+  String get rawDataNoBlocks;
+
+  /// No description provided for @rawDataService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service {code}'**
+  String rawDataService(String code);
+
+  /// No description provided for @rawDataNoServiceBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocks'**
+  String get rawDataNoServiceBlocks;
+
+  /// No description provided for @rawDataCopyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy all'**
+  String get rawDataCopyAll;
+
+  /// No description provided for @rawDataCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw data copied to clipboard'**
+  String get rawDataCopied;
+
+  /// No description provided for @cardNotFullyRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Not fully read'**
+  String get cardNotFullyRead;
 }
 
 class _AppLocalizationsDelegate

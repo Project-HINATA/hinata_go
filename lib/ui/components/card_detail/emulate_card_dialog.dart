@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/engine/card_emulation.dart';
 import '../../../l10n/l10n.dart';
+import '../../../models/card/card.dart';
 import '../../../models/card/saved_card.dart';
 import '../../../providers/card_emulator_provider.dart';
 
@@ -18,14 +19,16 @@ Future<void> showCardEmulateFlow(
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => const _EmulateDialog(),
+    builder: (context) => _EmulateDialog(card: card.card),
   );
   // The dialog may leave with its route, not through its stop button.
   await emulator.stop();
 }
 
 class _EmulateDialog extends ConsumerWidget {
-  const _EmulateDialog();
+  final ICCard card;
+
+  const _EmulateDialog({required this.card});
 
   Future<void> _stop(BuildContext context, WidgetRef ref) async {
     await ref.read(cardEmulatorProvider.notifier).stop();
@@ -80,6 +83,10 @@ class _EmulateDialog extends ConsumerWidget {
                     text: l10n.cardEmulateOfficialWarning,
                     warning: true,
                   ),
+                if (emulationIsPartial(card))
+                  _InfoRow(text: l10n.cardEmulatePartial, warning: true),
+                if (emulatesLite(card))
+                  _InfoRow(text: l10n.cardEmulateNoChallenge, warning: true),
                 ...switch (emulator.kind) {
                   EmulationKind.ndef => [
                     _InfoRow(text: l10n.ndefEmulateReadOnly),

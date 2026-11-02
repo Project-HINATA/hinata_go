@@ -48,4 +48,7 @@ mixin TransitCard on ICCard {
   List<TransitTransaction> get transactions;
   String? get cardNumber;
   DateTime? get snapshotTime;
+
+  /// Whether the whole transaction history was read.
+  bool get isHistoryComplete;
 }

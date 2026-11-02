@@ -134,7 +134,7 @@ void main() {
     });
 
     test('Amusement IC (AIC) preserves tags across JSON serialization', () {
-      final card = Aic(
+      final card = Aic.fromAccessCode(
         Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]),
         Uint8List(8),
         Uint16List.fromList([0x8157]),

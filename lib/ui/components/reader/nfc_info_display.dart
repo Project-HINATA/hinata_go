@@ -7,7 +7,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
 
-import '../../../models/card/transit.dart';
 import '../../../providers/current_scan_session_provider.dart';
 import '../../../providers/hardware_device_provider.dart';
 import '../../../providers/nfc_provider.dart';
@@ -91,7 +90,7 @@ class _NfcDisplayInputs {
     required this.isIOS,
     required this.isPaused,
     required this.isReadingExtendedInfo,
-    required this.isTransitCard,
+    required this.hasExtendedInfo,
     required this.isExtendedInfoLoaded,
   });
 
@@ -122,9 +121,9 @@ class _NfcDisplayInputs {
       isReadingExtendedInfo: ref.watch(
         currentScanSessionProvider.select((s) => s.isReadingExtendedInfo),
       ),
-      isTransitCard: ref.watch(
+      hasExtendedInfo: ref.watch(
         currentScanSessionProvider.select(
-          (s) => s.scannedCard?.card is TransitCard,
+          (s) => s.scannedCard?.hasExtendedInfo ?? false,
         ),
       ),
       isExtendedInfoLoaded: ref.watch(
@@ -145,7 +144,7 @@ class _NfcDisplayInputs {
   final bool isIOS;
   final bool isPaused;
   final bool isReadingExtendedInfo;
-  final bool isTransitCard;
+  final bool hasExtendedInfo;
   final bool isExtendedInfoLoaded;
 }
 
@@ -176,7 +175,7 @@ class _NfcDisplayState {
     final showReadingExtended =
         inputs.isReadingExtendedInfo ||
         (inputs.isCardPresent &&
-            inputs.isTransitCard &&
+            inputs.hasExtendedInfo &&
             !inputs.isExtendedInfoLoaded);
 
     return _NfcDisplayState(

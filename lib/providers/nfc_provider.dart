@@ -15,7 +15,6 @@ import '../models/card/card_read_result.dart';
 import '../models/card/iso14443a.dart';
 import '../models/card/scanned_card.dart';
 import '../models/card/saved_card.dart';
-import '../models/card/transit.dart';
 import '../models/card/tunion.dart';
 import '../models/scan_log.dart';
 import '../navigation/router.dart';
@@ -339,9 +338,9 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
           presenceMode: ScanPresenceMode.timeoutHeartbeat,
         );
 
-        // 3. If it is a transit card, read extended info sequentially if not yet loaded
+        // 3. Read transit history and FeliCa blocks if not yet loaded
         final sessionState = ref.read(currentScanSessionProvider);
-        if (finalCard.card is TransitCard &&
+        if (finalCard.hasExtendedInfo &&
             !sessionState.isReadingExtendedInfo &&
             !sessionState.isExtendedInfoLoaded) {
           ref
@@ -365,11 +364,9 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
               await _updateRegisteredScan(extendedCard);
             }
           } catch (e) {
-            log('Error reading extended transit history: $e');
+            log('Error reading extended card info: $e');
           } finally {
-            ref
-                .read(currentScanSessionProvider.notifier)
-                .setReadingExtendedInfo(false);
+            ref.read(currentScanSessionProvider.notifier).finishExtendedRead();
           }
         }
       }

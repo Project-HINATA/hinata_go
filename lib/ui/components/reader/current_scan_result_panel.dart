@@ -103,6 +103,7 @@ class CurrentScanResultPanel extends HookConsumerWidget {
         card: currentScan.card,
         source: currentScan.source,
         showDismissControls: session.showDismissControls,
+        isReadingExtendedInfo: session.isReadingExtendedInfo,
         animationController: animationController,
         onSave: () {
           showDialog(
@@ -159,6 +160,7 @@ class _CurrentScanResultContent extends StatelessWidget {
     required this.card,
     required this.source,
     required this.showDismissControls,
+    required this.isReadingExtendedInfo,
     required this.animationController,
     required this.onSave,
     required this.onSend,
@@ -169,6 +171,7 @@ class _CurrentScanResultContent extends StatelessWidget {
   final ICCard card;
   final String source;
   final bool showDismissControls;
+  final bool isReadingExtendedInfo;
   final AnimationController animationController;
   final VoidCallback onSave;
   final Future<void> Function() onSend;
@@ -192,7 +195,10 @@ class _CurrentScanResultContent extends StatelessWidget {
         ],
         if (card is TransitCard) ...[
           const SizedBox(height: 16),
-          TransitHistoryCard(card: card as TransitCard),
+          TransitHistoryCard(
+            card: card as TransitCard,
+            showReadState: !isReadingExtendedInfo,
+          ),
         ],
         if (scannedCard.isUsable) ...[
           const SizedBox(height: 24),

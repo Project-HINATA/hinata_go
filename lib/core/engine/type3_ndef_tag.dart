@@ -24,10 +24,13 @@ class Type3NdefTag extends FelicaTag {
         idm: idm,
         pmm: pmm,
         systemCodes: const [ndefSystemCode],
-        services: const {_readOnlyService, _readWriteService},
-        blocks: _blocksFor(message, dataBlocks),
+        services: _servicesFor(_blocksFor(message, dataBlocks)),
         markerBlock: dataBlocks,
       );
+
+  static Map<int, Map<int, Uint8List>> _servicesFor(
+    Map<int, Uint8List> blocks,
+  ) => {_readOnlyService: blocks, _readWriteService: blocks};
 
   factory Type3NdefTag(
     Uint8List message, {

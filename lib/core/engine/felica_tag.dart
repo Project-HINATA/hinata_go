@@ -1,8 +1,13 @@
 import 'package:flutter/foundation.dart';
 
+import '../../models/card/felica_dump.dart';
+
 /// An emulated FeliCa card answering the commands a reader may send without
 /// authentication: polling, system code and service queries, and reads
-/// without encryption. Writes are refused.
+/// without encryption. Writes are refused, so a reader that writes a
+/// challenge, such as to a Lite-S RC block, gets no answer to it.
+///
+/// A block the card has but whose data was not saved reads as zeros.
 ///
 /// Commands and responses start with the command code, without the FeliCa
 /// length byte.
@@ -17,9 +22,18 @@ class FelicaTag {
   /// The first one is the system code of the polling response.
   final List<int> systemCodes;
 
-  /// Service codes readable without encryption; they all read [blocks].
-  final Set<int> services;
-  final Map<int, Uint8List> blocks;
+  /// Service codes readable without encryption, each to its saved blocks.
+  final Map<int, Map<int, Uint8List>> services;
+
+  /// Whether the card's blocks were not all saved. Then any service that
+  /// reads without encryption is answered, and every block missing from it
+  /// reads as zeros; otherwise a block past the saved ones is past the end of
+  /// its service.
+  final bool partial;
+
+  /// Block numbers every service has though they may not be saved, such as
+  /// the fixed Lite-S blocks; missing ones read as zeros.
+  final Set<int> fixedBlocks;
 
   /// The block whose read counts as the reader reading the card.
   final int? markerBlock;
@@ -31,7 +45,8 @@ class FelicaTag {
     required this.pmm,
     required this.systemCodes,
     this.services = const {},
-    this.blocks = const {},
+    this.partial = false,
+    this.fixedBlocks = const {},
     this.markerBlock,
   }) {
     if (idm.length != 8 || pmm.length != 8) {
@@ -44,8 +59,10 @@ class FelicaTag {
         'Must not be empty',
       );
     }
-    if (blocks.values.any((block) => block.length != 16)) {
-      throw ArgumentError('Blocks must be 16 bytes');
+    for (final blocks in services.values) {
+      if (blocks.values.any((block) => block.length != 16)) {
+        throw ArgumentError('Blocks must be 16 bytes');
+      }
     }
   }
 
@@ -68,6 +85,7 @@ class FelicaTag {
       0x04 => _response(0x05, [0x00]),
       0x06 => _check(command),
       0x08 => _response(0x09, [0x01, 0xA5]),
+      0x0A => _searchServiceCode(command),
       0x0C => _response(0x0D, [
         systemCodes.length,
         for (final code in systemCodes) ...[code >> 8, code & 0xFF],
@@ -100,10 +118,20 @@ class FelicaTag {
     return _response(0x03, [
       count,
       for (var i = 0; i < count; i++)
-        ...(services.contains(_code(command, 10 + 2 * i))
+        ...(_hasService(_code(command, 10 + 2 * i))
             ? [0x00, 0x00]
             : [0xFF, 0xFF]),
     ]);
+  }
+
+  /// The service at the requested index, or 0xFFFF past the last. The card
+  /// has no areas to report.
+  Uint8List? _searchServiceCode(Uint8List command) {
+    if (command.length != 11) return null;
+    final index = _code(command, 9);
+    final codes = services.keys.toList();
+    final code = index < codes.length ? codes[index] : 0xFFFF;
+    return _response(0x0B, [code & 0xFF, code >> 8]);
   }
 
   Uint8List _check(Uint8List command) {
@@ -114,9 +142,10 @@ class FelicaTag {
     if (serviceCount < 1 || serviceCount > 16) return error(0xA1);
     var offset = 10 + 2 * serviceCount;
     if (command.length <= offset) return error(0xA1);
-    for (var i = 0; i < serviceCount; i++) {
-      if (!services.contains(_code(command, 10 + 2 * i))) return error(0xA6);
-    }
+    final codes = [
+      for (var i = 0; i < serviceCount; i++) _code(command, 10 + 2 * i),
+    ];
+    if (!codes.every(_hasService)) return error(0xA6);
     final count = command[offset++];
     if (count < 1 || count > maxBlocksPerRead) return error(0xA2);
 
@@ -137,15 +166,21 @@ class FelicaTag {
         number = command[offset + 1] | command[offset + 2] << 8;
         offset += 3;
       }
-      final block = blocks[number];
-      if (block == null) return error(0xA8);
+      final block = services[codes[head & 0x0F]]?[number];
+      if (block == null && !partial && !fixedBlocks.contains(number)) {
+        return error(0xA8);
+      }
       if (number == markerBlock) markerRead = true;
-      data.addAll(block);
+      data.addAll(block ?? Uint8List(16));
     }
     if (offset != command.length) return error(0xA2);
     if (markerRead) _markerRead = true;
     return _response(0x07, [0x00, 0x00, count, ...data]);
   }
+
+  bool _hasService(int code) =>
+      services.containsKey(code) ||
+      (partial && FelicaDump.readsWithoutEncryption(code));
 
   static int _code(Uint8List command, int offset) =>
       command[offset] | command[offset + 1] << 8;

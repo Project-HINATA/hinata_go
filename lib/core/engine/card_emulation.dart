@@ -1,10 +1,8 @@
-import 'dart:typed_data';
-
 import '../../models/card/aic.dart';
 import '../../models/card/card.dart';
 import '../../models/card/felica.dart';
 import '../../models/card/ndef.dart';
-import '../crypto/spad0.dart';
+import 'felica_dump_reader.dart';
 import 'felica_tag.dart';
 import 'type3_ndef_tag.dart';
 import 'type4_ndef_tag.dart';
@@ -22,9 +20,12 @@ class EmulationTarget {
   const EmulationTarget({required this.kind, required this.felica, this.type4});
 }
 
-/// Amusement IC is a FeliCa Lite-S; S_PAD0 holds the access code.
-const _liteSReadOnlyService = 0x000B;
-const _liteSReadWriteService = 0x0009;
+/// A Lite-S reads every block through both of its services.
+const _liteReadOnlyService = 0x000B;
+const _liteReadWriteService = 0x0009;
+
+/// The Lite-S blocks, which every Lite-S has whether or not they were saved.
+final _liteFixedBlocks = FelicaDumpReader.liteBlocks.toSet();
 
 /// The kind [card] would be emulated as, or null when it cannot be.
 ///
@@ -49,6 +50,14 @@ EmulationKind? emulationKindOf(ICCard card) {
   return EmulationKind.felica;
 }
 
+/// Whether emulating [card] leaves out blocks the card had, because they
+/// were not all read. Those read as zeros.
+bool emulationIsPartial(ICCard card) => card is Felica && !card.isFullyRead;
+
+/// Whether [card] is a Lite or Lite-S, whose MAC answers to a reader's
+/// challenge cannot be emulated.
+bool emulatesLite(ICCard card) => card is Felica && card.isLite;
+
 EmulationTarget emulationTargetFor(ICCard card, {required int type4MaxRead}) {
   switch (emulationKindOf(card)) {
     case EmulationKind.ndef:
@@ -58,40 +67,30 @@ EmulationTarget emulationTargetFor(ICCard card, {required int type4MaxRead}) {
         type4: Type4NdefTag(message, maxRead: type4MaxRead),
         felica: Type3NdefTag(message, idm: Type3NdefTag.randomIdm()),
       );
-    case EmulationKind.amusementIc:
-      final aic = card as Aic;
-      return EmulationTarget(
-        kind: EmulationKind.amusementIc,
-        felica: FelicaTag(
-          idm: aic.id,
-          pmm: aic.pmm,
-          systemCodes: aic.systemCode,
-          services: const {_liteSReadOnlyService, _liteSReadWriteService},
-          blocks: {0: amusementIcSpad0(aic.accessCode)},
-          markerBlock: 0,
-        ),
-      );
-    case EmulationKind.felica:
+    case final EmulationKind kind:
       final felica = card as Felica;
+      final dump = felica.dump;
+      final services = {...?dump?.services};
+      // A Lite-S reads the same blocks through its read/write service.
+      final liteBlocks = services[_liteReadOnlyService];
+      if (felica.isLite && liteBlocks != null) {
+        services.putIfAbsent(_liteReadWriteService, () => liteBlocks);
+      }
       return EmulationTarget(
-        kind: EmulationKind.felica,
+        kind: kind,
         felica: FelicaTag(
           idm: felica.id,
           pmm: felica.pmm,
           systemCodes: felica.systemCode,
+          services: services,
+          partial: !felica.isFullyRead,
+          fixedBlocks: felica.isLite ? _liteFixedBlocks : const {},
+          markerBlock: kind == EmulationKind.amusementIc
+              ? Aic.spad0Block
+              : null,
         ),
       );
     case null:
       throw ArgumentError.value(card.runtimeType, 'card', 'Cannot emulate');
   }
-}
-
-/// S_PAD0 of an Amusement IC holding [accessCode]. Only the access code and
-/// the zero before it are known from a read card; the bytes ahead of them
-/// are left zero.
-Uint8List amusementIcSpad0(Uint8List accessCode) {
-  if (accessCode.length != 10) {
-    throw ArgumentError.value(accessCode.length, 'accessCode.length');
-  }
-  return spad0Encrypt(Uint8List(16)..setAll(6, accessCode));
 }

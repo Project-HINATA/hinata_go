@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:cardcipher/epass.dart';
 
 import 'card.dart';
+import 'felica_dump.dart';
 
 BigInt bytesToBigInt(Uint8List bytes) {
   BigInt result = BigInt.zero;
@@ -16,7 +17,17 @@ class Felica extends ICCard implements HasEPass {
   final Uint8List pmm;
   final Uint16List systemCode;
 
-  Felica(super.id, this.pmm, this.systemCode, {super.tags});
+  /// The blocks read from the card; null when none were saved with it.
+  final FelicaDump? dump;
+
+  Felica(super.id, this.pmm, this.systemCode, {super.tags, this.dump});
+
+  /// FeliCa Lite and Lite-S, told apart from other ICs by the IC type in the
+  /// PMm. They have one block map, read through service 0x000B.
+  bool get isLite => pmm.length == 8 && (pmm[1] == 0xF0 || pmm[1] == 0xF1);
+
+  /// Whether every block that reads without encryption was saved.
+  bool get isFullyRead => dump?.complete ?? false;
 
   String get pmmString =>
       pmm.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
@@ -51,8 +62,14 @@ class Felica extends ICCard implements HasEPass {
       ...super.toJson(),
       'pmm': pmmString,
       'systemCode': systemCode.toList(),
+      if (dump != null) 'dump': dump!.toJson(),
     };
   }
+
+  /// Remote instances take the card's identity, not its blocks.
+  @override
+  Map<String, dynamic> toRemoteJson({bool includeCanonicalFields = true}) =>
+      toJson()..remove('dump');
 
   factory Felica.fromJson(Map<String, dynamic> json) {
     return Felica(
@@ -64,6 +81,9 @@ class Felica extends ICCard implements HasEPass {
       tags:
           (json['tags'] as List<dynamic>?)?.map(CardTag.fromJson).toList() ??
           const [],
+      dump: json['dump'] is Map<String, dynamic>
+          ? FelicaDump.fromJson(json['dump'] as Map<String, dynamic>)
+          : null,
     );
   }
 
