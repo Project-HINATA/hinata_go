@@ -279,8 +279,7 @@ private struct ClipCapLane: View {
     let counted = row?.pieces.contains(where: inWindow) == true
     VStack(alignment: .leading, spacing: 8) {
       ClipLaneHeader(value: first.map { first in
-        counted ? prismCapText(paidBefore: cap.paidBefore, priceCap: cap.priceCap)
-          : first.isClosed == true ? String(localized: "不封顶") : String(localized: "封顶") + " " + prismMoney(first.priceCap ?? 0)
+        counted ? prismCapText(paidBefore: cap.paidBefore, priceCap: cap.priceCap) : capWindowText(first)
       } ?? "", quiet: true) {
         Text(cap.name).fontWeight(.semibold).lineLimit(1)
       }
@@ -289,14 +288,23 @@ private struct ClipCapLane: View {
                    pick: { next in
                      let same = tapped && row.map { $0.pieces[0].startMinute == next.pieces[0].startMinute && $0.pieces[0].ruleId == next.pieces[0].ruleId } == true
                      picked.picked = same || prismIsNow(next, nowMinute) ? nil : (next.pieces[0].startMinute, next.pieces[0].ruleId)
-                   }) { s in
+                   },
+                   // A gap no window covers is outlined, so it reads as uncovered rather than as nothing.
+                   outlined: { $0.isClosed == true },
+                   name: { $0.isClosed == true ? String(localized: "未覆盖") : $0.label }) { s in
         AnyShapeStyle(s.isClosed == true ? Color.clear : Color.primary.opacity(0.12))
       }
       if let row, let first {
-        Text((first.isClosed == true ? String(localized: "不封顶") : first.label) + " " + row.startLabel + "–" + row.endLabel)
+        Text((first.isClosed == true ? String(localized: "未覆盖") : first.label) + " " + row.startLabel + "–" + row.endLabel)
           .font(.caption).foregroundStyle(.secondary).lineLimit(1)
       }
     }
+  }
+
+  /// A cap window not yet counting: its cap, or none when no window covers it or its cap is 0.
+  private func capWindowText(_ s: PrismDaySegment) -> String {
+    s.isClosed == true ? String(localized: "未覆盖")
+      : (s.priceCap ?? 0) > 0 ? String(localized: "封顶") + " " + prismMoney(s.priceCap ?? 0) : String(localized: "不封顶")
   }
 }
 
@@ -325,14 +333,20 @@ private struct ClipDayStrip: View {
   let picked: PrismPeriodRow?
   var fill: ((PrismDaySegment) -> Double)? = nil
   let pick: (PrismPeriodRow) -> Void
+  /// Pieces drawn as a dashed outline instead of a fill.
+  let outlined: (PrismDaySegment) -> Bool
+  /// What a piece is called to VoiceOver.
+  let name: (PrismDaySegment) -> String
   let tone: (PrismDaySegment) -> AnyShapeStyle
   private static let gap: CGFloat = 2
 
   init(segments: [PrismDaySegment], rows: [PrismPeriodRow], nowMinute: Int, height: CGFloat, accent: Color,
        picked: PrismPeriodRow?, fill: ((PrismDaySegment) -> Double)? = nil, pick: @escaping (PrismPeriodRow) -> Void,
+       outlined: @escaping (PrismDaySegment) -> Bool = { _ in false },
+       name: @escaping (PrismDaySegment) -> String = { $0.label },
        tone: @escaping (PrismDaySegment) -> AnyShapeStyle) {
     self.segments = segments; self.rows = rows; self.nowMinute = nowMinute; self.height = height; self.accent = accent
-    self.picked = picked; self.fill = fill; self.pick = pick; self.tone = tone
+    self.picked = picked; self.fill = fill; self.pick = pick; self.outlined = outlined; self.name = name; self.tone = tone
   }
 
   var body: some View {
@@ -353,12 +367,17 @@ private struct ClipDayStrip: View {
                 }
               }
               .clipShape(Capsule())
+              .overlay {
+                if outlined(s) {
+                  Capsule().strokeBorder(Color.primary.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+                }
+              }
               .overlay { if isPicked { Capsule().inset(by: -3).strokeBorder(Color.primary.opacity(0.6), lineWidth: 2) } }
               .frame(width: usable * CGFloat(s.endMinute - s.startMinute) / 1440, height: height)
               .contentShape(Rectangle().inset(by: -10))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(Text((row?.startLabel ?? s.startLabel) + "–" + (row?.endLabel ?? s.endLabel) + " " + s.label))
+            .accessibilityLabel(Text((row?.startLabel ?? s.startLabel) + "–" + (row?.endLabel ?? s.endLabel) + " " + name(s)))
           }
         }
         Circle()

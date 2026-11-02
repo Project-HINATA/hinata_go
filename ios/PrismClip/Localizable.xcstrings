@@ -4716,6 +4716,23 @@
         }
       }
     },
+    "未覆盖" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not covered"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未覆盖"
+          }
+        }
+      }
+    },
     "新增" : {
       "extractionState" : "manual",
       "localizations" : {
