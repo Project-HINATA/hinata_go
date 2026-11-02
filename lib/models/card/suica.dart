@@ -67,8 +67,11 @@ class Suica extends Felica with TransitCard {
     );
   }
 
+  /// The history alone counts: it stays complete when the card left while
+  /// other services were being read.
   @override
-  bool get isHistoryComplete => isFullyRead;
+  bool get isHistoryComplete =>
+      dump?.isServiceComplete(historyService) ?? false;
 
   @override
   String get balanceFormatted => "${balance.toInt()} JPY";

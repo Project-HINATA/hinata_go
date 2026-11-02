@@ -13,6 +13,7 @@ import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/felica_dump.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/ndef.dart';
+import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/suica.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 
@@ -111,12 +112,12 @@ void main() {
       0xFE,
       0x00,
     ]);
-    // No blocks were saved, so every block reads as zeros.
+    // No services were saved, so the card has none to read.
     expect(
       tag.process(
         Uint8List.fromList([0x06, ...idm, 1, 0x0B, 0x00, 1, 0x80, 0]),
       ),
-      [0x07, ...idm, 0x00, 0x00, 1, ...Uint8List(16)],
+      [0x07, ...idm, 0x01, 0xA6],
     );
   });
 
@@ -170,14 +171,28 @@ void main() {
     final target = emulationTargetFor(saved, type4MaxRead: 51);
     final engine = CardReaderEngine(_FelicaTagChannel(target.felica));
 
+    final progress = <ScannedCard>[];
     final read = await engine.handleFelica(
       tag: Felica(idm, saved.pmm, saved.systemCode),
+      onProgress: progress.add,
     );
+
+    // The history shows record by record, before the other services are
+    // listed and read.
+    expect(progress, hasLength(2));
+    final first = progress.first.card as Suica;
+    expect(first.balance, 1000);
+    expect(first.isFullyRead, isFalse);
+    expect(first.dump!.services[0x090F]!.keys, [0]);
+    final last = progress.last.card as Suica;
+    expect(last.dump!.services.keys, [0x090F]);
+    expect(last.dump!.services[0x090F]!.keys, [0, 1]);
 
     final card = read!.card;
     expect(card, isA<Suica>());
     expect(read.isExtendedInfoFullyLoaded, isTrue);
     expect((card as Suica).balance, 1000);
+    // The finished dump keeps the card's order, not the reading order.
     expect(card.dump!.services.keys, [0x008B, 0x090F]);
     expect(card.dump!.blockCount, 3);
     expect(card.dump!.block(0x090F, 0), history);
@@ -209,17 +224,54 @@ void main() {
 
     expect(dump.complete, isFalse);
     expect(dump.services[0x100B]!.keys, [0, 1]);
+    expect(dump.isServiceComplete(0x100B), isFalse);
   });
 
-  test('a Lite-S keeps every readable block of its one service', () async {
+  test(
+    'a Suica history read in full stays complete if the card leaves',
+    () async {
+      final history = _hex('1602000033A0E3420000E80300000100');
+      final saved = Felica(
+        idm,
+        _hex('0120220427674EFF'),
+        Uint16List.fromList([0x0003]),
+        dump: FelicaDump(
+          complete: true,
+          services: {
+            0x090F: {0: history},
+            0x108F: {0: Uint8List(16), 1: Uint8List(16)},
+          },
+        ),
+      );
+      final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
+      // The history's one block and its end, three service searches, then one
+      // block of the next service before the card leaves.
+      final channel = _FelicaTagChannel(tag, answers: 6);
+
+      final read = await CardReaderEngine(
+        channel,
+      ).handleFelica(tag: Felica(idm, saved.pmm, saved.systemCode));
+
+      final card = read!.card as Suica;
+      expect(card.isFullyRead, isFalse);
+      expect(card.isHistoryComplete, isTrue);
+      expect(card.dump!.services[0x108F]!.keys, [0]);
+      final decoded = ICCard.fromJson(card.toJson()) as Suica;
+      expect(decoded.isHistoryComplete, isTrue);
+      expect(decoded.dump!.isServiceComplete(0x108F), isFalse);
+    },
+  );
+
+  test('a Lite-S reads back only the blocks it saved', () async {
     final saved = Aic.fromAccessCode(idm, pmm, systemCodes, accessCode);
     final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
 
     final dump = await FelicaDumpReader(_FelicaTagChannel(tag)).read(saved);
 
+    // Only S_PAD0 was saved; the other Lite-S blocks are missing.
     expect(dump.complete, isTrue);
     expect(dump.services.keys, [0x000B]);
-    expect(dump.services[0x000B]!.keys, FelicaDumpReader.liteBlocks);
+    expect(dump.services[0x000B]!.keys, [0]);
     expect(dump.block(0x000B, 0), saved.dump!.block(0x000B, 0));
     // The Lite-S read/write service reads the same blocks.
     expect(
@@ -253,8 +305,8 @@ void main() {
 
     expect(read(0x81), [0x07, ...idm, 0, 0, 1, ...mac]);
     expect(read(0x91), [0x07, ...idm, 0, 0, 1, ...macA]);
-    // A Lite-S block that was not saved reads as zeros.
-    expect(read(0x82), [0x07, ...idm, 0, 0, 1, ...Uint8List(16)]);
+    // A Lite-S block that was not saved is missing.
+    expect(read(0x82), [0x07, ...idm, 0x01, 0xA8]);
   });
 
   test('only cards with complete saved data are emulated', () {

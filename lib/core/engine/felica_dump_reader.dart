@@ -34,8 +34,19 @@ class FelicaDumpReader {
 
   /// Reads [tag]'s blocks. Never throws: if the card stops answering, the
   /// blocks read so far come back in a dump that is not complete.
-  Future<FelicaDump> read(Felica tag) async {
+  ///
+  /// The services in [first] are read before the card's services are
+  /// listed, and [onFirstBlock] gets the dump after each of their blocks, so
+  /// what a card is mostly read for shows as it is read. The finished dump
+  /// keeps the card's order of services.
+  Future<FelicaDump> read(
+    Felica tag, {
+    List<int> first = const [],
+    void Function(FelicaDump dump)? onFirstBlock,
+  }) async {
     final services = <int, Map<int, Uint8List>>{};
+    final finished = <int>{};
+    var order = <int>[];
     try {
       if (tag.isLite) {
         final blocks = services[liteService] = {};
@@ -44,22 +55,66 @@ class FelicaDumpReader {
           if (data != null) blocks[number] = data;
         }
       } else {
-        for (final service in await _searchServices(tag.id)) {
-          if (!FelicaDump.readsWithoutEncryption(service)) continue;
+        for (final service in first) {
           final blocks = services[service] = {};
-          for (var number = 0; number < _maxBlocksPerService; number++) {
-            final data = await readBlock(tag.id, service, number);
-            if (data == null) break;
-            blocks[number] = data;
+          await _readService(
+            tag.id,
+            service,
+            blocks,
+            onBlock: onFirstBlock == null
+                ? null
+                : () => onFirstBlock(
+                    FelicaDump(complete: false, services: services),
+                  ),
+          );
+          // A service the card lacks fails at block 0, as an empty one.
+          if (blocks.isEmpty) {
+            services.remove(service);
+          } else {
+            finished.add(service);
           }
         }
+        order = await _searchServices(tag.id);
+        for (final service in order) {
+          if (!FelicaDump.readsWithoutEncryption(service)) continue;
+          if (services.containsKey(service)) continue;
+          await _readService(tag.id, service, services[service] = {});
+          finished.add(service);
+        }
       }
-      return FelicaDump(complete: true, services: services);
+      return FelicaDump(complete: true, services: _ordered(services, order));
     } catch (error, stackTrace) {
       log('FeliCa read stopped early', error: error, stackTrace: stackTrace);
-      return FelicaDump(complete: false, services: services);
+      return FelicaDump(
+        complete: false,
+        services: _ordered(services, order),
+        finishedServices: finished,
+      );
     }
   }
+
+  /// Reads [service] into [blocks] from block 0 until the card reports an
+  /// error, calling [onBlock] after each block. [blocks] keeps what was read
+  /// if the card stops answering.
+  Future<void> _readService(
+    Uint8List idm,
+    int service,
+    Map<int, Uint8List> blocks, {
+    void Function()? onBlock,
+  }) async {
+    for (var number = 0; number < _maxBlocksPerService; number++) {
+      final data = await readBlock(idm, service, number);
+      if (data == null) return;
+      blocks[number] = data;
+      onBlock?.call();
+    }
+  }
+
+  /// [services] in the card's [order], then any the card did not list.
+  static Map<int, Map<int, Uint8List>> _ordered(
+    Map<int, Map<int, Uint8List>> services,
+    List<int> order,
+  ) => {for (final service in order) service: ?services[service], ...services};
 
   /// Reads block [number] of [service] with Read Without Encryption. Returns
   /// null when the card answers with an error status, and throws when it

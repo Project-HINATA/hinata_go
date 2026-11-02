@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 import 'ndef.dart';
 import 'aic.dart';
@@ -38,6 +38,17 @@ class ICCard {
 
   /// Checks if this card is logically or physically the same card as [other].
   bool isSameCard(ICCard other) {
+    // A FeliCa card's kind comes from its blocks and can change between
+    // scans; its IDm, PMm and system codes do not. A copy that shares only
+    // the IDm, such as on a writable card, is another card.
+    if (this is Felica && other is Felica) {
+      final felica = this as Felica;
+      return id.isNotEmpty &&
+          idString == other.idString &&
+          felica.pmmString == other.pmmString &&
+          listEquals(felica.systemCode, other.systemCode);
+    }
+
     if (type != other.type) return false;
 
     // For cards with access codes (Aime, Banapass, AIC), compare their access codes

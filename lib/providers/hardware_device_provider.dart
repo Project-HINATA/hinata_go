@@ -309,6 +309,9 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
               // Read extended card history using active card session without re-polling
               final extendedCard = await usbImpl.readExtended(
                 sessionState.scannedCard ?? scannedCard,
+                onProgress: ref
+                    .read(currentScanSessionProvider.notifier)
+                    .updateCard,
               );
               debugPrint(
                 '[_startPollLoop] Phase 2 read finished. extendedCard: ${extendedCard != null ? "found" : "null"}',

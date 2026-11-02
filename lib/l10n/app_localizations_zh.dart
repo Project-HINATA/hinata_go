@@ -1086,11 +1086,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cardEmulateOfficialWarning => '模拟的卡片无法用于官方服务器。';
 
   @override
-  String get cardEmulateFelicaData => '模拟已保存的 IDm、PMm、系统码和区块，没有数据的区块读出全 0。';
-
-  @override
-  String get cardEmulateAicData =>
-      '模拟已保存的 IDm、PMm、系统码和 Lite-S 区块（含 S_PAD0 中的访问码），没有数据的区块读出全 0。';
+  String get cardEmulateFelicaData => '模拟已保存的卡片数据。';
 
   @override
   String get cardEmulatePollOnly => '读卡设备只读取卡号时，这里不会显示正在读取。';
@@ -1119,14 +1115,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get banapassAccessCodeCannotCreate => '此 Banapass 访问代码不可用于新建卡片。';
 
   @override
-  String get cardEmulatePartial => '该卡片未完整读取，模拟不完整：未读取的区块会返回全 0。';
+  String get cardEmulatePartial => '卡片未完整读取，模拟可能不完整。';
 
   @override
-  String get cardEmulateNoChallenge =>
-      '无法响应读卡设备的挑战（MAC、MAC_A），需要验证卡片的读卡设备会拒绝它。';
+  String get cardEmulateNoChallenge => '无法模拟 MAC 认证。';
 
   @override
-  String get cardReadIncomplete => '该卡片未完整读取，部分区块缺失，模拟不完整。';
+  String get cardReadIncomplete => '卡片未完整读取。';
 
   @override
   String get rawData => '原始数据';
@@ -1137,10 +1132,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get rawDataComplete => '已读取全部无需加密即可读取的区块。';
+  String get rawDataComplete => '卡片已完整读取。';
 
   @override
-  String get rawDataNoBlocks => '该卡片没有保存任何区块，重新读取卡片即可保存。';
+  String get rawDataNoBlocks => '没有保存的数据，重新读取卡片即可保存。';
 
   @override
   String rawDataService(String code) {

@@ -37,11 +37,15 @@ class CardReaderEngine {
   /// Resolves a FeliCa tag to an Amusement IC, a Suica or a plain FeliCa
   /// card. With [readExtended] every block that reads without encryption is
   /// saved with it; without, only what tells the kind of card apart.
+  ///
+  /// [onProgress] gets the card as it stands while the read goes on, after
+  /// each record of a Suica's history.
   Future<ScannedCard?> handleFelica({
     required Felica tag,
     String source = 'NFC',
     bool readExtended = true,
     ScannedCard? existingCard,
+    void Function(ScannedCard card)? onProgress,
   }) async {
     final reader = FelicaDumpReader(transceiver);
 
@@ -100,24 +104,33 @@ class CardReaderEngine {
     }
 
     if (!readExtended) return ScannedCard(card: tag, source: source);
-    final dump = await reader.read(tag);
-    final ICCard card =
-        tag.systemCode.contains(0x0003) &&
-            dump.services[Suica.historyService]?.isNotEmpty == true
-        ? Suica.fromDump(
-            tag.id,
-            tag.pmm,
-            tag.systemCode,
-            dump,
-            snapshotTime: DateTime.now(),
-            tags: _suicaTags,
-          )
-        : Felica(tag.id, tag.pmm, tag.systemCode, tags: tag.tags, dump: dump);
-    return ScannedCard(
-      card: card,
+    final mayBeSuica = tag.systemCode.contains(0x0003);
+    ScannedCard scanned(FelicaDump dump) => ScannedCard(
+      card:
+          mayBeSuica && dump.services[Suica.historyService]?.isNotEmpty == true
+          ? Suica.fromDump(
+              tag.id,
+              tag.pmm,
+              tag.systemCode,
+              dump,
+              snapshotTime: DateTime.now(),
+              tags: _suicaTags,
+            )
+          : Felica(tag.id, tag.pmm, tag.systemCode, tags: tag.tags, dump: dump),
       source: source,
       isExtendedInfoFullyLoaded: dump.complete,
     );
+
+    // A Suica's history is read first and shows record by record, before
+    // the rest of its services are read.
+    final dump = await reader.read(
+      tag,
+      first: mayBeSuica ? const [Suica.historyService] : const [],
+      onFirstBlock: onProgress == null
+          ? null
+          : (dump) => onProgress(scanned(dump)),
+    );
+    return scanned(dump);
   }
 
   /// [dump] with block [number] of [service] set to [data] when the dump
@@ -265,6 +278,7 @@ class CardReaderEngine {
     String source = 'NFC',
     bool readExtended = true,
     ScannedCard? existingCard,
+    void Function(ScannedCard card)? onProgress,
   }) async {
     if (rawTag is Felica) {
       try {
@@ -273,6 +287,7 @@ class CardReaderEngine {
           source: source,
           readExtended: readExtended,
           existingCard: existingCard,
+          onProgress: onProgress,
         );
         return card == null
             ? const CardReadResult.incomplete()

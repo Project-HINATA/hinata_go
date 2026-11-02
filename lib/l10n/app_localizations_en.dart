@@ -1133,12 +1133,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Emulated cards cannot be used with official servers.';
 
   @override
-  String get cardEmulateFelicaData =>
-      'The saved IDm, PMm, system codes and blocks are emulated. Blocks without saved data read as zeros.';
-
-  @override
-  String get cardEmulateAicData =>
-      'The saved IDm, PMm, system codes and Lite-S blocks, with the access code in S_PAD0, are emulated. Blocks without saved data read as zeros.';
+  String get cardEmulateFelicaData => 'Emulates the saved card data.';
 
   @override
   String get cardEmulatePollOnly =>
@@ -1170,15 +1165,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cardEmulatePartial =>
-      'This card was not fully read, so the emulation is incomplete: blocks that were not read return zeros.';
+      'This card was not fully read. The emulation may be incomplete.';
 
   @override
-  String get cardEmulateNoChallenge =>
-      'A reader\'s challenge (MAC, MAC_A) cannot be answered, so readers that authenticate the card reject it.';
+  String get cardEmulateNoChallenge => 'MAC authentication cannot be emulated.';
 
   @override
-  String get cardReadIncomplete =>
-      'This card was not fully read. Blocks are missing, so emulating it is incomplete.';
+  String get cardReadIncomplete => 'This card was not fully read.';
 
   @override
   String get rawData => 'Raw data';
@@ -1195,12 +1188,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get rawDataComplete =>
-      'Every block that reads without encryption was read.';
+  String get rawDataComplete => 'This card was fully read.';
 
   @override
   String get rawDataNoBlocks =>
-      'No blocks were saved with this card. Scan it again to save them.';
+      'No data saved. Scan the card again to save it.';
 
   @override
   String rawDataService(String code) {

@@ -313,7 +313,12 @@ class UsbHinataDeviceImpl {
     return const CardReadResult.incomplete();
   }
 
-  Future<ScannedCard?> readExtended(ScannedCard basicCard) async {
+  /// [onProgress] gets the card as it stands before the read finishes, once
+  /// part of it is worth showing.
+  Future<ScannedCard?> readExtended(
+    ScannedCard basicCard, {
+    void Function(ScannedCard card)? onProgress,
+  }) async {
     final tag = _activeTag;
     if (tag == null) {
       return null;
@@ -327,6 +332,7 @@ class UsbHinataDeviceImpl {
       source: 'HINATA',
       readExtended: true,
       existingCard: basicCard,
+      onProgress: onProgress,
     );
     return result.status == CardReadStatus.recognized ? result.card : null;
   }

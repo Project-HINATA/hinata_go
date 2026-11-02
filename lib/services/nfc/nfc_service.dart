@@ -13,6 +13,7 @@ Future<CardReadResult> handleNfcTag(
   NFCTag tag, {
   bool readExtended = true,
   ScannedCard? existingCard,
+  void Function(ScannedCard card)? onProgress,
 }) async {
   if (tag.ndefAvailable == true) {
     try {
@@ -35,5 +36,6 @@ Future<CardReadResult> handleNfcTag(
     source: 'NFC',
     readExtended: readExtended,
     existingCard: existingCard,
+    onProgress: onProgress,
   );
 }

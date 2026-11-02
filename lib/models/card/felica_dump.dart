@@ -15,10 +15,16 @@ class FelicaDump {
   /// service's blocks are ordered by block number.
   final Map<int, Map<int, Uint8List>> services;
 
+  /// The services read until the card reported their end, when the read as
+  /// a whole stopped early. Every service is, in a complete dump.
+  final Set<int> finishedServices;
+
   FelicaDump({
     required this.complete,
     Map<int, Map<int, Uint8List>> services = const {},
-  }) : services = Map.unmodifiable({
+    Set<int> finishedServices = const {},
+  }) : finishedServices = Set.unmodifiable(finishedServices),
+       services = Map.unmodifiable({
          for (final entry in services.entries)
            entry.key: Map<int, Uint8List>.unmodifiable(
              SplayTreeMap<int, Uint8List>.of(entry.value),
@@ -29,6 +35,44 @@ class FelicaDump {
         throw ArgumentError('Blocks must be $blockSize bytes');
       }
     }
+  }
+
+  /// Whether [service] was read, every block of it.
+  bool isServiceComplete(int service) =>
+      (complete && services.containsKey(service)) ||
+      finishedServices.contains(service);
+
+  /// This dump with a later scan's services over its own. The later scan's
+  /// copy of a service replaces this one, unless it was cut off in a service
+  /// this dump read in full.
+  FelicaDump overlaidWith(FelicaDump later) {
+    if (later.complete) return later;
+    bool takeLater(int service) =>
+        later.services.containsKey(service) &&
+        (later.isServiceComplete(service) || !isServiceComplete(service));
+    final merged = {
+      for (final MapEntry(key: service, value: blocks) in services.entries)
+        service: takeLater(service) ? later.services[service]! : blocks,
+      ...{
+        for (final MapEntry(key: service, value: blocks)
+            in later.services.entries)
+          if (!services.containsKey(service)) service: blocks,
+      },
+    };
+    final finished = {
+      for (final service in merged.keys)
+        if (takeLater(service)
+            ? later.isServiceComplete(service)
+            : isServiceComplete(service))
+          service,
+    };
+    // Only a dump that had every service can still have them all.
+    final whole = complete && merged.keys.every(finished.contains);
+    return FelicaDump(
+      complete: whole,
+      services: merged,
+      finishedServices: whole ? const {} : finished,
+    );
   }
 
   /// Block [number] of [service], or null when it was not read.
@@ -50,6 +94,7 @@ class FelicaDump {
       for (final MapEntry(key: code, value: blocks) in services.entries)
         {
           'code': code,
+          if (!complete && finishedServices.contains(code)) 'finished': true,
           'blocks': {
             for (final MapEntry(key: number, value: data) in blocks.entries)
               '$number': _hex(data),
@@ -60,10 +105,12 @@ class FelicaDump {
 
   factory FelicaDump.fromJson(Map<String, dynamic> json) {
     final services = <int, Map<int, Uint8List>>{};
+    final finishedServices = <int>{};
     for (final service in json['services'] as List<dynamic>? ?? const []) {
       if (service is! Map<String, dynamic>) continue;
       final code = service['code'];
       if (code is! int) continue;
+      if (service['finished'] == true) finishedServices.add(code);
       final blocks = services[code] = {};
       final blocksJson = service['blocks'] as Map<String, dynamic>? ?? const {};
       for (final MapEntry(:key, :value) in blocksJson.entries) {
@@ -76,6 +123,7 @@ class FelicaDump {
     return FelicaDump(
       complete: json['complete'] as bool? ?? false,
       services: services,
+      finishedServices: finishedServices,
     );
   }
 

@@ -3,6 +3,7 @@ import 'storage_provider.dart';
 import '../models/remote_instance.dart';
 import '../models/card/saved_card.dart';
 import '../models/card/card.dart';
+import '../models/card/scan_merge.dart';
 import '../models/card_folder.dart';
 import '../models/scan_log.dart';
 import '../models/scanning_mode.dart';
@@ -113,6 +114,59 @@ class SavedCardsNotifier extends Notifier<List<SavedCard>> {
     } catch (_) {
       return null;
     }
+  }
+
+  static const historyFolderId = 'history_folder';
+
+  /// Records a scanned [card] in the history, which holds one entry per
+  /// physical card: an entry already there takes the scan merged over what
+  /// it held, keeping its place and any name given to it; otherwise a new
+  /// entry [id] is added. Returns the entry's id and the card it held before
+  /// this scan, for [updateScan].
+  ({String id, ICCard? before}) recordScan(
+    ICCard card, {
+    required String id,
+    required String source,
+  }) {
+    final existing = state
+        .where((c) => c.folderId == historyFolderId && c.card.isSameCard(card))
+        .firstOrNull;
+    if (existing == null) {
+      state = [
+        ...state,
+        SavedCard(
+          id: id,
+          name: card.name,
+          card: card,
+          folderId: historyFolderId,
+          source: source,
+        ),
+      ];
+      ref.read(storageProvider).saveSavedCards(state);
+      return (id: id, before: null);
+    }
+    _updateEntry(existing, mergeScans(existing.card, card), source: source);
+    return (id: existing.id, before: existing.card);
+  }
+
+  /// Puts a later read of the scan recorded as [id] into its entry, merged
+  /// over [before], the card the entry held before the scan.
+  void updateScan(String id, ICCard? before, ICCard card) {
+    final entry = state.where((c) => c.id == id).firstOrNull;
+    if (entry == null) return;
+    _updateEntry(entry, before == null ? card : mergeScans(before, card));
+  }
+
+  /// [entry] holding [card]. A name that was the card's own follows the
+  /// card, whose kind a later read may change.
+  void _updateEntry(SavedCard entry, ICCard card, {String? source}) {
+    updateCard(
+      entry.copyWith(
+        card: card,
+        name: entry.name == entry.card.name ? card.name : entry.name,
+        source: source,
+      ),
+    );
   }
 
   void replaceCard(SavedCard oldCard, SavedCard newCard) {

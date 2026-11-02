@@ -1188,8 +1188,7 @@
   "cardEmulateWaiting": "Waiting for a reader",
   "cardEmulateConnected": "A reader is reading the card",
   "cardEmulateOfficialWarning": "Emulated cards cannot be used with official servers.",
-  "cardEmulateFelicaData": "The saved IDm, PMm, system codes and blocks are emulated. Blocks without saved data read as zeros.",
-  "cardEmulateAicData": "The saved IDm, PMm, system codes and Lite-S blocks, with the access code in S_PAD0, are emulated. Blocks without saved data read as zeros.",
+  "cardEmulateFelicaData": "Emulates the saved card data.",
   "cardEmulatePollOnly": "A reader that only reads the card number is not shown here.",
   "cardEmulateUnsupported": "This card cannot be emulated",
   "ndefRecordCount": "NDEF record count",
@@ -1205,9 +1204,9 @@
     }
   },
   "banapassAccessCodeCannotCreate": "This Banapass access code cannot be used to create a card.",
-  "cardEmulatePartial": "This card was not fully read, so the emulation is incomplete: blocks that were not read return zeros.",
-  "cardEmulateNoChallenge": "A reader's challenge (MAC, MAC_A) cannot be answered, so readers that authenticate the card reject it.",
-  "cardReadIncomplete": "This card was not fully read. Blocks are missing, so emulating it is incomplete.",
+  "cardEmulatePartial": "This card was not fully read. The emulation may be incomplete.",
+  "cardEmulateNoChallenge": "MAC authentication cannot be emulated.",
+  "cardReadIncomplete": "This card was not fully read.",
   "rawData": "Raw data",
   "rawDataBlockCount": "{count, plural, =1{1 block} other{{count} blocks}}",
   "@rawDataBlockCount": {
@@ -1217,8 +1216,8 @@
       }
     }
   },
-  "rawDataComplete": "Every block that reads without encryption was read.",
-  "rawDataNoBlocks": "No blocks were saved with this card. Scan it again to save them.",
+  "rawDataComplete": "This card was fully read.",
+  "rawDataNoBlocks": "No data saved. Scan the card again to save it.",
   "rawDataService": "Service {code}",
   "@rawDataService": {
     "placeholders": {

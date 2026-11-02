@@ -14,7 +14,7 @@ import '../l10n/l10n.dart';
 import '../models/card/card_read_result.dart';
 import '../models/card/iso14443a.dart';
 import '../models/card/scanned_card.dart';
-import '../models/card/saved_card.dart';
+import '../models/card/card.dart';
 import '../models/card/tunion.dart';
 import '../models/scan_log.dart';
 import '../navigation/router.dart';
@@ -95,6 +95,9 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   bool _isRetrying = false;
   String? _lastScanLogId;
   String? _lastSavedCardId;
+
+  /// What the history entry of the last scan held before it.
+  ICCard? _lastSavedCardBefore;
   bool _exclusiveOperation = false;
 
   @override
@@ -355,6 +358,9 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
               activeTag,
               readExtended: true,
               existingCard: sessionState.scannedCard ?? finalCard,
+              onProgress: ref
+                  .read(currentScanSessionProvider.notifier)
+                  .updateCard,
             );
             final extendedCard = extendedResult.card;
             if (extendedCard != null) {
@@ -491,9 +497,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     final card = scannedCard.card;
 
     final scanLogId = const Uuid().v4();
-    final savedCardId = const Uuid().v4();
     _lastScanLogId = scanLogId;
-    _lastSavedCardId = savedCardId;
 
     // 1. Create ScanLog
     final newLog = ScanLog(
@@ -504,13 +508,12 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     );
     ref.read(scanLogsProvider.notifier).addLog(newLog);
 
-    // 2. Auto-save to 'history_folder'
-    final savedCard = SavedCard.fromScanned(
-      scannedCard,
-      id: savedCardId,
-      folderId: 'history_folder',
-    );
-    ref.read(savedCardsProvider.notifier).addCard(savedCard);
+    // 2. Record in the history, one entry per physical card
+    final history = ref
+        .read(savedCardsProvider.notifier)
+        .recordScan(card, id: const Uuid().v4(), source: scannedCard.source);
+    _lastSavedCardId = history.id;
+    _lastSavedCardBefore = history.before;
 
     // 3. Handle according to Scanning Mode
     if (scanningMode == ScanningMode.sender && card is! NdefCard) {
@@ -539,21 +542,11 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       } catch (_) {}
     }
 
-    if (_lastSavedCardId != null) {
-      final savedCards = ref.read(savedCardsProvider);
-      try {
-        final existingSaved = savedCards.firstWhere(
-          (e) => e.id == _lastSavedCardId,
-        );
-        final updatedSaved = SavedCard(
-          id: existingSaved.id,
-          name: existingSaved.name,
-          card: card,
-          folderId: existingSaved.folderId,
-          source: existingSaved.source,
-        );
-        ref.read(savedCardsProvider.notifier).updateCard(updatedSaved);
-      } catch (_) {}
+    final savedCardId = _lastSavedCardId;
+    if (savedCardId != null) {
+      ref
+          .read(savedCardsProvider.notifier)
+          .updateScan(savedCardId, _lastSavedCardBefore, card);
     }
   }
 

@@ -2129,14 +2129,8 @@ abstract class AppLocalizations {
   /// No description provided for @cardEmulateFelicaData.
   ///
   /// In en, this message translates to:
-  /// **'The saved IDm, PMm, system codes and blocks are emulated. Blocks without saved data read as zeros.'**
+  /// **'Emulates the saved card data.'**
   String get cardEmulateFelicaData;
-
-  /// No description provided for @cardEmulateAicData.
-  ///
-  /// In en, this message translates to:
-  /// **'The saved IDm, PMm, system codes and Lite-S blocks, with the access code in S_PAD0, are emulated. Blocks without saved data read as zeros.'**
-  String get cardEmulateAicData;
 
   /// No description provided for @cardEmulatePollOnly.
   ///
@@ -2189,19 +2183,19 @@ abstract class AppLocalizations {
   /// No description provided for @cardEmulatePartial.
   ///
   /// In en, this message translates to:
-  /// **'This card was not fully read, so the emulation is incomplete: blocks that were not read return zeros.'**
+  /// **'This card was not fully read. The emulation may be incomplete.'**
   String get cardEmulatePartial;
 
   /// No description provided for @cardEmulateNoChallenge.
   ///
   /// In en, this message translates to:
-  /// **'A reader\'s challenge (MAC, MAC_A) cannot be answered, so readers that authenticate the card reject it.'**
+  /// **'MAC authentication cannot be emulated.'**
   String get cardEmulateNoChallenge;
 
   /// No description provided for @cardReadIncomplete.
   ///
   /// In en, this message translates to:
-  /// **'This card was not fully read. Blocks are missing, so emulating it is incomplete.'**
+  /// **'This card was not fully read.'**
   String get cardReadIncomplete;
 
   /// No description provided for @rawData.
@@ -2219,13 +2213,13 @@ abstract class AppLocalizations {
   /// No description provided for @rawDataComplete.
   ///
   /// In en, this message translates to:
-  /// **'Every block that reads without encryption was read.'**
+  /// **'This card was fully read.'**
   String get rawDataComplete;
 
   /// No description provided for @rawDataNoBlocks.
   ///
   /// In en, this message translates to:
-  /// **'No blocks were saved with this card. Scan it again to save them.'**
+  /// **'No data saved. Scan the card again to save it.'**
   String get rawDataNoBlocks;
 
   /// No description provided for @rawDataService.

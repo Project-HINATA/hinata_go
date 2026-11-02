@@ -92,11 +92,7 @@ class _EmulateDialog extends ConsumerWidget {
                     _InfoRow(text: l10n.ndefEmulateReadOnly),
                     _InfoRow(text: l10n.ndefEmulateIosLimit),
                   ],
-                  EmulationKind.amusementIc => [
-                    _InfoRow(text: l10n.cardEmulateAicData),
-                    _InfoRow(text: l10n.cardEmulatePollOnly),
-                  ],
-                  EmulationKind.felica => [
+                  EmulationKind.amusementIc || EmulationKind.felica => [
                     _InfoRow(text: l10n.cardEmulateFelicaData),
                     _InfoRow(text: l10n.cardEmulatePollOnly),
                   ],

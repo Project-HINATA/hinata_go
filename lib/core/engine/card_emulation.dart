@@ -2,7 +2,6 @@ import '../../models/card/aic.dart';
 import '../../models/card/card.dart';
 import '../../models/card/felica.dart';
 import '../../models/card/ndef.dart';
-import 'felica_dump_reader.dart';
 import 'felica_tag.dart';
 import 'type3_ndef_tag.dart';
 import 'type4_ndef_tag.dart';
@@ -23,9 +22,6 @@ class EmulationTarget {
 /// A Lite-S reads every block through both of its services.
 const _liteReadOnlyService = 0x000B;
 const _liteReadWriteService = 0x0009;
-
-/// The Lite-S blocks, which every Lite-S has whether or not they were saved.
-final _liteFixedBlocks = FelicaDumpReader.liteBlocks.toSet();
 
 /// The kind [card] would be emulated as, or null when it cannot be.
 ///
@@ -51,7 +47,7 @@ EmulationKind? emulationKindOf(ICCard card) {
 }
 
 /// Whether emulating [card] leaves out blocks the card had, because they
-/// were not all read. Those read as zeros.
+/// were not all read. A reader finds them missing.
 bool emulationIsPartial(ICCard card) => card is Felica && !card.isFullyRead;
 
 /// Whether [card] is a Lite or Lite-S, whose MAC answers to a reader's
@@ -83,8 +79,6 @@ EmulationTarget emulationTargetFor(ICCard card, {required int type4MaxRead}) {
           pmm: felica.pmm,
           systemCodes: felica.systemCode,
           services: services,
-          partial: !felica.isFullyRead,
-          fixedBlocks: felica.isLite ? _liteFixedBlocks : const {},
           markerBlock: kind == EmulationKind.amusementIc
               ? Aic.spad0Block
               : null,
