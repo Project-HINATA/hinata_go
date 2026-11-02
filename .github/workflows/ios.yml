@@ -206,10 +206,20 @@ jobs:
         run: |
           bash .github/scripts/build_ios_ipa.sh
 
+      - name: Generate release notes
+        if: ${{ steps.channel.outputs.value == 'production' }}
+        shell: bash
+        env:
+          APP_VERSION: ${{ steps.version.outputs.marketing }}
+        run: |
+          bash .github/scripts/generate_release_notes.sh "$APP_VERSION" "$RUNNER_TEMP/release-notes"
+
       - name: Publish IPA
         env:
           IOS_RELEASE_CHANNEL: ${{ steps.channel.outputs.value }}
           IOS_IPA_PATH: build/ios/ipa/*.ipa
+          IOS_APP_VERSION: ${{ steps.version.outputs.marketing }}
+          IOS_RELEASE_NOTES_DIR: ${{ runner.temp }}/release-notes
         run: |
           set -euo pipefail
           ipa_path="$(find build/ios/ipa -maxdepth 1 -name '*.ipa' -print -quit)"

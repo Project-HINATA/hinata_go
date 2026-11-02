@@ -108,5 +108,6 @@ jobs:
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           mappingFile: build/app/outputs/mapping/release/mapping.txt
           releaseName: ${{ steps.meta.outputs.mode_title }}
+          whatsNewDirectory: ${{ steps.meta.outputs.play_notes_dir }}
           tracks: ${{ steps.meta.outputs.is_prerelease == 'true' && 'alpha' || 'production' }}
           status: completed

@@ -1,5 +1,69 @@
 default_platform(:ios)
 
+# App Store Connect rejects a submission whose version has no What's New in
+# any of its localizations, or, because the app ships an App Clip, no default
+# App Clip experience. Fill in both before deliver submits the version.
+def prepare_app_store_version
+  bundle_id = ENV.fetch("IOS_BUNDLE_ID")
+  app_version = ENV.fetch("IOS_APP_VERSION")
+  platform = Spaceship::ConnectAPI::Platform::IOS
+
+  app = Spaceship::ConnectAPI::App.find(bundle_id)
+  UI.user_error!("App #{bundle_id} not found in App Store Connect") if app.nil?
+
+  # deliver does the same before uploading; doing it first gives us the
+  # version to fill in.
+  app.ensure_version!(app_version, platform: platform)
+  version = app.get_edit_app_store_version(platform: platform)
+  UI.user_error!("No editable App Store version #{app_version}") if version.nil?
+
+  set_whats_new(version)
+  ensure_app_clip_default_experience(app, version, platform)
+end
+
+def set_whats_new(version)
+  notes_dir = ENV.fetch("IOS_RELEASE_NOTES_DIR")
+  notes = {
+    zh: File.read(File.join(notes_dir, "zh.txt")).strip,
+    en: File.read(File.join(notes_dir, "en.txt")).strip
+  }
+
+  version.get_app_store_version_localizations.each do |localization|
+    text = localization.locale.start_with?("zh") ? notes[:zh] : notes[:en]
+    localization.update(attributes: { whats_new: text })
+    UI.message("Set What's New for #{localization.locale}")
+  end
+end
+
+def ensure_app_clip_default_experience(app, version, platform)
+  tunes = Spaceship::ConnectAPI.client.tunes_request_client
+  current = tunes.get("v1/appStoreVersions/#{version.id}/appClipDefaultExperience").body["data"]
+  return UI.message("App Clip default experience already set") if current
+
+  app_clip = Spaceship::ConnectAPI.get_app_clips(app_id: app.id).body["data"].first
+  return UI.message("App has no App Clip") if app_clip.nil?
+
+  # Copy the experience of the live version, or else any earlier one.
+  template = nil
+  live_version = app.get_live_app_store_version(platform: platform)
+  if live_version
+    template = tunes.get("v1/appStoreVersions/#{live_version.id}/appClipDefaultExperience").body["data"]
+  end
+  template ||= tunes.get("v1/appClips/#{app_clip["id"]}/appClipDefaultExperiences").body["data"].first
+  if template.nil?
+    UI.important("No earlier App Clip default experience to copy; set one up in App Store Connect")
+    return
+  end
+
+  Spaceship::ConnectAPI.post_app_clip_default_experience(
+    app_clip_id: app_clip["id"],
+    app_store_version_id: version.id,
+    attributes: nil,
+    template_default_experience_id: template["id"]
+  )
+  UI.success("Copied App Clip default experience #{template["id"]} to version #{version.version_string}")
+end
+
 platform :ios do
   desc "Refresh App Store profiles using the installed distribution identity"
   lane :prepare_distribution_profiles do
@@ -90,6 +154,7 @@ platform :ios do
         distribute_external: false
       )
     elsif channel == "production"
+      prepare_app_store_version
       upload_to_app_store(
         api_key: api_key,
         ipa: ipa_path,

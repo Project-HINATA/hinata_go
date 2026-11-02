@@ -15,6 +15,7 @@ clean_latest="$(echo "${latest_tag#v}" | tr -d '\r')"
 
 changelog="自动构建产物"
 is_prerelease=true
+play_notes_dir=""
 
 if [[ "$pub_ver" == "$clean_latest" ]]; then
   # Pre-releases always reuse the single rolling "pre" tag so the release
@@ -27,19 +28,33 @@ else
   title="Release v${pub_ver}"
   is_prerelease=false
 
-  if [[ -n "$latest_tag" ]]; then
-    logs="$(git log "$latest_tag..HEAD" --oneline | grep -E '^[a-f0-9]+ (feat|fix|ui):' || echo '无特定变更记录')"
+  notes_dir="${RUNNER_TEMP:-$(mktemp -d)}/release-notes"
+  ./.github/scripts/generate_release_notes.sh "$pub_ver" "$notes_dir"
+
+  if [[ "$(cat "$notes_dir/found")" == "true" ]]; then
+    changelog="### 🚀 更新内容"$'\n\n'"$(cat "$notes_dir/zh.md")"$'\n\n'"### 🚀 What's New"$'\n\n'"$(cat "$notes_dir/en.md")"
   else
-    logs="$(git log --oneline | grep -E '^[a-f0-9]+ (feat|fix|ui):' || echo '首次发布')"
+    if [[ -n "$latest_tag" ]]; then
+      logs="$(git log "$latest_tag..HEAD" --oneline | grep -E '^[a-f0-9]+ (feat|fix|ui):' || echo '无特定变更记录')"
+    else
+      logs="$(git log --oneline | grep -E '^[a-f0-9]+ (feat|fix|ui):' || echo '首次发布')"
+    fi
+    changelog="### 🚀 更新内容"$'\n'"$logs"
   fi
-  changelog="### 🚀 更新内容"$'\n'"$logs"
+
+  # Google Play reads one whatsnew-<locale> file per language.
+  play_notes_dir="${notes_dir}/play"
+  mkdir -p "$play_notes_dir"
+  cp "$notes_dir/zh_short.txt" "$play_notes_dir/whatsnew-zh-CN"
+  cp "$notes_dir/en_short.txt" "$play_notes_dir/whatsnew-en-US"
 fi
 
 echo "tag_name=$new_tag" >> "$GITHUB_OUTPUT"
 echo "mode_title=$title" >> "$GITHUB_OUTPUT"
 echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
+echo "play_notes_dir=$play_notes_dir" >> "$GITHUB_OUTPUT"
 {
   echo "changelog<<EOF"
-  echo -e "$changelog"
+  printf '%s\n' "$changelog"
   echo "EOF"
 } >> "$GITHUB_OUTPUT"
