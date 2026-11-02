@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'aic.dart';
 import 'card.dart';
 import 'felica.dart';
@@ -19,36 +21,28 @@ ICCard mergeScans(ICCard earlier, ICCard later) {
       ? earlierDump
       : earlierDump.overlaidWith(laterDump);
   if (dump == null) return later;
+  // The merged dump has every system either scan found.
+  final systemCode = dump.systemCodes.length > later.systemCode.length
+      ? Uint16List.fromList(dump.systemCodes)
+      : later.systemCode;
 
   final aic = later is Aic ? later : (earlier is Aic ? earlier : null);
   if (aic != null) {
-    return Aic(
-      later.id,
-      later.pmm,
-      later.systemCode,
-      dump: dump,
-      tags: aic.tags,
-    );
+    return Aic(later.id, later.pmm, systemCode, dump: dump, tags: aic.tags);
   }
 
   final suica = later is Suica ? later : (earlier is Suica ? earlier : null);
   final history = dump.services[Suica.historyService];
-  if (later.systemCode.contains(0x0003) && history?.isNotEmpty == true) {
+  if (systemCode.contains(0x0003) && history?.isNotEmpty == true) {
     return Suica.fromDump(
       later.id,
       later.pmm,
-      later.systemCode,
+      systemCode,
       dump,
       snapshotTime: later is Suica ? later.snapshotTime : suica?.snapshotTime,
       tags: suica?.tags ?? later.tags,
     );
   }
 
-  return Felica(
-    later.id,
-    later.pmm,
-    later.systemCode,
-    tags: later.tags,
-    dump: dump,
-  );
+  return Felica(later.id, later.pmm, systemCode, tags: later.tags, dump: dump);
 }

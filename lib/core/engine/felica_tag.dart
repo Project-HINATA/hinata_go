@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../models/card/felica.dart';
+
 /// An emulated FeliCa card answering the commands a reader may send without
 /// authentication: polling, system code and service queries, and reads
 /// without encryption. Writes are refused, so a reader that writes a
@@ -8,6 +10,10 @@ import 'package:flutter/foundation.dart';
 /// Only what was saved is emulated: a service or block that was not saved
 /// is answered as one the card does not have.
 ///
+/// Each system answers with its own IDm, [idm] with the system number in the
+/// high nibble of its first byte, and commands reach the system their IDm
+/// names.
+///
 /// Commands and responses start with the command code, without the FeliCa
 /// length byte.
 class FelicaTag {
@@ -15,14 +21,17 @@ class FelicaTag {
   /// 53 bytes `TgResponseToInitiator` can carry with its length byte over HID.
   static const maxBlocksPerRead = 2;
 
+  /// The IDm of system 0.
   final Uint8List idm;
   final Uint8List pmm;
 
-  /// The first one is the system code of the polling response.
+  /// The system codes, by system number. The first one is the system code
+  /// of the polling response.
   final List<int> systemCodes;
 
-  /// Service codes readable without encryption, each to its saved blocks.
-  final Map<int, Map<int, Uint8List>> services;
+  /// By system number, the services readable without encryption, each to
+  /// its saved blocks.
+  final List<Map<int, Map<int, Uint8List>>> systems;
 
   /// The block whose read counts as the reader reading the card.
   final int? markerBlock;
@@ -33,9 +42,14 @@ class FelicaTag {
     required this.idm,
     required this.pmm,
     required this.systemCodes,
-    this.services = const {},
+    Map<int, Map<int, Uint8List>> services = const {},
+    List<Map<int, Map<int, Uint8List>>> otherSystems = const [],
     this.markerBlock,
-  }) {
+  }) : systems = [
+         services,
+         for (var number = 1; number < systemCodes.length; number++)
+           number - 1 < otherSystems.length ? otherSystems[number - 1] : {},
+       ] {
     if (idm.length != 8 || pmm.length != 8) {
       throw ArgumentError('IDm and PMm must be 8 bytes');
     }
@@ -46,12 +60,15 @@ class FelicaTag {
         'Must not be empty',
       );
     }
-    for (final blocks in services.values) {
+    for (final blocks in systems.expand((system) => system.values)) {
       if (blocks.values.any((block) => block.length != 16)) {
         throw ArgumentError('Blocks must be 16 bytes');
       }
     }
   }
+
+  /// System 0's services.
+  Map<int, Map<int, Uint8List>> get services => systems.first;
 
   /// Whether [markerBlock] was read since the previous call.
   bool takeMarkerRead() {
@@ -64,16 +81,22 @@ class FelicaTag {
   Uint8List? process(Uint8List command) {
     if (command.isEmpty) return null;
     if (command[0] == 0x00) return _poll(command);
-    if (command.length < 9 || !listEquals(command.sublist(1, 9), idm)) {
-      return null;
-    }
+    if (command.length < 9) return null;
+    final target = command.sublist(1, 9);
+    final system = [
+      for (var number = 0; number < systems.length; number++) number,
+    ].where((number) => listEquals(target, _idmOf(number))).firstOrNull;
+    if (system == null) return null;
+    Uint8List response(int code, List<int> body) =>
+        Uint8List.fromList([code, ...target, ...body]);
+    final services = systems[system];
     return switch (command[0]) {
-      0x02 => _requestService(command),
-      0x04 => _response(0x05, [0x00]),
-      0x06 => _check(command),
-      0x08 => _response(0x09, [0x01, 0xA5]),
-      0x0A => _searchServiceCode(command),
-      0x0C => _response(0x0D, [
+      0x02 => _requestService(command, services, response),
+      0x04 => response(0x05, [0x00]),
+      0x06 => _check(command, services, response),
+      0x08 => response(0x09, [0x01, 0xA5]),
+      0x0A => _searchServiceCode(command, services, response),
+      0x0C => response(0x0D, [
         systemCodes.length,
         for (final code in systemCodes) ...[code >> 8, code & 0xFF],
       ]),
@@ -87,25 +110,35 @@ class FelicaTag {
     bool matches(int code) =>
         (command[1] == 0xFF || command[1] == code >> 8) &&
         (command[2] == 0xFF || command[2] == code & 0xFF);
-    final code = systemCodes.where(matches).firstOrNull;
-    if (code == null) return null;
+    final number = [
+      for (var i = 0; i < systemCodes.length; i++) i,
+    ].where((i) => matches(systemCodes[i])).firstOrNull;
+    if (number == null) return null;
+    final code = systemCodes[number];
     return Uint8List.fromList([
       0x01,
-      ...idm,
+      ..._idmOf(number),
       ...pmm,
       if (command[3] == 0x01) ...[code >> 8, code & 0xFF],
     ]);
   }
 
-  Uint8List? _requestService(Uint8List command) {
+  Uint8List _idmOf(int number) =>
+      number == 0 ? idm : Felica.systemIdm(idm, number);
+
+  Uint8List? _requestService(
+    Uint8List command,
+    Map<int, Map<int, Uint8List>> services,
+    _Respond response,
+  ) {
     final count = command.length > 9 ? command[9] : 0;
     if (count < 1 || count > 32 || command.length != 10 + 2 * count) {
       return null;
     }
-    return _response(0x03, [
+    return response(0x03, [
       count,
       for (var i = 0; i < count; i++)
-        ...(_hasService(_code(command, 10 + 2 * i))
+        ...(services.containsKey(_code(command, 10 + 2 * i))
             ? [0x00, 0x00]
             : [0xFF, 0xFF]),
     ]);
@@ -113,16 +146,24 @@ class FelicaTag {
 
   /// The service at the requested index, or 0xFFFF past the last. The card
   /// has no areas to report.
-  Uint8List? _searchServiceCode(Uint8List command) {
+  Uint8List? _searchServiceCode(
+    Uint8List command,
+    Map<int, Map<int, Uint8List>> services,
+    _Respond response,
+  ) {
     if (command.length != 11) return null;
     final index = _code(command, 9);
     final codes = services.keys.toList();
     final code = index < codes.length ? codes[index] : 0xFFFF;
-    return _response(0x0B, [code & 0xFF, code >> 8]);
+    return response(0x0B, [code & 0xFF, code >> 8]);
   }
 
-  Uint8List _check(Uint8List command) {
-    Uint8List error(int code) => _response(0x07, [0x01, code]);
+  Uint8List _check(
+    Uint8List command,
+    Map<int, Map<int, Uint8List>> services,
+    _Respond response,
+  ) {
+    Uint8List error(int code) => response(0x07, [0x01, code]);
 
     if (command.length < 10) return error(0xA1);
     final serviceCount = command[9];
@@ -132,7 +173,7 @@ class FelicaTag {
     final codes = [
       for (var i = 0; i < serviceCount; i++) _code(command, 10 + 2 * i),
     ];
-    if (!codes.every(_hasService)) return error(0xA6);
+    if (!codes.every(services.containsKey)) return error(0xA6);
     final count = command[offset++];
     if (count < 1 || count > maxBlocksPerRead) return error(0xA2);
 
@@ -160,14 +201,12 @@ class FelicaTag {
     }
     if (offset != command.length) return error(0xA2);
     if (markerRead) _markerRead = true;
-    return _response(0x07, [0x00, 0x00, count, ...data]);
+    return response(0x07, [0x00, 0x00, count, ...data]);
   }
-
-  bool _hasService(int code) => services.containsKey(code);
 
   static int _code(Uint8List command, int offset) =>
       command[offset] | command[offset + 1] << 8;
-
-  Uint8List _response(int code, List<int> body) =>
-      Uint8List.fromList([code, ...idm, ...body]);
 }
+
+/// Builds a response with [code] and [body] after the IDm it answers for.
+typedef _Respond = Uint8List Function(int code, List<int> body);

@@ -49,19 +49,24 @@ class FelicaRawDataPage extends ConsumerWidget {
     return _hex(number, number > 0xFF ? 4 : 2);
   }
 
-  /// The dump as text: the card's identity, then each service's blocks.
+  /// The dump as text: the card's identity, then each system's services and
+  /// their blocks.
   String _dumpText(FelicaDump? dump) {
     final buffer = StringBuffer()
       ..writeln('IDm: ${card.idString.toUpperCase()}')
       ..writeln('PMm: ${card.pmmString.toUpperCase()}')
       ..writeln('System codes: ${card.systemCodeDisplay}')
       ..writeln('Complete: ${card.isFullyRead}');
-    for (final MapEntry(key: service, value: blocks)
-        in dump?.services.entries ??
-            const <MapEntry<int, Map<int, Uint8List>>>[]) {
-      buffer.writeln('Service ${_hex(service, 4)}');
-      for (final MapEntry(key: number, value: data) in blocks.entries) {
-        buffer.writeln('  ${_blockLabel(service, number)}: ${_bytes(data)}');
+    for (final system in dump?.systems ?? const <FelicaSystem>[]) {
+      buffer.writeln('System ${_hex(system.code, 4)}');
+      for (final MapEntry(key: service, value: blocks)
+          in system.services.entries) {
+        buffer.writeln('  Service ${_hex(service, 4)}');
+        for (final MapEntry(key: number, value: data) in blocks.entries) {
+          buffer.writeln(
+            '    ${_blockLabel(service, number)}: ${_bytes(data)}',
+          );
+        }
       }
     }
     return buffer.toString();
@@ -106,29 +111,72 @@ class FelicaRawDataPage extends ConsumerWidget {
                   : l10n.cardReadIncomplete,
               warning: !card.isFullyRead,
             ),
-            if (dump == null || dump.services.isEmpty)
+            if (dump == null || dump.blockCount == 0)
               _Notice(text: l10n.rawDataNoBlocks)
             else
-              for (final MapEntry(key: service, value: blocks)
-                  in dump.services.entries)
-                _ServiceSection(
-                  service: service,
-                  blocks: [
-                    for (final MapEntry(key: number, value: data)
-                        in blocks.entries)
-                      _BlockRow(
-                        label: _blockLabel(service, number),
-                        data: data,
-                        onCopy: () => _copy(
-                          ref,
-                          _bytes(data).replaceAll(' ', ''),
-                          l10n.valueCopiedToClipboard,
-                        ),
-                      ),
-                  ],
+              for (final system in dump.systems) ...[
+                _SystemHeader(
+                  code: system.code,
+                  empty: system.services.isEmpty,
                 ),
+                for (final MapEntry(key: service, value: blocks)
+                    in system.services.entries)
+                  _ServiceSection(
+                    service: service,
+                    blocks: [
+                      for (final MapEntry(key: number, value: data)
+                          in blocks.entries)
+                        _BlockRow(
+                          label: _blockLabel(service, number),
+                          data: data,
+                          onCopy: () => _copy(
+                            ref,
+                            _bytes(data).replaceAll(' ', ''),
+                            l10n.valueCopiedToClipboard,
+                          ),
+                        ),
+                    ],
+                  ),
+              ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Heads the services of one system.
+class _SystemHeader extends StatelessWidget {
+  final int code;
+
+  /// Whether no service of the system was saved.
+  final bool empty;
+
+  const _SystemHeader({required this.code, required this.empty});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.rawDataSystem(_hex(code, 4)),
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          if (empty)
+            Text(
+              l10n.rawDataNoServiceBlocks,
+              style: context.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
       ),
     );
   }

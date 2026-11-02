@@ -1212,5 +1212,6 @@
   "rawDataNoServiceBlocks": "无区块",
   "rawDataCopyAll": "全部复制",
   "rawDataCopied": "原始数据已复制到剪贴板",
-  "cardNotFullyRead": "未完整读取"
+  "cardNotFullyRead": "未完整读取",
+  "rawDataSystem": "系统 {code}"
 }

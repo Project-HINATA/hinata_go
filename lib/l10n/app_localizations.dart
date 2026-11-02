@@ -2251,6 +2251,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not fully read'**
   String get cardNotFullyRead;
+
+  /// No description provided for @rawDataSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System {code}'**
+  String rawDataSystem(String code);
 }
 
 class _AppLocalizationsDelegate

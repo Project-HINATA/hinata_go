@@ -12,6 +12,7 @@ import 'package:hinata_go/models/card/felica_dump.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hinata_go/models/card/nesica.dart';
+import 'package:hinata_go/models/card/scan_merge.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/suica.dart';
 import 'package:hinata_go/models/card/tunion.dart';
@@ -38,8 +39,9 @@ class CardReaderEngine {
   /// card. With [readExtended] every block that reads without encryption is
   /// saved with it; without, only what tells the kind of card apart.
   ///
-  /// [onProgress] gets the card as it stands while the read goes on, after
-  /// each record of a Suica's history.
+  /// [onProgress] gets the card as it stands while the read goes on: once
+  /// its system codes are listed, and after each record of a Suica's
+  /// history.
   Future<ScannedCard?> handleFelica({
     required Felica tag,
     String source = 'NFC',
@@ -74,6 +76,7 @@ class CardReaderEngine {
                 services: {
                   Aic.service: {Aic.spad0Block: spad0},
                 },
+                systemCode: tag.systemCode.firstOrNull ?? 0,
               );
         final manufacturer = Aic(
           tag.id,
@@ -105,30 +108,50 @@ class CardReaderEngine {
 
     if (!readExtended) return ScannedCard(card: tag, source: source);
     final mayBeSuica = tag.systemCode.contains(0x0003);
-    ScannedCard scanned(FelicaDump dump) => ScannedCard(
-      card:
-          mayBeSuica && dump.services[Suica.historyService]?.isNotEmpty == true
-          ? Suica.fromDump(
-              tag.id,
-              tag.pmm,
-              tag.systemCode,
-              dump,
-              snapshotTime: DateTime.now(),
-              tags: _suicaTags,
-            )
-          : Felica(tag.id, tag.pmm, tag.systemCode, tags: tag.tags, dump: dump),
-      source: source,
-      isExtendedInfoFullyLoaded: dump.complete,
-    );
+    ScannedCard scanned(FelicaDump dump) {
+      // Polling names one system; the dump lists them all once it can.
+      final systemCode = dump.systemCodes.length > tag.systemCode.length
+          ? Uint16List.fromList(dump.systemCodes)
+          : tag.systemCode;
+      return ScannedCard(
+        card:
+            mayBeSuica &&
+                dump.services[Suica.historyService]?.isNotEmpty == true
+            ? Suica.fromDump(
+                tag.id,
+                tag.pmm,
+                systemCode,
+                dump,
+                snapshotTime: DateTime.now(),
+                tags: _suicaTags,
+              )
+            : Felica(tag.id, tag.pmm, systemCode, tags: tag.tags, dump: dump),
+        source: source,
+        isExtendedInfoFullyLoaded: dump.complete,
+      );
+    }
 
-    // A Suica's history is read first and shows record by record, before
-    // the rest of its services are read.
+    // The system codes show as soon as they are listed, then a Suica's
+    // history record by record, before the rest of the services are read.
     final dump = await reader.read(
       tag,
       first: mayBeSuica ? const [Suica.historyService] : const [],
-      onFirstBlock: onProgress == null
+      onProgress: onProgress == null
           ? null
-          : (dump) => onProgress(scanned(dump)),
+          : (dump) {
+              // Over what the first read showed, so a Suica stays one before
+              // its history is read again.
+              final progress = scanned(dump);
+              final shown = existingCard?.card;
+              onProgress(
+                shown == null || !shown.isSameCard(progress.card)
+                    ? progress
+                    : ScannedCard(
+                        card: mergeScans(shown, progress.card),
+                        source: source,
+                      ),
+              );
+            },
     );
     return scanned(dump);
   }
@@ -142,15 +165,25 @@ class CardReaderEngine {
     Uint8List data,
   ) {
     if (dump.block(service, number) != null) return dump;
-    return FelicaDump(
+    final system = dump.systems.firstOrNull;
+    return FelicaDump.ofSystems(
       complete: dump.complete,
-      services: {
-        service: {number: data},
-        ...dump.services.map(
-          (code, blocks) =>
-              MapEntry(code, {...blocks, if (code == service) number: data}),
+      systems: [
+        FelicaSystem(
+          code: system?.code ?? 0,
+          services: {
+            service: {number: data},
+            ...dump.services.map(
+              (code, blocks) => MapEntry(code, {
+                ...blocks,
+                if (code == service) number: data,
+              }),
+            ),
+          },
+          finishedServices: system?.finishedServices ?? const {},
         ),
-      },
+        ...dump.systems.skip(1),
+      ],
     );
   }
 
@@ -486,6 +519,7 @@ class CardReaderEngine {
           services: {
             Suica.historyService: {0: newest},
           },
+          systemCode: tag.systemCode.firstOrNull ?? 0,
         ),
         snapshotTime: DateTime.now(),
         tags: _suicaTags,

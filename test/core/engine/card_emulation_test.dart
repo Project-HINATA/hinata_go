@@ -21,6 +21,9 @@ import 'package:hinata_nfc/hinata_nfc.dart';
 class _FelicaTagChannel implements NfcCardChannel {
   final FelicaTag tag;
 
+  /// The command codes sent, in order.
+  final commands = <int>[];
+
   /// How many commands are answered before the card leaves the field.
   int? answers;
 
@@ -34,6 +37,7 @@ class _FelicaTagChannel implements NfcCardChannel {
       answers = left - 1;
     }
     expect(data[0], data.length);
+    commands.add(data[1]);
     final response = tag.process(Uint8List.sublistView(data, 1));
     if (response == null) throw StateError('No response');
     return Uint8List.fromList([response.length + 1, ...response]);
@@ -95,9 +99,12 @@ void main() {
       0x00,
       0x03,
     ]);
+    // System 1 answers with its own IDm, the system number in the high
+    // nibble of the first byte.
+    final system1 = Uint8List.fromList(idm)..[0] = 0x11;
     expect(tag.process(_hex('00FE000100')), [
       0x01,
-      ...idm,
+      ...system1,
       ...felica.pmm,
       0xFE,
       0x00,
@@ -129,6 +136,7 @@ void main() {
       systemCodes,
       dump: FelicaDump(
         complete: true,
+        systemCode: 0x88B4,
         services: {
           0x090F: {0: block},
         },
@@ -162,6 +170,7 @@ void main() {
       Uint16List.fromList([0x0003]),
       dump: FelicaDump(
         complete: true,
+        systemCode: 0x0003,
         services: {
           0x008B: {0: Uint8List(16)},
           0x090F: {0: history, 1: Uint8List(16)},
@@ -177,10 +186,11 @@ void main() {
       onProgress: progress.add,
     );
 
-    // The history shows record by record, before the other services are
-    // listed and read.
-    expect(progress, hasLength(2));
-    final first = progress.first.card as Suica;
+    // The system codes show first, then the history record by record,
+    // before the other services are listed and read.
+    expect(progress, hasLength(3));
+    expect((progress[0].card as Felica).systemCode, [0x0003]);
+    final first = progress[1].card as Suica;
     expect(first.balance, 1000);
     expect(first.isFullyRead, isFalse);
     expect(first.dump!.services[0x090F]!.keys, [0]);
@@ -204,6 +214,158 @@ void main() {
     expect(card.toRemoteJson().containsKey('dump'), isFalse);
   });
 
+  test('every system reads back through its own IDm', () async {
+    final history = _hex('1602000033A0E3420000E80300000100');
+    final common = Uint8List(16)..fillRange(0, 16, 0x5A);
+    final saved = Felica(
+      idm,
+      _hex('0120220427674EFF'),
+      Uint16List.fromList([0x0003, 0xFE00]),
+      dump: FelicaDump.ofSystems(
+        complete: true,
+        systems: [
+          FelicaSystem(
+            code: 0x0003,
+            services: {
+              0x090F: {0: history},
+            },
+          ),
+          FelicaSystem(
+            code: 0xFE00,
+            services: {
+              0x1A8B: {0: common},
+            },
+          ),
+        ],
+      ),
+    );
+    final target = emulationTargetFor(saved, type4MaxRead: 51);
+    final engine = CardReaderEngine(_FelicaTagChannel(target.felica));
+
+    // Polling finds only system 0.
+    final read = await engine.handleFelica(
+      tag: Felica(idm, saved.pmm, Uint16List.fromList([0x0003])),
+    );
+
+    final card = read!.card as Suica;
+    expect(read.isExtendedInfoFullyLoaded, isTrue);
+    expect(card.systemCode, [0x0003, 0xFE00]);
+    expect(card.dump!.systemCodes, [0x0003, 0xFE00]);
+    expect(card.dump!.systems[1].services[0x1A8B]![0], common);
+    // A system's services answer only to that system's IDm.
+    final system1 = Uint8List.fromList(idm)..[0] = 0x11;
+    expect(
+      target.felica.process(
+        Uint8List.fromList([0x06, ...system1, 1, 0x8B, 0x1A, 1, 0x80, 0]),
+      ),
+      [0x07, ...system1, 0, 0, 1, ...common],
+    );
+    expect(
+      target.felica.process(
+        Uint8List.fromList([0x06, ...idm, 1, 0x8B, 0x1A, 1, 0x80, 0]),
+      ),
+      [0x07, ...idm, 0x01, 0xA6],
+    );
+
+    final decoded = ICCard.fromJson(card.toJson()) as Suica;
+    expect(decoded.dump!.systemCodes, [0x0003, 0xFE00]);
+    expect(decoded.dump!.systems[1].services[0x1A8B]![0], common);
+  });
+
+  test(
+    'the system codes show over the first read, which stays a Suica',
+    () async {
+      final history = _hex('1602000033A0E3420000E80300000100');
+      final saved = Felica(
+        idm,
+        _hex('0120220427674EFF'),
+        Uint16List.fromList([0x0003, 0xFE00]),
+        dump: FelicaDump.ofSystems(
+          complete: true,
+          systems: [
+            FelicaSystem(
+              code: 0x0003,
+              services: {
+                0x090F: {0: history},
+              },
+            ),
+            FelicaSystem(code: 0xFE00),
+          ],
+        ),
+      );
+      final engine = CardReaderEngine(
+        _FelicaTagChannel(emulationTargetFor(saved, type4MaxRead: 51).felica),
+      );
+      final polled = Felica(idm, saved.pmm, Uint16List.fromList([0x0003]));
+      final basic = await engine.handleFelica(tag: polled, readExtended: false);
+      expect((basic!.card as Felica).systemCode, [0x0003]);
+
+      final progress = <ScannedCard>[];
+      await engine.handleFelica(
+        tag: polled,
+        existingCard: basic,
+        onProgress: progress.add,
+      );
+
+      // Before the history is read again, the codes already show, and the
+      // card is still the Suica the first read found.
+      final codes = progress.first.card as Suica;
+      expect(codes.systemCode, [0x0003, 0xFE00]);
+      expect(codes.balance, 1000);
+    },
+  );
+
+  test('a dump saved before systems were kept is the first system', () {
+    final card =
+        ICCard.fromJson({
+              'type': 'felica',
+              'id': '012e0102030405f6',
+              'pmm': '0120220427674eff',
+              'systemCode': [0x0003],
+              'dump': {
+                'complete': true,
+                'services': [
+                  {
+                    'code': 0x090F,
+                    'blocks': {'0': '00112233445566778899aabbccddeeff'},
+                  },
+                ],
+              },
+            })
+            as Felica;
+
+    expect(card.dump!.systemCodes, [0x0003]);
+    expect(
+      card.dump!.block(0x090F, 0),
+      _hex('00112233445566778899AABBCCDDEEFF'),
+    );
+  });
+
+  test('blocks are read two at a time', () async {
+    final saved = Felica(
+      idm,
+      _hex('0120220427674EFF'),
+      Uint16List.fromList([0x0003]),
+      dump: FelicaDump(
+        complete: true,
+        services: {
+          0x090F: {for (var i = 0; i < 20; i++) i: Uint8List(16)..[0] = i},
+        },
+        systemCode: 0x0003,
+      ),
+    );
+    final channel = _FelicaTagChannel(
+      emulationTargetFor(saved, type4MaxRead: 51).felica,
+    );
+
+    final dump = await FelicaDumpReader(channel).read(saved);
+
+    expect(dump.services[0x090F]!.keys, List.generate(20, (i) => i));
+    expect(dump.block(0x090F, 19)![0], 19);
+    // Ten reads of two, one past the end, then block 20 alone to find it.
+    expect(channel.commands.where((code) => code == 0x06), hasLength(12));
+  });
+
   test('a read that stops early keeps its blocks, marked incomplete', () async {
     final saved = Felica(
       idm,
@@ -211,13 +373,15 @@ void main() {
       systemCodes,
       dump: FelicaDump(
         complete: true,
+        systemCode: 0x88B4,
         services: {
           0x100B: {for (var i = 0; i < 4; i++) i: Uint8List(16)..[0] = i},
         },
       ),
     );
     final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
-    // Two service searches, then two block reads before the card leaves.
+    // The system codes, two service searches, then one read of two blocks
+    // before the card leaves.
     final channel = _FelicaTagChannel(tag, answers: 4);
 
     final dump = await FelicaDumpReader(channel).read(saved);
@@ -237,6 +401,7 @@ void main() {
         Uint16List.fromList([0x0003]),
         dump: FelicaDump(
           complete: true,
+          systemCode: 0x0003,
           services: {
             0x090F: {0: history},
             0x108F: {0: Uint8List(16), 1: Uint8List(16)},
@@ -244,9 +409,11 @@ void main() {
         ),
       );
       final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
-      // The history's one block and its end, three service searches, then one
-      // block of the next service before the card leaves.
-      final channel = _FelicaTagChannel(tag, answers: 6);
+      // The system codes, the history: a two-block read past its end, then
+      // its one block and its end one at a time; three service searches,
+      // then one read of two blocks of the next service before the card
+      // leaves.
+      final channel = _FelicaTagChannel(tag, answers: 8);
 
       final read = await CardReaderEngine(
         channel,
@@ -255,7 +422,7 @@ void main() {
       final card = read!.card as Suica;
       expect(card.isFullyRead, isFalse);
       expect(card.isHistoryComplete, isTrue);
-      expect(card.dump!.services[0x108F]!.keys, [0]);
+      expect(card.dump!.services[0x108F]!.keys, [0, 1]);
       final decoded = ICCard.fromJson(card.toJson()) as Suica;
       expect(decoded.isHistoryComplete, isTrue);
       expect(decoded.dump!.isServiceComplete(0x108F), isFalse);
@@ -293,6 +460,7 @@ void main() {
       systemCodes,
       dump: FelicaDump(
         complete: true,
+        systemCode: 0x88B4,
         services: {
           0x000B: {0x81: mac, 0x91: macA},
         },

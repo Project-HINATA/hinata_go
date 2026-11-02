@@ -1153,4 +1153,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cardNotFullyRead => '未完整读取';
+
+  @override
+  String rawDataSystem(String code) {
+    return '系统 $code';
+  }
 }

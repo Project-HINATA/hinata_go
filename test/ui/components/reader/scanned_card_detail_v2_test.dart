@@ -200,6 +200,6 @@ void main() {
     expect(find.text('Fake Access Code'), findsOneWidget);
     expect(find.text('0008 5087 4256 0778 4056'), findsOneWidget);
     expect(find.text('PMm'), findsOneWidget);
-    expect(find.text('System Code'), findsOneWidget);
+    expect(find.text('Codes'), findsOneWidget);
   });
 }

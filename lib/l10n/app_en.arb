@@ -1229,5 +1229,13 @@
   "rawDataNoServiceBlocks": "No blocks",
   "rawDataCopyAll": "Copy all",
   "rawDataCopied": "Raw data copied to clipboard",
-  "cardNotFullyRead": "Not fully read"
+  "cardNotFullyRead": "Not fully read",
+  "rawDataSystem": "System {code}",
+  "@rawDataSystem": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  }
 }

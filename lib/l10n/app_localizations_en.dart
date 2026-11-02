@@ -1210,4 +1210,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cardNotFullyRead => 'Not fully read';
+
+  @override
+  String rawDataSystem(String code) {
+    return 'System $code';
+  }
 }

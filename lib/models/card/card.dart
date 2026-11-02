@@ -39,14 +39,16 @@ class ICCard {
   /// Checks if this card is logically or physically the same card as [other].
   bool isSameCard(ICCard other) {
     // A FeliCa card's kind comes from its blocks and can change between
-    // scans; its IDm, PMm and system codes do not. A copy that shares only
-    // the IDm, such as on a writable card, is another card.
+    // scans; its IDm, PMm and first system do not. A copy that shares only
+    // the IDm, such as on a writable card, is another card. Polling finds
+    // one system and a full read all of them, so only the first is
+    // compared.
     if (this is Felica && other is Felica) {
       final felica = this as Felica;
       return id.isNotEmpty &&
           idString == other.idString &&
           felica.pmmString == other.pmmString &&
-          listEquals(felica.systemCode, other.systemCode);
+          felica.systemCode.firstOrNull == other.systemCode.firstOrNull;
     }
 
     if (type != other.type) return false;

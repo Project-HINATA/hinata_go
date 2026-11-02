@@ -44,6 +44,7 @@ class Aic extends Felica implements HasAccessCode {
           if (accessCode.length == 10)
             service: {spad0Block: spad0For(accessCode)},
         },
+        systemCode: systemCode.firstOrNull ?? 0,
       ),
       tags: tags,
     );

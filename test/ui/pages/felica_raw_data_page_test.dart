@@ -35,6 +35,7 @@ void main() {
       Uint16List.fromList([0x0003]),
       dump: FelicaDump(
         complete: true,
+        systemCode: 0x0003,
         services: {
           0x090F: {
             0: ICCard.hexToBytes('00112233445566778899AABBCCDDEEFF'),

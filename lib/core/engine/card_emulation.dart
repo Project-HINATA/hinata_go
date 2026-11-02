@@ -65,20 +65,29 @@ EmulationTarget emulationTargetFor(ICCard card, {required int type4MaxRead}) {
       );
     case final EmulationKind kind:
       final felica = card as Felica;
-      final dump = felica.dump;
-      final services = {...?dump?.services};
+      // Each system's services, in the order of the card's system codes.
+      final systems = [
+        for (final code in felica.systemCode)
+          {
+            ...?felica.dump?.systems
+                .where((system) => system.code == code)
+                .firstOrNull
+                ?.services,
+          },
+      ];
       // A Lite-S reads the same blocks through its read/write service.
-      final liteBlocks = services[_liteReadOnlyService];
+      final liteBlocks = systems.first[_liteReadOnlyService];
       if (felica.isLite && liteBlocks != null) {
-        services.putIfAbsent(_liteReadWriteService, () => liteBlocks);
+        systems.first.putIfAbsent(_liteReadWriteService, () => liteBlocks);
       }
       return EmulationTarget(
         kind: kind,
         felica: FelicaTag(
-          idm: felica.id,
+          idm: Felica.systemIdm(felica.id, 0),
           pmm: felica.pmm,
           systemCodes: felica.systemCode,
-          services: services,
+          services: systems.first,
+          otherSystems: systems.skip(1).toList(),
           markerBlock: kind == EmulationKind.amusementIc
               ? Aic.spad0Block
               : null,

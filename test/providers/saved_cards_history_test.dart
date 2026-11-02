@@ -30,6 +30,7 @@ void main() {
   group('FelicaDump.overlaidWith', () {
     final earlier = FelicaDump(
       complete: true,
+      systemCode: 0x0003,
       services: {
         0x008B: {0: _block(1)},
         0x090F: {0: _block(1), 1: _block(1)},
@@ -39,6 +40,7 @@ void main() {
     test('a complete later scan replaces everything', () {
       final later = FelicaDump(
         complete: true,
+        systemCode: 0x0003,
         services: {
           0x090F: {0: _block(2)},
         },
@@ -49,6 +51,7 @@ void main() {
     test('later services replace earlier ones, which stay in place', () {
       final later = FelicaDump(
         complete: false,
+        systemCode: 0x0003,
         services: {
           0x090F: {0: _block(2)},
           0x10CB: {0: _block(2)},
@@ -70,6 +73,7 @@ void main() {
     test('a service the later scan was cut off in keeps the earlier copy', () {
       final later = FelicaDump(
         complete: false,
+        systemCode: 0x0003,
         services: {
           0x090F: {0: _block(2)},
         },
@@ -81,15 +85,52 @@ void main() {
       expect(merged.complete, isTrue);
     });
 
+    test('systems the later scan did not reach are kept', () {
+      final twoSystems = FelicaDump.ofSystems(
+        complete: true,
+        systems: [
+          FelicaSystem(
+            code: 0x0003,
+            services: {
+              0x090F: {0: _block(1)},
+            },
+          ),
+          FelicaSystem(
+            code: 0xFE00,
+            services: {
+              0x1A8B: {0: _block(1)},
+            },
+          ),
+        ],
+      );
+      final later = FelicaDump(
+        complete: false,
+        services: {
+          0x090F: {0: _block(2)},
+        },
+        finishedServices: {0x090F},
+        systemCode: 0x0003,
+      );
+
+      final merged = twoSystems.overlaidWith(later);
+
+      expect(merged.systemCodes, [0x0003, 0xFE00]);
+      expect(merged.block(0x090F, 0), _block(2));
+      expect(merged.systems[1].services[0x1A8B]![0], _block(1));
+      expect(merged.complete, isTrue);
+    });
+
     test('a service neither scan finished takes the later copy', () {
       final partial = FelicaDump(
         complete: false,
+        systemCode: 0x0003,
         services: {
           0x090F: {0: _block(1), 1: _block(1)},
         },
       );
       final later = FelicaDump(
         complete: false,
+        systemCode: 0x0003,
         services: {
           0x090F: {0: _block(2)},
         },
@@ -108,6 +149,7 @@ void main() {
         _systemCodes,
         FelicaDump(
           complete: true,
+          systemCode: 0x0003,
           services: {
             0x090F: {0: _record(500)},
           },
@@ -130,6 +172,7 @@ void main() {
             _systemCodes,
             FelicaDump(
               complete: complete,
+              systemCode: 0x0003,
               services: {
                 0x008B: {0: _block(balance)},
                 0x090F: {0: _record(balance)},
@@ -160,12 +203,12 @@ void main() {
         transactions: const [],
       );
       expect(_felica(null).isSameCard(suica), isTrue);
-      // A copy of the IDm alone, on a card with another PMm or system
-      // codes, is another card.
+      // A copy of the IDm alone, on a card with another PMm or first system
+      // code, is another card.
       for (final other in [
         Felica(Uint8List(8), _pmm, _systemCodes),
         Felica(_idm, ICCard.hexToBytes('00F1000000014300'), _systemCodes),
-        Felica(_idm, _pmm, Uint16List.fromList([0x0003, 0xFE00])),
+        Felica(_idm, _pmm, Uint16List.fromList([0xFE00])),
       ]) {
         expect(_felica(null).isSameCard(other), isFalse);
       }
@@ -195,6 +238,7 @@ void main() {
     test('a rescan completes the card it left incomplete', () {
       final partial = FelicaDump(
         complete: false,
+        systemCode: 0x0003,
         services: {
           0x090F: {0: _record(100)},
         },
@@ -215,6 +259,7 @@ void main() {
       expect(second.id, 'first');
       final full = FelicaDump(
         complete: true,
+        systemCode: 0x0003,
         services: {
           0x090F: {0: _record(200), 1: _record(100)},
         },

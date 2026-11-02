@@ -29,6 +29,11 @@ class Felica extends ICCard implements HasEPass {
   /// Whether every block that reads without encryption was saved.
   bool get isFullyRead => dump?.complete ?? false;
 
+  /// The IDm a card with [idm] answers with for its system [number]: the
+  /// system number is the high nibble of the first byte.
+  static Uint8List systemIdm(Uint8List idm, int number) =>
+      Uint8List.fromList(idm)..[0] = (idm[0] & 0x0F) | (number << 4);
+
   String get pmmString =>
       pmm.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
 
@@ -72,17 +77,21 @@ class Felica extends ICCard implements HasEPass {
       toJson()..remove('dump');
 
   factory Felica.fromJson(Map<String, dynamic> json) {
+    final systemCode = Uint16List.fromList(
+      (json['systemCode'] as List<dynamic>?)?.cast<int>() ?? [],
+    );
     return Felica(
       ICCard.hexToBytes(json['id'] as String? ?? ''),
       ICCard.hexToBytes(json['pmm'] as String? ?? ''),
-      Uint16List.fromList(
-        (json['systemCode'] as List<dynamic>?)?.cast<int>() ?? [],
-      ),
+      systemCode,
       tags:
           (json['tags'] as List<dynamic>?)?.map(CardTag.fromJson).toList() ??
           const [],
       dump: json['dump'] is Map<String, dynamic>
-          ? FelicaDump.fromJson(json['dump'] as Map<String, dynamic>)
+          ? FelicaDump.fromJson(
+              json['dump'] as Map<String, dynamic>,
+              legacySystemCode: systemCode.firstOrNull ?? 0,
+            )
           : null,
     );
   }
