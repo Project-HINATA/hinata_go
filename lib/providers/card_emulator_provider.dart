@@ -87,10 +87,6 @@ class CardEmulator extends Notifier<CardEmulatorState> {
     final kind = emulationKindOf(card.card);
     state = CardEmulatorState(kind: kind);
     if (kind == null) return _fail(CardEmulatorFailure.unsupportedCard);
-    final target = emulationTargetFor(
-      card.card,
-      type4MaxRead: HinataCardEmulator.hidMaxRead,
-    );
     if (!ref.read(cardEmulatorAvailableProvider)) {
       return _fail(CardEmulatorFailure.noReader);
     }
@@ -118,6 +114,11 @@ class CardEmulator extends Notifier<CardEmulatorState> {
       if (ref.read(hardwareDeviceProvider).connectedDevice != reader) {
         return _fail(CardEmulatorFailure.readerDisconnected);
       }
+      final target = emulationTargetFor(
+        card.card,
+        type4MaxRead: HinataCardEmulator.hidMaxRead,
+        felicaMaxBlocks: reader.emulatedFelicaBlocks,
+      );
       await reader.emulateCard(
         target,
         cancel: cancel.future,

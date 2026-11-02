@@ -30,7 +30,11 @@ class CardReaderEngine {
 
   final NfcCardChannel transceiver;
 
-  CardReaderEngine(this.transceiver);
+  /// How many FeliCa blocks one read asks for, as many as [transceiver]
+  /// passes back.
+  final int felicaBlocksPerRead;
+
+  CardReaderEngine(this.transceiver, {this.felicaBlocksPerRead = 2});
 
   static const int _aimeAccessCodeStart = 6;
   static const int _aimeAccessCodeEnd = 16;
@@ -49,7 +53,10 @@ class CardReaderEngine {
     ScannedCard? existingCard,
     void Function(ScannedCard card)? onProgress,
   }) async {
-    final reader = FelicaDumpReader(transceiver);
+    final reader = FelicaDumpReader(
+      transceiver,
+      blocksPerRead: felicaBlocksPerRead,
+    );
 
     if (_mayAic(tag.id, tag.pmm, tag.systemCode)) {
       final Uint8List? spad0;

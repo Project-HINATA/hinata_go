@@ -31,11 +31,20 @@ class FelicaDumpReader {
 
   final NfcCardChannel channel;
 
-  /// How many blocks one Read Without Encryption asks for. A HINATA reader
-  /// passes a PN532 frame in one HID report, which holds two.
+  /// How many blocks one Read Without Encryption asks for at first, as many
+  /// as [channel] passes back. A card that reads fewer at once halves it.
   final int blocksPerRead;
 
+  /// How many blocks a read asks for now.
+  late int _batchSize = blocksPerRead;
+
   FelicaDumpReader(this.channel, {this.blocksPerRead = 2});
+
+  /// After a batch failed whole: when its blocks each read alone, the card
+  /// refused how many were asked for, not one of them, so ask for fewer.
+  void _fitBatch(int asked, int readAlone) {
+    if (asked > 1 && readAlone == asked) _batchSize = asked ~/ 2;
+  }
 
   /// Reads [tag]'s blocks, in each of its systems. Never throws: if the card
   /// stops answering, the blocks read so far come back in a dump that is not
@@ -76,18 +85,24 @@ class FelicaDumpReader {
       if (tag.isLite) {
         // A Lite-S has one system and does not list it.
         final blocks = services[polled]![liteService] = {};
-        for (var i = 0; i < liteBlocks.length; i += blocksPerRead) {
-          final batch = liteBlocks.skip(i).take(blocksPerRead).toList();
+        var i = 0;
+        while (i < liteBlocks.length) {
+          final batch = liteBlocks.skip(i).take(_batchSize).toList();
+          i += batch.length;
           final data = await readBlocks(tag.id, liteService, batch);
           if (data != null) {
             blocks.addAll(Map.fromIterables(batch, data));
             continue;
           }
           // One unreadable block fails the batch; read them one by one.
+          var readAlone = 0;
           for (final number in batch) {
             final single = await readBlock(tag.id, liteService, number);
-            if (single != null) blocks[number] = single;
+            if (single == null) continue;
+            blocks[number] = single;
+            readAlone++;
           }
+          _fitBatch(batch.length, readAlone);
         }
         return dump(complete: true);
       }
@@ -143,12 +158,14 @@ class FelicaDumpReader {
   }) async {
     var number = 0;
     while (number < _maxBlocksPerService) {
-      final batch = [for (var i = number; i < number + blocksPerRead; i++) i];
+      final batch = [for (var i = number; i < number + _batchSize; i++) i];
       // A batch that runs past the end fails whole; the blocks before the
       // end are then read one by one.
-      final data =
-          await readBlocks(idm, service, batch) ??
-          (batch.length > 1 ? await _singles(idm, service, number) : null);
+      var data = await readBlocks(idm, service, batch);
+      if (data == null && batch.length > 1) {
+        data = await _singles(idm, service, batch);
+        _fitBatch(batch.length, data.length);
+      }
       if (data == null || data.isEmpty) return;
       for (final block in data) {
         blocks[number++] = block;
@@ -158,15 +175,15 @@ class FelicaDumpReader {
     }
   }
 
-  /// The blocks of [service] from [start] read one at a time, up to a batch
-  /// and stopping at the first the card refuses.
+  /// [batch]'s blocks of [service] read one at a time, stopping at the first
+  /// the card refuses.
   Future<List<Uint8List>> _singles(
     Uint8List idm,
     int service,
-    int start,
+    List<int> batch,
   ) async {
     final blocks = <Uint8List>[];
-    for (var number = start; number < start + blocksPerRead; number++) {
+    for (final number in batch) {
       final data = await readBlock(idm, service, number);
       if (data == null) break;
       blocks.add(data);

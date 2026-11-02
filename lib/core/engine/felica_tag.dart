@@ -17,9 +17,14 @@ import '../../models/card/felica.dart';
 /// Commands and responses start with the command code, without the FeliCa
 /// length byte.
 class FelicaTag {
-  /// A Check response is 12 bytes plus 16 per block, and must fit in the
-  /// 53 bytes `TgResponseToInitiator` can carry with its length byte over HID.
-  static const maxBlocksPerRead = 2;
+  /// A Check response is 12 bytes plus 16 per block. Through a HINATA
+  /// reader that sends a PN532 frame in one HID report, it must fit in the
+  /// 53 bytes `TgResponseToInitiator` can carry with its length byte.
+  static const defaultMaxBlocksPerRead = 2;
+
+  /// The most blocks one Check answers; a reader asking for more gets an
+  /// error, as from a card that reads fewer at once.
+  final int maxBlocksPerRead;
 
   /// The IDm of system 0.
   final Uint8List idm;
@@ -45,6 +50,7 @@ class FelicaTag {
     Map<int, Map<int, Uint8List>> services = const {},
     List<Map<int, Map<int, Uint8List>>> otherSystems = const [],
     this.markerBlock,
+    this.maxBlocksPerRead = defaultMaxBlocksPerRead,
   }) : systems = [
          services,
          for (var number = 1; number < systemCodes.length; number++)

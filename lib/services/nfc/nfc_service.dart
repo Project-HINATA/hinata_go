@@ -26,7 +26,8 @@ Future<CardReadResult> handleNfcTag(
     }
   }
   final channel = PhoneNfcCardChannel();
-  final engine = CardReaderEngine(channel);
+  // A phone passes up to 255 bytes, more blocks than most cards read at once.
+  final engine = CardReaderEngine(channel, felicaBlocksPerRead: 8);
   final internalTag = tag.toInternalTag();
 
   if (internalTag == null) return const CardReadResult.noTarget();

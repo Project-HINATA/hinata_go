@@ -54,7 +54,13 @@ bool emulationIsPartial(ICCard card) => card is Felica && !card.isFullyRead;
 /// challenge cannot be emulated.
 bool emulatesLite(ICCard card) => card is Felica && card.isLite;
 
-EmulationTarget emulationTargetFor(ICCard card, {required int type4MaxRead}) {
+/// [felicaMaxBlocks] bounds the blocks one FeliCa read answers, as the
+/// reader can pass them.
+EmulationTarget emulationTargetFor(
+  ICCard card, {
+  required int type4MaxRead,
+  int felicaMaxBlocks = FelicaTag.defaultMaxBlocksPerRead,
+}) {
   switch (emulationKindOf(card)) {
     case EmulationKind.ndef:
       final message = (card as NdefCard).message;
@@ -91,6 +97,7 @@ EmulationTarget emulationTargetFor(ICCard card, {required int type4MaxRead}) {
           markerBlock: kind == EmulationKind.amusementIc
               ? Aic.spad0Block
               : null,
+          maxBlocksPerRead: felicaMaxBlocks,
         ),
       );
     case null:

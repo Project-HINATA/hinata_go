@@ -9,6 +9,7 @@ import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import '../../core/engine/card_emulation.dart';
 import '../../core/engine/card_reader_engine.dart';
+import '../../core/engine/felica_tag.dart';
 import '../nfc/ndef_tag_service.dart';
 import '../../models/card/card.dart';
 import 'hinata_card_emulator.dart';
@@ -71,6 +72,15 @@ class UsbHinataDeviceImpl {
   dynamic _activeTag;
   String? _pendingUnsupportedFingerprint;
   String? _confirmedUnsupportedFingerprint;
+
+  /// FeliCa blocks one read passes back: a PN532 frame of eight with
+  /// firmware that splits frames over HID reports, two in one report.
+  int get felicaBlocksPerRead => _hinata.pn532LongFrames ? 8 : 2;
+
+  /// FeliCa blocks an emulated card answers at once: as many as one PN532
+  /// frame carries with firmware that splits frames, else one report.
+  int get emulatedFelicaBlocks =>
+      _hinata.pn532LongFrames ? 15 : FelicaTag.defaultMaxBlocksPerRead;
 
   UsbHinataDeviceImpl(this._hinata) {
     _hinata.subscribeCardioInput((data) {
@@ -167,7 +177,10 @@ class UsbHinataDeviceImpl {
   Future<CardReadResult> pollResult({bool readExtended = true}) async {
     try {
       final channel = HinataNfcCardChannel(_hinata.pn532Api);
-      final engine = CardReaderEngine(channel);
+      final engine = CardReaderEngine(
+        channel,
+        felicaBlocksPerRead: felicaBlocksPerRead,
+      );
       final felicaTag = await _pollFelicaTag();
       if (felicaTag != null) {
         _activeTag = felicaTag;
@@ -325,7 +338,10 @@ class UsbHinataDeviceImpl {
     }
 
     final channel = HinataNfcCardChannel(_hinata.pn532Api);
-    final engine = CardReaderEngine(channel);
+    final engine = CardReaderEngine(
+      channel,
+      felicaBlocksPerRead: felicaBlocksPerRead,
+    );
 
     final result = await engine.processTag(
       tag,

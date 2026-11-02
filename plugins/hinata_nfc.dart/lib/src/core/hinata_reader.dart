@@ -18,6 +18,10 @@ class HinataReader {
   final HIDDevice _device;
 
   int firmTimeStamp = 0;
+
+  /// Whether the firmware passes PN532 frames longer than one HID report,
+  /// split over several.
+  bool pn532LongFrames = false;
   List<int> commitHash = [];
   List<int> chipId = [];
 
@@ -68,6 +72,27 @@ class HinataReader {
     if (firmTimeStamp >= 2025100522) {
       await _loadStartupConfig();
     }
+    if (firmTimeStamp >= _featuresSince) {
+      pn532LongFrames = await _hasFeature(_featurePn532LongFrames);
+    }
+  }
+
+  /// The first firmware that answers kPCPROTO_GET_FEATURES.
+  static const _featuresSince = 2026110220;
+  static const _featurePn532LongFrames = 0x01;
+
+  /// PN532 bytes one passthrough report carries after its command byte.
+  static const _pn532Chunk = 62;
+
+  /// Whether the firmware reports [feature]. Firmware that predates a
+  /// feature, or does not answer, lacks it.
+  Future<bool> _hasFeature(int feature) async {
+    try {
+      final data = await sendReq(0xE7, [], timeout: 300);
+      return data.length > 1 && data[1] & feature != 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   Subscription? _segaSub;
@@ -85,15 +110,50 @@ class HinataReader {
   late final pn532Api = Pn532Api(
     (data) async {
       _pn532Sub = _subscribe(0xE2, UnSubscribePolicy.never());
-      await sendReqWithoutRes(0xE2, data);
+      if (!pn532LongFrames) {
+        await sendReqWithoutRes(0xE2, data);
+        return;
+      }
+      // A longer frame continues in kPCPROTO_NFC_PASSTHROUGH_MORE reports,
+      // each with its byte count.
+      await sendReqWithoutRes(0xE2, data.take(_pn532Chunk).toList());
+      for (var i = _pn532Chunk; i < data.length; i += _pn532Chunk - 1) {
+        final part = data.skip(i).take(_pn532Chunk - 1).toList();
+        await sendReqWithoutRes(0xEB, [part.length, ...part]);
+      }
     },
     ({timeout}) async {
-      final frame = _pn532Sub!.receive();
-      var res = await (timeout == null ? frame : frame.timeout(timeout));
-      return res.sublist(1);
+      Future<List<int>> next() async {
+        final report = _pn532Sub!.receive();
+        final res = await (timeout == null ? report : report.timeout(timeout));
+        return res.sublist(1);
+      }
+
+      var frame = await next();
+      // A frame longer than one report continues in the reports after it.
+      if (pn532LongFrames) {
+        final length = _pn532FrameLength(frame);
+        while (frame.length < length) {
+          frame = [...frame, ...await next()];
+        }
+      }
+      return frame;
     },
     onComplete: _clearPn532Subscription,
   );
+
+  /// The bytes of the PN532 frame [frame] starts, through its data
+  /// checksum; the postamble may be left out. An ACK is six bytes.
+  static int _pn532FrameLength(List<int> frame) {
+    if (frame.length < 5 ||
+        frame[0] != 0 ||
+        frame[1] != 0 ||
+        frame[2] != 0xFF) {
+      return frame.length;
+    }
+    if (frame[3] == 0 && frame[4] == 0xFF) return 6;
+    return frame[3] + 6;
+  }
 
   void _clearPn532Subscription() {
     final subscription = _pn532Sub;

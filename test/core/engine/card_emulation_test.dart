@@ -366,6 +366,31 @@ void main() {
     expect(channel.commands.where((code) => code == 0x06), hasLength(12));
   });
 
+  test('a card that reads fewer blocks at once gets smaller reads', () async {
+    final saved = Felica(
+      idm,
+      _hex('0120220427674EFF'),
+      Uint16List.fromList([0x0003]),
+      dump: FelicaDump(
+        complete: true,
+        services: {
+          0x090F: {for (var i = 0; i < 20; i++) i: Uint8List(16)..[0] = i},
+        },
+        systemCode: 0x0003,
+      ),
+    );
+    final channel = _FelicaTagChannel(
+      emulationTargetFor(saved, type4MaxRead: 51, felicaMaxBlocks: 4).felica,
+    );
+
+    final dump = await FelicaDumpReader(channel, blocksPerRead: 8).read(saved);
+
+    expect(dump.services[0x090F]!.keys, List.generate(20, (i) => i));
+    // Eight refused, read alone; then reads of four, one past the end, and
+    // block 20 alone to find it.
+    expect(channel.commands.where((code) => code == 0x06), hasLength(14));
+  });
+
   test('a read that stops early keeps its blocks, marked incomplete', () async {
     final saved = Felica(
       idm,

@@ -51,7 +51,7 @@ class Type3NdefTag extends FelicaTag {
     final attribute = Uint8List(16)
       ..setAll(0, [
         0x10, // mapping version 1.0
-        FelicaTag.maxBlocksPerRead, // Nbr
+        FelicaTag.defaultMaxBlocksPerRead, // Nbr
         0x01, // Nbw
         dataBlocks >> 8, dataBlocks & 0xFF, // Nmaxb
         0x00, 0x00, 0x00, 0x00,
