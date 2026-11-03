@@ -1868,6 +1868,144 @@ abstract class AppLocalizations {
   /// **'Supports https://, tel:, mailto: and geo:'**
   String get ndefLinkHint;
 
+  /// No description provided for @ndefPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get ndefPhone;
+
+  /// No description provided for @ndefEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get ndefEmail;
+
+  /// No description provided for @ndefSms.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS'**
+  String get ndefSms;
+
+  /// No description provided for @ndefLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get ndefLocation;
+
+  /// No description provided for @ndefWifi.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi'**
+  String get ndefWifi;
+
+  /// No description provided for @ndefContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get ndefContact;
+
+  /// No description provided for @ndefAndroidApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Android app'**
+  String get ndefAndroidApp;
+
+  /// No description provided for @ndefPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get ndefPhoneNumber;
+
+  /// No description provided for @ndefEmailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get ndefEmailAddress;
+
+  /// No description provided for @ndefEmailSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject'**
+  String get ndefEmailSubject;
+
+  /// No description provided for @ndefMessageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get ndefMessageBody;
+
+  /// No description provided for @ndefLatitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get ndefLatitude;
+
+  /// No description provided for @ndefLongitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get ndefLongitude;
+
+  /// No description provided for @ndefWifiSsid.
+  ///
+  /// In en, this message translates to:
+  /// **'Network name (SSID)'**
+  String get ndefWifiSsid;
+
+  /// No description provided for @ndefWifiSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get ndefWifiSecurity;
+
+  /// No description provided for @ndefWifiOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'None (open network)'**
+  String get ndefWifiOpen;
+
+  /// No description provided for @ndefWifiWpa2.
+  ///
+  /// In en, this message translates to:
+  /// **'WPA/WPA2 Personal'**
+  String get ndefWifiWpa2;
+
+  /// No description provided for @ndefWifiWpa3.
+  ///
+  /// In en, this message translates to:
+  /// **'WPA3 Personal'**
+  String get ndefWifiWpa3;
+
+  /// No description provided for @ndefWifiPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get ndefWifiPassword;
+
+  /// No description provided for @ndefWifiHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Android can join the network when it scans the tag; iPhone cannot join Wi-Fi over NFC.'**
+  String get ndefWifiHint;
+
+  /// No description provided for @ndefContactName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get ndefContactName;
+
+  /// No description provided for @ndefPackageName.
+  ///
+  /// In en, this message translates to:
+  /// **'Package name'**
+  String get ndefPackageName;
+
+  /// No description provided for @ndefAndroidAppHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Android opens this app, or its store page when it is not installed. Usually the last record.'**
+  String get ndefAndroidAppHint;
+
   /// No description provided for @ndefAdvanced.
   ///
   /// In en, this message translates to:

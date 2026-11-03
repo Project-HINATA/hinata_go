@@ -359,7 +359,12 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
         .markCardRemoved(source: 'HINATA');
   }
 
+  /// How many [suspendNfcPolling] calls have not been resumed yet: polling
+  /// resumes once every holder, such as an open card or a write, is done.
+  int _pollingHolds = 0;
+
   Future<UsbHinataDeviceImpl?> suspendNfcPolling() async {
+    _pollingHolds++;
     state = state.copyWith(isNfcPollingSuspended: true);
     final activePoll = _activePoll;
     if (activePoll != null) await activePoll.future;
@@ -367,7 +372,10 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
   }
 
   void resumeNfcPolling() {
-    state = state.copyWith(isNfcPollingSuspended: false);
+    if (_pollingHolds > 0) _pollingHolds--;
+    if (_pollingHolds == 0) {
+      state = state.copyWith(isNfcPollingSuspended: false);
+    }
   }
 
   void setIsUpdating(bool updating) {

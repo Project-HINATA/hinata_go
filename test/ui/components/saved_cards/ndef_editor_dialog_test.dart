@@ -114,6 +114,53 @@ void main() {
     },
   );
 
+  testWidgets('a phone record edits in its preset form', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final source = NdefCard.fromRecords([
+      ndef.UriRecord.fromString('tel:10086'),
+    ]);
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              child: const Text('Open'),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => NdefEditorDialog(
+                  initialFolderId: 'favorites_folder',
+                  copyOf: source,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Phone'), findsOneWidget);
+    await tester.tap(find.text('tel:10086'));
+    await tester.pumpAndSettle();
+
+    final number = find.byWidgetPredicate(
+      (w) => w is TextField && w.decoration?.labelText == 'Phone number',
+    );
+    expect(tester.widget<TextField>(number).controller!.text, '10086');
+    await tester.enterText(number, '+86 10010');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    final saved = container.read(savedCardsProvider).single.card as NdefCard;
+    expect(ndefRecordUri(saved.records.single).toString(), 'tel:+8610010');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a copy of a card\'s NDEF is saved as a new dataset', (
     tester,
   ) async {

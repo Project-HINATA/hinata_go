@@ -954,6 +954,75 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ndefLinkHint => '支持 https://、tel:、mailto: 和 geo:';
 
   @override
+  String get ndefPhone => '电话';
+
+  @override
+  String get ndefEmail => '邮件';
+
+  @override
+  String get ndefSms => '短信';
+
+  @override
+  String get ndefLocation => '位置';
+
+  @override
+  String get ndefWifi => 'Wi-Fi';
+
+  @override
+  String get ndefContact => '联系人';
+
+  @override
+  String get ndefAndroidApp => '安卓应用';
+
+  @override
+  String get ndefPhoneNumber => '电话号码';
+
+  @override
+  String get ndefEmailAddress => '邮箱地址';
+
+  @override
+  String get ndefEmailSubject => '主题';
+
+  @override
+  String get ndefMessageBody => '正文';
+
+  @override
+  String get ndefLatitude => '纬度';
+
+  @override
+  String get ndefLongitude => '经度';
+
+  @override
+  String get ndefWifiSsid => '网络名称（SSID）';
+
+  @override
+  String get ndefWifiSecurity => '安全性';
+
+  @override
+  String get ndefWifiOpen => '无（开放网络）';
+
+  @override
+  String get ndefWifiWpa2 => 'WPA/WPA2 个人';
+
+  @override
+  String get ndefWifiWpa3 => 'WPA3 个人';
+
+  @override
+  String get ndefWifiPassword => '密码';
+
+  @override
+  String get ndefWifiHint => '安卓扫描后可以直接连接；iPhone 不支持通过 NFC 连接 Wi-Fi。';
+
+  @override
+  String get ndefContactName => '姓名';
+
+  @override
+  String get ndefPackageName => '应用包名';
+
+  @override
+  String get ndefAndroidAppHint => '安卓会打开这个应用，没有安装时跳转到应用商店。一般放在最后一条。';
+
+  @override
   String get ndefAdvanced => '高级选项';
 
   @override

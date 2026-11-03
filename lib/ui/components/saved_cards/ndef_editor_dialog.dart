@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../models/card/ndef.dart';
+import '../../../models/card/ndef_presets.dart';
 import '../../../models/card/saved_card.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../ui_text.dart';
@@ -253,9 +254,15 @@ class _RecordDialog extends HookWidget {
         // Binary payloads must remain in the lossless raw editor.
       }
     }
+    final preset = record == null ? null : ndefPresetOf(record!);
+    final wifi = record == null ? null : wifiOf(record!);
+    final contact = record == null ? null : contactOf(record!);
+    final geo = uri == null ? null : geoOf(uri);
     final kind = useState(
       record == null
           ? 'text'
+          : preset != null
+          ? preset.name
           : uri != null
           ? 'url'
           : textRecord != null
@@ -278,7 +285,57 @@ class _RecordDialog extends HookWidget {
     );
     final id = useTextEditingController(text: _hex(record?.id ?? []));
     final tnf = useState(record?.tnf ?? ndef.TypeNameFormat.unknown);
+    // The preset forms' fields.
+    final query = uri?.queryParameters ?? const <String, String>{};
+    final phoneNumber = useTextEditingController(
+      text: preset == NdefPreset.phone || preset == NdefPreset.sms
+          ? uri!.path
+          : '',
+    );
+    final emailAddress = useTextEditingController(
+      text: preset == NdefPreset.email ? uri!.path : '',
+    );
+    final subject = useTextEditingController(text: query['subject'] ?? '');
+    final body = useTextEditingController(text: query['body'] ?? '');
+    final latitude = useTextEditingController(
+      text: geo?.latitude.toString() ?? '',
+    );
+    final longitude = useTextEditingController(
+      text: geo?.longitude.toString() ?? '',
+    );
+    final ssid = useTextEditingController(text: wifi?.ssid ?? '');
+    final password = useTextEditingController(text: wifi?.password ?? '');
+    final security = useState(wifi?.security ?? NdefWifiSecurity.wpa2);
+    final contactName = useTextEditingController(text: contact?.name ?? '');
+    final contactPhone = useTextEditingController(text: contact?.phone ?? '');
+    final contactEmail = useTextEditingController(text: contact?.email ?? '');
+    final packageName = useTextEditingController(
+      text: (record == null ? null : androidAppOf(record!)) ?? '',
+    );
     final error = useState<String?>(null);
+    Widget field(
+      TextEditingController controller,
+      String label, {
+      String? helper,
+      int maxLines = 1,
+      TextInputType? keyboardType,
+      bool obscure = false,
+    }) => Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: TextField(
+        controller: controller,
+        maxLines: maxLines,
+        minLines: maxLines > 1 ? 2 : 1,
+        keyboardType: keyboardType,
+        obscureText: obscure,
+        decoration: InputDecoration(
+          labelText: label,
+          helperText: helper,
+          helperMaxLines: 3,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
     return _EditorFrame(
       title: record == null ? l10n.ndefRecordAdd : l10n.ndefRecordEdit,
       content: SizedBox(
@@ -292,6 +349,11 @@ class _RecordDialog extends HookWidget {
                 options: [
                   NativeChoice(label: l10n.ndefText, value: 'text'),
                   NativeChoice(label: l10n.ndefLink, value: 'url'),
+                  for (final preset in NdefPreset.values)
+                    NativeChoice(
+                      label: ndefPresetLabel(preset),
+                      value: preset.name,
+                    ),
                   const NativeChoice(label: 'MIME', value: 'mime'),
                   NativeChoice(label: l10n.ndefExternal, value: 'external'),
                   NativeChoice(label: l10n.ndefRaw, value: 'raw'),
@@ -303,7 +365,107 @@ class _RecordDialog extends HookWidget {
                 },
               ),
               const SizedBox(height: 20),
-              if (kind.value == 'raw') ...[
+              ...switch (kind.value) {
+                'phone' => [
+                  field(
+                    phoneNumber,
+                    l10n.ndefPhoneNumber,
+                    keyboardType: TextInputType.phone,
+                  ),
+                ],
+                'email' => [
+                  field(
+                    emailAddress,
+                    l10n.ndefEmailAddress,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  field(subject, l10n.ndefEmailSubject),
+                  field(body, l10n.ndefMessageBody, maxLines: 5),
+                ],
+                'sms' => [
+                  field(
+                    phoneNumber,
+                    l10n.ndefPhoneNumber,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  field(body, l10n.ndefMessageBody, maxLines: 5),
+                ],
+                'location' => [
+                  for (final (controller, label) in [
+                    (latitude, l10n.ndefLatitude),
+                    (longitude, l10n.ndefLongitude),
+                  ])
+                    field(
+                      controller,
+                      label,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        signed: true,
+                        decimal: true,
+                      ),
+                    ),
+                ],
+                'wifi' => [
+                  field(ssid, l10n.ndefWifiSsid),
+                  NativeChoiceField<NdefWifiSecurity>(
+                    label: l10n.ndefWifiSecurity,
+                    options: [
+                      NativeChoice(
+                        label: l10n.ndefWifiWpa2,
+                        value: NdefWifiSecurity.wpa2,
+                      ),
+                      NativeChoice(
+                        label: l10n.ndefWifiWpa3,
+                        value: NdefWifiSecurity.wpa3,
+                      ),
+                      NativeChoice(
+                        label: l10n.ndefWifiOpen,
+                        value: NdefWifiSecurity.open,
+                      ),
+                    ],
+                    selected: security.value,
+                    onChanged: (value) => security.value = value,
+                  ),
+                  const SizedBox(height: 20),
+                  if (security.value != NdefWifiSecurity.open)
+                    field(
+                      password,
+                      l10n.ndefWifiPassword,
+                      helper: l10n.ndefWifiHint,
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Text(
+                        l10n.ndefWifiHint,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                ],
+                'contact' => [
+                  field(contactName, l10n.ndefContactName),
+                  field(
+                    contactPhone,
+                    l10n.ndefPhoneNumber,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  field(
+                    contactEmail,
+                    l10n.ndefEmailAddress,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                ],
+                'androidApp' => [
+                  field(
+                    packageName,
+                    l10n.ndefPackageName,
+                    helper: l10n.ndefAndroidAppHint,
+                  ),
+                ],
+                _ => const <Widget>[],
+              },
+              if (NdefPreset.values.any((p) => p.name == kind.value))
+                const SizedBox.shrink()
+              else if (kind.value == 'raw') ...[
                 NativeChoiceField<ndef.TypeNameFormat>(
                   label: l10n.ndefTnf,
                   options: [
@@ -406,6 +568,35 @@ class _RecordDialog extends HookWidget {
             try {
               late final ndef.NDEFRecord result;
               switch (kind.value) {
+                case 'phone':
+                  result = phoneRecord(phoneNumber.text);
+                case 'email':
+                  result = emailRecord(
+                    emailAddress.text,
+                    subject: subject.text,
+                    body: body.text,
+                  );
+                case 'sms':
+                  result = smsRecord(phoneNumber.text, body: body.text);
+                case 'location':
+                  result = locationRecord(
+                    double.parse(latitude.text.trim()),
+                    double.parse(longitude.text.trim()),
+                  );
+                case 'wifi':
+                  result = wifiRecord(
+                    ssid.text,
+                    security: security.value,
+                    password: password.text,
+                  );
+                case 'contact':
+                  result = contactRecord(
+                    name: contactName.text,
+                    phone: contactPhone.text,
+                    email: contactEmail.text,
+                  );
+                case 'androidApp':
+                  result = androidAppRecord(packageName.text);
                 case 'url':
                   final uri = Uri.tryParse(content.text.trim());
                   if (uri == null || !uri.hasScheme) {

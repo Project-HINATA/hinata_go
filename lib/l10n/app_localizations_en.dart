@@ -985,6 +985,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ndefLinkHint => 'Supports https://, tel:, mailto: and geo:';
 
   @override
+  String get ndefPhone => 'Phone';
+
+  @override
+  String get ndefEmail => 'Email';
+
+  @override
+  String get ndefSms => 'SMS';
+
+  @override
+  String get ndefLocation => 'Location';
+
+  @override
+  String get ndefWifi => 'Wi-Fi';
+
+  @override
+  String get ndefContact => 'Contact';
+
+  @override
+  String get ndefAndroidApp => 'Android app';
+
+  @override
+  String get ndefPhoneNumber => 'Phone number';
+
+  @override
+  String get ndefEmailAddress => 'Email address';
+
+  @override
+  String get ndefEmailSubject => 'Subject';
+
+  @override
+  String get ndefMessageBody => 'Message';
+
+  @override
+  String get ndefLatitude => 'Latitude';
+
+  @override
+  String get ndefLongitude => 'Longitude';
+
+  @override
+  String get ndefWifiSsid => 'Network name (SSID)';
+
+  @override
+  String get ndefWifiSecurity => 'Security';
+
+  @override
+  String get ndefWifiOpen => 'None (open network)';
+
+  @override
+  String get ndefWifiWpa2 => 'WPA/WPA2 Personal';
+
+  @override
+  String get ndefWifiWpa3 => 'WPA3 Personal';
+
+  @override
+  String get ndefWifiPassword => 'Password';
+
+  @override
+  String get ndefWifiHint =>
+      'Android can join the network when it scans the tag; iPhone cannot join Wi-Fi over NFC.';
+
+  @override
+  String get ndefContactName => 'Name';
+
+  @override
+  String get ndefPackageName => 'Package name';
+
+  @override
+  String get ndefAndroidAppHint =>
+      'Android opens this app, or its store page when it is not installed. Usually the last record.';
+
+  @override
   String get ndefAdvanced => 'Advanced options';
 
   @override

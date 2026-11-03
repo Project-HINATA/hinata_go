@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -17,6 +20,8 @@ import '../../providers/app_state_provider.dart';
 import '../../providers/card_emulator_provider.dart';
 import '../../providers/card_sender.dart';
 import '../../providers/card_writer_provider.dart';
+import '../../providers/hardware_device_provider.dart';
+import '../../providers/nfc_provider.dart';
 import '../../services/notification_service.dart';
 import '../components/card_detail/bottom_actions.dart';
 import '../components/card_detail/emulate_card_dialog.dart';
@@ -169,6 +174,21 @@ class CardDetailPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Neither the reader nor the phone scans while a card is open. Writing
+    // and emulating hold scanning too, and it resumes once all are done.
+    useEffect(() {
+      final hardware = ref.read(hardwareDeviceProvider.notifier);
+      final nfc = ref.read(nfcProvider.notifier);
+      // Providers change after the frame, not while it builds or unmounts.
+      Future.microtask(() {
+        unawaited(hardware.suspendNfcPolling());
+        unawaited(nfc.suspendForExclusiveOperation());
+      });
+      return () => Future.microtask(() {
+        hardware.resumeNfcPolling();
+        nfc.resumeAfterExclusiveOperation();
+      });
+    }, const []);
     final senderState = ref.watch(cardSenderProvider);
     final writerState = ref.watch(cardWriterProvider);
     final writerAvailable = ref.watch(cardWriterAvailableProvider);

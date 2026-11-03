@@ -6,8 +6,11 @@ import 'package:ndef/ndef.dart' as ndef;
 
 import '../l10n/l10n.dart';
 import '../models/card/ndef.dart';
+import '../models/card/ndef_presets.dart';
 
 String ndefRecordLabel(ndef.NDEFRecord record) {
+  final preset = ndefPresetOf(record);
+  if (preset != null) return ndefPresetLabel(preset);
   if (ndefRecordUri(record) != null) return l10n.ndefLink;
   if (record.tnf == ndef.TypeNameFormat.nfcWellKnown &&
       listEquals(record.type, [0x54])) {
@@ -21,7 +24,35 @@ String ndefRecordLabel(ndef.NDEFRecord record) {
   return l10n.ndefRaw;
 }
 
+String ndefPresetLabel(NdefPreset preset) => switch (preset) {
+  NdefPreset.phone => l10n.ndefPhone,
+  NdefPreset.email => l10n.ndefEmail,
+  NdefPreset.sms => l10n.ndefSms,
+  NdefPreset.location => l10n.ndefLocation,
+  NdefPreset.wifi => l10n.ndefWifi,
+  NdefPreset.contact => l10n.ndefContact,
+  NdefPreset.androidApp => l10n.ndefAndroidApp,
+};
+
 IconData ndefRecordIcon(ndef.NDEFRecord record) {
+  switch (ndefPresetOf(record)) {
+    case NdefPreset.phone:
+      return Icons.phone_outlined;
+    case NdefPreset.email:
+      return Icons.email_outlined;
+    case NdefPreset.sms:
+      return Icons.sms_outlined;
+    case NdefPreset.location:
+      return Icons.place_outlined;
+    case NdefPreset.wifi:
+      return Icons.wifi;
+    case NdefPreset.contact:
+      return Icons.person_outline;
+    case NdefPreset.androidApp:
+      return Icons.android;
+    case null:
+      break;
+  }
   if (ndefRecordUri(record) != null) return Icons.link;
   if (record.tnf == ndef.TypeNameFormat.media) {
     return Icons.description_outlined;

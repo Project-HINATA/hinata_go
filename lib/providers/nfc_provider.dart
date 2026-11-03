@@ -98,7 +98,12 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
   /// What the history entry of the last scan held before it.
   ICCard? _lastSavedCardBefore;
-  bool _exclusiveOperation = false;
+
+  /// How many [suspendForExclusiveOperation] calls have not been resumed
+  /// yet: scanning resumes once every holder, such as an open card or a
+  /// write, is done.
+  int _exclusiveHolds = 0;
+  bool get _exclusiveOperation => _exclusiveHolds > 0;
 
   @override
   NfcState build() {
@@ -282,7 +287,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   }
 
   Future<void> suspendForExclusiveOperation() async {
-    _exclusiveOperation = true;
+    _exclusiveHolds++;
     while (_isStarting || _isRetrying) {
       await Future.delayed(const Duration(milliseconds: 20));
     }
@@ -293,8 +298,8 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   }
 
   void resumeAfterExclusiveOperation() {
-    _exclusiveOperation = false;
-    if (!kIsWeb && Platform.isAndroid) {
+    if (_exclusiveHolds > 0) _exclusiveHolds--;
+    if (!_exclusiveOperation && !kIsWeb && Platform.isAndroid) {
       unawaited(startSession());
     }
   }
