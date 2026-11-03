@@ -114,6 +114,50 @@ void main() {
     },
   );
 
+  testWidgets('a copy of a card\'s NDEF is saved as a new dataset', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final source = NdefCard(
+      NdefCard.fromRecords([
+        ndef.TextRecord(text: 'on the card', language: 'en'),
+      ]).message,
+      physicalCard: Iso14443(Uint8List.fromList([1, 2, 3, 4]), 0, 0x44),
+    );
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              child: const Text('Open'),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => NdefEditorDialog(
+                  initialFolderId: 'favorites_folder',
+                  copyOf: source,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(find.text('on the card'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    final saved = container.read(savedCardsProvider).single;
+    final card = saved.card as NdefCard;
+    expect(card.message, source.message);
+    expect(card.physicalCard, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'saved NDEF details offer writing on iOS backend and no game send',
     (tester) async {

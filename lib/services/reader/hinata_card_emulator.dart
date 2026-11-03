@@ -56,7 +56,7 @@ class HinataCardEmulator {
     required void Function(CardEmulationEvent event) onEvent,
   }) async {
     final felica = target.felica;
-    final systemCode = felica.systemCodes.first;
+    final systemCode = felica.activationSystemCode;
     final targetMode = Uint8List.fromList([
       _passiveOnly,
       0x04, 0x00, // SENS_RES

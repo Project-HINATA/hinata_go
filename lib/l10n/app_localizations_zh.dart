@@ -993,6 +993,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ndefSaveCopy => '保存副本';
 
   @override
+  String get ndefSaveAsDataset => '另存为 NDEF 数据集';
+
+  @override
   String get ndefWriteTitle => '写入 NDEF 标签';
 
   @override
@@ -1090,6 +1093,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cardEmulatePollOnly => '读卡设备只读取卡号时，这里不会显示正在读取。';
+
+  @override
+  String get cardEmulateNdef => '卡片中的 NDEF 数据也会一起模拟，手机等 NFC 设备可以读取。';
 
   @override
   String get cardEmulateUnsupported => '该卡片无法模拟';

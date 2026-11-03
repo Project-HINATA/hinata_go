@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:math' show min;
 
 import 'package:flutter/foundation.dart';
 
@@ -6,6 +7,7 @@ import 'package:hinata_nfc/hinata_nfc.dart';
 
 import '../../models/card/felica.dart';
 import '../../models/card/felica_dump.dart';
+import '../../models/card/suica.dart';
 
 /// Reads every block of a FeliCa card that reads without encryption.
 ///
@@ -60,7 +62,10 @@ class FelicaDumpReader {
     List<int> first = const [],
     void Function(FelicaDump dump)? onProgress,
   }) async {
-    final polledCode = tag.systemCode.firstOrNull ?? 0;
+    // A Lite polled as a Type 3 tag answers 0x12FC for its one system.
+    final polledCode = tag.isLite
+        ? Felica.liteSystemCode
+        : tag.systemCode.firstOrNull ?? 0;
     final polled = tag.id[0] >> 4;
     // By system number; until the systems are listed, only the polled one.
     var codes = <int>[];
@@ -145,6 +150,85 @@ class FelicaDumpReader {
       log('FeliCa read stopped early', error: error, stackTrace: stackTrace);
       return dump(complete: false);
     }
+  }
+
+  /// The first batch of [tag]'s blocks, in its polled system, which tells
+  /// the kind of card apart: of a Lite or a card polled as 0x12FC, service
+  /// 0x000B from block 0 (an Amusement IC's S_PAD0, a Type 3 tag's attribute
+  /// block), and of a card polled as 0x0003, a Suica's newest history
+  /// records. When block 0 of 0x000B describes an NDEF message, the rest of
+  /// the blocks holding it are read too, so the message shows at once.
+  ///
+  /// Null for any other card, which shows without its blocks. The dump is
+  /// never complete: the rest of the card is read after. Throws when the
+  /// card does not answer the first batch.
+  Future<FelicaDump?> readFirst(Felica tag) async {
+    final int service;
+    if (tag.isLite || tag.systemCode.contains(Felica.ndefSystemCode)) {
+      service = Felica.ndefService;
+    } else if (tag.systemCode.contains(0x0003)) {
+      service = Suica.historyService;
+    } else {
+      return null;
+    }
+    final blocks = <int, Uint8List>{};
+    FelicaDump dump() => FelicaDump(
+      complete: false,
+      systemCode: tag.isLite
+          ? Felica.liteSystemCode
+          : tag.systemCode.firstOrNull ?? 0,
+      services: {if (blocks.isNotEmpty) service: blocks},
+    );
+
+    final next = await _readRange(tag.id, service, 0, blocks);
+    final attribute = service == Felica.ndefService ? blocks[0] : null;
+    // Version 1 of the Type 3 mapping; the rest is checked once read.
+    if (attribute == null || attribute[0] >> 4 != 1) return dump();
+    final length = attribute[11] << 16 | attribute[12] << 8 | attribute[13];
+    final dataBlocks = min(
+      (length + 15) ~/ 16,
+      attribute[3] << 8 | attribute[4],
+    );
+    try {
+      await _readRange(tag.id, service, next, blocks, end: dataBlocks + 1);
+    } catch (error, stackTrace) {
+      log(
+        'FeliCa NDEF read stopped early',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    return dump();
+  }
+
+  /// Reads blocks of [service] into [blocks] from [start]: one batch, or up
+  /// to [end] when given. Returns the block after the last one read; it
+  /// stops early at a block the card refuses.
+  Future<int> _readRange(
+    Uint8List idm,
+    int service,
+    int start,
+    Map<int, Uint8List> blocks, {
+    int? end,
+  }) async {
+    final last = end ?? start + _batchSize;
+    var number = start;
+    while (number < last) {
+      final batch = [
+        for (var i = number; i < last && i < number + _batchSize; i++) i,
+      ];
+      var data = await readBlocks(idm, service, batch);
+      if (data == null && batch.length > 1) {
+        data = await _singles(idm, service, batch);
+        _fitBatch(batch.length, data.length);
+      }
+      if (data == null || data.isEmpty) break;
+      for (final block in data) {
+        blocks[number++] = block;
+      }
+      if (data.length < batch.length) break;
+    }
+    return number;
   }
 
   /// Reads [service] into [blocks] from block 0 until the card reports an

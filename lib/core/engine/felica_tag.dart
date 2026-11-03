@@ -34,6 +34,11 @@ class FelicaTag {
   /// of the polling response.
   final List<int> systemCodes;
 
+  /// System codes system 0 also answers polling for, as a Lite-S enabled
+  /// for NDEF answers 0x12FC besides 0x88B4. Request System Code does not
+  /// list them.
+  final List<int> aliasCodes;
+
   /// By system number, the services readable without encryption, each to
   /// its saved blocks.
   final List<Map<int, Map<int, Uint8List>>> systems;
@@ -47,6 +52,7 @@ class FelicaTag {
     required this.idm,
     required this.pmm,
     required this.systemCodes,
+    this.aliasCodes = const [],
     Map<int, Map<int, Uint8List>> services = const {},
     List<Map<int, Map<int, Uint8List>>> otherSystems = const [],
     this.markerBlock,
@@ -72,6 +78,11 @@ class FelicaTag {
       }
     }
   }
+
+  /// The system code the PN532 answers polling with by itself, before the
+  /// host sees a command: an alias when there is one, so a reader looking
+  /// for NDEF finds it.
+  int get activationSystemCode => aliasCodes.firstOrNull ?? systemCodes.first;
 
   /// System 0's services.
   Map<int, Map<int, Uint8List>> get services => systems.first;
@@ -119,11 +130,12 @@ class FelicaTag {
     final number = [
       for (var i = 0; i < systemCodes.length; i++) i,
     ].where((i) => matches(systemCodes[i])).firstOrNull;
-    if (number == null) return null;
-    final code = systemCodes[number];
+    final alias = number == null ? aliasCodes.where(matches).firstOrNull : null;
+    if (number == null && alias == null) return null;
+    final code = alias ?? systemCodes[number!];
     return Uint8List.fromList([
       0x01,
-      ..._idmOf(number),
+      ..._idmOf(number ?? 0),
       ...pmm,
       if (command[3] == 0x01) ...[code >> 8, code & 0xFF],
     ]);

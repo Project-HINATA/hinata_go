@@ -6,7 +6,6 @@ import 'package:hinata_nfc/hinata_nfc.dart';
 import '../../core/crypto/mifare_key.dart';
 import '../../core/engine/mifare_write_payload.dart';
 import '../../models/card/card.dart';
-import '../../models/card/felica.dart';
 import '../../models/card/iso14443a.dart';
 import '../../models/card/ndef.dart';
 import 'mifare_card_writer.dart';
@@ -114,8 +113,6 @@ class NdefTagService {
         final result = await _readType4();
         if (result != null) (message, capacity) = result;
       }
-    } else if (tag is Felica && tag.systemCode.contains(0x12fc)) {
-      (message, capacity) = await _readType3(tag);
     }
     return message == null
         ? null
@@ -553,50 +550,6 @@ class NdefTagService {
       bytes.add(part);
     }
     return (bytes.toBytes(), ((cc[11] << 8) | cc[12]) - 2);
-  }
-
-  Future<(Uint8List, int)> _readType3(Felica tag) async {
-    Future<Uint8List> block(int index) async {
-      final command = [
-        0,
-        6,
-        ...tag.id,
-        1,
-        0x0b,
-        0,
-        1,
-        if (index < 256) ...[0x80, index] else ...[0, index & 255, index >> 8],
-      ];
-      command[0] = command.length;
-      final res = await channel.transceive(Uint8List.fromList(command));
-      if (res.length != 29 ||
-          res[1] != 7 ||
-          !listEquals(res.sublist(2, 10), tag.id) ||
-          res[10] != 0 ||
-          res[11] != 0 ||
-          res[12] != 1) {
-        throw const FormatException('Invalid Type 3 read response');
-      }
-      return Uint8List.sublistView(res, 13);
-    }
-
-    final attribute = await block(0);
-    final checksum = attribute.take(14).fold(0, (a, b) => a + b) & 0xffff;
-    final length = (attribute[11] << 16) | (attribute[12] << 8) | attribute[13];
-    if (attribute[0] >> 4 != 1 ||
-        attribute[9] != 0 ||
-        checksum != (attribute[14] << 8) + attribute[15] ||
-        length > ((attribute[3] << 8) + attribute[4]) * 16) {
-      throw const FormatException('Invalid Type 3 attribute');
-    }
-    final bytes = BytesBuilder();
-    for (var i = 1; bytes.length < length; i++) {
-      bytes.add(await block(i));
-    }
-    return (
-      Uint8List.sublistView(bytes.toBytes(), 0, length),
-      ((attribute[3] << 8) | attribute[4]) * 16,
-    );
   }
 
   Never _fail(MifareWriteFailure failure, String message) =>

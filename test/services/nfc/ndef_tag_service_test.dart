@@ -142,51 +142,17 @@ void main() {
     );
   });
 
-  test(
-    'reads FeliCa Type 3 NDEF and validates its attribute checksum',
-    () async {
-      final tag = Felica(
-        Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]),
-        Uint8List(8),
-        Uint16List.fromList([0x12fc]),
-      );
-      final attribute = Uint8List(16)
-        ..[0] = 0x10
-        ..[1] = 1
-        ..[4] = 32
-        ..[10] = 1
-        ..[13] = message.message.length;
-      var checksum = attribute.take(14).fold(0, (a, b) => a + b);
-      attribute[14] = checksum >> 8;
-      attribute[15] = checksum & 255;
-      final bytes = Uint8List((message.message.length + 15) ~/ 16 * 16)
-        ..setRange(0, message.message.length, message.message);
-      final channel = _ScriptChannel((command) {
-        expect(command.sublist(0, 13), [16, 6, ...tag.id, 1, 0x0b, 0]);
-        final block = command.last;
-        return Uint8List.fromList([
-          29,
-          7,
-          ...tag.id,
-          0,
-          0,
-          1,
-          ...block == 0
-              ? attribute
-              : bytes.sublist((block - 1) * 16, block * 16),
-        ]);
-      });
-      final read = (await NdefTagService(channel).read(tag))!;
-      expect(read.message, message.message);
-      expect(read.physicalCard, same(tag));
-      expect(read.capacity, 512);
-      attribute[15] ^= 1;
-      await expectLater(
-        NdefTagService(channel).read(tag),
-        throwsFormatException,
-      );
-    },
-  );
+  test('leaves a FeliCa card to the block read', () async {
+    final tag = Felica(
+      Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]),
+      Uint8List(8),
+      Uint16List.fromList([0x12fc]),
+    );
+    final channel = _ScriptChannel((command) {
+      fail('Sent ${command.length} bytes to a FeliCa card');
+    });
+    expect(await NdefTagService(channel).read(tag), isNull);
+  });
   test('reads Type 4 CC, NLEN and bounded READ BINARY chunks', () async {
     final card = NdefCard.fromRecords([
       ndef.TextRecord(text: 'x' * 300, language: 'en'),

@@ -1024,6 +1024,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ndefSaveCopy => 'Save a copy';
 
   @override
+  String get ndefSaveAsDataset => 'Save as NDEF dataset';
+
+  @override
   String get ndefWriteTitle => 'Write NDEF tag';
 
   @override
@@ -1138,6 +1141,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cardEmulatePollOnly =>
       'A reader that only reads the card number is not shown here.';
+
+  @override
+  String get cardEmulateNdef =>
+      'The card\'s NDEF data is emulated too, for phones and other NFC devices to read.';
 
   @override
   String get cardEmulateUnsupported => 'This card cannot be emulated';

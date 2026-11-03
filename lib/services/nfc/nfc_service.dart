@@ -15,7 +15,8 @@ Future<CardReadResult> handleNfcTag(
   ScannedCard? existingCard,
   void Function(ScannedCard card)? onProgress,
 }) async {
-  if (tag.ndefAvailable == true) {
+  // A FeliCa card's NDEF is read with its blocks.
+  if (tag.ndefAvailable == true && tag.type != NFCTagType.iso18092) {
     try {
       return CardReadResult.recognized(
         ScannedCard(card: await readPhoneNdef(tag), source: 'NFC'),

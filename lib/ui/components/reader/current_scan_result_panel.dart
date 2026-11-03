@@ -33,8 +33,8 @@ class CurrentScanResultPanel extends HookConsumerWidget {
         !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.iOS ||
             defaultTargetPlatform == TargetPlatform.android) &&
-        card is NdefCard &&
-        card.prismUrl != null;
+        card != null &&
+        ndefOf(card)?.prismUrl != null;
     if (currentScan == null || opensPrism) {
       return const SizedBox.shrink();
     }
@@ -179,6 +179,7 @@ class _CurrentScanResultContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ndef = ndefOf(card);
     return Column(
       children: [
         _ScanDetailStack(
@@ -189,9 +190,9 @@ class _CurrentScanResultContent extends StatelessWidget {
           animationController: animationController,
           onClear: onClear,
         ),
-        if (card is NdefCard) ...[
+        if (ndef != null) ...[
           const SizedBox(height: 16),
-          NdefRecordsCard(card: card as NdefCard),
+          NdefRecordsCard(card: ndef),
         ],
         if (card is TransitCard) ...[
           const SizedBox(height: 16),

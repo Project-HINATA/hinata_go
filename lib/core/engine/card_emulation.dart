@@ -13,6 +13,7 @@ class EmulationTarget {
   final EmulationKind kind;
 
   /// Answers Type A readers through ISO-DEP; without it they get nothing.
+  /// An NDEF card has one, and so does a FeliCa card holding NDEF.
   final Type4NdefTag? type4;
   final FelicaTag felica;
 
@@ -75,27 +76,43 @@ EmulationTarget emulationTargetFor(
       );
     case final EmulationKind kind:
       final felica = card as Felica;
+      // A Lite has one system, 0x88B4, whatever code it was polled with.
+      final systemCodes = felica.isLite
+          ? const [Felica.liteSystemCode]
+          : felica.systemCode;
       // Each system's services, in the order of the card's system codes.
-      final systems = [
-        for (final code in felica.systemCode)
-          {
-            ...?felica.dump?.systems
-                .where((system) => system.code == code)
-                .firstOrNull
-                ?.services,
-          },
-      ];
+      final systems = felica.isLite
+          ? [
+              {...?felica.dump?.systems.firstOrNull?.services},
+            ]
+          : [
+              for (final code in systemCodes)
+                {
+                  ...?felica.dump?.systems
+                      .where((system) => system.code == code)
+                      .firstOrNull
+                      ?.services,
+                },
+            ];
       // A Lite-S reads the same blocks through its read/write service.
       final liteBlocks = systems.first[_liteReadOnlyService];
       if (felica.isLite && liteBlocks != null) {
         systems.first.putIfAbsent(_liteReadWriteService, () => liteBlocks);
       }
+      final message = ndefOf(felica)?.message;
       return EmulationTarget(
         kind: kind,
+        type4: message != null && message.length <= Type4NdefTag.maxMessageSize
+            ? Type4NdefTag(message, maxRead: type4MaxRead)
+            : null,
         felica: FelicaTag(
           idm: Felica.systemIdm(felica.id, 0),
           pmm: felica.pmm,
-          systemCodes: felica.systemCode,
+          systemCodes: systemCodes,
+          // A Lite-S holding NDEF answers as a Type 3 tag too.
+          aliasCodes: felica.isLite && message != null
+              ? const [Felica.ndefSystemCode]
+              : const [],
           services: systems.first,
           otherSystems: systems.skip(1).toList(),
           markerBlock: kind == EmulationKind.amusementIc

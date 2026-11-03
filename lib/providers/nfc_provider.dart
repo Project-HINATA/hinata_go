@@ -454,7 +454,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     }
 
     final card = scannedCard.card;
-    final prismUrl = card is NdefCard ? card.prismUrl : null;
+    final prismUrl = ndefOf(card)?.prismUrl;
     if (prismUrl != null && !kIsWeb && (Platform.isIOS || Platform.isAndroid)) {
       final url = prismUrl;
       try {

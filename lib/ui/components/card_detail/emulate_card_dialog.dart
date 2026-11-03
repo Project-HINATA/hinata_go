@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/engine/card_emulation.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/card/card.dart';
+import '../../../models/card/ndef.dart';
 import '../../../models/card/saved_card.dart';
 import '../../../providers/card_emulator_provider.dart';
 
@@ -94,6 +95,8 @@ class _EmulateDialog extends ConsumerWidget {
                   ],
                   EmulationKind.amusementIc || EmulationKind.felica => [
                     _InfoRow(text: l10n.cardEmulateFelicaData),
+                    if (ndefOf(card) != null)
+                      _InfoRow(text: l10n.cardEmulateNdef),
                     _InfoRow(text: l10n.cardEmulatePollOnly),
                   ],
                   null => const <Widget>[],

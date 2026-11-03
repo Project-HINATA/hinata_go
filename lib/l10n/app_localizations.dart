@@ -1946,6 +1946,12 @@ abstract class AppLocalizations {
   /// **'Save a copy'**
   String get ndefSaveCopy;
 
+  /// No description provided for @ndefSaveAsDataset.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as NDEF dataset'**
+  String get ndefSaveAsDataset;
+
   /// No description provided for @ndefWriteTitle.
   ///
   /// In en, this message translates to:
@@ -2137,6 +2143,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A reader that only reads the card number is not shown here.'**
   String get cardEmulatePollOnly;
+
+  /// No description provided for @cardEmulateNdef.
+  ///
+  /// In en, this message translates to:
+  /// **'The card\'s NDEF data is emulated too, for phones and other NFC devices to read.'**
+  String get cardEmulateNdef;
 
   /// No description provided for @cardEmulateUnsupported.
   ///

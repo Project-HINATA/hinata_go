@@ -42,13 +42,14 @@ class ICCard {
     // scans; its IDm, PMm and first system do not. A copy that shares only
     // the IDm, such as on a writable card, is another card. Polling finds
     // one system and a full read all of them, so only the first is
-    // compared.
+    // compared. A Lite has one system, which it may answer as 0x12FC.
     if (this is Felica && other is Felica) {
       final felica = this as Felica;
       return id.isNotEmpty &&
           idString == other.idString &&
           felica.pmmString == other.pmmString &&
-          felica.systemCode.firstOrNull == other.systemCode.firstOrNull;
+          (felica.isLite ||
+              felica.systemCode.firstOrNull == other.systemCode.firstOrNull);
     }
 
     if (type != other.type) return false;

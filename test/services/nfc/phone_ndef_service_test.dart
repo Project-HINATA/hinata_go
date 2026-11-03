@@ -80,10 +80,13 @@ void main() {
         expect(read.message, card.message);
         expect(read.physicalCard, isNotNull);
         expect(read.capacity, 512);
-        expect(
-          (await handleNfcTag(tag(type: type))).card!.card,
-          isA<NdefCard>(),
-        );
+        // A FeliCa card's NDEF is read with its blocks instead.
+        if (type != 'iso18092') {
+          expect(
+            (await handleNfcTag(tag(type: type))).card!.card,
+            isA<NdefCard>(),
+          );
+        }
         expect(stages, [
           MifareWriteStage.checkingPermissions,
           MifareWriteStage.writingData,

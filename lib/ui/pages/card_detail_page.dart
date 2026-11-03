@@ -239,13 +239,26 @@ class CardDetailPage extends HookConsumerWidget {
             savedCard: activeSavedCard,
           ),
         )
-      else
+      else ...[
         AdaptiveAppBarAction(
           iosSymbol: 'pencil',
           icon: Icons.edit_note,
           label: l10n.renameCard,
           onPressed: () => _renameCard(context, ref, activeSavedCard),
         ),
+        // The card's own NDEF stays as read; edits become a new dataset.
+        if (ndefOf(activeCard) case final ndef?)
+          AdaptiveAppBarAction(
+            iosSymbol: 'doc.badge.plus',
+            icon: Icons.note_add_outlined,
+            label: l10n.ndefSaveAsDataset,
+            onPressed: () => showNdefEditor(
+              context,
+              initialFolderId: activeSavedCard.folderId,
+              copyOf: ndef,
+            ),
+          ),
+      ],
       AdaptiveAppBarAction(
         iosSymbol: 'trash',
         icon: Icons.delete_outline,
@@ -295,9 +308,9 @@ class CardDetailPage extends HookConsumerWidget {
             title: activeSavedCard?.name,
             showHeader: true,
           ),
-          if (activeCard is NdefCard) ...[
+          if (ndefOf(activeCard) case final ndef?) ...[
             const SizedBox(height: 16),
-            NdefRecordsCard(card: activeCard),
+            NdefRecordsCard(card: ndef),
           ],
           if (activeCard is TransitCard) ...[
             const SizedBox(height: 16),

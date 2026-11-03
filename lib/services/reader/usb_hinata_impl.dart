@@ -251,6 +251,14 @@ class UsbHinataDeviceImpl {
     required String source,
     required bool readExtended,
   }) async {
+    // A FeliCa card's NDEF is read with its blocks.
+    if (tag is Felica) {
+      return await engine.processTag(
+        tag,
+        source: source,
+        readExtended: readExtended,
+      );
+    }
     final classic = tag is Iso14443 && tag.isMifareClassicCandidate;
     try {
       final ndefChannel = tag is Iso14443

@@ -7,6 +7,7 @@ import 'package:hinata_go/core/engine/card_emulation.dart';
 import 'package:hinata_go/core/engine/card_reader_engine.dart';
 import 'package:hinata_go/core/engine/felica_dump_reader.dart';
 import 'package:hinata_go/core/engine/felica_tag.dart';
+import 'package:hinata_go/core/engine/type3_ndef_tag.dart';
 import 'package:hinata_go/models/card/aic.dart';
 import 'package:hinata_go/models/card/card.dart';
 import 'package:hinata_go/models/card/felica.dart';
@@ -16,6 +17,7 @@ import 'package:hinata_go/models/card/ndef.dart';
 import 'package:hinata_go/models/card/scanned_card.dart';
 import 'package:hinata_go/models/card/suica.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
+import 'package:ndef/ndef.dart' as ndef;
 
 /// Hands length-prefixed FeliCa frames to an emulated card.
 class _FelicaTagChannel implements NfcCardChannel {
@@ -75,10 +77,22 @@ void main() {
     expect(target.type4, isNull);
 
     final engine = CardReaderEngine(_FelicaTagChannel(target.felica));
-    final read = await engine.handleFelica(tag: Felica(idm, pmm, systemCodes));
+    // The first batch, S_PAD0 among it, already tells it apart.
+    final basic = await engine.handleFelica(
+      tag: Felica(idm, pmm, systemCodes),
+      readExtended: false,
+    );
+    expect(basic!.card, isA<Aic>());
+    expect(basic.isExtendedInfoFullyLoaded, isFalse);
+
+    final read = await engine.handleFelica(
+      tag: Felica(idm, pmm, systemCodes),
+      existingCard: basic,
+    );
 
     final card = read!.card;
     expect(card, isA<Aic>());
+    expect(read.isExtendedInfoFullyLoaded, isTrue);
     expect((card as Aic).accessCodeString, '50012345678901234567');
     expect(card.id, idm);
     expect(target.felica.takeMarkerRead(), isTrue);
@@ -298,7 +312,9 @@ void main() {
       );
       final polled = Felica(idm, saved.pmm, Uint16List.fromList([0x0003]));
       final basic = await engine.handleFelica(tag: polled, readExtended: false);
-      expect((basic!.card as Felica).systemCode, [0x0003]);
+      // The first batch of history already makes it a Suica.
+      expect(basic!.card, isA<Suica>());
+      expect((basic.card as Felica).systemCode, [0x0003]);
 
       final progress = <ScannedCard>[];
       await engine.handleFelica(
@@ -515,5 +531,156 @@ void main() {
       isNull,
     );
     expect(emulationKindOf(Iso14443(_hex('01020304'), 0x08, 0x0004)), isNull);
+  });
+
+  group('a FeliCa card holding NDEF', () {
+    final message = NdefCard.fromRecords([
+      ndef.UriRecord.fromString('https://example.org/${'a' * 60}'),
+    ]).message;
+    final type3 = Type3NdefTag(message, idm: idm).services[0x000B]!;
+    // The rest of a Lite-S, after its NDEF blocks.
+    final rest = {
+      for (var number = type3.length; number < 14; number++)
+        number: Uint8List(16),
+      0x88: Uint8List(16)..[3] = 0x01,
+    };
+    Felica lite({Map<int, Uint8List>? blocks, int polled = 0x12FC}) => Felica(
+      idm,
+      pmm,
+      Uint16List.fromList([polled]),
+      dump: FelicaDump(
+        complete: true,
+        systemCode: polled,
+        services: {0x000B: blocks ?? type3},
+      ),
+    );
+    Uint8List? poll(FelicaTag tag, int code) => tag.process(
+      Uint8List.fromList([0x00, code >> 8, code & 0xFF, 0x01, 0x00]),
+    );
+
+    test(
+      'a Lite-S polled as 0x12FC is saved as 0x88B4 with its NDEF',
+      () async {
+        final engine = CardReaderEngine(
+          _FelicaTagChannel(
+            FelicaTag(
+              idm: idm,
+              pmm: pmm,
+              systemCodes: const [0x88B4],
+              services: {
+                0x000B: {...type3, ...rest},
+              },
+            ),
+          ),
+        );
+        final polled = Felica(idm, pmm, Uint16List.fromList([0x12FC]));
+        final basic = await engine.handleFelica(
+          tag: polled,
+          readExtended: false,
+        );
+
+        // The first scan reads the NDEF blocks only, and shows the message.
+        final card = basic!.card as Felica;
+        expect(card.systemCode, [0x88B4]);
+        expect(card.dump!.systemCodes, [0x88B4]);
+        expect(card.dump!.services[0x000B]!.keys, type3.keys);
+        expect(basic.isExtendedInfoFullyLoaded, isFalse);
+        expect(ndefOf(card)!.message, message);
+
+        final full = await engine.handleFelica(tag: polled);
+        expect(full!.isExtendedInfoFullyLoaded, isTrue);
+        expect((full.card as Felica).dump!.services[0x000B]![0x88], rest[0x88]);
+        expect(ndefOf(full.card)!.message, message);
+      },
+    );
+
+    test('a Lite-S without NDEF shows after one batch', () async {
+      // Not an Amusement IC, whose check would read S_PAD0 first.
+      final lite = _hex('0101010203040506');
+      final channel = _FelicaTagChannel(
+        FelicaTag(
+          idm: lite,
+          pmm: pmm,
+          systemCodes: const [0x88B4],
+          services: {
+            0x000B: {...type3, 0: Uint8List(16), ...rest},
+          },
+        ),
+      );
+      final basic = await CardReaderEngine(channel).handleFelica(
+        tag: Felica(lite, pmm, Uint16List.fromList([0x88B4])),
+        readExtended: false,
+      );
+
+      expect(channel.commands, [0x06]);
+      expect(basic!.isExtendedInfoFullyLoaded, isFalse);
+      expect(ndefOf(basic.card), isNull);
+    });
+
+    test('a Lite-S holding NDEF also answers 0x12FC and Type A', () {
+      final target = emulationTargetFor(lite(), type4MaxRead: 51);
+      expect(target.kind, EmulationKind.felica);
+      expect(target.type4, isNotNull);
+
+      final tag = target.felica;
+      expect(tag.systemCodes, [0x88B4]);
+      expect(tag.activationSystemCode, 0x12FC);
+      expect(poll(tag, 0x12FC), [0x01, ...idm, ...pmm, 0x12, 0xFC]);
+      expect(poll(tag, 0x88B4), [0x01, ...idm, ...pmm, 0x88, 0xB4]);
+      expect(poll(tag, 0xFE00), isNull);
+      // The alias is not a system of its own.
+      expect(tag.process(Uint8List.fromList([0x0C, ...idm])), [
+        0x0D,
+        ...idm,
+        1,
+        0x88,
+        0xB4,
+      ]);
+    });
+
+    test('a Lite-S without NDEF answers 0x88B4 only', () {
+      final blocks = {...type3, 0: Uint8List(16)};
+      final target = emulationTargetFor(
+        lite(blocks: blocks, polled: 0x88B4),
+        type4MaxRead: 51,
+      );
+      expect(target.type4, isNull);
+      expect(target.felica.activationSystemCode, 0x88B4);
+      expect(poll(target.felica, 0x12FC), isNull);
+    });
+
+    test('a Standard card holds NDEF in its 0x12FC system only', () {
+      final standardPmm = _hex('0120220427674EFF');
+      final card = Felica(
+        idm,
+        standardPmm,
+        Uint16List.fromList([0x0003, 0x12FC]),
+        dump: FelicaDump.ofSystems(
+          complete: true,
+          systems: [
+            FelicaSystem(code: 0x0003),
+            FelicaSystem(code: 0x12FC, services: {0x000B: type3}),
+          ],
+        ),
+      );
+      expect(ndefOf(card)!.message, message);
+      final target = emulationTargetFor(card, type4MaxRead: 51);
+      expect(target.type4, isNotNull);
+      expect(target.felica.aliasCodes, isEmpty);
+      expect(target.felica.activationSystemCode, 0x0003);
+
+      final elsewhere = Felica(
+        idm,
+        standardPmm,
+        Uint16List.fromList([0x0003]),
+        dump: FelicaDump(
+          complete: true,
+          systemCode: 0x0003,
+          services: {0x000B: type3},
+        ),
+      );
+      expect(ndefOf(elsewhere), isNull);
+      expect(emulationTargetFor(elsewhere, type4MaxRead: 51).type4, isNull);
+    });
   });
 }

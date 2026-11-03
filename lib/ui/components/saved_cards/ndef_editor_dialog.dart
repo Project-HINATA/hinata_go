@@ -17,16 +17,20 @@ import '../../ndef_record_ui.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/native_alert.dart';
 
+/// Edits [savedCard], or makes a new dataset, starting from the records of
+/// [copyOf] when given.
 Future<void> showNdefEditor(
   BuildContext context, {
   required String initialFolderId,
   SavedCard? savedCard,
+  NdefCard? copyOf,
 }) async {
   await _showEditorRoute<void>(
     context,
     (_) => NdefEditorDialog(
       initialFolderId: initialFolderId,
       savedCard: savedCard,
+      copyOf: copyOf,
     ),
   );
 }
@@ -44,10 +48,15 @@ Future<T?> _showEditorRoute<T>(BuildContext context, WidgetBuilder builder) {
 class NdefEditorDialog extends HookConsumerWidget {
   final String initialFolderId;
   final SavedCard? savedCard;
+
+  /// The NDEF a new dataset starts from. The dataset does not take its
+  /// physical card, so it is emulated as a tag of its own.
+  final NdefCard? copyOf;
   const NdefEditorDialog({
     super.key,
     required this.initialFolderId,
     this.savedCard,
+    this.copyOf,
   });
 
   @override
@@ -56,7 +65,9 @@ class NdefEditorDialog extends HookConsumerWidget {
     useListenable(name);
     final folder = useState(initialFolderId);
     final records = useState(
-      (savedCard?.card as NdefCard?)?.records ?? <ndef.NDEFRecord>[],
+      (savedCard?.card as NdefCard?)?.records ??
+          copyOf?.records ??
+          <ndef.NDEFRecord>[],
     );
     final folders = ref
         .watch(cardFoldersProvider)

@@ -22,9 +22,64 @@ class Felica extends ICCard implements HasEPass {
 
   Felica(super.id, this.pmm, this.systemCode, {super.tags, this.dump});
 
-  /// FeliCa Lite and Lite-S, told apart from other ICs by the IC type in the
-  /// PMm. They have one block map, read through service 0x000B.
-  bool get isLite => pmm.length == 8 && (pmm[1] == 0xF0 || pmm[1] == 0xF1);
+  /// The system code of a FeliCa Lite or Lite-S.
+  static const liteSystemCode = 0x88B4;
+
+  /// The system code of an NFC Forum Type 3 tag, which holds NDEF.
+  static const ndefSystemCode = 0x12FC;
+
+  /// The Type 3 service whose block 0 describes the NDEF message and whose
+  /// later blocks hold it.
+  static const ndefService = 0x000B;
+
+  /// The Lite-S MC block, whose SYS_OP byte enables NDEF.
+  static const _liteMcBlock = 0x88;
+
+  /// FeliCa Lite, Lite-S and FeliCa Link in Lite-S mode, told apart from
+  /// other ICs by the IC type in the PMm. They have one block map, read
+  /// through service 0x000B.
+  bool get isLite =>
+      pmm.length == 8 && (pmm[1] == 0xF0 || pmm[1] == 0xF1 || pmm[1] == 0xF2);
+
+  /// The NDEF message the card holds as an NFC Forum Type 3 tag, read from
+  /// its saved blocks; null when it holds none, or not every block of it
+  /// was saved.
+  ///
+  /// A Lite keeps it in its one system. Any other card keeps it in the
+  /// system 0x12FC.
+  late final Uint8List? ndefMessage = _readNdefMessage();
+
+  Uint8List? _readNdefMessage() {
+    final systems = dump?.systems ?? const [];
+    final system = isLite
+        ? systems.firstOrNull
+        : systems.where((s) => s.code == ndefSystemCode).firstOrNull;
+    final blocks = system?.services[ndefService];
+    if (blocks == null) return null;
+    if (isLite) {
+      // A Lite-S answers as a Type 3 tag only with SYS_OP set to 0x01.
+      final mc = blocks[_liteMcBlock];
+      if (mc != null && mc[3] != 0x01) return null;
+    }
+    final attribute = blocks[0];
+    if (attribute == null || attribute[0] >> 4 != 1 || attribute[9] != 0) {
+      return null;
+    }
+    final checksum = attribute.take(14).fold(0, (sum, b) => sum + b) & 0xFFFF;
+    if (checksum != (attribute[14] << 8 | attribute[15])) return null;
+    final length = attribute[11] << 16 | attribute[12] << 8 | attribute[13];
+    final dataBlocks = (length + 15) ~/ 16;
+    if (length == 0 || dataBlocks > (attribute[3] << 8 | attribute[4])) {
+      return null;
+    }
+    final bytes = BytesBuilder();
+    for (var number = 1; number <= dataBlocks; number++) {
+      final block = blocks[number];
+      if (block == null) return null;
+      bytes.add(block);
+    }
+    return Uint8List.sublistView(bytes.toBytes(), 0, length);
+  }
 
   /// Whether every block that reads without encryption was saved.
   bool get isFullyRead => dump?.complete ?? false;

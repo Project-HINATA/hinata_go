@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hinata_go/core/engine/type3_ndef_tag.dart';
 import 'package:hinata_go/models/card/felica.dart';
+import 'package:hinata_go/models/card/felica_dump.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hinata_go/models/scan_log.dart';
 
@@ -115,6 +117,47 @@ void main() {
       final log = ScanLog.fromJson(json);
       expect(log.id, 'legacy-log');
       expect(log.showValue, 'OLD_VALUE');
+    });
+  });
+
+  group('NDEF in a FeliCa card', () {
+    final idm = Uint8List.fromList([1, 0x2e, 1, 2, 3, 4, 5, 6]);
+    final litePmm = Uint8List.fromList([0, 0xF1, 0, 0, 0, 1, 0x43, 0]);
+    final message = Uint8List.fromList(
+      List.generate(40, (i) => i == 0 ? 0xD1 : i),
+    );
+    final type3 = Type3NdefTag(message, idm: idm).services[0x000B]!;
+    Felica lite(Map<int, Uint8List> blocks, {Uint8List? pmm}) => Felica(
+      idm,
+      pmm ?? litePmm,
+      Uint16List.fromList([0x88B4]),
+      dump: FelicaDump(
+        complete: true,
+        systemCode: 0x88B4,
+        services: {0x000B: blocks},
+      ),
+    );
+
+    test('reads the message after the attribute block', () {
+      expect(lite(type3).ndefMessage, message);
+    });
+
+    test('a FeliCa Link in Lite-S mode is a Lite', () {
+      final linkPmm = Uint8List.fromList(litePmm)..[1] = 0xF2;
+      expect(lite(type3, pmm: linkPmm).isLite, isTrue);
+      expect(lite(type3, pmm: linkPmm).ndefMessage, message);
+    });
+
+    test('a bad checksum or a missing block is no message', () {
+      final attribute = Uint8List.fromList(type3[0]!)..[15] ^= 1;
+      expect(lite({...type3, 0: attribute}).ndefMessage, isNull);
+      expect(lite({...type3}..remove(2)).ndefMessage, isNull);
+    });
+
+    test('a Lite-S with NDEF off in its MC block is no message', () {
+      final mc = Uint8List(16)..[3] = 0x01;
+      expect(lite({...type3, 0x88: mc}).ndefMessage, message);
+      expect(lite({...type3, 0x88: Uint8List(16)}).ndefMessage, isNull);
     });
   });
 }

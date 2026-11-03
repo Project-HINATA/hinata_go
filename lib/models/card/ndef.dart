@@ -82,6 +82,24 @@ class NdefCard extends CardData {
   }
 }
 
+/// The NDEF [card] carries: an NDEF card itself, or the message a FeliCa
+/// card holds as a Type 3 tag, with the card's identity as its physical
+/// card. Null when it carries none, or a message that does not decode.
+NdefCard? ndefOf(ICCard card) {
+  if (card is NdefCard) return card;
+  if (card is! Felica) return null;
+  final message = card.ndefMessage;
+  if (message == null) return null;
+  try {
+    return NdefCard(
+      message,
+      physicalCard: Felica(card.id, card.pmm, card.systemCode),
+    );
+  } on FormatException {
+    return null;
+  }
+}
+
 Uri? _prismUrl(ndef.NDEFRecord record, int depth) {
   final uri = ndefRecordUri(record);
   if (uri != null &&
