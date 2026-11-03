@@ -904,7 +904,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ndefExternal => '外部类型';
 
   @override
-  String get ndefRaw => '原始记录（十六进制）';
+  String get ndefRaw => '原始记录';
 
   @override
   String get ndefTypeHex => '类型（十六进制）';
@@ -951,7 +951,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ndefLink => '链接';
 
   @override
-  String get ndefLinkHint => '支持 https://、tel:、mailto: 和 geo:';
+  String get ndefLinkHint => '网址可以省略 https://，也支持 tel:、mailto: 和 geo: 等链接';
 
   @override
   String get ndefPhone => '电话';
@@ -1233,4 +1233,109 @@ class AppLocalizationsZh extends AppLocalizations {
   String rawDataSystem(String code) {
     return '系统 $code';
   }
+
+  @override
+  String get ndefRecordsTitle => '内容';
+
+  @override
+  String get ndefRecordsEmpty => '还没有内容';
+
+  @override
+  String get ndefRecordsEmptyHint => '可以添加链接、文本、Wi-Fi 等内容。';
+
+  @override
+  String get ndefRecordsMissing => '请至少添加一条内容';
+
+  @override
+  String get ndefOrderHint => '手机按顺序处理内容，通常以第一条为准。拖动右侧把手可以调整顺序。';
+
+  @override
+  String get ndefChooseKind => '选择内容类型';
+
+  @override
+  String get ndefKindsCommon => '常用';
+
+  @override
+  String get ndefKindsAdvanced => '高级';
+
+  @override
+  String get ndefKindUrlDescription => '打开网页或其他链接';
+
+  @override
+  String get ndefKindTextDescription => '一段文字，读取后显示';
+
+  @override
+  String get ndefKindPhoneDescription => '拨打电话号码';
+
+  @override
+  String get ndefKindEmailDescription => '写一封邮件';
+
+  @override
+  String get ndefKindSmsDescription => '写一条短信';
+
+  @override
+  String get ndefKindLocationDescription => '在地图中打开位置';
+
+  @override
+  String get ndefKindWifiDescription => '安卓读取后连接 Wi-Fi';
+
+  @override
+  String get ndefKindContactDescription => '保存一位联系人';
+
+  @override
+  String get ndefKindAndroidAppDescription => '在安卓上打开应用';
+
+  @override
+  String get ndefKindMimeDescription => '带媒体类型的文本内容';
+
+  @override
+  String get ndefKindExternalDescription => '应用自定义的记录类型';
+
+  @override
+  String get ndefKindRawDescription => '逐字节编辑类型和内容';
+
+  @override
+  String get ndefFieldRequired => '必填';
+
+  @override
+  String get ndefFieldInvalid => '格式不正确';
+
+  @override
+  String get ndefFieldOptional => '可选';
+
+  @override
+  String get ndefWifiPasswordShort => '至少 8 个字符';
+
+  @override
+  String get ndefLatitudeRange => '应在 -90 到 90 之间';
+
+  @override
+  String get ndefLongitudeRange => '应在 -180 到 180 之间';
+
+  @override
+  String get ndefTextPlaceholder => '要显示的文字';
+
+  @override
+  String get ndefLanguageHint => '语言标签，如 zh、en、ja';
+
+  @override
+  String get ndefHexHint => '十六进制字节，如 0A 1B 2C';
+
+  @override
+  String get ndefWifiOpenShort => '开放';
+
+  @override
+  String get ndefRecordDone => '完成';
+
+  @override
+  String get ndefRecordDelete => '删除这条内容';
+
+  @override
+  String get ndefDiscardTitle => '放弃更改？';
+
+  @override
+  String get ndefDiscardMessage => '未保存的更改将会丢失。';
+
+  @override
+  String get ndefDiscard => '放弃';
 }

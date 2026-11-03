@@ -41,9 +41,7 @@ ndef.NDEFRecord emailRecord(
   String body = '',
 }) {
   final value = address.trim();
-  if (!RegExp(r'^[^\s@]+@[^\s@]+$').hasMatch(value)) {
-    throw const FormatException();
-  }
+  if (!isEmailAddress(value)) throw const FormatException();
   final query = [
     if (subject.isNotEmpty) 'subject=${Uri.encodeComponent(subject)}',
     if (body.isNotEmpty) 'body=${Uri.encodeComponent(body)}',
@@ -91,7 +89,7 @@ ndef.NDEFRecord wifiRecord(
   if (ssid.isEmpty || utf8.encode(ssid).length > 32) {
     throw const FormatException();
   }
-  if (security != NdefWifiSecurity.open && password.length < 8) {
+  if (security != NdefWifiSecurity.open && !isWifiPassword(password)) {
     throw const FormatException();
   }
   return ndef.WifiRecord(
@@ -194,9 +192,7 @@ ndef.NDEFRecord contactRecord({
 /// page when it is not installed.
 ndef.NDEFRecord androidAppRecord(String package) {
   final value = package.trim();
-  if (!RegExp(r'^[a-zA-Z]\w*(\.[a-zA-Z]\w*)+$').hasMatch(value)) {
-    throw const FormatException();
-  }
+  if (!isAndroidPackage(value)) throw const FormatException();
   return ndef.AARRecord(packageName: value);
 }
 
@@ -207,14 +203,28 @@ String? androidAppOf(ndef.NDEFRecord record) {
   return decoded is ndef.AARRecord ? decoded.packageName : null;
 }
 
+/// Whether [number], without its spaces, can go in a `tel:` or `sms:` link.
+bool isPhoneNumber(String number) =>
+    _phonePattern.hasMatch(number.replaceAll(RegExp(r'\s'), ''));
+
+bool isEmailAddress(String address) =>
+    RegExp(r'^[^\s@]+@[^\s@]+$').hasMatch(address.trim());
+
+bool isAndroidPackage(String package) =>
+    RegExp(r'^[a-zA-Z]\w*(\.[a-zA-Z]\w*)+$').hasMatch(package.trim());
+
+/// Whether a Wi-Fi record can hold [password]: WPA asks for 8 to 63
+/// characters.
+bool isWifiPassword(String password) =>
+    password.length >= 8 && password.length <= 63;
+
 const _vcardType = 'text/vcard';
 final _phonePattern = RegExp(r'^\+?[0-9*#()\-]{1,32}$');
 
 /// [number] without spaces, or throws when it is not a phone number.
 String _phoneNumber(String number) {
-  final value = number.replaceAll(RegExp(r'\s'), '');
-  if (!_phonePattern.hasMatch(value)) throw const FormatException();
-  return value;
+  if (!isPhoneNumber(number)) throw const FormatException();
+  return number.replaceAll(RegExp(r'\s'), '');
 }
 
 ndef.NDEFRecord? _decode(ndef.NDEFRecord record) {

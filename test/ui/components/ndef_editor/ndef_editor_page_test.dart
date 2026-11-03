@@ -18,7 +18,8 @@ import 'package:hinata_go/ui/components/reader/ndef_records_card.dart';
 import 'package:hinata_go/ui/components/reader/current_scan_result_panel.dart';
 import 'package:hinata_go/ui/components/saved_cards/add_card_dialog.dart';
 import 'package:hinata_go/ui/components/saved_cards/add_felica_dialog.dart';
-import 'package:hinata_go/ui/components/saved_cards/ndef_editor_dialog.dart';
+import 'package:hinata_go/ui/components/ndef_editor/editor_widgets.dart';
+import 'package:hinata_go/ui/components/ndef_editor/ndef_editor_page.dart';
 import 'package:hinata_go/ui/pages/card_detail_page.dart';
 import 'package:hinata_go/ui/pages/saved_cards_page.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -62,6 +63,42 @@ void main() {
     ),
   );
 
+  /// The text field labelled [label] in an editor form.
+  Finder field(String label) => find.descendant(
+    of: find.byWidgetPredicate(
+      (w) =>
+          w is EditorTextField &&
+          (w.label == label || w.label.startsWith('$label · ')),
+    ),
+    matching: find.byType(TextField),
+  );
+
+  Future<void> openNew(WidgetTester tester, {NdefCard? copyOf}) async {
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              child: const Text('Open'),
+              onPressed: () => showNdefEditor(
+                context,
+                initialFolderId: 'favorites_folder',
+                copyOf: copyOf,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapButton(WidgetTester tester, String label) async {
+    await tester.tap(find.widgetWithText(FilledButton, label).last);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets(
     'creates a named dataset with two records in the selected folder',
     (tester) async {
@@ -69,40 +106,18 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(
-        app(
-          Scaffold(
-            body: Builder(
-              builder: (context) => TextButton(
-                child: const Text('Open'),
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => const NdefEditorDialog(
-                    initialFolderId: 'favorites_folder',
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await openNew(tester);
       await tester.enterText(find.byType(TextField).first, 'Dataset');
       for (final text in ['first', 'second']) {
         await tester.tap(find.text('Add record'));
         await tester.pumpAndSettle();
-        await tester.enterText(
-          find.byWidgetPredicate(
-            (w) => w is TextField && w.decoration?.labelText == 'Content',
-          ),
-          text,
-        );
-        await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
+        await tester.tap(find.text('Text'));
         await tester.pumpAndSettle();
+        await tester.enterText(field('Content'), text);
+        await tapButton(tester, 'Done');
       }
-      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-      await tester.pumpAndSettle();
+      expect(find.text('Choose a record type'), findsNothing);
+      await tapButton(tester, 'Save');
       final saved = container.read(savedCardsProvider).single;
       expect(saved.name, 'Dataset');
       expect(saved.folderId, 'favorites_folder');
@@ -122,39 +137,19 @@ void main() {
     final source = NdefCard.fromRecords([
       ndef.UriRecord.fromString('tel:10086'),
     ]);
-    await tester.pumpWidget(
-      app(
-        Scaffold(
-          body: Builder(
-            builder: (context) => TextButton(
-              child: const Text('Open'),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (_) => NdefEditorDialog(
-                  initialFolderId: 'favorites_folder',
-                  copyOf: source,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.tap(find.text('Open'));
-    await tester.pumpAndSettle();
+    await openNew(tester, copyOf: source);
     expect(find.text('Phone'), findsOneWidget);
     await tester.tap(find.text('tel:10086'));
     await tester.pumpAndSettle();
 
-    final number = find.byWidgetPredicate(
-      (w) => w is TextField && w.decoration?.labelText == 'Phone number',
-    );
+    final number = field('Phone number');
     expect(tester.widget<TextField>(number).controller!.text, '10086');
+    await tester.enterText(number, 'call me');
+    await tapButton(tester, 'Done');
+    expect(find.text('Invalid format'), findsOneWidget);
     await tester.enterText(number, '+86 10010');
-    await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await tester.pumpAndSettle();
+    await tapButton(tester, 'Done');
+    await tapButton(tester, 'Save');
 
     final saved = container.read(savedCardsProvider).single.card as NdefCard;
     expect(ndefRecordUri(saved.records.single).toString(), 'tel:+8610010');
@@ -174,35 +169,72 @@ void main() {
       ]).message,
       physicalCard: Iso14443(Uint8List.fromList([1, 2, 3, 4]), 0, 0x44),
     );
-    await tester.pumpWidget(
-      app(
-        Scaffold(
-          body: Builder(
-            builder: (context) => TextButton(
-              child: const Text('Open'),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (_) => NdefEditorDialog(
-                  initialFolderId: 'favorites_folder',
-                  copyOf: source,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.tap(find.text('Open'));
-    await tester.pumpAndSettle();
+    await openNew(tester, copyOf: source);
     expect(find.text('on the card'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await tester.pumpAndSettle();
+    await tapButton(tester, 'Save');
 
     final saved = container.read(savedCardsProvider).single;
     final card = saved.card as NdefCard;
     expect(card.message, source.message);
     expect(card.physicalCard, isNull);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('closing with unsaved changes asks first', (tester) async {
+    await openNew(tester);
+    await tester.enterText(find.byType(TextField).first, 'Draft');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Discard changes?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Draft'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Cancel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard'));
+    await tester.pumpAndSettle();
+    expect(find.text('Open'), findsOneWidget);
+    expect(container.read(savedCardsProvider), isEmpty);
+  });
+
+  testWidgets('a record is deleted from its form', (tester) async {
+    final source = NdefCard.fromRecords([
+      ndef.TextRecord(text: 'keep', language: 'en'),
+      ndef.TextRecord(text: 'drop', language: 'en'),
+    ]);
+    await openNew(tester, copyOf: source);
+    await tester.tap(find.text('drop'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Delete record'));
+    await tester.pumpAndSettle();
+    expect(find.text('drop'), findsNothing);
+    await tapButton(tester, 'Save');
+    final saved = container.read(savedCardsProvider).single.card as NdefCard;
+    expect(saved.records.map(ndefRecordValue), ['keep']);
+  });
+
+  testWidgets('an open Wi-Fi network has no password field', (tester) async {
+    await openNew(tester);
+    await tester.tap(find.text('Add record'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Wi-Fi'));
+    await tester.pumpAndSettle();
+    expect(field('Password'), findsOneWidget);
+    await tester.enterText(field('Network name (SSID)'), 'Guest');
+    await tester.enterText(field('Password'), 'short');
+    await tapButton(tester, 'Done');
+    expect(
+      tester.widget<EditorTextField>(find.byType(EditorTextField).last).error,
+      'At least 8 characters',
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(field('Password'), findsNothing);
+    await tapButton(tester, 'Done');
+    expect(find.text('Guest'), findsNothing);
+    expect(find.text('Guest · Open'), findsOneWidget);
   });
 
   testWidgets(
@@ -337,8 +369,7 @@ void main() {
       expect(find.text('hello'), findsOneWidget);
       await tester.tap(find.byTooltip('Edit NDEF dataset'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-      await tester.pumpAndSettle();
+      await tapButton(tester, 'Save');
       final updated =
           container.read(savedCardsProvider).single.card as NdefCard;
       expect(updated.id, physical.id);
@@ -371,10 +402,6 @@ void main() {
     expect(find.text('NDEF capacity'), findsNothing);
     expect(find.text('phone'), findsOneWidget);
   });
-  Finder contentField(String label) => find.byWidgetPredicate(
-    (w) => w is TextField && w.decoration?.labelText == label,
-  );
-
   Future<void> openEditor(WidgetTester tester, SavedCard saved) async {
     container.read(savedCardsProvider.notifier).addCard(saved);
     await tester.pumpWidget(app(CardDetailPage(savedCard: saved)));
@@ -411,16 +438,21 @@ void main() {
         card: NdefCard.fromRecords([record]),
       );
       await openEditor(tester, saved);
-      await tester.tap(find.byType(ListTile).last);
+      await tester.tap(find.text('original').last);
       await tester.pumpAndSettle();
       expect(find.text('Edit record'), findsOneWidget);
-      expect(find.byType(AlertDialog), findsNothing);
-      expect(contentField('Content'), findsOneWidget);
-      await tester.enterText(contentField('Content'), 'updated');
-      await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
-      await tester.pumpAndSettle();
+      expect(field('Content'), findsOneWidget);
+      // The identifier stays editable on the type's own form.
+      expect(
+        tester
+            .widget<TextField>(field('Record ID (hex, optional)'))
+            .controller!
+            .text,
+        '01 02',
+      );
+      await tester.enterText(field('Content'), 'updated');
+      await tapButton(tester, 'Done');
+      await tapButton(tester, 'Save');
       final actual =
           (container.read(savedCardsProvider).single.card as NdefCard)
               .records
@@ -454,12 +486,10 @@ void main() {
     await openEditor(tester, saved);
     await tester.tap(find.text('MIME · application/octet-stream').last);
     await tester.pumpAndSettle();
-    expect(contentField('Payload (hex)'), findsOneWidget);
-    expect(contentField('Content'), findsNothing);
-    await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
-    await tester.pumpAndSettle();
+    expect(field('Payload (hex)'), findsOneWidget);
+    expect(field('Content'), findsNothing);
+    await tapButton(tester, 'Done');
+    await tapButton(tester, 'Save');
     expect(
       (container.read(savedCardsProvider).single.card as NdefCard).message,
       (saved.card as NdefCard).message,
@@ -488,10 +518,10 @@ void main() {
       await tester.pumpAndSettle();
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pumpAndSettle();
-      final save = find.widgetWithText(FilledButton, 'Save').last;
-      expect(tester.getRect(save).bottom, lessThanOrEqualTo(544));
-      await tester.enterText(contentField('Content'), 'with keyboard');
-      await tester.tap(save);
+      final done = find.widgetWithText(FilledButton, 'Done').last;
+      expect(tester.getRect(done).bottom, lessThanOrEqualTo(544));
+      await tester.enterText(field('Content'), 'with keyboard');
+      await tester.tap(done);
       await tester.pumpAndSettle();
       expect(find.text('with keyboard'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -544,18 +574,20 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.textContaining('添加文本'), findsNothing);
         expect(find.textContaining('Add text, links'), findsNothing);
-        expect(
-          tester
-              .widget<FilledButton>(
-                find.widgetWithText(FilledButton, l10n.save),
-              )
-              .onPressed,
-          isNull,
-        );
+        // Saving an empty dataset points at what is missing.
+        await tapButton(tester, l10n.save);
+        expect(find.text(l10n.ndefFieldRequired), findsOneWidget);
+        expect(find.text(l10n.ndefRecordsMissing), findsOneWidget);
+        // Large text pushes the row under the floating button; the list
+        // scrolls it clear.
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+        await tester.pumpAndSettle();
         await tester.tap(find.text(l10n.ndefAddRecord));
         await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsNothing);
-        expect(contentField(l10n.ndefIdHex), findsNothing);
+        expect(find.text(l10n.ndefChooseKind), findsOneWidget);
+        await tester.tap(find.text(l10n.ndefText));
+        await tester.pumpAndSettle();
+        expect(field(l10n.ndefIdHex), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );

@@ -1775,7 +1775,7 @@ abstract class AppLocalizations {
   /// No description provided for @ndefRaw.
   ///
   /// In en, this message translates to:
-  /// **'Raw record (hex)'**
+  /// **'Raw record'**
   String get ndefRaw;
 
   /// No description provided for @ndefTypeHex.
@@ -1865,7 +1865,7 @@ abstract class AppLocalizations {
   /// No description provided for @ndefLinkHint.
   ///
   /// In en, this message translates to:
-  /// **'Supports https://, tel:, mailto: and geo:'**
+  /// **'Web addresses can leave out https://; tel:, mailto:, geo: and other links work too'**
   String get ndefLinkHint;
 
   /// No description provided for @ndefPhone.
@@ -2407,6 +2407,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System {code}'**
   String rawDataSystem(String code);
+
+  /// No description provided for @ndefRecordsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Records'**
+  String get ndefRecordsTitle;
+
+  /// No description provided for @ndefRecordsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No records yet'**
+  String get ndefRecordsEmpty;
+
+  /// No description provided for @ndefRecordsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a link, text, Wi-Fi network or other content.'**
+  String get ndefRecordsEmptyHint;
+
+  /// No description provided for @ndefRecordsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one record'**
+  String get ndefRecordsMissing;
+
+  /// No description provided for @ndefOrderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Phones handle records in order and usually act on the first one. Drag the handle to reorder.'**
+  String get ndefOrderHint;
+
+  /// No description provided for @ndefChooseKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a record type'**
+  String get ndefChooseKind;
+
+  /// No description provided for @ndefKindsCommon.
+  ///
+  /// In en, this message translates to:
+  /// **'Common'**
+  String get ndefKindsCommon;
+
+  /// No description provided for @ndefKindsAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get ndefKindsAdvanced;
+
+  /// No description provided for @ndefKindUrlDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a web page or another link'**
+  String get ndefKindUrlDescription;
+
+  /// No description provided for @ndefKindTextDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain text, shown when read'**
+  String get ndefKindTextDescription;
+
+  /// No description provided for @ndefKindPhoneDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Calls a phone number'**
+  String get ndefKindPhoneDescription;
+
+  /// No description provided for @ndefKindEmailDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts an email'**
+  String get ndefKindEmailDescription;
+
+  /// No description provided for @ndefKindSmsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts a text message'**
+  String get ndefKindSmsDescription;
+
+  /// No description provided for @ndefKindLocationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a place in maps'**
+  String get ndefKindLocationDescription;
+
+  /// No description provided for @ndefKindWifiDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Joins a Wi-Fi network on Android'**
+  String get ndefKindWifiDescription;
+
+  /// No description provided for @ndefKindContactDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves a contact'**
+  String get ndefKindContactDescription;
+
+  /// No description provided for @ndefKindAndroidAppDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens an app on Android'**
+  String get ndefKindAndroidAppDescription;
+
+  /// No description provided for @ndefKindMimeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Text content with a media type'**
+  String get ndefKindMimeDescription;
+
+  /// No description provided for @ndefKindExternalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A record type an app defines'**
+  String get ndefKindExternalDescription;
+
+  /// No description provided for @ndefKindRawDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The type and payload, byte by byte'**
+  String get ndefKindRawDescription;
+
+  /// No description provided for @ndefFieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get ndefFieldRequired;
+
+  /// No description provided for @ndefFieldInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid format'**
+  String get ndefFieldInvalid;
+
+  /// No description provided for @ndefFieldOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get ndefFieldOptional;
+
+  /// No description provided for @ndefWifiPasswordShort.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get ndefWifiPasswordShort;
+
+  /// No description provided for @ndefLatitudeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Between -90 and 90'**
+  String get ndefLatitudeRange;
+
+  /// No description provided for @ndefLongitudeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Between -180 and 180'**
+  String get ndefLongitudeRange;
+
+  /// No description provided for @ndefTextPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Text to show'**
+  String get ndefTextPlaceholder;
+
+  /// No description provided for @ndefLanguageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A language tag, such as en, zh or ja'**
+  String get ndefLanguageHint;
+
+  /// No description provided for @ndefHexHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex bytes, such as 0A 1B 2C'**
+  String get ndefHexHint;
+
+  /// No description provided for @ndefWifiOpenShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get ndefWifiOpenShort;
+
+  /// No description provided for @ndefRecordDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get ndefRecordDone;
+
+  /// No description provided for @ndefRecordDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete record'**
+  String get ndefRecordDelete;
+
+  /// No description provided for @ndefDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get ndefDiscardTitle;
+
+  /// No description provided for @ndefDiscardMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your unsaved changes will be lost.'**
+  String get ndefDiscardMessage;
+
+  /// No description provided for @ndefDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get ndefDiscard;
 }
 
 class _AppLocalizationsDelegate

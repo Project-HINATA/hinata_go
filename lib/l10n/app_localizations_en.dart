@@ -932,7 +932,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ndefExternal => 'External type';
 
   @override
-  String get ndefRaw => 'Raw record (hex)';
+  String get ndefRaw => 'Raw record';
 
   @override
   String get ndefTypeHex => 'Type (hex)';
@@ -982,7 +982,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ndefLink => 'Link';
 
   @override
-  String get ndefLinkHint => 'Supports https://, tel:, mailto: and geo:';
+  String get ndefLinkHint =>
+      'Web addresses can leave out https://; tel:, mailto:, geo: and other links work too';
 
   @override
   String get ndefPhone => 'Phone';
@@ -1293,4 +1294,111 @@ class AppLocalizationsEn extends AppLocalizations {
   String rawDataSystem(String code) {
     return 'System $code';
   }
+
+  @override
+  String get ndefRecordsTitle => 'Records';
+
+  @override
+  String get ndefRecordsEmpty => 'No records yet';
+
+  @override
+  String get ndefRecordsEmptyHint =>
+      'Add a link, text, Wi-Fi network or other content.';
+
+  @override
+  String get ndefRecordsMissing => 'Add at least one record';
+
+  @override
+  String get ndefOrderHint =>
+      'Phones handle records in order and usually act on the first one. Drag the handle to reorder.';
+
+  @override
+  String get ndefChooseKind => 'Choose a record type';
+
+  @override
+  String get ndefKindsCommon => 'Common';
+
+  @override
+  String get ndefKindsAdvanced => 'Advanced';
+
+  @override
+  String get ndefKindUrlDescription => 'Opens a web page or another link';
+
+  @override
+  String get ndefKindTextDescription => 'Plain text, shown when read';
+
+  @override
+  String get ndefKindPhoneDescription => 'Calls a phone number';
+
+  @override
+  String get ndefKindEmailDescription => 'Drafts an email';
+
+  @override
+  String get ndefKindSmsDescription => 'Drafts a text message';
+
+  @override
+  String get ndefKindLocationDescription => 'Opens a place in maps';
+
+  @override
+  String get ndefKindWifiDescription => 'Joins a Wi-Fi network on Android';
+
+  @override
+  String get ndefKindContactDescription => 'Saves a contact';
+
+  @override
+  String get ndefKindAndroidAppDescription => 'Opens an app on Android';
+
+  @override
+  String get ndefKindMimeDescription => 'Text content with a media type';
+
+  @override
+  String get ndefKindExternalDescription => 'A record type an app defines';
+
+  @override
+  String get ndefKindRawDescription => 'The type and payload, byte by byte';
+
+  @override
+  String get ndefFieldRequired => 'Required';
+
+  @override
+  String get ndefFieldInvalid => 'Invalid format';
+
+  @override
+  String get ndefFieldOptional => 'Optional';
+
+  @override
+  String get ndefWifiPasswordShort => 'At least 8 characters';
+
+  @override
+  String get ndefLatitudeRange => 'Between -90 and 90';
+
+  @override
+  String get ndefLongitudeRange => 'Between -180 and 180';
+
+  @override
+  String get ndefTextPlaceholder => 'Text to show';
+
+  @override
+  String get ndefLanguageHint => 'A language tag, such as en, zh or ja';
+
+  @override
+  String get ndefHexHint => 'Hex bytes, such as 0A 1B 2C';
+
+  @override
+  String get ndefWifiOpenShort => 'Open';
+
+  @override
+  String get ndefRecordDone => 'Done';
+
+  @override
+  String get ndefRecordDelete => 'Delete record';
+
+  @override
+  String get ndefDiscardTitle => 'Discard changes?';
+
+  @override
+  String get ndefDiscardMessage => 'Your unsaved changes will be lost.';
+
+  @override
+  String get ndefDiscard => 'Discard';
 }

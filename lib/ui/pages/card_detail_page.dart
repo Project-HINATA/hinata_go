@@ -12,7 +12,7 @@ import '../../l10n/l10n.dart';
 import '../../models/card/card.dart';
 import '../../models/card/felica.dart';
 import '../../models/card/ndef.dart';
-import '../components/saved_cards/ndef_editor_dialog.dart';
+import '../components/ndef_editor/ndef_editor_page.dart';
 import '../../models/card/transit.dart';
 import '../../models/card/saved_card.dart';
 import '../../models/remote_instance.dart';
@@ -276,6 +276,7 @@ class CardDetailPage extends HookConsumerWidget {
               context,
               initialFolderId: activeSavedCard.folderId,
               copyOf: ndef,
+              initialName: activeSavedCard.name,
             ),
           ),
       ],
