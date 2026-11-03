@@ -22,6 +22,16 @@ class Felica extends ICCard implements HasEPass {
 
   Felica(super.id, this.pmm, this.systemCode, {super.tags, this.dump});
 
+  /// A card as polling found it, with the system code it answered. A Lite
+  /// has one system, 0x88B4, though it may answer polling as 0x12FC, so it
+  /// is always saved and compared as 0x88B4.
+  factory Felica.polled(Uint8List id, Uint8List pmm, Uint16List systemCode) {
+    final card = Felica(id, pmm, systemCode);
+    return card.isLite
+        ? Felica(id, pmm, Uint16List.fromList([liteSystemCode]))
+        : card;
+  }
+
   /// The system code of a FeliCa Lite or Lite-S.
   static const liteSystemCode = 0x88B4;
 

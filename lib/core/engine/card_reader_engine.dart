@@ -107,10 +107,8 @@ class CardReaderEngine {
     FelicaDump dump, {
     required String source,
   }) {
-    // Polling names one system; the dump lists them all once it can. A
-    // Lite may answer polling as 0x12FC, but its system is 0x88B4.
-    final systemCode =
-        tag.isLite || dump.systemCodes.length > tag.systemCode.length
+    // Polling names one system; the dump lists them all once it can.
+    final systemCode = dump.systemCodes.length > tag.systemCode.length
         ? Uint16List.fromList(dump.systemCodes)
         : tag.systemCode;
     final spad0 = dump.block(Aic.service, Aic.spad0Block);

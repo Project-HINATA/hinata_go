@@ -160,4 +160,48 @@ void main() {
       expect(lite({...type3, 0x88: Uint8List(16)}).ndefMessage, isNull);
     });
   });
+
+  group('a polled FeliCa card', () {
+    final idm = Uint8List.fromList([1, 0x2e, 1, 2, 3, 4, 5, 6]);
+    final litePmm = Uint8List.fromList([0, 0xF1, 0, 0, 0, 1, 0x43, 0]);
+    final standardPmm = Uint8List.fromList([
+      1,
+      0x20,
+      0x22,
+      4,
+      0x27,
+      0x67,
+      0x4E,
+      0xFF,
+    ]);
+
+    test('a Lite answering 0x12FC is saved as 0x88B4', () {
+      final polled = Felica.polled(idm, litePmm, Uint16List.fromList([0x12FC]));
+      expect(polled.systemCode, [0x88B4]);
+      expect(
+        polled.isSameCard(
+          Felica.polled(idm, litePmm, Uint16List.fromList([0x88B4])),
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'any other card keeps the code it answered, and is compared by it',
+      () {
+        final polled = Felica.polled(
+          idm,
+          standardPmm,
+          Uint16List.fromList([0x12FC]),
+        );
+        expect(polled.systemCode, [0x12FC]);
+        expect(
+          polled.isSameCard(
+            Felica.polled(idm, standardPmm, Uint16List.fromList([0x0003])),
+          ),
+          isFalse,
+        );
+      },
+    );
+  });
 }

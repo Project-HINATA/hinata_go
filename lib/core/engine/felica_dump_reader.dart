@@ -62,10 +62,7 @@ class FelicaDumpReader {
     List<int> first = const [],
     void Function(FelicaDump dump)? onProgress,
   }) async {
-    // A Lite polled as a Type 3 tag answers 0x12FC for its one system.
-    final polledCode = tag.isLite
-        ? Felica.liteSystemCode
-        : tag.systemCode.firstOrNull ?? 0;
+    final polledCode = tag.systemCode.firstOrNull ?? 0;
     final polled = tag.id[0] >> 4;
     // By system number; until the systems are listed, only the polled one.
     var codes = <int>[];
@@ -174,9 +171,7 @@ class FelicaDumpReader {
     final blocks = <int, Uint8List>{};
     FelicaDump dump() => FelicaDump(
       complete: false,
-      systemCode: tag.isLite
-          ? Felica.liteSystemCode
-          : tag.systemCode.firstOrNull ?? 0,
+      systemCode: tag.systemCode.firstOrNull ?? 0,
       services: {if (blocks.isNotEmpty) service: blocks},
     );
 

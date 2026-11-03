@@ -378,7 +378,7 @@ class UsbHinataDeviceImpl {
     );
     if (targets.isNotEmpty) {
       final t = targets[0];
-      return Felica(t.id, t.pmm!, t.systemCodes!);
+      return Felica.polled(t.id, t.pmm!, t.systemCodes!);
     }
     return null;
   }

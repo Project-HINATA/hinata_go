@@ -30,7 +30,7 @@ extension NfcTagConverter on NFCTag {
           }).toList(),
         );
       }
-      return Felica(idm, pmm, systemCodes);
+      return Felica.polled(idm, pmm, systemCodes);
     }
 
     if (type == NFCTagType.iso15693) {

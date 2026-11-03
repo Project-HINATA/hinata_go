@@ -76,24 +76,16 @@ EmulationTarget emulationTargetFor(
       );
     case final EmulationKind kind:
       final felica = card as Felica;
-      // A Lite has one system, 0x88B4, whatever code it was polled with.
-      final systemCodes = felica.isLite
-          ? const [Felica.liteSystemCode]
-          : felica.systemCode;
       // Each system's services, in the order of the card's system codes.
-      final systems = felica.isLite
-          ? [
-              {...?felica.dump?.systems.firstOrNull?.services},
-            ]
-          : [
-              for (final code in systemCodes)
-                {
-                  ...?felica.dump?.systems
-                      .where((system) => system.code == code)
-                      .firstOrNull
-                      ?.services,
-                },
-            ];
+      final systems = [
+        for (final code in felica.systemCode)
+          {
+            ...?felica.dump?.systems
+                .where((system) => system.code == code)
+                .firstOrNull
+                ?.services,
+          },
+      ];
       // A Lite-S reads the same blocks through its read/write service.
       final liteBlocks = systems.first[_liteReadOnlyService];
       if (felica.isLite && liteBlocks != null) {
@@ -108,7 +100,7 @@ EmulationTarget emulationTargetFor(
         felica: FelicaTag(
           idm: Felica.systemIdm(felica.id, 0),
           pmm: felica.pmm,
-          systemCodes: systemCodes,
+          systemCodes: felica.systemCode,
           // A Lite-S holding NDEF answers as a Type 3 tag too.
           aliasCodes: felica.isLite && message != null
               ? const [Felica.ndefSystemCode]

@@ -544,13 +544,13 @@ void main() {
         number: Uint8List(16),
       0x88: Uint8List(16)..[3] = 0x01,
     };
-    Felica lite({Map<int, Uint8List>? blocks, int polled = 0x12FC}) => Felica(
+    Felica lite({Map<int, Uint8List>? blocks}) => Felica(
       idm,
       pmm,
-      Uint16List.fromList([polled]),
+      Uint16List.fromList([0x88B4]),
       dump: FelicaDump(
         complete: true,
-        systemCode: polled,
+        systemCode: 0x88B4,
         services: {0x000B: blocks ?? type3},
       ),
     );
@@ -573,7 +573,7 @@ void main() {
             ),
           ),
         );
-        final polled = Felica(idm, pmm, Uint16List.fromList([0x12FC]));
+        final polled = Felica.polled(idm, pmm, Uint16List.fromList([0x12FC]));
         final basic = await engine.handleFelica(
           tag: polled,
           readExtended: false,
@@ -640,10 +640,7 @@ void main() {
 
     test('a Lite-S without NDEF answers 0x88B4 only', () {
       final blocks = {...type3, 0: Uint8List(16)};
-      final target = emulationTargetFor(
-        lite(blocks: blocks, polled: 0x88B4),
-        type4MaxRead: 51,
-      );
+      final target = emulationTargetFor(lite(blocks: blocks), type4MaxRead: 51);
       expect(target.type4, isNull);
       expect(target.felica.activationSystemCode, 0x88B4);
       expect(poll(target.felica, 0x12FC), isNull);
