@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -47,6 +48,17 @@ class _FelicaTagChannel implements NfcCardChannel {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// A card that does not answer Request System Code.
+class _UnlistedChannel extends _FelicaTagChannel {
+  _UnlistedChannel(super.tag);
+
+  @override
+  Future<Uint8List> transceive(Uint8List data, {Duration? timeout}) {
+    if (data[1] == 0x0C) throw TimeoutException('No answer');
+    return super.transceive(data, timeout: timeout);
+  }
 }
 
 Uint8List _hex(String hex) => Uint8List.fromList([
@@ -287,7 +299,7 @@ void main() {
   });
 
   test(
-    'the system codes show over the first read, which stays a Suica',
+    'the first batch lists the systems, and the card stays a Suica',
     () async {
       final history = _hex('1602000033A0E3420000E80300000100');
       final saved = Felica(
@@ -312,19 +324,25 @@ void main() {
       );
       final polled = Felica(idm, saved.pmm, Uint16List.fromList([0x0003]));
       final basic = await engine.handleFelica(tag: polled, readExtended: false);
-      // The first batch of history already makes it a Suica.
+      // The first batch lists the systems, and its history already makes it
+      // a Suica.
       expect(basic!.card, isA<Suica>());
-      expect((basic.card as Felica).systemCode, [0x0003]);
+      expect((basic.card as Felica).systemCode, [0x0003, 0xFE00]);
+      expect((basic.card as Suica).balance, 1000);
 
+      final channel = engine.transceiver as _FelicaTagChannel;
+      channel.commands.clear();
       final progress = <ScannedCard>[];
       await engine.handleFelica(
         tag: polled,
         existingCard: basic,
         onProgress: progress.add,
       );
+      // The background read does not list the systems again.
+      expect(channel.commands, isNot(contains(0x0C)));
 
-      // Before the history is read again, the codes already show, and the
-      // card is still the Suica the first read found.
+      // Before the history is read again, the card is still the Suica the
+      // first read found.
       final codes = progress.first.card as Suica;
       expect(codes.systemCode, [0x0003, 0xFE00]);
       expect(codes.balance, 1000);
@@ -679,5 +697,62 @@ void main() {
       expect(ndefOf(elsewhere), isNull);
       expect(emulationTargetFor(elsewhere, type4MaxRead: 51).type4, isNull);
     });
+
+    test(
+      'the first batch finds NDEF in a system other than the polled one',
+      () async {
+        final card = Felica(
+          idm,
+          _hex('0120220427674EFF'),
+          Uint16List.fromList([0xFE00, 0x12FC]),
+          dump: FelicaDump.ofSystems(
+            complete: true,
+            systems: [
+              FelicaSystem(code: 0xFE00),
+              FelicaSystem(code: 0x12FC, services: {0x000B: type3}),
+            ],
+          ),
+        );
+        final engine = CardReaderEngine(
+          _FelicaTagChannel(emulationTargetFor(card, type4MaxRead: 51).felica),
+        );
+        final basic = await engine.handleFelica(
+          tag: Felica(idm, card.pmm, Uint16List.fromList([0xFE00])),
+          readExtended: false,
+        );
+
+        expect((basic!.card as Felica).systemCode, [0xFE00, 0x12FC]);
+        expect(ndefOf(basic.card)!.message, message);
+        expect(basic.isExtendedInfoFullyLoaded, isFalse);
+      },
+    );
+  });
+
+  test('a card that does not list its systems shows its polled one', () async {
+    final history = _hex('1602000033A0E3420000E80300000100');
+    final saved = Felica(
+      idm,
+      _hex('0120220427674EFF'),
+      Uint16List.fromList([0x0003]),
+      dump: FelicaDump(
+        complete: true,
+        systemCode: 0x0003,
+        services: {
+          0x090F: {0: history},
+        },
+      ),
+    );
+    final engine = CardReaderEngine(
+      _UnlistedChannel(emulationTargetFor(saved, type4MaxRead: 51).felica),
+    );
+    final polled = Felica(idm, saved.pmm, Uint16List.fromList([0x0003]));
+    final basic = await engine.handleFelica(tag: polled, readExtended: false);
+
+    expect(basic!.card, isA<Suica>());
+    expect((basic.card as Felica).systemCode, [0x0003]);
+    // The background read keeps to the polled system, as listed.
+    final full = await engine.handleFelica(tag: polled, existingCard: basic);
+    expect(full!.isExtendedInfoFullyLoaded, isTrue);
+    expect((full.card as Suica).balance, 1000);
   });
 }

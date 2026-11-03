@@ -94,6 +94,8 @@ class CardReaderEngine {
       first: tag.systemCode.contains(0x0003)
           ? const [Suica.historyService]
           : const [],
+      // The first batch already listed them.
+      systemCodes: earlier?.systemCodes,
       onProgress: onProgress == null
           ? null
           : (dump) => onProgress(scanned(dump)),

@@ -52,7 +52,8 @@ class FelicaDumpReader {
   /// stops answering, the blocks read so far come back in a dump that is not
   /// complete.
   ///
-  /// The card's systems are listed first, then the services in [first] are
+  /// The card's systems are listed first, unless [systemCodes] gives them,
+  /// as the first batch listed them; then the services in [first] are
   /// read in the polled system before the rest. [onProgress] gets the dump
   /// once the systems are known and after each block of [first], so the
   /// system codes and what a card is mostly read for show as they are read.
@@ -60,6 +61,7 @@ class FelicaDumpReader {
   Future<FelicaDump> read(
     Felica tag, {
     List<int> first = const [],
+    List<int>? systemCodes,
     void Function(FelicaDump dump)? onProgress,
   }) async {
     final polledCode = tag.systemCode.firstOrNull ?? 0;
@@ -109,7 +111,7 @@ class FelicaDumpReader {
         return dump(complete: true);
       }
 
-      codes = await _requestSystemCodes(tag.id);
+      codes = systemCodes ?? await _requestSystemCodes(tag.id);
       onProgress?.call(dump(complete: false));
 
       for (final service in first) {
@@ -149,43 +151,78 @@ class FelicaDumpReader {
     }
   }
 
-  /// The first batch of [tag]'s blocks, in its polled system, which tells
-  /// the kind of card apart: of a Lite or a card polled as 0x12FC, service
-  /// 0x000B from block 0 (an Amusement IC's S_PAD0, a Type 3 tag's attribute
-  /// block), and of a card polled as 0x0003, a Suica's newest history
-  /// records. When block 0 of 0x000B describes an NDEF message, the rest of
-  /// the blocks holding it are read too, so the message shows at once.
+  /// The first batch of [tag]'s blocks, which tells the kind of card apart.
   ///
-  /// Null for any other card, which shows without its blocks. The dump is
-  /// never complete: the rest of the card is read after. Throws when the
-  /// card does not answer the first batch.
+  /// A card other than a Lite lists its systems first, with Request System
+  /// Code; one that does not answer it is taken to have only its polled
+  /// system. Then, by system:
+  /// - of a Lite or a system 0x12FC, service 0x000B from block 0: an
+  ///   Amusement IC's S_PAD0, a Type 3 tag's attribute block. When block 0
+  ///   describes an NDEF message, the rest of the blocks holding it are read
+  ///   too, so the message shows at once.
+  /// - of a system 0x0003, a Suica's newest history records.
+  ///
+  /// Null when nothing was read, not even the systems. The dump is never
+  /// complete: the rest of the card is read after. Throws when the card
+  /// does not answer a first batch.
   Future<FelicaDump?> readFirst(Felica tag) async {
-    final int service;
-    if (tag.isLite || tag.systemCode.contains(Felica.ndefSystemCode)) {
-      service = Felica.ndefService;
-    } else if (tag.systemCode.contains(0x0003)) {
-      service = Suica.historyService;
-    } else {
-      return null;
+    final polled = [(tag.id[0] >> 4, tag.systemCode.firstOrNull ?? 0)];
+    var listed = false;
+    var systems = polled;
+    if (!tag.isLite) {
+      try {
+        final codes = await _requestSystemCodes(tag.id);
+        if (codes.isNotEmpty) {
+          systems = codes.indexed.toList();
+          listed = true;
+        }
+      } catch (error, stackTrace) {
+        log('FeliCa systems not listed', error: error, stackTrace: stackTrace);
+      }
     }
-    final blocks = <int, Uint8List>{};
-    FelicaDump dump() => FelicaDump(
-      complete: false,
-      systemCode: tag.systemCode.firstOrNull ?? 0,
-      services: {if (blocks.isNotEmpty) service: blocks},
-    );
 
-    final next = await _readRange(tag.id, service, 0, blocks);
+    final read = <int, Map<int, Map<int, Uint8List>>>{};
+    for (final (number, code) in systems) {
+      final int service;
+      if (tag.isLite || code == Felica.ndefSystemCode) {
+        service = Felica.ndefService;
+      } else if (code == 0x0003) {
+        service = Suica.historyService;
+      } else {
+        continue;
+      }
+      final blocks = <int, Uint8List>{};
+      await _readFirstBatch(Felica.systemIdm(tag.id, number), service, blocks);
+      if (blocks.isNotEmpty) read[number] = {service: blocks};
+    }
+    if (!listed && read.isEmpty) return null;
+    return FelicaDump.ofSystems(
+      complete: false,
+      systems: [
+        for (final (number, code) in systems)
+          FelicaSystem(code: code, services: read[number] ?? const {}),
+      ],
+    );
+  }
+
+  /// Reads a batch of [service] from block 0 into [blocks], and when it is a
+  /// Type 3 tag's, on through the blocks of the NDEF message.
+  Future<void> _readFirstBatch(
+    Uint8List idm,
+    int service,
+    Map<int, Uint8List> blocks,
+  ) async {
+    final next = await _readRange(idm, service, 0, blocks);
     final attribute = service == Felica.ndefService ? blocks[0] : null;
     // Version 1 of the Type 3 mapping; the rest is checked once read.
-    if (attribute == null || attribute[0] >> 4 != 1) return dump();
+    if (attribute == null || attribute[0] >> 4 != 1) return;
     final length = attribute[11] << 16 | attribute[12] << 8 | attribute[13];
     final dataBlocks = min(
       (length + 15) ~/ 16,
       attribute[3] << 8 | attribute[4],
     );
     try {
-      await _readRange(tag.id, service, next, blocks, end: dataBlocks + 1);
+      await _readRange(idm, service, next, blocks, end: dataBlocks + 1);
     } catch (error, stackTrace) {
       log(
         'FeliCa NDEF read stopped early',
@@ -193,7 +230,6 @@ class FelicaDumpReader {
         stackTrace: stackTrace,
       );
     }
-    return dump();
   }
 
   /// Reads blocks of [service] into [blocks] from [start]: one batch, or up
