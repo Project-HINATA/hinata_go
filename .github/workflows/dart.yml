@@ -82,6 +82,9 @@ jobs:
         with:
           files: build/app/outputs/flutter-apk/*.apk
           tag_name: ${{ steps.meta.outputs.tag_name }}
+          # Tag this build's commit; without it GitHub tags the branch head,
+          # which may already be a later push.
+          target_commitish: ${{ github.sha }}
           name: ${{ steps.meta.outputs.mode_title }}
           prerelease: ${{ steps.meta.outputs.is_prerelease == 'true' }}
           body: |
