@@ -296,5 +296,20 @@ void main() {
       expect(saved.id, first.id);
       expect(saved.name, 'Commute');
     });
+
+    test('a rescanned card moves to the end, as the latest scan', () {
+      final other = Felica(
+        ICCard.hexToBytes('0114AABBCCDDEEFF'),
+        _pmm,
+        _systemCodes,
+      );
+      notifier.recordScan(_felica(null), id: 'first', source: 'NFC');
+      notifier.recordScan(other, id: 'other', source: 'NFC');
+      notifier.recordScan(_felica(null), id: 'again', source: 'HINATA');
+
+      final saved = container.read(savedCardsProvider);
+      expect([for (final entry in saved) entry.id], ['other', 'first']);
+      expect(saved.last.source, 'HINATA');
+    });
   });
 }

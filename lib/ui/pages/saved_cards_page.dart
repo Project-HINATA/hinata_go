@@ -169,9 +169,12 @@ class SavedCardsPage extends ConsumerWidget {
     final layout = context.appLayout;
     final folders = ref.watch(cardFoldersProvider);
     final allCards = ref.watch(savedCardsProvider);
-    final folderCards = allCards
-        .where((c) => c.folderId == selectedFolderId)
-        .toList();
+    final inFolder = allCards.where((c) => c.folderId == selectedFolderId);
+    // The history is kept in the order cards were last scanned; the latest
+    // shows first.
+    final folderCards = selectedFolderId == SavedCardsNotifier.historyFolderId
+        ? inFolder.toList().reversed.toList()
+        : inFolder.toList();
     void selectFolder(String id) {
       ref.read(selectedCardFolderIdProvider.notifier).select(id);
     }

@@ -119,10 +119,11 @@ class SavedCardsNotifier extends Notifier<List<SavedCard>> {
   static const historyFolderId = 'history_folder';
 
   /// Records a scanned [card] in the history, which holds one entry per
-  /// physical card: an entry already there takes the scan merged over what
-  /// it held, keeping its place and any name given to it; otherwise a new
-  /// entry [id] is added. Returns the entry's id and the card it held before
-  /// this scan, for [updateScan].
+  /// physical card, in the order they were last scanned: an entry already
+  /// there takes the scan merged over what it held, keeping any name given
+  /// to it, and moves to the end; otherwise a new entry [id] is added there.
+  /// Returns the entry's id and the card it held before this scan, for
+  /// [updateScan].
   ({String id, ICCard? before}) recordScan(
     ICCard card, {
     required String id,
@@ -145,7 +146,17 @@ class SavedCardsNotifier extends Notifier<List<SavedCard>> {
       ref.read(storageProvider).saveSavedCards(state);
       return (id: id, before: null);
     }
-    _updateEntry(existing, mergeScans(existing.card, card), source: source);
+    final merged = mergeScans(existing.card, card);
+    state = [
+      for (final saved in state)
+        if (saved.id != existing.id) saved,
+      existing.copyWith(
+        card: merged,
+        name: existing.name == existing.card.name ? merged.name : null,
+        source: source,
+      ),
+    ];
+    ref.read(storageProvider).saveSavedCards(state);
     return (id: existing.id, before: existing.card);
   }
 
