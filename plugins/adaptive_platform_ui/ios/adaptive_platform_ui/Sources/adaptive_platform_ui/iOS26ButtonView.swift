@@ -60,6 +60,8 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
         arguments args: Any?,
         binaryMessenger messenger: FlutterBinaryMessenger
     ) {
+        // The glass appears with its page.
+        GlassFrameRate.hold()
         _view = UIView(frame: frame)
 
         // Extract configuration from arguments
@@ -334,6 +336,7 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
     }
 
     @objc private func buttonPressed() {
+        GlassFrameRate.hold()
         // iOS 26 spring animation on press
         UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseOut) {
             self.button.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)

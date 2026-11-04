@@ -150,6 +150,7 @@ class iOS26SliderView: NSObject, FlutterPlatformView {
     }
 
     @objc private func sliderTouchDown() {
+        GlassFrameRate.hold()
         // Notify Flutter side about touch start
         channel.invokeMethod("changeStart", arguments: ["value": Double(sliderControl.value)])
     }

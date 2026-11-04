@@ -23,7 +23,10 @@ class SceneDelegate: FlutterSceneDelegate {
       bridge: appDelegate.nativeShellBridge
     )
     let window = UIWindow(windowScene: windowScene)
-    window.rootViewController = shell
+    window.rootViewController = ShellRootViewController(
+      flutterViewController: flutterViewController,
+      shell: shell
+    )
     self.window = window
     window.makeKeyAndVisible()
     connectionOptions.userActivities.forEach { PrismURLBridge.shared.handle($0) }

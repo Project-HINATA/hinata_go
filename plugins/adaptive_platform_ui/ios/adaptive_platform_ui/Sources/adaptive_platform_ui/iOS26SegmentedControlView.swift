@@ -47,6 +47,8 @@ class iOS26SegmentedControlView: NSObject, FlutterPlatformView {
         arguments args: Any?,
         binaryMessenger messenger: FlutterBinaryMessenger
     ) {
+        // The glass appears with its page.
+        GlassFrameRate.hold()
         _view = UIView(frame: frame)
 
         if let config = args as? [String: Any] {
@@ -161,6 +163,7 @@ class iOS26SegmentedControlView: NSObject, FlutterPlatformView {
         ])
 
         segmentedControl.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
+        segmentedControl.addTarget(self, action: #selector(segmentTouched), for: .touchDown)
     }
 
     private func colorFromARGB(_ argb: Int) -> UIColor {
@@ -200,7 +203,13 @@ class iOS26SegmentedControlView: NSObject, FlutterPlatformView {
         segmentedControl.layoutIfNeeded()
     }
 
+    /// The selection's glass starts moving on touch.
+    @objc private func segmentTouched() {
+        GlassFrameRate.hold()
+    }
+
     @objc private func segmentChanged() {
+        GlassFrameRate.hold()
         // The theme has not changed. Re-applying it here (title attributes and
         // a forced layout) would cut the Liquid Glass selection animation.
         channel.invokeMethod("valueChanged", arguments: ["index": segmentedControl.selectedSegmentIndex])

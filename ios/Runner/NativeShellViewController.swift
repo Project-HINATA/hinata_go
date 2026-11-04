@@ -80,6 +80,9 @@ final class NativeShellViewController: UITabBarController,
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
     syncSafeAreaInsets()
+    if let page = (selectedViewController as? UINavigationController)?.topViewController {
+      (parent as? ShellRootViewController)?.mirrorSafeArea(of: page.view)
+    }
     syncActionButtonPosition()
     if isDimmed {
       if !isChromeFading { applyChromeDimming(animated: false) }
@@ -199,46 +202,22 @@ final class NativeShellViewController: UITabBarController,
     moveFlutter(to: host)
   }
 
-  /// Reparents the shared Flutter surface under [host], filling its view.
+  /// Points Flutter at [host], the page now on screen.
+  ///
+  /// The surface itself never moves (see `ShellRootViewController`); only its
+  /// safe area follows the page, so Dart lays out under the bars as before.
   func moveFlutter(to host: UIViewController) {
-    if flutterViewController.parent === host,
-      flutterViewController.view.superview === host.view
-    {
-      return
-    }
-    NSLayoutConstraint.deactivate(flutterConstraints)
-    let flutterView = flutterViewController.view!
+    host.view.layoutIfNeeded()
+    (parent as? ShellRootViewController)?.mirrorSafeArea(of: host.view)
+  }
 
-    // Between two views of the same window, move the surface without taking
-    // it out first: it never leaves the window, so UIKit sends no appearance
-    // calls and Flutter keeps its render surface. Taken out, it would be torn
-    // down and rebuilt on every page transition, and the rebuild waits on the
-    // raster thread while that may wait on this thread for platform view
-    // overlays: the app freezes.
-    let staysInWindow = flutterView.window != nil && host.view.window === flutterView.window
-    flutterViewController.willMove(toParent: nil)
-    if !staysInWindow { flutterView.removeFromSuperview() }
-    flutterViewController.removeFromParent()
-
-    flutterView.translatesAutoresizingMaskIntoConstraints = false
-    if staysInWindow {
-      // UIKit only adopts a child whose view already sits in the parent's
-      // hierarchy, so the view moves first.
-      host.view.insertSubview(flutterView, at: 0)
-      host.addChild(flutterViewController)
-    } else {
-      host.addChild(flutterViewController)
-      host.view.insertSubview(flutterView, at: 0)
-    }
-    flutterConstraints = [
-      flutterView.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
-      flutterView.trailingAnchor.constraint(equalTo: host.view.trailingAnchor),
-      flutterView.topAnchor.constraint(equalTo: host.view.topAnchor),
-      flutterView.bottomAnchor.constraint(equalTo: host.view.bottomAnchor),
-    ]
-    NSLayoutConstraint.activate(flutterConstraints)
-    flutterViewController.didMove(toParent: host)
-    syncSafeAreaInsets()
+  /// Follows a safe area change of the page on top, such as the bar being
+  /// shown, hidden or resized.
+  func pageSafeAreaDidChange(_ page: NativeTopBarPageController) {
+    guard let nav = selectedViewController as? UINavigationController,
+      nav.topViewController === page
+    else { return }
+    (parent as? ShellRootViewController)?.mirrorSafeArea(of: page.view)
   }
 
   private func installActionButton() {
@@ -315,13 +294,13 @@ final class NativeShellViewController: UITabBarController,
     }
   }
 
-  /// The tab that owns Flutter: the page's navigation controller.
+  /// The tab Flutter is showing.
   private var flutterViewControllerHost: UIViewController? {
-    flutterViewController.parent?.parent
+    selectedViewController
   }
 
-  /// The Flutter surface every tab shares. Its parent is the selected tab's
-  /// navigation controller; exposed so tests can follow it across tabs.
+  /// The Flutter surface every tab shares, under the whole shell; exposed so
+  /// tests can reach it.
   var flutterSurface: FlutterViewController { flutterViewController }
 
   /// iPad's top tab bar may not be in this view hierarchy. Never constrain our
@@ -358,6 +337,7 @@ final class NativeShellViewController: UITabBarController,
   /// A tap on the selected tab is Flutter's alone: UIKit would pop the
   /// placeholder pages, while Flutter pops its branch and the bar follows.
   private func shouldSelectTab(at index: Int) -> Bool {
+    FullFrameRate.hold()
     guard !isApplyingFlutterSelection else { return true }
     // iOS 18+ may ask through both the legacy and the UITab callback.
     if let pending = userSwitch { return pending.index == index }
@@ -530,6 +510,7 @@ final class NativeShellViewController: UITabBarController,
   }
 
   func nativeShell(setSelectedIndex index: Int) {
+    FullFrameRate.hold()
     guard let controllers = viewControllers, controllers.indices.contains(index) else { return }
     // Flutter changed tabs on its own (a swipe, a deep link), or brings UIKit
     // back to the tab its router landed on.
@@ -556,6 +537,7 @@ final class NativeShellViewController: UITabBarController,
   }
 
   func nativeShell(setChromeVisibility tabBarVisible: Bool, dimmed: Bool) {
+    FullFrameRate.hold()
     isTabBarVisible = tabBarVisible
     isDimmed = dimmed
 
@@ -823,6 +805,8 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
 
     channel.setMethodCallHandler { [weak self] call, result in
       guard let self else { return result(nil) }
+      // Pushes, pops and item changes animate the bar.
+      if call.method != "scroll" && call.method != "getLayout" { FullFrameRate.hold() }
       self.handle(call, result: result)
     }
   }
@@ -1732,6 +1716,13 @@ final class NativeTopBarPageController: UIViewController {
 
   let scrollProxy = NativeTopBarScrollProxy()
 
+  /// Flutter sits under the shell and takes its safe area from the page on
+  /// top, so the page reports when its own changes.
+  override func viewSafeAreaInsetsDidChange() {
+    super.viewSafeAreaInsetsDidChange()
+    (tabBarController as? NativeShellViewController)?.pageSafeAreaDidChange(self)
+  }
+
   override func loadView() {
     let view = UIView()
     view.backgroundColor = .clear
@@ -2395,4 +2386,145 @@ struct NativeShellLayout: Equatable {
     tabsInBar = traits.horizontalSizeClass == .regular && !verticalTabs && !barHidden
     largeTitles = traits.horizontalSizeClass == .compact && !barHidden
   }
+}
+
+/// Keeps the display at its full refresh rate while UIKit animates.
+///
+/// The display rate is negotiated between everything on screen. Liquid Glass
+/// and bar animations ask for 80 Hz, and Flutter's frame timer accepts any
+/// rate from 60 Hz up, so on a 120 Hz iPhone a page with glass controls slid
+/// in with the rate switching between 120 and 80 Hz mid-animation, which
+/// reads as judder. While such an animation may run, this display link asks
+/// for the full rate and nothing lower; it stops on its own afterwards.
+enum FullFrameRate {
+  private static var link: CADisplayLink?
+  private static var until: CFTimeInterval = 0
+  private static let target = FullFrameRateTarget()
+
+  /// Holds the full rate for [duration] seconds from now.
+  static func hold(for duration: CFTimeInterval = 0.8) {
+    until = max(until, CACurrentMediaTime() + duration)
+    guard link == nil else { return }
+    let rate = Float(UIScreen.main.maximumFramesPerSecond)
+    let link = CADisplayLink(target: target, selector: #selector(FullFrameRateTarget.tick(_:)))
+    link.preferredFrameRateRange = CAFrameRateRange(minimum: rate, maximum: rate, preferred: rate)
+    link.add(to: .main, forMode: .common)
+    self.link = link
+  }
+
+  fileprivate static func tick(_ link: CADisplayLink) {
+    guard link.timestamp >= until else { return }
+    link.invalidate()
+    self.link = nil
+  }
+}
+
+private final class FullFrameRateTarget: NSObject {
+  @objc func tick(_ link: CADisplayLink) { FullFrameRate.tick(link) }
+}
+
+/// The window's root: Flutter's surface at the bottom, the native shell over
+/// it.
+///
+/// The surface is installed once and never moves. Moving it into each page
+/// a transition shows, as the shell used to, sent Flutter appearance calls,
+/// a lifecycle round trip and a burst of viewport updates on every push and
+/// pop, all on the main thread while the page slid in. The shell's pages are
+/// transparent; touches that land on them, rather than on a bar or control,
+/// go to Flutter (see `ShellRootView`). Flutter's safe area mirrors the page
+/// on top, so the layout Dart sees is unchanged.
+final class ShellRootViewController: UIViewController {
+  let flutterViewController: FlutterViewController
+  let shell: NativeShellViewController
+
+  init(flutterViewController: FlutterViewController, shell: NativeShellViewController) {
+    self.flutterViewController = flutterViewController
+    self.shell = shell
+    super.init(nibName: nil, bundle: nil)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) is not supported")
+  }
+
+  override func loadView() {
+    view = ShellRootView()
+  }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    view.backgroundColor = .clear
+    for child in [flutterViewController as UIViewController, shell] {
+      addChild(child)
+      child.view.frame = view.bounds
+      child.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      view.addSubview(child.view)
+      child.didMove(toParent: self)
+    }
+    let root = view as! ShellRootView
+    root.flutterView = flutterViewController.view
+    root.shellView = shell.view
+  }
+
+  /// Flutter's safe area: the root's own plus what the page on top adds (its
+  /// bars), as when Flutter was inside the page.
+  func mirrorSafeArea(of page: UIView) {
+    guard page.window != nil, page.bounds.size == view.bounds.size else { return }
+    let own = view.safeAreaInsets
+    let target = page.safeAreaInsets
+    let extra = UIEdgeInsets(
+      top: max(0, target.top - own.top),
+      left: max(0, target.left - own.left),
+      bottom: max(0, target.bottom - own.bottom),
+      right: max(0, target.right - own.right)
+    )
+    if flutterViewController.additionalSafeAreaInsets != extra {
+      flutterViewController.additionalSafeAreaInsets = extra
+    }
+  }
+
+  // The shell decides these, as it did as the root.
+  override var childForStatusBarStyle: UIViewController? { shell }
+  override var childForStatusBarHidden: UIViewController? { shell }
+  override var childForHomeIndicatorAutoHidden: UIViewController? { shell }
+  override var childForScreenEdgesDeferringSystemGestures: UIViewController? { shell }
+  override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+    shell.supportedInterfaceOrientations
+  }
+}
+
+/// Sends touches that land on the shell's transparent containers to Flutter.
+final class ShellRootView: UIView {
+  weak var flutterView: UIView?
+  weak var shellView: UIView?
+
+  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    guard let flutterView, let shellView else { return super.hitTest(point, with: event) }
+    if let hit = shellView.hitTest(convert(point, to: shellView), with: event),
+      !Self.isContainer(hit)
+    {
+      return hit
+    }
+    return flutterView.hitTest(convert(point, to: flutterView), with: event)
+  }
+
+  /// Views that only hold pages: the root views of the shell, the tabs'
+  /// navigation controllers and the transparent pages, and UIKit's own
+  /// wrappers between them. Bars, controls and the chip strip are not.
+  private static func isContainer(_ view: UIView) -> Bool {
+    if let owner = view.next as? UIViewController, owner.viewIfLoaded === view {
+      return owner is NativeShellViewController
+        || owner is UINavigationController
+        || owner is NativeTopBarPageController
+    }
+    return containerClassNames.contains(NSStringFromClass(type(of: view)))
+  }
+
+  private static let containerClassNames: Set<String> = [
+    "UITransitionView",
+    "UINavigationTransitionView",
+    "UIViewControllerWrapperView",
+    "UILayoutContainerView",
+    "_UIParallaxDimmingView",
+  ]
 }

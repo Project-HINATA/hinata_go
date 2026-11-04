@@ -19,6 +19,8 @@ class iOS26PopupMenuButtonView: NSObject, FlutterPlatformView {
 
     init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
         self.channel = FlutterMethodChannel(name: "adaptive_platform_ui/ios26_popup_menu_button_\(viewId)", binaryMessenger: messenger)
+        // The glass appears with its page.
+        GlassFrameRate.hold()
         self.container = UIView(frame: frame)
         self.button = UIButton(type: .system)
 
@@ -112,6 +114,7 @@ class iOS26PopupMenuButtonView: NSObject, FlutterPlatformView {
 
         // Build menu
         rebuildMenu()
+        button.addTarget(self, action: #selector(onTouchDown), for: .touchDown)
 
         if #available(iOS 14.0, *) {
             button.showsMenuAsPrimaryAction = !triggerOnLongPress
@@ -170,6 +173,11 @@ class iOS26PopupMenuButtonView: NSObject, FlutterPlatformView {
     }
 
     func view() -> UIView { container }
+
+    /// The button's glass and the menu animate from the touch.
+    @objc private func onTouchDown() {
+        GlassFrameRate.hold()
+    }
 
     private static func circularImage(_ image: UIImage, size: CGFloat) -> UIImage {
         let rect = CGRect(x: 0, y: 0, width: size, height: size)

@@ -19,7 +19,7 @@ class RunnerTests: XCTestCase {
   func testFlutterSurfaceStaysVisibleAcrossTabChanges() async throws {
     let window = try XCTUnwrap(UIApplication.shared.connectedScenes
       .compactMap { ($0 as? UIWindowScene)?.keyWindow }.first)
-    let shell = try XCTUnwrap(window.rootViewController as? NativeShellViewController)
+    let shell = try XCTUnwrap((window.rootViewController as? ShellRootViewController)?.shell)
     let flutter = shell.flutterSurface
     defer { shell.nativeShell(setSelectedIndex: 0) }
 
@@ -29,7 +29,7 @@ class RunnerTests: XCTestCase {
       let rendering = XCTNSPredicateExpectation(
         predicate: NSPredicate { _, _ in flutter.isDisplayingFlutterUI }, object: flutter)
       await fulfillment(of: [rendering], timeout: 10)
-      XCTAssertTrue(flutter.parent === pageHost(in: shell.viewControllers?[index]))
+      XCTAssertTrue(flutter.parent is ShellRootViewController)
     }
   }
 
@@ -46,22 +46,15 @@ class RunnerTests: XCTestCase {
     RunLoop.current.run(until: Date().addingTimeInterval(0.45))
   }
 
-  /// Flutter is a child of whichever page is on top; the page's navigation
-  /// controller is the tab that owns the surface.
-  @MainActor
-  private func pageHost(in slot: UIViewController?) -> UIViewController? {
-    (slot as? UINavigationController)?.viewControllers.first ?? slot
-  }
-
   @MainActor
   func testFlutterSurfaceStaysVisibleWithUITabSelection() async throws {
     guard #available(iOS 18.0, *) else { throw XCTSkip("UITab requires iOS 18") }
     let window = try XCTUnwrap(UIApplication.shared.connectedScenes
       .compactMap { ($0 as? UIWindowScene)?.keyWindow }.first)
-    let shell = try XCTUnwrap(window.rootViewController as? NativeShellViewController)
+    let shell = try XCTUnwrap((window.rootViewController as? ShellRootViewController)?.shell)
     let selected = try XCTUnwrap(shell.selectedViewController)
     let flutter = shell.flutterSurface
-    XCTAssertTrue(flutter.parent === pageHost(in: selected))
+    XCTAssertTrue(flutter.parent is ShellRootViewController)
     let delegate = try XCTUnwrap(shell.delegate)
     let appDelegate = try XCTUnwrap(UIApplication.shared.delegate as? AppDelegate)
     var forwardedSelections: [Int] = []
@@ -95,14 +88,14 @@ class RunnerTests: XCTestCase {
       delegate.tabBarController?(shell, didSelectTab: tab, previousTab: nil)
       delegate.tabBarController?(shell, didSelect: target)
       XCTAssertEqual(shell.selectedIndex, index)
-      XCTAssertTrue(flutter.parent === pageHost(in: target))
+      XCTAssertTrue(flutter.parent is ShellRootViewController)
       XCTAssertEqual(forwardedSelections.count, count + 1)
       XCTAssertEqual(forwardedSelections.last, index)
 
       // Dart confirming the tab it was told about changes nothing.
       shell.nativeShell(setSelectedIndex: index)
       XCTAssertEqual(shell.selectedIndex, index)
-      XCTAssertTrue(flutter.parent === pageHost(in: target))
+      XCTAssertTrue(flutter.parent is ShellRootViewController)
       XCTAssertEqual(forwardedSelections.count, count + 1)
 
       shell.view.layoutIfNeeded()
@@ -120,7 +113,7 @@ class RunnerTests: XCTestCase {
     shell.selectedIndex = 2
     shell.tabBarController(shell, didSelect: settings)
     XCTAssertEqual(forwardedSelections.last, 2)
-    XCTAssertTrue(flutter.parent === pageHost(in: settings))
+    XCTAssertTrue(flutter.parent is ShellRootViewController)
 
     // Repeated taps on the active tab stay with UIKit's selection and reset
     // the branch in Flutter instead.
@@ -134,7 +127,7 @@ class RunnerTests: XCTestCase {
   func testNativeShellActionLayoutAcrossTabsAndChromeChanges() throws {
     let window = try XCTUnwrap(UIApplication.shared.connectedScenes
       .compactMap { ($0 as? UIWindowScene)?.keyWindow }.first)
-    let shell = try XCTUnwrap(window.rootViewController as? NativeShellViewController)
+    let shell = try XCTUnwrap((window.rootViewController as? ShellRootViewController)?.shell)
     shell.loadViewIfNeeded()
     shell.nativeShell(setActionButton: [
       "symbol": "plus", "label": "Layout regression action", "actionId": "test",
@@ -187,8 +180,8 @@ class RunnerTests: XCTestCase {
     defer { restoreTopBar(bar, nav) }
     let root = try XCTUnwrap(nav.viewControllers.first)
     XCTAssertTrue(
-      pageHost(in: nav) === shell.flutterSurface.parent,
-      "Flutter must start on the selected tab (selected=\(shell.selectedIndex))")
+      shell.flutterSurface.parent is ShellRootViewController,
+      "Flutter must sit under the shell (selected=\(shell.selectedIndex))")
 
     bar.reset(["token": 1, "title": "HINATA Go", "logo": true])
     XCTAssertEqual(nav.viewControllers.count, 1)
@@ -212,17 +205,17 @@ class RunnerTests: XCTestCase {
     XCTAssertTrue(
       shell.selectedViewController === nav,
       "the selected tab changed mid-test (selected=\(shell.selectedIndex))")
-    // The placeholder transition moves no Flutter content: the surface must
-    // stay in the window even though its root controller is no longer on top.
+    // The placeholder transition moves no Flutter content: the surface stays
+    // under the shell, in the window, with the page's safe area.
     let flutter = shell.flutterSurface
     XCTAssertTrue(
-      flutter.parent === nav.topViewController,
-      "Flutter left the top page during the push (parent=\(String(describing: flutter.parent)))")
+      flutter.parent is ShellRootViewController,
+      "Flutter moved during the push (parent=\(String(describing: flutter.parent)))")
     XCTAssertNotNil(flutter.view.window)
     XCTAssertFalse(flutter.view.isHidden)
     XCTAssertGreaterThan(flutter.view.frame.width, 0)
     XCTAssertGreaterThan(flutter.view.frame.height, 0)
-    XCTAssertTrue(flutter.view.isDescendant(of: nav.view))
+    XCTAssertFalse(flutter.view.isDescendant(of: nav.view))
     nav.popViewController(animated: false)
     waitForTransition(nav)
     XCTAssertEqual(nav.viewControllers.count, 1)
@@ -472,7 +465,7 @@ class RunnerTests: XCTestCase {
   ) {
     let window = try XCTUnwrap(UIApplication.shared.connectedScenes
       .compactMap { ($0 as? UIWindowScene)?.keyWindow }.first)
-    let shell = try XCTUnwrap(window.rootViewController as? NativeShellViewController)
+    let shell = try XCTUnwrap((window.rootViewController as? ShellRootViewController)?.shell)
     shell.loadViewIfNeeded()
     let bar = try XCTUnwrap(shell.topBar)
     // The suite shares one live Flutter app: let pending navigation from an

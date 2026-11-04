@@ -120,9 +120,15 @@ class iOS26SwitchView: NSObject, FlutterPlatformView {
 
         // Add value changed action
         switchControl.addTarget(self, action: #selector(switchValueChanged), for: .valueChanged)
+        switchControl.addTarget(self, action: #selector(switchTouched), for: .touchDown)
 
         // Apply enabled state
         switchControl.isEnabled = isEnabled
+    }
+
+    /// The thumb's glass animates from the touch.
+    @objc private func switchTouched() {
+        GlassFrameRate.hold()
     }
 
     @objc private func switchValueChanged() {

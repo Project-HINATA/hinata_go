@@ -70,3 +70,38 @@ public class AdaptivePlatformUiPlugin: NSObject, FlutterPlugin {
         )
     }
 }
+
+/// Keeps the display at its full refresh rate while a Liquid Glass control
+/// animates: appearing with its page, pressed, or moving its selection.
+///
+/// Glass animations ask for 80 Hz, and Flutter's frame timer accepts any rate
+/// from 60 Hz up, so the whole screen, Flutter included, would drop to 80 Hz
+/// and switch back mid-animation. This display link asks for the full rate
+/// and nothing lower for a moment; it stops on its own afterwards.
+enum GlassFrameRate {
+    private static var link: CADisplayLink?
+    private static var until: CFTimeInterval = 0
+    private static let target = GlassFrameRateTarget()
+
+    static func hold(for duration: CFTimeInterval = 0.8) {
+        until = max(until, CACurrentMediaTime() + duration)
+        guard link == nil else { return }
+        let rate = Float(UIScreen.main.maximumFramesPerSecond)
+        let link = CADisplayLink(target: target, selector: #selector(GlassFrameRateTarget.tick(_:)))
+        if #available(iOS 15.0, *) {
+            link.preferredFrameRateRange = CAFrameRateRange(minimum: rate, maximum: rate, preferred: rate)
+        }
+        link.add(to: .main, forMode: .common)
+        self.link = link
+    }
+
+    fileprivate static func tick(_ link: CADisplayLink) {
+        guard link.timestamp >= until else { return }
+        link.invalidate()
+        self.link = nil
+    }
+}
+
+private final class GlassFrameRateTarget: NSObject {
+    @objc func tick(_ link: CADisplayLink) { GlassFrameRate.tick(link) }
+}
