@@ -5,6 +5,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'glass_bleed.dart';
+
 /// Native iOS 26 segmented control implementation using platform views
 class IOS26SegmentedControl extends StatefulWidget {
   const IOS26SegmentedControl({
@@ -193,6 +195,7 @@ class _IOS26SegmentedControlState extends State<IOS26SegmentedControl> {
       'selectedIndex': widget.selectedIndex,
       'enabled': widget.enabled,
       'isDark': isDark,
+      'bleed': kGlassBleed,
       ..._buildThemeParams(),
     };
 
@@ -236,7 +239,10 @@ class _IOS26SegmentedControlState extends State<IOS26SegmentedControl> {
       );
 
       // Wrap in SizedBox for height
-      control = SizedBox(height: widget.height, child: control);
+      control = SizedBox(
+        height: widget.height,
+        child: GlassBleed(child: control),
+      );
 
       // Center if shrinkWrap is true (but don't use IntrinsicWidth with UiKitView)
       if (widget.shrinkWrap) {

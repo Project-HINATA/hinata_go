@@ -62,9 +62,11 @@ final class NativeShellViewController: UITabBarController,
     )
     syncLayout()
     var traits: [UITrait] = [UITraitHorizontalSizeClass.self, UITraitVerticalSizeClass.self]
-    if #available(iOS 27.1, *) {
-      traits += UITraitCollection.systemTraitsAffectingVerticalBarEdge
-    }
+    #if compiler(>=6.3)
+      if #available(iOS 27.1, *) {
+        traits += UITraitCollection.systemTraitsAffectingVerticalBarEdge
+      }
+    #endif
     registerForTraitChanges(traits) { (self: Self, _: UITraitCollection) in
       self.syncLayout()
     }
@@ -205,15 +207,29 @@ final class NativeShellViewController: UITabBarController,
       return
     }
     NSLayoutConstraint.deactivate(flutterConstraints)
+    let flutterView = flutterViewController.view!
 
+    // Between two views of the same window, move the surface without taking
+    // it out first: it never leaves the window, so UIKit sends no appearance
+    // calls and Flutter keeps its render surface. Taken out, it would be torn
+    // down and rebuilt on every page transition, and the rebuild waits on the
+    // raster thread while that may wait on this thread for platform view
+    // overlays: the app freezes.
+    let staysInWindow = flutterView.window != nil && host.view.window === flutterView.window
     flutterViewController.willMove(toParent: nil)
-    flutterViewController.view.removeFromSuperview()
+    if !staysInWindow { flutterView.removeFromSuperview() }
     flutterViewController.removeFromParent()
 
-    host.addChild(flutterViewController)
-    let flutterView = flutterViewController.view!
     flutterView.translatesAutoresizingMaskIntoConstraints = false
-    host.view.insertSubview(flutterView, at: 0)
+    if staysInWindow {
+      // UIKit only adopts a child whose view already sits in the parent's
+      // hierarchy, so the view moves first.
+      host.view.insertSubview(flutterView, at: 0)
+      host.addChild(flutterViewController)
+    } else {
+      host.addChild(flutterViewController)
+      host.view.insertSubview(flutterView, at: 0)
+    }
     flutterConstraints = [
       flutterView.leadingAnchor.constraint(equalTo: host.view.leadingAnchor),
       flutterView.trailingAnchor.constraint(equalTo: host.view.trailingAnchor),
@@ -737,6 +753,19 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
   private let channel: FlutterMethodChannel
   private var isCovered = false
 
+  /// Stack changes Dart sent while UIKit was still animating an earlier one.
+  /// UIKit cannot start a push or pop inside a running transition: a page
+  /// that pops two routes in a row (a form closing, then the picker that
+  /// opened it) would leave the native stack out of step with Flutter and the
+  /// window stuck mid-transition. They run in order once the bar settles.
+  private var queuedChanges: [() -> Void] = []
+
+  /// Whether a push or pop this bar started has not finished yet. UIKit only
+  /// starts it at the next layout pass, so until then the navigation
+  /// controller has no transition coordinator to tell.
+  private var stackChangeRunning = false
+  private var stackChangeTimeout: DispatchWorkItem?
+
   /// The chip strip of each tab's navigation controller, created the first
   /// time a page of that tab has chips.
   private var chipStrips: [ObjectIdentifier: NativeTopBarChipStrip] = [:]
@@ -825,7 +854,9 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
       else {
         return result(FlutterError(code: "bad_args", message: nil, details: nil))
       }
-      reset(map, scroll: args["scroll"] as? [String: Any])
+      perform(waitsForTransition: true) { [weak self] in
+        self?.reset(map, scroll: args["scroll"] as? [String: Any])
+      }
       result(nil)
     case "push":
       guard let args = call.arguments as? [String: Any],
@@ -833,26 +864,38 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
       else {
         return result(FlutterError(code: "bad_args", message: nil, details: nil))
       }
-      push(map, scroll: args["scroll"] as? [String: Any])
+      perform(waitsForTransition: true) { [weak self] in
+        self?.push(map, scroll: args["scroll"] as? [String: Any])
+      }
       result(nil)
     case "pop":
-      if let nav = navigationController, nav.viewControllers.count > 1 {
-        restoreScrolledAwayBar()
+      perform(waitsForTransition: true) { [weak self] in
+        guard let self, let nav = self.navigationController,
+          nav.viewControllers.count > 1
+        else { return }
+        self.restoreScrolledAwayBar()
+        self.beginStackChange()
         nav.popViewController(animated: true)
-        syncChips(.pop)
+        self.syncChips(.pop)
       }
       result(nil)
     case "update":
       guard let args = call.arguments as? [String: Any],
         let map = args["item"] as? [String: Any],
-        let token = map["token"] as? Int,
-        let top = navigationController?.topViewController as? NativeTopBarPageController,
-        top.token == token
+        let token = map["token"] as? Int
       else {
         return result(FlutterError(code: "bad_args", message: nil, details: nil))
       }
-      configure(map, on: top)
-      syncChips(.fade)
+      // The page may still be waiting to be pushed; update it once it is on top.
+      perform(waitsForTransition: false) { [weak self] in
+        guard let self,
+          let top = self.navigationController?.topViewController
+            as? NativeTopBarPageController,
+          top.token == token
+        else { return }
+        self.configure(map, on: top)
+        self.syncChips(.fade)
+      }
       result(nil)
     case "scroll":
       guard let args = call.arguments as? [String: Any],
@@ -861,7 +904,9 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
         return result(FlutterError(code: "bad_args", message: nil, details: nil))
       }
       // A page that has already left the stack has nothing to update.
-      scroll(token: token, args, animated: args["animated"] as? Bool ?? false)
+      perform(waitsForTransition: false) { [weak self] in
+        self?.scroll(token: token, args, animated: args["animated"] as? Bool ?? false)
+      }
       result(nil)
     case "getLayout":
       result(layoutMap)
@@ -873,6 +918,46 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
       result(nil)
     default:
       result(FlutterMethodNotImplemented)
+    }
+  }
+
+  private var isTransitioning: Bool {
+    stackChangeRunning || navigationController?.transitionCoordinator != nil
+  }
+
+  /// Notes that an animated push or pop has been asked of UIKit.
+  private func beginStackChange() {
+    stackChangeRunning = true
+    stackChangeTimeout?.cancel()
+    // UIKit reports the end through the delegate; should that never come (a
+    // tab that left the window mid-change), do not hold the queue forever.
+    let timeout = DispatchWorkItem { [weak self] in self?.endStackChange() }
+    stackChangeTimeout = timeout
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: timeout)
+  }
+
+  private func endStackChange() {
+    stackChangeTimeout?.cancel()
+    stackChangeTimeout = nil
+    stackChangeRunning = false
+    runQueuedChanges()
+  }
+
+  /// Runs [change] now, or after the changes queued before it. A stack change
+  /// ([waitsForTransition]) also waits for the running transition to end;
+  /// item and scroll updates only keep their order behind queued ones.
+  private func perform(waitsForTransition: Bool, _ change: @escaping () -> Void) {
+    if queuedChanges.isEmpty && !(waitsForTransition && isTransitioning) {
+      change()
+      return
+    }
+    queuedChanges.append(change)
+  }
+
+  /// Runs queued changes until one starts a new transition.
+  private func runQueuedChanges() {
+    while !queuedChanges.isEmpty && !isTransitioning {
+      queuedChanges.removeFirst()()
     }
   }
 
@@ -909,6 +994,7 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
     page.token = map["token"] as? Int ?? 0
     configure(map, on: page)
     if let scroll { page.applyScroll(scroll, animated: false) }
+    beginStackChange()
     nav.pushViewController(page, animated: true)
     syncChips(.push)
   }
@@ -1355,10 +1441,12 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
       item.title = content.title
     }
     item.hidesBackButton = true
-    if #available(iOS 27.1, *) {
-      // The bar decides the axis; ask for the vertical one when both exist.
-      item.verticalBarCompressionBehavior = .automatic
-    }
+    #if compiler(>=6.3)
+      if #available(iOS 27.1, *) {
+        // The bar decides the axis; ask for the vertical one when both exist.
+        item.verticalBarCompressionBehavior = .automatic
+      }
+    #endif
     if animated, let titleView = content.titleView, let bar {
       // A new title view laid out inside the animated item change would grow
       // from an empty frame. Give it its frame first, then fade it in with
@@ -1509,6 +1597,15 @@ final class NativeTopBarCoordinator: NSObject, UINavigationControllerDelegate {
   /// across the bar as a stray edge, so the content transition is suppressed
   /// while the bar keeps animating its items. Flutter moves to the incoming
   /// page first, so the surface stays in the window throughout.
+  func navigationController(
+    _ navigationController: UINavigationController,
+    didShow viewController: UIViewController,
+    animated: Bool
+  ) {
+    // UIKit clears the transition coordinator after this call returns.
+    DispatchQueue.main.async { [weak self] in self?.endStackChange() }
+  }
+
   func navigationController(
     _ navigationController: UINavigationController,
     animationControllerFor operation: UINavigationController.Operation,
@@ -1716,12 +1813,14 @@ final class NativeTopBarTitleView: UIView {
       content.topAnchor.constraint(equalTo: topAnchor),
       content.bottomAnchor.constraint(equalTo: bottomAnchor),
     ])
-    if #available(iOS 27.1, *) {
-      registerForTraitChanges(UITraitCollection.systemTraitsAffectingVerticalBarEdge) {
-        (self: Self, _: UITraitCollection) in
-        self.invalidateIntrinsicContentSize()
+    #if compiler(>=6.3)
+      if #available(iOS 27.1, *) {
+        registerForTraitChanges(UITraitCollection.systemTraitsAffectingVerticalBarEdge) {
+          (self: Self, _: UITraitCollection) in
+          self.invalidateIntrinsicContentSize()
+        }
       }
-    }
+    #endif
   }
 
   required init?(coder: NSCoder) {
@@ -1733,9 +1832,12 @@ final class NativeTopBarTitleView: UIView {
   /// it takes the whole band, so it does, with its content at the start.
   private var fillsBand: Bool {
     guard leadingBesideVerticalBar else { return false }
-    if #available(iOS 27.1, *) {
-      return traitCollection.verticalBarEdge != .unspecified
-    }
+    // verticalBarEdge is in the iOS 27.1 SDK; older SDKs (Swift 6.2) skip it.
+    #if compiler(>=6.3)
+      if #available(iOS 27.1, *) {
+        return traitCollection.verticalBarEdge != .unspecified
+      }
+    #endif
     return false
   }
 
@@ -2283,9 +2385,12 @@ struct NativeShellLayout: Equatable {
   init() {}
 
   init(traits: UITraitCollection) {
-    if #available(iOS 27.1, *) {
-      verticalTabs = traits.verticalBarEdge != .unspecified
-    }
+    // verticalBarEdge is in the iOS 27.1 SDK; older SDKs (Swift 6.2) skip it.
+    #if compiler(>=6.3)
+      if #available(iOS 27.1, *) {
+        verticalTabs = traits.verticalBarEdge != .unspecified
+      }
+    #endif
     barHidden = traits.verticalSizeClass == .compact && !verticalTabs
     tabsInBar = traits.horizontalSizeClass == .regular && !verticalTabs && !barHidden
     largeTitles = traits.horizontalSizeClass == .compact && !barHidden

@@ -298,6 +298,7 @@ class NdefRecordPage extends HookWidget {
         button: EditorPrimaryButton(
           label: l10n.ndefRecordDone,
           icon: Icons.check_rounded,
+          sfSymbol: 'checkmark',
           onPressed: done,
         ),
         children: [

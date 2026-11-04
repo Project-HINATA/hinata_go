@@ -38,6 +38,8 @@ class iOS26SegmentedControlView: NSObject, FlutterPlatformView {
     private var tintColor: UIColor?
     private var textColor: UIColor?
     private var selectedTextColor: UIColor?
+    /// The margin Flutter leaves around the control for its glass to draw in.
+    private var bleed: CGFloat = 0
 
     init(
         frame: CGRect,
@@ -49,6 +51,7 @@ class iOS26SegmentedControlView: NSObject, FlutterPlatformView {
 
         if let config = args as? [String: Any] {
             controlId = config["id"] as? Int ?? 0
+            bleed = CGFloat(config["bleed"] as? Double ?? 0)
             isDark = config["isDark"] as? Bool ?? false
         } else {
             controlId = 0
@@ -149,10 +152,12 @@ class iOS26SegmentedControlView: NSObject, FlutterPlatformView {
 
         _view.addSubview(segmentedControl)
         NSLayoutConstraint.activate([
-            segmentedControl.leadingAnchor.constraint(equalTo: _view.leadingAnchor),
-            segmentedControl.trailingAnchor.constraint(equalTo: _view.trailingAnchor),
-            segmentedControl.topAnchor.constraint(equalTo: _view.topAnchor),
-            segmentedControl.bottomAnchor.constraint(equalTo: _view.bottomAnchor),
+            // Flutter sizes this view [bleed] larger on every side than the
+            // control's layout box, so the glass rim stays inside it.
+            segmentedControl.leadingAnchor.constraint(equalTo: _view.leadingAnchor, constant: bleed),
+            segmentedControl.trailingAnchor.constraint(equalTo: _view.trailingAnchor, constant: -bleed),
+            segmentedControl.topAnchor.constraint(equalTo: _view.topAnchor, constant: bleed),
+            segmentedControl.bottomAnchor.constraint(equalTo: _view.bottomAnchor, constant: -bleed),
         ])
 
         segmentedControl.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
@@ -196,7 +201,8 @@ class iOS26SegmentedControlView: NSObject, FlutterPlatformView {
     }
 
     @objc private func segmentChanged() {
-        applyTheme()
+        // The theme has not changed. Re-applying it here (title attributes and
+        // a forced layout) would cut the Liquid Glass selection animation.
         channel.invokeMethod("valueChanged", arguments: ["index": segmentedControl.selectedSegmentIndex])
 
         let impact = UIImpactFeedbackGenerator(style: .light)
@@ -208,7 +214,11 @@ class iOS26SegmentedControlView: NSObject, FlutterPlatformView {
         case "setSelectedIndex":
             if let args = call.arguments as? [String: Any],
                let index = args["index"] as? Int {
-                if index >= 0 && index < segmentedControl.numberOfSegments {
+                // Dart echoes back the index the user just picked. Setting it
+                // again restarts the selection animation that is running.
+                if index == segmentedControl.selectedSegmentIndex {
+                    // Already selected.
+                } else if index >= 0 && index < segmentedControl.numberOfSegments {
                     segmentedControl.selectedSegmentIndex = index
                 } else if index == -1 {
                     segmentedControl.selectedSegmentIndex = UISegmentedControl.noSegment

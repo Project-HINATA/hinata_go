@@ -47,6 +47,12 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
     private var iconSize: CGFloat?
     private var iconColor: UIColor?
     private var useSmoothRectangleBorder: Bool = true
+    /// The margin Flutter leaves around the button for its glass to draw in.
+    private var bleed: CGFloat = 0
+    /// Whether the activity indicator replaces the symbol.
+    private var isBusy = false
+    /// The label's font size, semibold; the size preset's font when nil.
+    private var labelFontSize: CGFloat?
 
     init(
         frame: CGRect,
@@ -84,6 +90,11 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
 
             // Use smooth rectangle border setting
             useSmoothRectangleBorder = config["useSmoothRectangleBorder"] as? Bool ?? true
+            bleed = CGFloat(config["bleed"] as? Double ?? 0)
+            isBusy = config["busy"] as? Bool ?? false
+            if let fontSize = config["fontSize"] as? Double {
+                labelFontSize = CGFloat(fontSize)
+            }
         } else {
             buttonId = 0
         }
@@ -138,10 +149,12 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
         let heightConstraint = button.heightAnchor.constraint(equalToConstant: getHeightForSize())
         heightConstraint.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            button.leadingAnchor.constraint(equalTo: _view.leadingAnchor),
-            button.trailingAnchor.constraint(equalTo: _view.trailingAnchor),
-            button.topAnchor.constraint(equalTo: _view.topAnchor),
-            button.bottomAnchor.constraint(equalTo: _view.bottomAnchor),
+            // Flutter sizes this view [bleed] larger on every side than the
+            // button's layout box, so the glass rim stays inside it.
+            button.leadingAnchor.constraint(equalTo: _view.leadingAnchor, constant: bleed),
+            button.trailingAnchor.constraint(equalTo: _view.trailingAnchor, constant: -bleed),
+            button.topAnchor.constraint(equalTo: _view.topAnchor, constant: bleed),
+            button.bottomAnchor.constraint(equalTo: _view.bottomAnchor, constant: -bleed),
             heightConstraint
         ])
 
@@ -206,12 +219,15 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
 
                     // Apply icon size
                     let symbolSize = iconSize ?? 24.0
-                    finalImage = image.applyingSymbolConfiguration(
-                        UIImage.SymbolConfiguration(pointSize: symbolSize)
-                    ) ?? image
+                    // Beside a label the symbol takes the label's weight.
+                    let symbolConfig = buttonLabel.isEmpty
+                        ? UIImage.SymbolConfiguration(pointSize: symbolSize)
+                        : UIImage.SymbolConfiguration(pointSize: symbolSize, weight: .semibold)
+                    finalImage = image.applyingSymbolConfiguration(symbolConfig) ?? image
 
-                    // Apply icon color
-                    if let color = iconColor {
+                    // Apply icon color; beside a label the symbol takes the
+                    // label's color, which glass styles do not pass on.
+                    if let color = iconColor ?? (buttonLabel.isEmpty ? nil : textColor) {
                         finalImage = finalImage.withTintColor(color, renderingMode: .alwaysOriginal)
                     }
 
@@ -219,15 +235,18 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
                     config.title = nil
                     config.attributedTitle = nil
                 }
-            } else if !buttonLabel.isEmpty {
-                // Text label mode
-                config.title = buttonLabel
-
-                // Set title font with attributed string
-                var attributedTitle = AttributedString(buttonLabel)
-                attributedTitle.font = getFontForSize()
-                config.attributedTitle = attributedTitle
             }
+            if !buttonLabel.isEmpty {
+                // Text label mode, after the symbol when there is one
+                var attributedTitle = AttributedString(buttonLabel)
+                attributedTitle.font = labelFontSize.map {
+                    UIFont.systemFont(ofSize: $0, weight: .semibold)
+                } ?? getFontForSize()
+                config.attributedTitle = attributedTitle
+                config.titleLineBreakMode = .byTruncatingTail
+                config.imagePadding = 8
+            }
+            config.showsActivityIndicator = isBusy
 
             // Set corner style based on useSmoothRectangleBorder
             if useSmoothRectangleBorder {
@@ -351,7 +370,15 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
             if let args = call.arguments as? [String: Any],
                let label = args["label"] as? String {
                 buttonLabel = label
-                button.setTitle(label, for: .normal)
+                applyLiquidGlassStyle()
+            }
+            result(nil)
+
+        case "setBusy":
+            if let args = call.arguments as? [String: Any],
+               let busy = args["busy"] as? Bool {
+                isBusy = busy
+                applyLiquidGlassStyle()
             }
             result(nil)
 

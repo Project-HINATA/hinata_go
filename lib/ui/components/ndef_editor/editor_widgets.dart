@@ -3,6 +3,7 @@ import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/glass_label_button.dart';
 import '../../widgets/native_alert.dart';
 
 /// A page of the NDEF editor: its sections scroll under the bar, with the
@@ -108,43 +109,26 @@ class EditorPrimaryButton extends StatelessWidget {
     super.key,
     required this.label,
     required this.icon,
+    required this.sfSymbol,
     required this.onPressed,
   });
 
   final String label;
   final IconData icon;
+
+  /// The symbol the native iOS button draws.
+  final String sfSymbol;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     if (useCupertinoChrome) {
-      return AdaptiveButton.child(
-        onPressed: onPressed,
+      return GlassLabelButton(
+        label: label,
+        icon: icon,
+        sfSymbol: sfSymbol,
         style: AdaptiveButtonStyle.prominentGlass,
-        size: AdaptiveButtonSize.large,
-        useSmoothRectangleBorder: false,
-        color: scheme.primary,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: scheme.onPrimary),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
+        onPressed: onPressed,
       );
     }
     return FilledButton.icon(

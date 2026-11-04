@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../../style/sf_symbol.dart';
+import 'glass_bleed.dart';
 
 /// iOS 26 native button styles (Liquid Glass design)
 enum IOS26ButtonStyle {
@@ -71,7 +72,34 @@ class IOS26Button extends StatefulWidget {
     this.useSmoothRectangleBorder = true,
   }) : child = null,
        isChildMode = false,
-       sfSymbol = null;
+       sfSymbol = null,
+       busy = false,
+       fontSize = null;
+
+  /// Creates an iOS 26 style button with an SF Symbol and a label, both drawn
+  /// natively. Unlike a [IOS26Button.child] button, Flutter draws nothing on
+  /// top of the platform view, so it needs no overlay layer: it composites
+  /// cheaply while a page slides over or under it.
+  ///
+  /// [busy] swaps the symbol for the system activity indicator.
+  const IOS26Button.labeled({
+    super.key,
+    required this.onPressed,
+    required this.label,
+    required SFSymbol this.sfSymbol,
+    this.busy = false,
+    this.fontSize,
+    this.style = IOS26ButtonStyle.filled,
+    this.size = IOS26ButtonSize.medium,
+    this.color,
+    this.textColor,
+    this.enabled = true,
+    this.minSize,
+    this.useSmoothRectangleBorder = true,
+  }) : child = null,
+       isChildMode = false,
+       padding = null,
+       borderRadius = null;
 
   /// Creates an iOS 26 style button with a custom child widget
   /// The child will be overlaid on top of the native button background
@@ -90,7 +118,9 @@ class IOS26Button extends StatefulWidget {
   }) : label = '',
        textColor = null,
        isChildMode = true,
-       sfSymbol = null;
+       sfSymbol = null,
+       busy = false,
+       fontSize = null;
 
   /// Creates an iOS 26 style button with a native SF Symbol icon
   const IOS26Button.sfSymbol({
@@ -108,7 +138,9 @@ class IOS26Button extends StatefulWidget {
   }) : label = '',
        textColor = null,
        child = null,
-       isChildMode = false;
+       isChildMode = false,
+       busy = false,
+       fontSize = null;
 
   /// The callback that is called when the button is tapped
   final VoidCallback? onPressed;
@@ -124,6 +156,14 @@ class IOS26Button extends StatefulWidget {
 
   /// Whether this is child mode
   final bool isChildMode;
+
+  /// Whether a [IOS26Button.labeled] button shows the activity indicator in
+  /// place of its symbol.
+  final bool busy;
+
+  /// The label's font size; the size preset's when null. Labels are
+  /// semibold at a custom size.
+  final double? fontSize;
 
   /// The visual style of the button
   final IOS26ButtonStyle style;
@@ -227,6 +267,10 @@ class _IOS26ButtonState extends State<IOS26Button> {
       _channel.invokeMethod('setLabel', {'label': widget.label});
     }
 
+    if (oldWidget.busy != widget.busy) {
+      _channel.invokeMethod('setBusy', {'busy': widget.busy});
+    }
+
     if (oldWidget.color != widget.color) {
       _channel.invokeMethod('setColor', {
         'color': widget.color != null ? _colorToHex(widget.color!) : null,
@@ -267,6 +311,9 @@ class _IOS26ButtonState extends State<IOS26Button> {
           : null,
       'isDark': MediaQuery.platformBrightnessOf(context) == Brightness.dark,
       'useSmoothRectangleBorder': widget.useSmoothRectangleBorder,
+      'bleed': kGlassBleed,
+      'busy': widget.busy,
+      'fontSize': ?widget.fontSize,
       if (widget.sfSymbol != null) 'iconName': widget.sfSymbol!.name,
       if (widget.sfSymbol != null) 'iconSize': widget.sfSymbol!.size,
       if (widget.sfSymbol?.color != null)
@@ -330,10 +377,12 @@ class _IOS26ButtonState extends State<IOS26Button> {
   Widget build(BuildContext context) {
     // Only use native implementation on iOS
     if (!kIsWeb && Platform.isIOS) {
-      final platformView = UiKitView(
-        viewType: 'adaptive_platform_ui/ios26_button',
-        creationParams: _buildCreationParams(),
-        creationParamsCodec: const StandardMessageCodec(),
+      final platformView = GlassBleed(
+        child: UiKitView(
+          viewType: 'adaptive_platform_ui/ios26_button',
+          creationParams: _buildCreationParams(),
+          creationParamsCodec: const StandardMessageCodec(),
+        ),
       );
 
       // Wrap in SizedBox for height constraint. In child mode the Flutter-drawn

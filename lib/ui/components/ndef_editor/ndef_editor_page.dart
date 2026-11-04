@@ -174,6 +174,7 @@ class NdefEditorPage extends HookConsumerWidget {
         button: EditorPrimaryButton(
           label: l10n.save,
           icon: Icons.check_rounded,
+          sfSymbol: 'checkmark',
           onPressed: save,
         ),
         children: [

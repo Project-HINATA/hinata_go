@@ -4,6 +4,7 @@ import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:hinata_go/context_extensions.dart';
 
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/glass_label_button.dart';
 
 class CardDetailBottomActions extends StatelessWidget {
   final VoidCallback? onSend;
@@ -114,10 +115,10 @@ class CardDetailBottomActions extends StatelessWidget {
       return Expanded(
         child: SizedBox(
           height: _buttonHeight,
-          child: _nativeButton(
-            context,
+          child: GlassLabelButton(
             label: isSaving ? l10n.savingUpper : (saveLabel ?? l10n.saveUpper),
             icon: CupertinoIcons.folder_badge_plus,
+            sfSymbol: 'folder.badge.plus',
             style: AdaptiveButtonStyle.glass,
             onPressed: isSaving || isSending || isWriting ? null : onSave,
             busy: isSaving,
@@ -150,10 +151,10 @@ class CardDetailBottomActions extends StatelessWidget {
       return Expanded(
         child: SizedBox(
           height: _buttonHeight,
-          child: _nativeButton(
-            context,
+          child: GlassLabelButton(
             label: l10n.cardWrite,
             icon: CupertinoIcons.waveform_path_ecg,
+            sfSymbol: 'waveform.path.ecg',
             style: AdaptiveButtonStyle.glass,
             onPressed: isSaving || isSending || isWriting ? null : onWrite,
             busy: isWriting,
@@ -201,10 +202,10 @@ class CardDetailBottomActions extends StatelessWidget {
       return Expanded(
         child: SizedBox(
           height: _buttonHeight,
-          child: _nativeButton(
-            context,
+          child: GlassLabelButton(
             label: isSending ? l10n.sendingUpper : l10n.sendUpper,
             icon: CupertinoIcons.paperplane_fill,
+            sfSymbol: 'paperplane.fill',
             style: AdaptiveButtonStyle.prominentGlass,
             onPressed: isSending || isSaving || isWriting ? null : onSend,
             busy: isSending,
@@ -226,69 +227,6 @@ class CardDetailBottomActions extends StatelessWidget {
             ? _buildSpinner(color: Colors.white)
             : const Icon(Icons.send),
         label: Text(isSending ? l10n.sendingUpper : l10n.sendUpper),
-      ),
-    );
-  }
-
-  /// A native iOS button: a Liquid Glass pill on iOS 26+, a tinted capsule
-  /// before that. The label and icon are drawn by Flutter over the native
-  /// button so they keep the app's language and symbols.
-  Widget _nativeButton(
-    BuildContext context, {
-    required String label,
-    required IconData icon,
-    required AdaptiveButtonStyle style,
-    required VoidCallback? onPressed,
-    required bool busy,
-  }) {
-    final scheme = context.colorScheme;
-    final foreground =
-        style == AdaptiveButtonStyle.prominentGlass ||
-            style == AdaptiveButtonStyle.filled
-        ? scheme.onPrimary
-        : scheme.primary;
-    return SizedBox(
-      height: 56,
-      child: AdaptiveButton.child(
-        onPressed: onPressed ?? () {},
-        style: style,
-        size: AdaptiveButtonSize.large,
-        enabled: onPressed != null,
-        useSmoothRectangleBorder: false,
-        color:
-            style == AdaptiveButtonStyle.prominentGlass ||
-                style == AdaptiveButtonStyle.filled
-            ? scheme.primary
-            : null,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (busy)
-              SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: foreground,
-                ),
-              )
-            else
-              Icon(icon, size: 18, color: foreground),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: foreground,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
