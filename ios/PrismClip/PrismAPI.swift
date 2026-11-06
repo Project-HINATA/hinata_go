@@ -134,12 +134,6 @@ final class PrismAPI {
     let _: EmptyResponse = try await send(request)
   }
 
-  func loginMachine(_ input: MachineLoginRequest) async throws -> SwipeResult {
-    var request = try makeRequest(path: "/api/v1/machines/login", method: "POST")
-    request.httpBody = try encoder.encode(input)
-    return try await send(request)
-  }
-
   /// Opens a short window in which the card put on this cabinet's reader is added to the account.
   func startCardCapture(ticket: String, location: [String: Double]?) async throws -> PrismCardCapture {
     var body: [String: Any] = ["ticket": ticket]
@@ -297,16 +291,26 @@ final class PrismAPI {
     }
     let result = try await uncachedResponseData(for: request)
     if request.httpMethod != "GET", !path.hasSuffix("/checkout/preview"), !path.hasSuffix("/machines/session/start"),
-       let http = result.1 as? HTTPURLResponse, 200..<300 ~= http.statusCode { await invalidateReads() }
+       !path.hasSuffix("/devices/report"), let http = result.1 as? HTTPURLResponse, 200..<300 ~= http.statusCode { await invalidateReads() }
     return result
   }
 
   private func uncachedResponseData(for request: URLRequest) async throws -> (Data, URLResponse) {
-    do { return try await session.data(for: request) }
-    catch let error as URLError {
-      guard Self.isRetryable(request), [.networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost].contains(error.code) else { throw error }
-      try await Task.sleep(nanoseconds: 300_000_000)
-      return try await session.data(for: request)
+    let reported = !(request.url?.path ?? "").hasSuffix("/devices/report")
+    var attempt = 1
+    while true {
+      let startedAt = Date()
+      do {
+        let result = try await session.data(for: request)
+        if reported { PrismPageReport.note(request, since: startedAt, answered: true) }
+        return result
+      } catch let error as URLError {
+        if reported, error.code != .cancelled { PrismPageReport.note(request, since: startedAt, answered: false) }
+        guard attempt < 3, Self.isRetryable(request), [.networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost].contains(error.code) else { throw error }
+        attempt += 1
+        PrismPageReport.noteRetry()
+        try await Task.sleep(nanoseconds: 300_000_000)
+      }
     }
   }
 
@@ -319,9 +323,9 @@ final class PrismAPI {
     return path.hasSuffix("/checkout/preview") || path.hasSuffix("/machines/session/start")
   }
 
-  /// Pushed power and air-conditioner state for a device page; same session, so same sign-in.
-  func deviceLiveSocket(ticket: String) throws -> URLSessionWebSocketTask {
-    var request = try makeRequest(path: "/api/v1/devices/session/ws?ticket=\(ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ticket)")
+  /// Word that the page changed, and nothing else; same session, so same sign-in.
+  func pageSocket(ticket: String) throws -> URLSessionWebSocketTask {
+    var request = try makeRequest(path: "/api/v1/devices/session/ws?ticket=\(ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ticket)&v=2")
     if let url = request.url, var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) {
       parts.scheme = parts.scheme == "https" ? "wss" : "ws"
       request.url = parts.url
@@ -340,6 +344,10 @@ final class PrismAPI {
     if method != "GET" {
       request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     }
+    // From a shop's China Mobile line a new connection to Cloudflare can stall for seconds or forever
+    // while another tried a moment later goes straight through, so nothing waits long on one attempt.
+    if method == "GET" || path.hasSuffix("/machines/session/start") { request.timeoutInterval = 5 }
+    else if path.hasSuffix("/session/action") { request.timeoutInterval = 10 }
     return request
   }
 
@@ -428,3 +436,91 @@ private struct ServerError: Decodable {
 }
 
 private struct APIEnvelope<T: Decodable>: Decodable { let data: T }
+
+/// How a scanned page fares on this phone's network, one row per visit: the same report the web page
+/// sends. What cannot be delivered waits for the next visit, because a network bad enough to matter is
+/// one where sending the report fails too. Nothing in it identifies the player.
+@MainActor
+final class PrismPageReport {
+  static let shared = PrismPageReport()
+  private static let storeKey = "prism.pageReports"
+  /// Told when an attempt got no answer and another is starting.
+  var onRetry: (() -> Void)?
+
+  private struct Visit {
+    let id = UUID().uuidString
+    let startedAt = Date()
+    var openMs: Int?
+    var openFailed = false
+    var reads = 0, readFailures = 0, readMs = 0, readMaxMs = 0
+    var actions = 0, actionFailures = 0, actionMs = 0, actionMaxMs = 0
+    var socketConnectMs: Int?
+    var socketDrops = 0
+
+    var json: [String: Any] {
+      func orNull(_ value: Int?) -> Any { value.map { $0 as Any } ?? NSNull() }
+      return [
+        "id": id, "client": "clip", "openMs": orNull(openMs), "openFailed": openFailed,
+        "documentMs": NSNull(), "documentConnectMs": NSNull(), "apiConnectMs": NSNull(),
+        "reads": reads, "readFailures": readFailures, "readMs": readMs, "readMaxMs": readMaxMs,
+        "actions": actions, "actionFailures": actionFailures, "actionMs": actionMs, "actionMaxMs": actionMaxMs,
+        "socketConnectMs": orNull(socketConnectMs), "socketDrops": socketDrops,
+      ]
+    }
+  }
+
+  private var visit: Visit?
+  private var publicId: String?
+
+  func start(publicId: String) {
+    visit = Visit()
+    self.publicId = publicId
+  }
+
+  func opened() {
+    guard var current = visit, current.openMs == nil else { return }
+    current.openMs = Int(Date().timeIntervalSince(current.startedAt) * 1000)
+    visit = current
+  }
+
+  func openFailed() { visit?.openFailed = true }
+  func socketOpened(since: Date) { if visit?.socketConnectMs == nil { visit?.socketConnectMs = Int(Date().timeIntervalSince(since) * 1000) } }
+  func socketDropped() { visit?.socketDrops += 1 }
+
+  nonisolated static func note(_ request: URLRequest, since: Date, answered: Bool) {
+    let ms = Int(Date().timeIntervalSince(since) * 1000), read = request.httpMethod == "GET"
+    Task { @MainActor in shared.count(read: read, ms: ms, answered: answered) }
+  }
+
+  nonisolated static func noteRetry() {
+    Task { @MainActor in shared.onRetry?() }
+  }
+
+  private func count(read: Bool, ms: Int, answered: Bool) {
+    guard var current = visit else { return }
+    if read {
+      current.reads += 1; current.readMs += ms; current.readMaxMs = max(current.readMaxMs, ms)
+      if !answered { current.readFailures += 1 }
+    } else {
+      current.actions += 1; current.actionMs += ms; current.actionMaxMs = max(current.actionMaxMs, ms)
+      if !answered { current.actionFailures += 1 }
+    }
+    visit = current
+  }
+
+  /// Sends this visit and whatever earlier ones could not be delivered. The visit keeps its id and
+  /// counting, so sending again later updates the same row.
+  func flush(api: PrismAPI) async {
+    guard let publicId else { return }
+    let waiting = (UserDefaults.standard.data(forKey: Self.storeKey)
+      .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [[String: Any]] }) ?? []
+    let visits = Array((waiting + (visit.map { [$0.json] } ?? [])).suffix(5))
+    guard !visits.isEmpty else { return }
+    do {
+      _ = try await api.requestJSON(path: "/api/v1/devices/report", body: ["publicId": publicId, "visits": visits])
+      UserDefaults.standard.removeObject(forKey: Self.storeKey)
+    } catch {
+      if let data = try? JSONSerialization.data(withJSONObject: visits) { UserDefaults.standard.set(data, forKey: Self.storeKey) }
+    }
+  }
+}

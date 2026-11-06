@@ -181,14 +181,6 @@ struct PasskeyAssertionResponse: Encodable {
   let userHandle: String?
 }
 
-struct MachineLoginRequest: Encodable {
-  let cardId: String
-  let lat: Double?
-  let lng: Double?
-  let accuracy: Double?
-  let ticket: String
-}
-
 struct EmptyResponse: Decodable {
   let ok: Bool
 }
@@ -214,38 +206,6 @@ struct CardFeedback: Equatable {
   struct Part: Equatable { let level: String; let text: String }
   /// The card's own outcome decides the row's icon.
   var level: String { parts.first?.level ?? "success" }
-}
-
-struct SwipeResult: Codable {
-  let ok: Bool?
-  /// What the game did with the card on a direct-connect machine: `ok` (signed in),
-  /// `failed` (turned away), `read`, `not_read`; `sent` or absent through a relay.
-  var card: String? = nil
-  /// Inline ones go on the card row; a dialog only when the coin went wrong.
-  var notices: [PrismNotice]? = nil
-  let coin: Coin?
-  struct Coin: Codable { let status: String; let operationId: String? }
-  var message: String {
-    switch coin?.status {
-    case "sent": return String(localized: "已刷卡并投一币")
-    case "skipped": return String(localized: "刷卡已完成，投币冷却中，本次未投币。")
-    case "failed": return String(localized: "刷卡已完成，投币请求失败，请联系店员。")
-    case "unknown": return String(localized: "刷卡已完成，投币结果待确认，请检查机台，不要重复刷卡。")
-    default: return String(localized: "本次登录已完成")
-    }
-  }
-}
-struct PrismDeviceState: Decodable {
-  var gate: String
-  /// What the older server contract reported; the device's power now arrives in `device`.
-  var power: String
-  var coinUsed: Bool? = nil
-  var mahjong: PrismMahjong? = nil
-  var climate: PrismClimate? = nil
-  /// The device's power and air conditioner as far as this read knows them. Absent from an older server.
-  var device: PrismDeviceView? = nil
-  /// Set while `gate` is `entry` in a shop that bills. Absent from an older server.
-  var billing: PrismResourceBilling? = nil
 }
 
 /// What confirming this resource would do to the player's billing, or why it cannot bill.
@@ -287,65 +247,6 @@ struct PrismResourceBilling: Decodable {
       let name: String; let config: PrismPricingConfig
     }
   }
-}
-
-/// The device's power and air conditioner as the backend tells them, from whichever channel carried
-/// them (a read, the shop hub, an action's answer). A key that is absent was not said, which is not
-/// the same as one said as null (the backend could not read it). Where a value came from (stored
-/// events or Home Assistant asked now) is the backend's business: the page shows the latest it was told.
-struct PrismDeviceView: Decodable, Equatable {
-  var hasPower = false
-  /// "on" or "off"; nil when said as unknown, or not said.
-  var power: String? = nil
-  var hasClimate = false
-  var climate: PrismClimate? = nil
-
-  init(hasPower: Bool = false, power: String? = nil, hasClimate: Bool = false, climate: PrismClimate? = nil) {
-    self.hasPower = hasPower; self.power = power; self.hasClimate = hasClimate; self.climate = climate
-  }
-
-  private enum CodingKeys: String, CodingKey { case power, climate }
-
-  init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    hasPower = container.contains(.power)
-    // Only "on" and "off" are a power state; anything else is unknown.
-    let raw = (try? container.decodeIfPresent(String.self, forKey: .power)) ?? nil
-    power = raw == "on" || raw == "off" ? raw : nil
-    hasClimate = container.contains(.climate)
-    climate = (try? container.decodeIfPresent(PrismClimate.self, forKey: .climate)) ?? nil
-  }
-
-  var isEmpty: Bool { !hasPower && !hasClimate }
-}
-
-/// A frame the shop hub pushes to a device page. A key that is absent was not said, which is
-/// not the same as one that was said as null (the backend could not read it). The `watching` the hub
-/// still sends is for older builds; this one treats `hello`, `watching` and `state` alike as state.
-struct PrismLiveFrame {
-  let type: String
-  let hasPower: Bool
-  let power: String?
-  let hasClimate: Bool
-  let climate: PrismClimate?
-
-  init?(_ text: String) {
-    guard let data = text.data(using: .utf8),
-          let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-          let type = object["type"] as? String else { return nil }
-    self.type = type
-    hasPower = object.keys.contains("power")
-    // Only "on" and "off" are a power state; anything else is unknown.
-    power = (object["power"] as? String).flatMap { $0 == "on" || $0 == "off" ? $0 : nil }
-    hasClimate = object.keys.contains("climate")
-    if let raw = object["climate"], !(raw is NSNull), let encoded = try? JSONSerialization.data(withJSONObject: raw) {
-      climate = try? JSONDecoder().decode(PrismClimate.self, from: encoded)
-    } else {
-      climate = nil
-    }
-  }
-
-  var view: PrismDeviceView { PrismDeviceView(hasPower: hasPower, power: power, hasClimate: hasClimate, climate: climate) }
 }
 
 /// A Home Assistant air conditioner as the device state reports it. The modes, fan speeds
@@ -397,7 +298,6 @@ func prismBindingPromptLines(_ template: String?, code: String) -> [PrismBinding
     ? rendered
     : rendered + [PrismBindingPromptLine(text: "bind \(code)", command: true)]
 }
-struct PrismDoorPassword: Decodable { let temporaryPassword: String; let expiresAt: String }
 struct PrismShopResponse: Decodable {
   let shop: Settings
   let membership: Membership?
@@ -528,9 +428,164 @@ struct PrismPricingSchedule: Decodable {
   }
 }
 
+/// A value the platform wants sent back as it is.
+enum PrismPageValue: Decodable, Equatable {
+  case string(String), number(Double), bool(Bool), null
 
-struct PrismMahjong: Decodable {
+  init(from decoder: Decoder) throws {
+    let value = try decoder.singleValueContainer()
+    if let bool = try? value.decode(Bool.self) { self = .bool(bool) }
+    else if let number = try? value.decode(Double.self) { self = .number(number) }
+    else if let string = try? value.decode(String.self) { self = .string(string) }
+    else { self = .null }
+  }
+
+  var json: Any {
+    switch self {
+    case .string(let value): return value
+    case .number(let value): return value
+    case .bool(let value): return value
+    case .null: return NSNull()
+    }
+  }
+}
+
+struct PrismPageButton: Decodable {
+  let id: String
+  let label: String
+  /// Replaces `label` while a code from this button is showing.
+  let againLabel: String?
+  let icon: String?
+  let style: String?
+  let enabled: Bool
+  let action: String
+  /// The answer shows on the button for a moment instead of under it.
+  let answerOnButton: Bool?
+  let payload: [String: PrismPageValue]?
+  /// The block that must be agreed to first.
+  let requires: String?
+  let needsLocation: Bool
+}
+
+/// Where the player's cards go. The cards themselves are read apart from the page.
+struct PrismPageCards: Decodable {
+  let id: String
+  let enabled: Bool
+  let capture: Bool
+  let action: String
+  let needsLocation: Bool
+}
+
+struct PrismPageTable: Decodable {
+  let id: String
+  let title: String
+  let status: String
   let capacity: Int
+  let emptyLabel: String
+  let mineLabel: String
   let seats: [Seat]
-  struct Seat: Decodable { let name: String; let mine: Bool; let playing: Bool }
+  struct Seat: Decodable { let name: String; let mine: Bool }
+}
+
+/// One block of the page. A block this build cannot read, a new kind or a changed one, is `unknown`
+/// and is skipped: the platform can add to the page without breaking a released App Clip.
+enum PrismPageBlock: Decodable, Identifiable {
+  case text(id: String, text: String, heading: Bool, error: Bool)
+  case signin(id: String)
+  case binding(id: String)
+  case pricing(id: String, rules: PrismResourceBilling.Rules, changes: PrismResourceBilling.Preview?)
+  case consent(id: String, text: String)
+  case climate(id: String, state: PrismClimate?, needsLocation: Bool)
+  case table(PrismPageTable)
+  case cards(PrismPageCards)
+  case button(PrismPageButton)
+  case unknown(id: String)
+
+  private enum Keys: String, CodingKey { case kind, id, text, style, level, rules, changes, state, needsLocation }
+
+  init(from decoder: Decoder) throws {
+    let keyed = try decoder.container(keyedBy: Keys.self)
+    let id = (try? keyed.decode(String.self, forKey: .id)) ?? UUID().uuidString
+    let kind = (try? keyed.decode(String.self, forKey: .kind)) ?? ""
+    do {
+      switch kind {
+      case "text":
+        self = .text(id: id, text: try keyed.decode(String.self, forKey: .text),
+                     heading: (try? keyed.decode(String.self, forKey: .style)) == "heading",
+                     error: (try? keyed.decode(String.self, forKey: .level)) == "error")
+      case "signin": self = .signin(id: id)
+      case "binding": self = .binding(id: id)
+      case "pricing":
+        self = .pricing(id: id, rules: try keyed.decode(PrismResourceBilling.Rules.self, forKey: .rules),
+                        changes: try? keyed.decode(PrismResourceBilling.Preview.self, forKey: .changes))
+      case "consent": self = .consent(id: id, text: try keyed.decode(String.self, forKey: .text))
+      case "climate":
+        self = .climate(id: id, state: try? keyed.decode(PrismClimate.self, forKey: .state),
+                        needsLocation: try keyed.decode(Bool.self, forKey: .needsLocation))
+      case "mahjong": self = .table(try PrismPageTable(from: decoder))
+      case "cards": self = .cards(try PrismPageCards(from: decoder))
+      case "button": self = .button(try PrismPageButton(from: decoder))
+      default: self = .unknown(id: id)
+      }
+    } catch {
+      self = .unknown(id: id)
+    }
+  }
+
+  var id: String {
+    switch self {
+    case .text(let id, _, _, _), .signin(let id), .binding(let id), .pricing(let id, _, _),
+         .consent(let id, _), .climate(let id, _, _), .unknown(let id):
+      return id
+    case .table(let table): return table.id
+    case .cards(let cards): return cards.id
+    case .button(let button): return button.id
+    }
+  }
+}
+
+/// The page after scanning a resource, as the platform generates it. `docs/player-page.md` in PRiSM
+/// says what clients do with it.
+struct PrismPage: Decodable {
+  let shop: String
+  let shopCode: String
+  let heroUrl: String?
+  let resource: String
+  let publicId: String
+  /// The player has something billing at this shop, here or elsewhere.
+  let billingActive: Bool
+  let blocks: [PrismPageBlock]
+
+  var cards: PrismPageCards? {
+    for block in blocks { if case .cards(let cards) = block { return cards } }
+    return nil
+  }
+  var climateNeedsLocation: Bool {
+    for block in blocks { if case .climate(_, _, let needsLocation) = block { return needsLocation } }
+    return false
+  }
+  var asksToSignIn: Bool { if case .signin = blocks.first { return true }; return false }
+  var needsBinding: Bool { blocks.contains { if case .binding = $0 { return true }; return false } }
+  var asksConsent: Bool { blocks.contains { if case .consent = $0 { return true }; return false } }
+  var offersPowerOn: Bool { blocks.contains { if case .button(let button) = $0 { return button.action == "power.on" }; return false } }
+  /// What the rest of the app reads alongside the page depends on these: the bill, the Live Activity.
+  func movedBilling(from other: PrismPage) -> Bool {
+    asksConsent != other.asksConsent || needsBinding != other.needsBinding || billingActive != other.billingActive
+  }
+}
+
+/// A door code, in that action's answer only. Shown above the button that asked for it until it expires.
+struct PrismPageCode: Decodable {
+  let title: String
+  let value: String
+  let expiresAt: String
+  let expiresLabel: String
+  let hint: String
+}
+
+struct PrismActionAnswer: Decodable {
+  let ok: Bool
+  let page: PrismPage
+  let notices: [PrismNotice]
+  var code: PrismPageCode? = nil
 }

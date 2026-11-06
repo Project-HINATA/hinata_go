@@ -1240,6 +1240,23 @@
         }
       }
     },
+    "网络较慢，正在重试" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The network is slow, trying again"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "网络较慢，正在重试"
+          }
+        }
+      }
+    },
     "网络异常，请重试" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4610,6 +4627,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新增方案"
+          }
+        }
+      }
+    },
+    "累计" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "So far"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累计"
+          }
+        }
+      }
+    },
+    "确认后结束" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ends when you confirm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认后结束"
           }
         }
       }

@@ -115,23 +115,12 @@ struct ClipResourcePricing: View {
       }
       ClipDayAxis().padding(.top, -8)
       let stopped = changes?.stopped ?? []
-      let unsettled = rules.caps?.unsettled ?? 0
-      if !stopped.isEmpty || unsettled > 0 {
-        VStack(spacing: 8) {
-          if !stopped.isEmpty {
-            HStack(alignment: .firstTextBaseline) {
-              Text("结束方案").foregroundStyle(.secondary)
-              Spacer(minLength: 12)
-              Text(stopped.map(\.planName).joined(separator: "、")).lineLimit(1)
-            }
-          }
-          if unsettled > 0 {
-            HStack(alignment: .firstTextBaseline) {
-              Text("已计").foregroundStyle(.secondary)
-              Spacer(minLength: 12)
-              Text(prismMoney(unsettled)).fontWeight(.semibold).monospacedDigit()
-            }
-          }
+      // The running bill is not repeated here: the account menu has it, in full.
+      if !stopped.isEmpty {
+        HStack(alignment: .firstTextBaseline) {
+          Text("确认后结束").foregroundStyle(.secondary)
+          Spacer(minLength: 12)
+          Text(stopped.map(\.planName).joined(separator: "、")).lineLimit(1)
         }
         .font(.subheadline)
         .padding(.top, 12)
@@ -177,7 +166,7 @@ private func prismIsNow(_ row: PrismPeriodRow?, _ nowMinute: Int) -> Bool {
 private func prismCapText(paidBefore: Double, priceCap: Double) -> String {
   paidBefore >= priceCap
     ? String(localized: "已达封顶") + " " + prismMoney(priceCap)
-    : String(localized: "已计") + " " + prismMoney(paidBefore) + " / " + String(localized: "封顶") + " " + prismMoney(priceCap)
+    : String(localized: "累计") + " " + prismMoney(paidBefore) + " / " + String(localized: "封顶") + " " + prismMoney(priceCap)
 }
 
 private func prismPriceText(_ s: PrismDaySegment) -> String {
@@ -237,7 +226,7 @@ private struct ClipPlanLane: View {
           return ""
         }()
         Text((first.isClosed == true ? String(localized: "不计费") : first.label) + " " + row.startLabel + "–" + row.endLabel + capLine)
-          .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
       }
       }
     }
@@ -283,7 +272,7 @@ private struct ClipCapLane: View {
       } ?? "", quiet: true) {
         Text(cap.name).fontWeight(.semibold).lineLimit(1)
       }
-      ClipDayStrip(segments: segments, rows: rows, nowMinute: nowMinute, height: 6, accent: prismAccent,
+      ClipDayStrip(segments: segments, rows: rows, nowMinute: nowMinute, height: 8, accent: prismAccent,
                    picked: tapped ? row : nil, fill: { s in segments.firstIndex(of: s).map { fills[$0] } ?? 0 },
                    pick: { next in
                      let same = tapped && row.map { $0.pieces[0].startMinute == next.pieces[0].startMinute && $0.pieces[0].ruleId == next.pieces[0].ruleId } == true
@@ -296,7 +285,7 @@ private struct ClipCapLane: View {
       }
       if let row, let first {
         Text((first.isClosed == true ? String(localized: "未覆盖") : first.label) + " " + row.startLabel + "–" + row.endLabel)
-          .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
       }
     }
   }
@@ -316,7 +305,7 @@ private struct ClipLaneHeader<Title: View>: View {
     HStack(alignment: .firstTextBaseline, spacing: 12) {
       HStack(spacing: 8) { title }.layoutPriority(1)
       Spacer(minLength: 0)
-      Text(value).font(quiet ? .caption : .subheadline.weight(.semibold)).monospacedDigit().lineLimit(1).fixedSize()
+      Text(value).fontWeight(quiet ? .regular : .semibold).monospacedDigit().lineLimit(1).fixedSize()
     }
     .font(.subheadline)
   }
