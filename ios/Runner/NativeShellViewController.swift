@@ -538,6 +538,9 @@ final class NativeShellViewController: UITabBarController,
 
   func nativeShell(setChromeVisibility tabBarVisible: Bool, dimmed: Bool) {
     FullFrameRate.hold()
+    // The tab bar leaves and returns with UIKit's own animation. Shown in one
+    // step it relaid the shell in the first frame of the pop and stalled it.
+    let animatesTabBar = tabBarVisible != isTabBarVisible && view.window != nil
     isTabBarVisible = tabBarVisible
     isDimmed = dimmed
 
@@ -548,7 +551,7 @@ final class NativeShellViewController: UITabBarController,
     topBar?.setCovered(dimmed)
 
     if #available(iOS 18.0, *) {
-      setTabBarHidden(!tabBarVisible, animated: false)
+      setTabBarHidden(!tabBarVisible, animated: animatesTabBar)
     } else {
       tabBar.isHidden = !tabBarVisible
     }
