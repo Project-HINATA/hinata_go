@@ -59,6 +59,10 @@ final class MachineLoginViewModel: ObservableObject {
   enum CardCapture: Equatable { case starting, waiting, done(level: String, message: String) }
   @Published private(set) var cardCapture: CardCapture?
   private var captureRun = 0
+  /// The window open on the reader, so giving up can close it: left open, it adds the next card to this player.
+  private var openCapture: (id: String, ticket: String)?
+  /// While waiting for the reader: asks what became of the card.
+  private var askCapture: (() -> Void)?
   var capturing: Bool { cardCapture == .starting || cardCapture == .waiting }
   private var cardFeedbackTask: Task<Void, Never>?
   /// A problem that needs the player: shown as an alert with the server's buttons.
@@ -515,6 +519,11 @@ final class MachineLoginViewModel: ObservableObject {
       // Initial account loading owns the transition to ready, even if authentication or
       // foreground activation briefly makes the scene inactive.
       if state != .loadingCards { visitRevision += 1 }
+      // Nobody may be here now, and a card put down could be anyone's.
+      if cardCapture == .waiting {
+        dismissCardCapture()
+        cardCapture = .done(level: "error", message: String(localized: "离开页面后已取消添加，请重新添加"))
+      }
       polling?.cancel()
       polling = nil
       closeLiveState()
@@ -761,8 +770,10 @@ final class MachineLoginViewModel: ObservableObject {
           let first = !self.socketOpenedOnce
           self.socketOpenedOnce = true
           if !first || Date().timeIntervalSince(self.pageReadAt) > 3 { self.readPage() }
+          if !first { self.askCapture?() }
         }
         if text.contains("event.pageChanged") { self.readPage() }
+        if text.contains("event.cardRead") { self.askCapture?() }
         self.receivePageSocket(socket, version: version)
       }
     }
@@ -861,16 +872,16 @@ final class MachineLoginViewModel: ObservableObject {
       let position: LocationSample? = page?.cards?.needsLocation == true ? try await location.currentLocation() : nil
       guard current() else { return }
       let started = try await api.startCardCapture(ticket: ticket, location: position.map { ["lat": $0.latitude, "lng": $0.longitude, "accuracy": $0.accuracy] })
-      guard current() else { return }
+      guard current() else {
+        Task { try? await api.cancelCardCapture(captureId: started.captureId, ticket: ticket) }
+        return
+      }
+      openCapture = (started.captureId, ticket)
+      defer { if current() { openCapture = nil } }
       cardCapture = .waiting
       let deadline = (prismParsedDate(started.expiresAt) ?? Date()).addingTimeInterval(2)
-      var status = "waiting"
-      while status == "waiting" && Date() < deadline {
-        try await Task.sleep(nanoseconds: 1_500_000_000)
-        guard current() else { return }
-        status = try await api.cardCaptureResult(captureId: started.captureId, ticket: ticket).status
-      }
-      guard current() else { return }
+      guard let status = try await captureOutcome(captureId: started.captureId, ticket: ticket, until: deadline, current: current),
+            current() else { return }
       let added = ["added", "bound", "exists"].contains(status)
       let message: String
       if added { message = String(localized: "已添加卡片") }
@@ -890,8 +901,44 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
+  /// What became of the card, asked when told the reader has one, after a lost connection comes back,
+  /// and once at the end of the window. Nil when a newer attempt or a cancel took over.
+  private func captureOutcome(captureId: String, ticket: String, until deadline: Date, current: @escaping () -> Bool) async throws -> String? {
+    var tell: AsyncStream<Void>.Continuation!
+    let asks = AsyncStream<Void>(bufferingPolicy: .bufferingNewest(1)) { tell = $0 }
+    let told = tell!
+    let timer = Task {
+      try? await Task.sleep(nanoseconds: UInt64(max(0, deadline.timeIntervalSinceNow) * 1_000_000_000))
+      told.yield()
+    }
+    askCapture = { told.yield() }
+    defer { timer.cancel(); told.finish(); askCapture = nil }
+    // The card may have been read before this answer got here.
+    told.yield()
+    for await _ in asks {
+      guard current() else { return nil }
+      let ended = Date() >= deadline
+      do {
+        let status = try await api.cardCaptureResult(captureId: captureId, ticket: ticket).status
+        if status != "waiting" { return status }
+        if ended { return "expired" }
+      } catch {
+        // An earlier ask can fail on a bad network; the next one says the same.
+        if ended || (error as? PrismAPIError)?.isSessionExpired == true { throw error }
+      }
+    }
+    return nil
+  }
+
   /// Stops waiting for the reader, or puts away the outcome.
-  func dismissCardCapture() { captureRun += 1; cardCapture = nil }
+  func dismissCardCapture() {
+    captureRun += 1; cardCapture = nil; askCapture?()
+    guard let open = openCapture else { return }
+    openCapture = nil
+    let api = self.api
+    // If this fails, the window closes by itself within seconds.
+    Task { try? await api.cancelCardCapture(captureId: open.id, ticket: open.ticket) }
+  }
   func pricingDate(_ date: String) async throws -> PrismShopResponse { try await api.request(shopPath() + "?date=" + date) }
 
   func bindPlatformIdentity() async {

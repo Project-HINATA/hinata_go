@@ -4597,6 +4597,23 @@
         }
       }
     },
+    "离开页面后已取消添加，请重新添加" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adding was cancelled because you left the page. Please try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "离开页面后已取消添加，请重新添加"
+          }
+        }
+      }
+    },
     "没有读到卡片" : {
       "extractionState" : "manual",
       "localizations" : {

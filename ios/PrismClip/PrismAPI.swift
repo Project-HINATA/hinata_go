@@ -141,6 +141,13 @@ final class PrismAPI {
     return try await request("/api/v1/devices/session/cards/capture", body: body)
   }
 
+  func cancelCardCapture(captureId: String, ticket: String) async throws {
+    let id = captureId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/?#%"))) ?? ""
+    let query = ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&=+"))) ?? ""
+    let request = try makeRequest(path: "/api/v1/devices/session/cards/capture/\(id)?ticket=\(query)", method: "DELETE")
+    let _: EmptyResponse = try await send(request)
+  }
+
   func cardCaptureResult(captureId: String, ticket: String) async throws -> PrismCardCaptureResult {
     let id = captureId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/?#%"))) ?? ""
     let query = ticket.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&=+"))) ?? ""
