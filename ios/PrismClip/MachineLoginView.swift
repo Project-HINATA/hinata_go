@@ -365,6 +365,7 @@ private struct ClipSessionPage: View {
         }
         let note = button.answerOnButton == true && button.enabled && model.inlineNoticeAnchor == button.id ? model.inlineNotice : nil
         let waiting = model.pressing == button.id || (button.action == "power.on" && model.waitingPower)
+        let off = busy || waiting || !button.enabled || (button.requires.map { !agreed.contains($0) } ?? false)
         Button { Task { await model.press(button) } } label: {
           HStack(spacing: 10) {
             if waiting { ProgressView() }
@@ -372,12 +373,12 @@ private struct ClipSessionPage: View {
             else if let symbol = Self.buttonSymbols[button.icon ?? ""] { Image(systemName: symbol) }
             Text(verbatim: note?.body ?? (model.pageCode != nil ? button.againLabel : nil) ?? button.label)
           }
-          // A primary button's words are the button style's, which also knows when it is disabled.
-          .modifier(ClipLabelTint(color: note.map { noticeColor($0.level) } ?? (button.style == "primary" ? nil : Color.primary)))
+          // Left to the button style when it has to show being disabled, which a set colour would hide.
+          .modifier(ClipLabelTint(color: note.map { noticeColor($0.level) } ?? (button.style == "primary" || off ? nil : Color.primary)))
           .frame(maxWidth: .infinity).padding(.vertical, 12)
         }
         .clipActionStyle(primary: button.style == "primary")
-        .disabled(busy || waiting || !button.enabled || (button.requires.map { !agreed.contains($0) } ?? false))
+        .disabled(off)
         if button.answerOnButton != true { AnchoredNotice([button.id]) }
       }
     }
