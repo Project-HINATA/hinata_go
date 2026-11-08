@@ -323,7 +323,7 @@ const List<_CardFieldDefinition<HasEPass>> _epassFieldDefinitions = [
 
 const List<_CardFieldDefinition<Felica>> _felicaSecondaryFieldDefinitions = [
   _CardFieldDefinition(label: 'PMm', extractor: _felicaPmm, groupInFours: true),
-  _CardFieldDefinition(label: 'Codes', extractor: _felicaSystemCode),
+  _CardFieldDefinition(label: 'System Codes', extractor: _felicaSystemCode),
 ];
 
 const List<_CardFieldDefinition<Iso14443>> _iso14443FieldDefinitions = [

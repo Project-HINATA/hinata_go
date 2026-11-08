@@ -302,7 +302,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pmm => 'PMm';
 
   @override
-  String get systemCode => 'System Code';
+  String get systemCode => 'System Codes';
 
   @override
   String get banapassData => 'Banapassport 数据';

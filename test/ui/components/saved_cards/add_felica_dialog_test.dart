@@ -65,7 +65,7 @@ void main() {
     await tester.enterText(field('IDm'), '01 14 B3 A4 1E 2C 5D 6F');
     await tester.enterText(field('PMm'), '100B4B428485D0FF');
     expect(saveButton(tester).onPressed, isNull);
-    await tester.enterText(field('System Code'), '0003, FE00');
+    await tester.enterText(field('System Codes'), '0003, FE00');
     await tester.pump();
     expect(saveButton(tester).onPressed, isNotNull);
 
@@ -92,7 +92,7 @@ void main() {
     await tester.enterText(field('Name / Description'), 'Bad');
     await tester.enterText(field('IDm'), '0114B3');
     await tester.enterText(field('PMm'), '100B4B428485D0FF');
-    await tester.enterText(field('System Code'), '0003, 0003');
+    await tester.enterText(field('System Codes'), '0003, 0003');
     await tester.pump();
 
     expect(find.text('Enter exactly 16 hex digits'), findsOneWidget);

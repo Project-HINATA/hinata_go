@@ -647,7 +647,7 @@ abstract class AppLocalizations {
   /// FeliCa system code
   ///
   /// In en, this message translates to:
-  /// **'System Code'**
+  /// **'System Codes'**
   String get systemCode;
 
   /// Bandai Namco Banapassport data

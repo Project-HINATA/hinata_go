@@ -419,7 +419,7 @@
   "@pmm": {
     "description": "FeliCa PMm field"
   },
-  "systemCode": "System Code",
+  "systemCode": "System Codes",
   "@systemCode": {
     "description": "FeliCa system code"
   },
