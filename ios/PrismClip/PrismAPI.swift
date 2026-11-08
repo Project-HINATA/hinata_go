@@ -313,10 +313,12 @@ final class PrismAPI {
         return result
       } catch let error as URLError {
         if reported, error.code != .cancelled { PrismPageReport.note(request, since: startedAt, answered: false) }
-        guard attempt < 3, Self.isRetryable(request), [.networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost].contains(error.code) else { throw error }
+        guard attempt < 4, Self.isRetryable(request), [.networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost, .cannotFindHost, .dnsLookupFailed].contains(error.code) else { throw error }
+        // Back from the background the radio can take a few seconds; 0.3 s, 1 s, then 2.5 s.
+        let wait: UInt64 = [300_000_000, 1_000_000_000, 2_500_000_000][attempt - 1]
         attempt += 1
         PrismPageReport.noteRetry()
-        try await Task.sleep(nanoseconds: 300_000_000)
+        try await Task.sleep(nanoseconds: wait)
       }
     }
   }

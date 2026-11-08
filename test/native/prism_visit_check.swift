@@ -110,7 +110,7 @@ enum PersistentCookieCheck {
         sessionStarts += 1
         // Echo the requested machine so routing can be asserted per link.
         let requested = (body["publicId"] as? String) ?? "device"
-        return ok(["ticket":"ticket-\(sessionStarts)", "expiresIn":300, "machine":["publicId":requested, "name":"Device", "webOnly":true, "coinAfterSwipe":true, "capabilities":capabilities, "shop":["name":"Store", "latitude":35,"longitude":139,"radiusMeters":80,"machineGeo":false,"billingEnabled":billing]]])
+        return ok(["ticket":"ticket-\(sessionStarts)", "expiresIn":300, "machine":["publicId":requested, "name":"Device", "webOnly":true, "capabilities":capabilities, "shop":["name":"Store", "latitude":35,"longitude":139,"radiusMeters":80,"machineGeo":false,"billingEnabled":billing]]])
       case "/api/v1/appclip/auth/exchange":
         precondition(body["code"] as? String == "oauth-code")
         signedIn = true

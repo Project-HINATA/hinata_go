@@ -528,6 +528,9 @@ final class MachineLoginViewModel: ObservableObject {
       polling = nil
       closeLiveState()
       await PrismPageReport.shared.flush(api: api)
+    } else if case .failed = state, currentInvocation != nil {
+      // A link that failed to open, often on a network not yet back, is opened again on return.
+      await reloadCurrentOrigin()
     } else if ![.loadingMachine, .loadingShop, .loadingCards].contains(state) {
       StoreVisitLiveActivityManager.shared.recoverExistingActivities(api: self.api)
       if deviceBusy { refreshPending = true; scheduleRefresh() }

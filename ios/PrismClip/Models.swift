@@ -88,7 +88,6 @@ struct PublicMachine: Decodable {
   let shop: Shop
   let webOnly: Bool?
   let capabilities: [String: Bool]?
-  let coinAfterSwipe: Bool?
   /// A card can be added at this cabinet's reader.
   var cardCapture: Bool? = nil
   func has(_ capability: String) -> Bool { capabilities == nil ? capability == "card" : capabilities?[capability] == true }
