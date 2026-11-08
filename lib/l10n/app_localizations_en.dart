@@ -1130,6 +1130,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ndefWriteVerifying => 'Reading back to verify';
 
   @override
+  String get ndefWriteRewritableDescription =>
+      'The tag can be written again later.';
+
+  @override
+  String get ndefWritePermanentDescription =>
+      'The tag is locked read-only after writing. NTAG sets its lock bits and MIFARE Classic locks its sector access control. This cannot be undone.';
+
+  @override
+  String get ndefWritePermanentConfirmTitle => 'Permanently lock this tag?';
+
+  @override
+  String get ndefWritePermanentConfirmBody =>
+      'After writing, the tag becomes read-only on every device. Its NDEF content can never be changed or erased again.';
+
+  @override
+  String get ndefWriteLocking => 'Locking the tag';
+
+  @override
+  String get ndefLockUnsupported =>
+      'This tag cannot be made read-only. Nothing was written.';
+
+  @override
   String get cardEmulate => 'Emulate';
 
   @override

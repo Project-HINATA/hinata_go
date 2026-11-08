@@ -20,6 +20,7 @@ enum MifareWriteFailure {
   authenticationFailed,
   invalidAccessBits,
   permissionDenied,
+  lockUnsupported,
   cardRemoved,
   writeFailed,
   verificationFailed,

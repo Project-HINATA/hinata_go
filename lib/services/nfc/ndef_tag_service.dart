@@ -14,6 +14,31 @@ const _madKey = [0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5];
 const _ndefKey = [0xd3, 0xf7, 0xd3, 0xf7, 0xd3, 0xf7];
 const _defaultKey = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
 
+/// GPB of a read-only NDEF sector: mapping version 1.0, read access granted,
+/// write access denied (NXP AN1305).
+const _readOnlyNdefGpb = 0x43;
+
+/// Data blocks readable with either key and never writable; the trailer frozen
+/// for good (keys and access bits can never be written again). Encodes as
+/// `07 8F 0F`, the read-only access bits of NXP AN1305.
+MifareSectorAccess _readOnlyClassicAccess(int gpb) => MifareSectorAccess(
+  block0: MifareAccessCondition.fromValue(2),
+  block1: MifareAccessCondition.fromValue(2),
+  block2: MifareAccessCondition.fromValue(2),
+  trailer: MifareAccessCondition.fromValue(6),
+  gpb: gpb,
+);
+
+/// Dynamic lock bytes 0-2 that lock every user page from 10h onward, with the
+/// RFUI bits left clear (NTAG213/215/216 data sheet, 8.5.3).
+const _ntagDynamicLocks = {
+  0x0f: [0xff, 0x0f, 0x3f],
+  0x11: [0xff, 0x00, 0x0f],
+  0x13: [0xff, 0x3f, 0x7f],
+};
+
+typedef _Lock = Future<void> Function();
+
 int madCrc(List<int> bytes) {
   var crc = 0xc7;
   for (final byte in bytes) {
@@ -81,7 +106,7 @@ class NdefTagService {
     int? capacity;
     if (tag is Iso14443) {
       if (tag.isMifareClassicCandidate) {
-        final sectors = await _readMad(tag);
+        final sectors = (await _readMad(tag))?.sectors;
         if (sectors == null) return null;
         final bytes = BytesBuilder();
         for (final sector in sectors) {
@@ -119,11 +144,15 @@ class NdefTagService {
         : NdefCard(message, physicalCard: tag, capacity: capacity);
   }
 
+  /// Writes [card] and verifies it. With [readOnly] the tag is then locked for
+  /// good, after the content has been verified: NTAG21x by its capability
+  /// container and lock bytes, MIFARE Classic by its sector trailers.
   Future<void> write(
     Iso14443 tag,
     NdefCard card, {
     MifareWriteStageCallback? onStage,
     bool Function()? isCancelled,
+    bool readOnly = false,
   }) async {
     onStage?.call(MifareWriteStage.checkingCard);
     void checkCancelled() {
@@ -134,10 +163,22 @@ class NdefTagService {
 
     checkCancelled();
     onStage?.call(MifareWriteStage.checkingPermissions);
+    final _Lock? lock;
     if (tag.isMifareClassicCandidate) {
-      await _writeClassic(tag, card.message, onStage, checkCancelled);
+      lock = await _writeClassic(
+        tag,
+        card.message,
+        onStage,
+        checkCancelled,
+        readOnly: readOnly,
+      );
     } else if (tag.sak == 0 && tag.id.length == 7) {
-      await _writeNtag(card.message, onStage, checkCancelled);
+      lock = await _writeNtag(
+        card.message,
+        onStage,
+        checkCancelled,
+        readOnly: readOnly,
+      );
     } else {
       _fail(
         MifareWriteFailure.unsupportedCard,
@@ -145,8 +186,18 @@ class NdefTagService {
       );
     }
     onStage?.call(MifareWriteStage.verifying);
+    await _verifyMessage(tag, card.message);
+    if (lock == null) return;
+
+    onStage?.call(MifareWriteStage.lockingCard);
+    await lock();
+    onStage?.call(MifareWriteStage.verifying);
+    await _verifyMessage(tag, card.message);
+  }
+
+  Future<void> _verifyMessage(Iso14443 tag, Uint8List expected) async {
     final actual = await read(tag);
-    if (actual == null || !listEquals(actual.message, card.message)) {
+    if (actual == null || !listEquals(actual.message, expected)) {
       _fail(MifareWriteFailure.verificationFailed, 'NDEF read-back mismatch');
     }
   }
@@ -167,7 +218,7 @@ class NdefTagService {
     return bytes;
   }
 
-  Future<List<int>?> _readMad(Iso14443 tag) async {
+  Future<({List<int> sectors, int version})?> _readMad(Iso14443 tag) async {
     if (tag.sak != 0x08 && tag.sak != 0x18) return null;
     try {
       await channel.reconnect();
@@ -209,13 +260,19 @@ class NdefTagService {
         17,
       );
     }
-    return sectors.isEmpty ? null : sectors;
+    return sectors.isEmpty ? null : (sectors: sectors, version: version);
   }
 
+  /// Finds a known key that may do everything planned for [sector]: read and
+  /// write its data blocks when [writesData], rewrite its trailer when
+  /// [writesTrailer]. [checksMapping] rejects an NDEF sector that is already
+  /// read-only or mapped differently.
   Future<MifareCredential> _manager(
     Iso14443 tag,
     int sector, {
-    required bool format,
+    bool writesData = true,
+    required bool writesTrailer,
+    required bool checksMapping,
   }) async {
     final candidates = [
       for (final key in [_defaultKey, _madKey, _ndefKey, banaKey, aimeKey])
@@ -230,7 +287,7 @@ class NdefTagService {
         authenticated = true;
         final trailer = await _readBlock(_trailer(sector));
         final access = MifareSectorAccess.decode(trailer);
-        if (!format && (trailer[9] & 0x0f != 0 || trailer[9] >> 6 != 1)) {
+        if (checksMapping && (trailer[9] & 0x0f != 0 || trailer[9] >> 6 != 1)) {
           _fail(
             MifareWriteFailure.permissionDenied,
             'NDEF sector $sector is read-only or has an unsupported mapping',
@@ -245,16 +302,17 @@ class NdefTagService {
           }
         }
         final groups = sector == 0 ? [1, 2] : [0, 1, 2];
-        if (groups.every(
-              (group) =>
-                  access
-                      .permissionsForBlock(group)
-                      .allows(credential.type, MifareDataOperation.write) &&
-                  access
-                      .permissionsForBlock(group)
-                      .allows(credential.type, MifareDataOperation.read),
-            ) &&
-            (!format ||
+        if ((!writesData ||
+                groups.every(
+                  (group) =>
+                      access
+                          .permissionsForBlock(group)
+                          .allows(credential.type, MifareDataOperation.write) &&
+                      access
+                          .permissionsForBlock(group)
+                          .allows(credential.type, MifareDataOperation.read),
+                )) &&
+            (!writesTrailer ||
                 access.trailerPermissions.canWriteEntireTrailer(
                   credential.type,
                 ))) {
@@ -277,17 +335,19 @@ class NdefTagService {
     );
   }
 
-  Future<void> _writeClassic(
+  Future<_Lock?> _writeClassic(
     Iso14443 tag,
     Uint8List message,
     MifareWriteStageCallback? onStage,
-    void Function() checkCancelled,
-  ) async {
+    void Function() checkCancelled, {
+    required bool readOnly,
+  }) async {
     if ((tag.sak != 8 && tag.sak != 0x18) ||
         (tag.id.length != 4 && tag.id.length != 7)) {
       _fail(MifareWriteFailure.unsupportedCard, 'Unsupported Classic geometry');
     }
-    final existing = await _readMad(tag);
+    final mad = await _readMad(tag);
+    final existing = mad?.sectors;
     final format = existing == null;
     final sectors =
         existing ??
@@ -300,15 +360,25 @@ class NdefTagService {
     if (tlv.length > dataBlocks.length * 16) {
       _fail(MifareWriteFailure.capacityExceeded, 'NDEF exceeds card capacity');
     }
-    final managers = <int, MifareCredential>{};
-    final affected = [
-      if (format) 0,
-      ...sectors,
-      if (format && tag.sak == 0x18) 16,
+    // The directory sectors a formatted card ends up with; a read-only card
+    // has them locked too, so no one can point the directory elsewhere.
+    final madSectors = [
+      0,
+      if (tag.sak == 0x18 && (format || mad?.version == 2)) 16,
     ];
-    for (final sector in affected) {
+    final managers = <int, MifareCredential>{};
+    // Every key is checked before the first write, so a card that could not
+    // be locked is never left half done.
+    for (final sector in {if (format || readOnly) ...madSectors, ...sectors}) {
       checkCancelled();
-      managers[sector] = await _manager(tag, sector, format: format);
+      final isMad = madSectors.contains(sector);
+      managers[sector] = await _manager(
+        tag,
+        sector,
+        writesData: format || !isMad,
+        writesTrailer: format || readOnly,
+        checksMapping: !format && !isMad,
+      );
     }
     checkCancelled();
     onStage?.call(MifareWriteStage.writingData);
@@ -365,6 +435,61 @@ class NdefTagService {
           : managers[sectors.first]!,
     );
     await _writeBlock(dataBlocks.first, Uint8List.sublistView(padded, 0, 16));
+    if (!readOnly) return null;
+
+    // Formatting left every trailer writable with the default key B.
+    MifareCredential lockCredential(int sector) => format
+        ? MifareCredential(MifareKeyType.b, _defaultKey)
+        : managers[sector]!;
+    return () async {
+      for (final sector in sectors) {
+        await _lockClassicSector(
+          tag,
+          sector,
+          lockCredential(sector),
+          keyA: _ndefKey,
+          gpb: (_) => _readOnlyNdefGpb,
+        );
+      }
+      // The directory last, so it never describes sectors still open.
+      for (final sector in madSectors) {
+        await _lockClassicSector(
+          tag,
+          sector,
+          lockCredential(sector),
+          keyA: _madKey,
+          gpb: (current) => current,
+        );
+      }
+    };
+  }
+
+  /// Freezes [sector]: its data stays readable with the public [keyA] and
+  /// nothing in it, the trailer included, can be written again.
+  Future<void> _lockClassicSector(
+    Iso14443 tag,
+    int sector,
+    MifareCredential credential, {
+    required List<int> keyA,
+    required int Function(int current) gpb,
+  }) async {
+    await channel.reconnect();
+    await _auth(tag, sector, credential);
+    final current = await _readBlock(_trailer(sector));
+    final access = _readOnlyClassicAccess(gpb(current[9]));
+    await channel.writeMifareBlock(
+      _trailer(sector),
+      Uint8List.fromList([...keyA, ...access.encode(), ..._defaultKey]),
+    );
+    await channel.reconnect();
+    await _auth(tag, sector, MifareCredential(MifareKeyType.a, keyA));
+    final locked = await _readBlock(_trailer(sector));
+    if (MifareSectorAccess.decode(locked) != access) {
+      _fail(
+        MifareWriteFailure.verificationFailed,
+        'Sector $sector did not lock',
+      );
+    }
   }
 
   Future<void> _writeClassicTrailer(
@@ -414,11 +539,12 @@ class NdefTagService {
     return bytes;
   }
 
-  Future<void> _writeNtag(
+  Future<_Lock?> _writeNtag(
     Uint8List message,
     MifareWriteStageCallback? onStage,
-    void Function() checkCancelled,
-  ) async {
+    void Function() checkCancelled, {
+    required bool readOnly,
+  }) async {
     final version = await channel.transceive(Uint8List.fromList([0x60]));
     if (version.length != 8 ||
         version[1] != 4 ||
@@ -491,9 +617,35 @@ class NdefTagService {
       );
     }
     await _writePage(4, Uint8List.sublistView(padded, 0, 4));
+    if (!readOnly) return null;
+
+    final dynamicLocks = _ntagDynamicLocks[version[6]]!;
+    return () async {
+      // The capability container goes first: once the static lock bits are
+      // set, its page can no longer be written.
+      await _sendPage(
+        3,
+        Uint8List.fromList([header[12], header[13], header[14], 0x0f]),
+      );
+      await _sendPage(dynamicPage, Uint8List.fromList([...dynamicLocks, 0]));
+      // Bytes 0-1 of page 2 are not affected by a WRITE; only the lock bytes
+      // are OR'ed in.
+      await _sendPage(
+        2,
+        Uint8List.fromList([header[8], header[9], 0xff, 0xff]),
+      );
+      final lockedHeader = await _readPages(0);
+      final lockedDynamic = await _readPages(dynamicPage);
+      if (lockedHeader[10] != 0xff ||
+          lockedHeader[11] != 0xff ||
+          lockedHeader[15] != 0x0f ||
+          !listEquals(lockedDynamic.sublist(0, 3), dynamicLocks)) {
+        _fail(MifareWriteFailure.verificationFailed, 'NTAG did not lock');
+      }
+    };
   }
 
-  Future<void> _writePage(int page, Uint8List bytes) async {
+  Future<void> _sendPage(int page, Uint8List bytes) async {
     final ack = await channel.transceive(
       Uint8List.fromList([0xa2, page, ...bytes]),
     );
@@ -501,6 +653,10 @@ class NdefTagService {
     if (ack.isNotEmpty && (ack.length != 1 || ack[0] != 0x0a)) {
       _fail(MifareWriteFailure.writeFailed, 'NTAG rejected WRITE');
     }
+  }
+
+  Future<void> _writePage(int page, Uint8List bytes) async {
+    await _sendPage(page, bytes);
     if (!listEquals((await _readPages(page)).sublist(0, 4), bytes)) {
       _fail(MifareWriteFailure.verificationFailed, 'Page $page mismatch');
     }

@@ -31,11 +31,15 @@ Future<NdefCard> readPhoneNdef(NFCTag tag) async {
   );
 }
 
+/// Writes [card] through the system NDEF stack. With [readOnly] the tag is
+/// then locked by the system, after the content has been verified; a tag the
+/// system cannot lock is refused before anything is written.
 Future<void> writePhoneNdef(
   NFCTag tag,
   NdefCard card, {
   required MifareWriteStageCallback onStage,
   required bool Function() isCancelled,
+  bool readOnly = false,
 }) async {
   onStage(MifareWriteStage.checkingPermissions);
   if (tag.ndefAvailable != true) {
@@ -48,6 +52,12 @@ Future<void> writePhoneNdef(
     throw const MifareCardWriteException(
       MifareWriteFailure.permissionDenied,
       'NDEF tag is read-only',
+    );
+  }
+  if (readOnly && tag.ndefCanMakeReadOnly != true) {
+    throw const MifareCardWriteException(
+      MifareWriteFailure.lockUnsupported,
+      'The system cannot make this tag read-only',
     );
   }
   final encoded = ndef.encodeNdefMessage(card.records);
@@ -81,6 +91,25 @@ Future<void> writePhoneNdef(
     throw const MifareCardWriteException(
       MifareWriteFailure.verificationFailed,
       'NDEF read-back mismatch',
+    );
+  }
+  if (!readOnly) return;
+
+  onStage(MifareWriteStage.lockingCard);
+  try {
+    await FlutterNfcKit.makeNdefReadOnly();
+  } catch (error) {
+    throw MifareCardWriteException(
+      MifareWriteFailure.writeFailed,
+      'The system could not make the tag read-only',
+      cause: error,
+    );
+  }
+  onStage(MifareWriteStage.verifying);
+  if (!listEquals(encoded, (await readPhoneNdef(tag)).message)) {
+    throw const MifareCardWriteException(
+      MifareWriteFailure.verificationFailed,
+      'NDEF read-back mismatch after locking',
     );
   }
 }

@@ -2144,6 +2144,42 @@ abstract class AppLocalizations {
   /// **'Reading back to verify'**
   String get ndefWriteVerifying;
 
+  /// No description provided for @ndefWriteRewritableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The tag can be written again later.'**
+  String get ndefWriteRewritableDescription;
+
+  /// No description provided for @ndefWritePermanentDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The tag is locked read-only after writing. NTAG sets its lock bits and MIFARE Classic locks its sector access control. This cannot be undone.'**
+  String get ndefWritePermanentDescription;
+
+  /// No description provided for @ndefWritePermanentConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently lock this tag?'**
+  String get ndefWritePermanentConfirmTitle;
+
+  /// No description provided for @ndefWritePermanentConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'After writing, the tag becomes read-only on every device. Its NDEF content can never be changed or erased again.'**
+  String get ndefWritePermanentConfirmBody;
+
+  /// No description provided for @ndefWriteLocking.
+  ///
+  /// In en, this message translates to:
+  /// **'Locking the tag'**
+  String get ndefWriteLocking;
+
+  /// No description provided for @ndefLockUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This tag cannot be made read-only. Nothing was written.'**
+  String get ndefLockUnsupported;
+
   /// No description provided for @cardEmulate.
   ///
   /// In en, this message translates to:

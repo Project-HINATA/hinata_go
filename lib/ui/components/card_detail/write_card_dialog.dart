@@ -18,54 +18,24 @@ Future<void> showCardWriteFlow(
   SavedCard card,
 ) async {
   final isNdef = card.card is NdefCard;
-  final mode = isNdef
-      ? (await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text(l10n.ndefWriteTitle),
-                    content: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _WarningRow(text: l10n.ndefWriteOverwrite),
-                            _WarningRow(text: l10n.ndefWriteClassicWarning),
-                            _WarningRow(text: l10n.ndefWriteKeepTag),
-                            if (defaultTargetPlatform == TargetPlatform.iOS)
-                              _WarningRow(text: l10n.ndefWriteIosLimit),
-                          ],
-                        ),
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text(l10n.cancel),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text(l10n.cardWriteStart),
-                      ),
-                    ],
-                  ),
-                ) ==
-                true
-            ? CardWriteMode.rewritable
-            : null)
-      : await showDialog<CardWriteMode>(
-          context: context,
-          builder: (context) => const _WriteOptionsDialog(),
-        );
+  final mode = await showDialog<CardWriteMode>(
+    context: context,
+    builder: (context) => _WriteOptionsDialog(isNdef: isNdef),
+  );
   if (mode == null || !context.mounted) return;
 
   if (mode == CardWriteMode.permanentlyReadOnly) {
+    final title = isNdef
+        ? l10n.ndefWritePermanentConfirmTitle
+        : l10n.cardWritePermanentConfirmTitle;
+    final body = isNdef
+        ? l10n.ndefWritePermanentConfirmBody
+        : l10n.cardWritePermanentConfirmBody;
     final confirmed = useCupertinoChrome
         ? await showNativeConfirmation(
             context,
-            title: l10n.cardWritePermanentConfirmTitle,
-            message: l10n.cardWritePermanentConfirmBody,
+            title: title,
+            message: body,
             confirmLabel: l10n.cardWriteConfirmPermanent,
             destructive: true,
           )
@@ -76,8 +46,8 @@ Future<void> showCardWriteFlow(
                 Icons.lock_outline,
                 color: Theme.of(context).colorScheme.error,
               ),
-              title: Text(l10n.cardWritePermanentConfirmTitle),
-              content: Text(l10n.cardWritePermanentConfirmBody),
+              title: Text(title),
+              content: Text(body),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
@@ -107,13 +77,15 @@ Future<void> showCardWriteFlow(
 }
 
 class _WriteOptionsDialog extends HookWidget {
-  const _WriteOptionsDialog();
+  final bool isNdef;
+
+  const _WriteOptionsDialog({required this.isNdef});
 
   @override
   Widget build(BuildContext context) {
     final mode = useState(CardWriteMode.rewritable);
     return AlertDialog(
-      title: Text(l10n.cardWriteTitle),
+      title: Text(isNdef ? l10n.ndefWriteTitle : l10n.cardWriteTitle),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 460),
         child: SingleChildScrollView(
@@ -121,9 +93,17 @@ class _WriteOptionsDialog extends HookWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _WarningRow(text: l10n.cardWriteWarningWritable),
-              _WarningRow(text: l10n.cardWriteWarningUid),
-              _WarningRow(text: l10n.cardWriteWarningCompatibility),
+              if (isNdef) ...[
+                _WarningRow(text: l10n.ndefWriteOverwrite),
+                _WarningRow(text: l10n.ndefWriteClassicWarning),
+                _WarningRow(text: l10n.ndefWriteKeepTag),
+                if (defaultTargetPlatform == TargetPlatform.iOS)
+                  _WarningRow(text: l10n.ndefWriteIosLimit),
+              ] else ...[
+                _WarningRow(text: l10n.cardWriteWarningWritable),
+                _WarningRow(text: l10n.cardWriteWarningUid),
+                _WarningRow(text: l10n.cardWriteWarningCompatibility),
+              ],
               const SizedBox(height: 20),
               Text(
                 l10n.cardWriteMode,
@@ -147,12 +127,16 @@ class _WriteOptionsDialog extends HookWidget {
                 onSelectionChanged: (selection) => mode.value = selection.first,
               ),
               const SizedBox(height: 8),
-              Text(
-                mode.value == CardWriteMode.rewritable
-                    ? l10n.cardWriteRewritableDescription
-                    : l10n.cardWritePermanentDescription,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text(switch ((mode.value, isNdef)) {
+                (CardWriteMode.rewritable, true) =>
+                  l10n.ndefWriteRewritableDescription,
+                (CardWriteMode.rewritable, false) =>
+                  l10n.cardWriteRewritableDescription,
+                (CardWriteMode.permanentlyReadOnly, true) =>
+                  l10n.ndefWritePermanentDescription,
+                (CardWriteMode.permanentlyReadOnly, false) =>
+                  l10n.cardWritePermanentDescription,
+              }, style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),
@@ -282,7 +266,8 @@ class _WriteProgressDialog extends ConsumerWidget {
       MifareWriteStage.checkingPermissions => l10n.cardWriteCheckingPermissions,
       MifareWriteStage.writingData =>
         isNdef ? l10n.ndefWriteData : l10n.cardWriteWritingData,
-      MifareWriteStage.lockingCard => l10n.cardWriteLockingCard,
+      MifareWriteStage.lockingCard =>
+        isNdef ? l10n.ndefWriteLocking : l10n.cardWriteLockingCard,
       MifareWriteStage.verifying =>
         isNdef ? l10n.ndefWriteVerifying : l10n.cardWriteVerifying,
       null => l10n.cardWriteWaitingForCard,
@@ -296,6 +281,7 @@ class _WriteProgressDialog extends ConsumerWidget {
     MifareWriteFailure.authenticationFailed => l10n.cardWriteUnknownKey,
     MifareWriteFailure.invalidAccessBits => l10n.cardWriteInvalidAccessBits,
     MifareWriteFailure.permissionDenied => l10n.cardWritePermissionDenied,
+    MifareWriteFailure.lockUnsupported => l10n.ndefLockUnsupported,
     MifareWriteFailure.cardRemoved => l10n.cardWriteCardRemoved,
     MifareWriteFailure.verificationFailed => l10n.cardWriteVerificationFailed,
     MifareWriteFailure.cancelled => l10n.cardWriteCancelled,

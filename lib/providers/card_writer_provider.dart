@@ -130,6 +130,7 @@ class CardWriter extends Notifier<CardWriterState> {
             ndefCard,
             onStage: onStage,
             isCancelled: () => _cancelRequested,
+            readOnly: mode == CardWriteMode.permanentlyReadOnly,
           );
         } else if (targetTag is Iso14443) {
           await NdefTagService(target.channel).write(
@@ -137,6 +138,7 @@ class CardWriter extends Notifier<CardWriterState> {
             ndefCard,
             isCancelled: () => _cancelRequested,
             onStage: onStage,
+            readOnly: mode == CardWriteMode.permanentlyReadOnly,
           );
         } else {
           throw const MifareCardWriteException(
@@ -328,6 +330,7 @@ class CardWriter extends Notifier<CardWriterState> {
         MifareWriteFailure.authenticationFailed => l10n.cardWriteUnknownKey,
         MifareWriteFailure.invalidAccessBits => l10n.cardWriteInvalidAccessBits,
         MifareWriteFailure.permissionDenied => l10n.cardWritePermissionDenied,
+        MifareWriteFailure.lockUnsupported => l10n.ndefLockUnsupported,
         MifareWriteFailure.cardRemoved => l10n.cardWriteCardRemoved,
         MifareWriteFailure.verificationFailed =>
           l10n.cardWriteVerificationFailed,

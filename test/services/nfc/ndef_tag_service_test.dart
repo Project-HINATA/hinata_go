@@ -134,6 +134,86 @@ void main() {
       expect(channel.writes, isEmpty);
     },
   );
+  for (final large in [false, true]) {
+    test(
+      'locks a freshly formatted Classic ${large ? '4K' : '1K'} read-only after verifying it',
+      () async {
+        final channel = _Classic(large: large);
+        final service = NdefTagService(channel);
+        await service.write(tag(large), message, readOnly: true);
+
+        expect((await service.read(tag(large)))!.message, message.message);
+        final lastData = channel.writes.lastIndexWhere((b) => !_isTrailer(b));
+        final ndefTrailers = [
+          for (var s = 1; s < (large ? 40 : 16); s++)
+            if (s != 16) s < 32 ? s * 4 + 3 : 128 + (s - 32) * 16 + 15,
+        ];
+        final madTrailers = [3, if (large) 67];
+        for (final trailer in ndefTrailers) {
+          expect(channel.blocks[trailer]!.sublist(0, 10), [
+            0xd3, 0xf7, 0xd3, 0xf7, 0xd3, 0xf7, 0x07, 0x8f, 0x0f, 0x43, //
+          ]);
+        }
+        expect(channel.blocks[3]!.sublist(0, 10), [
+          0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0x07, 0x8f, 0x0f, //
+          large ? 0xc2 : 0xc1,
+        ]);
+        if (large) expect(channel.blocks[67]!.sublist(6, 10), [7, 0x8f, 15, 0]);
+        // The directory is locked last, after every NDEF sector.
+        expect(channel.writes.lastWhere(_isTrailer), madTrailers.last);
+        expect(
+          channel.writes.indexOf(ndefTrailers.first, lastData),
+          greaterThan(lastData),
+        );
+
+        channel.writes.clear();
+        await expectLater(
+          service.write(tag(large), message),
+          failure(MifareWriteFailure.permissionDenied),
+        );
+        expect(channel.writes, isEmpty);
+      },
+    );
+  }
+  test('locks an already formatted Classic card in place', () async {
+    final channel = _Classic();
+    final service = NdefTagService(channel);
+    await service.write(tag(), message);
+    channel.writes.clear();
+    final card = NdefCard.fromRecords([
+      ndef.UriRecord.fromString('https://example.org/locked'),
+    ]);
+    await service.write(tag(), card, readOnly: true);
+    expect((await service.read(tag()))!.message, card.message);
+    expect(channel.blocks[3]!.sublist(6, 10), [7, 0x8f, 15, 0xc1]);
+    expect(channel.blocks[7]!.sublist(6, 10), [7, 0x8f, 15, 0x43]);
+    expect(channel.blocks[63]!.sublist(6, 10), [7, 0x8f, 15, 0x43]);
+  });
+  test(
+    'refuses to lock before writing when a directory trailer cannot be rewritten',
+    () async {
+      final channel = _Classic();
+      final service = NdefTagService(channel);
+      await service.write(tag(), message);
+      channel.blocks[3]!.setRange(
+        6,
+        10,
+        MifareSectorAccess(
+          block0: MifareAccessCondition.fromValue(4),
+          block1: MifareAccessCondition.fromValue(4),
+          block2: MifareAccessCondition.fromValue(4),
+          trailer: MifareAccessCondition.fromValue(6),
+          gpb: 0xc1,
+        ).encode(),
+      );
+      channel.writes.clear();
+      await expectLater(
+        service.write(tag(), message, readOnly: true),
+        failure(MifareWriteFailure.permissionDenied),
+      );
+      expect(channel.writes, isEmpty);
+    },
+  );
   test('detects failed Classic writes through read-back', () async {
     final channel = _Classic()..dropWrites = true;
     await expectLater(
@@ -221,6 +301,52 @@ void main() {
       expect(channel.memory[40 * 4], 0);
     },
   );
+  for (final (storage, dynamicPage, locks) in [
+    (0x0f, 0x28, [0xff, 0x0f, 0x3f]),
+    (0x11, 0x82, [0xff, 0x00, 0x0f]),
+    (0x13, 0xe2, [0xff, 0x3f, 0x7f]),
+  ]) {
+    test(
+      'locks NTAG with storage $storage read-only after verifying it',
+      () async {
+        final channel = _Ntag(dynamicPage: dynamicPage)..storage = storage;
+        final service = NdefTagService(channel);
+        await service.write(ntag, message, readOnly: true);
+
+        expect((await service.read(ntag))!.message, message.message);
+        // CC first, while page 3 can still be written; static locks last.
+        expect(channel.writes.sublist(channel.writes.length - 3), [
+          3,
+          dynamicPage,
+          2,
+        ]);
+        expect(channel.memory.sublist(8, 16), [
+          0x56, 0x78, 0xff, 0xff, 0xe1, 0x10, 0x12, 0x0f, //
+        ]);
+        expect(channel.memory.sublist(dynamicPage * 4, dynamicPage * 4 + 4), [
+          ...locks,
+          0xbd,
+        ]);
+
+        channel.writes.clear();
+        await expectLater(
+          service.write(ntag, message),
+          failure(MifareWriteFailure.permissionDenied),
+        );
+        expect(channel.writes, isEmpty);
+      },
+    );
+  }
+  test('does not lock NTAG whose content fails verification', () async {
+    final channel = _Ntag()..dropDataWrites = true;
+    await expectLater(
+      NdefTagService(channel).write(ntag, message, readOnly: true),
+      failure(MifareWriteFailure.verificationFailed),
+    );
+    expect(channel.writes, isNot(contains(2)));
+    expect(channel.writes, isNot(contains(3)));
+    expect(channel.memory[15], 0);
+  });
   for (final location in [10, 11, 15, 160, 161, 162, 167]) {
     test(
       'rejects NTAG lock/protection byte at $location without writes',
@@ -368,15 +494,21 @@ class _Classic implements NfcCardChannel {
   Future<void> close() async {}
 }
 
+/// NTAG21x memory with the chip's write rules: the lock bytes and CC are
+/// OR'ed in, page 2 bytes 0-1 and dynamic lock byte 3 ignore writes.
 class _Ntag implements NfcCardChannel {
-  final memory = Uint8List(180);
+  final int dynamicPage;
+  final Uint8List memory;
   final writes = <int>[];
   int storage = 15;
-  _Ntag() {
+  bool dropDataWrites = false;
+  _Ntag({this.dynamicPage = 0x28}) : memory = Uint8List(dynamicPage * 4 + 20) {
+    memory.setRange(8, 10, [0x56, 0x78]);
     memory.setRange(12, 16, [0xe1, 0x10, 0x12, 0]);
     memory[16] = 3;
     memory[18] = 0xfe;
-    memory[167] = 255;
+    memory[dynamicPage * 4 + 3] = 0xbd;
+    memory[dynamicPage * 4 + 7] = 255;
   }
   @override
   Future<Uint8List> transceive(Uint8List data, {Duration? timeout}) async {
@@ -389,8 +521,27 @@ class _Ntag implements NfcCardChannel {
       ]);
     }
     if (data[0] == 0xa2) {
-      writes.add(data[1]);
-      memory.setRange(data[1] * 4, data[1] * 4 + 4, data.sublist(2));
+      final page = data[1];
+      final start = page * 4;
+      final staticLocked = memory[10] == 0xff && memory[11] == 0xff;
+      if (staticLocked && page >= 3 && page < 16) {
+        return Uint8List.fromList([0]);
+      }
+      writes.add(page);
+      if (page == 2) {
+        memory[10] |= data[4];
+        memory[11] |= data[5];
+      } else if (page == 3) {
+        for (var i = 0; i < 4; i++) {
+          memory[start + i] |= data[2 + i];
+        }
+      } else if (page == dynamicPage) {
+        for (var i = 0; i < 3; i++) {
+          memory[start + i] |= data[2 + i];
+        }
+      } else if (!dropDataWrites) {
+        memory.setRange(start, start + 4, data.sublist(2));
+      }
       return Uint8List.fromList([0x0a]);
     }
     throw StateError('Unexpected command');

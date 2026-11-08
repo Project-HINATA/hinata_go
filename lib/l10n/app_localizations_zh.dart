@@ -1093,6 +1093,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ndefWriteVerifying => '正在回读验证';
 
   @override
+  String get ndefWriteRewritableDescription => '之后仍可再次写入这个标签。';
+
+  @override
+  String get ndefWritePermanentDescription =>
+      '写入后标签会被锁定为只读：NTAG 写入锁定位，MIFARE Classic 锁死扇区访问控制，无法恢复。';
+
+  @override
+  String get ndefWritePermanentConfirmTitle => '永久锁定这个标签？';
+
+  @override
+  String get ndefWritePermanentConfirmBody =>
+      '写入后这个标签在所有设备上都将只读，NDEF 内容再也无法修改或清除。';
+
+  @override
+  String get ndefWriteLocking => '正在锁定标签';
+
+  @override
+  String get ndefLockUnsupported => '这个标签无法设为只读，未写入任何内容。';
+
+  @override
   String get cardEmulate => '模拟';
 
   @override
