@@ -2,6 +2,22 @@
 
 HINATA Go for Android, iOS and the web (<https://go.neri.moe>).
 
+## 2.10.0 - 2026-11-11
+
+### 中文
+
+- 全新设计的 NDEF 编辑器，支持电话、邮件、短信、位置、Wi-Fi、联系人、安卓应用等常用记录类型
+- 写入 NDEF 标签时可设为永久只读（锁定后不可恢复）
+- 历史记录改为按扫描时间倒序排列
+- iOS：优化部分页面的掉帧问题
+
+### English
+
+- Redesigned NDEF editor with support for common record types, including phone, email, SMS, location, Wi-Fi, contact and Android app
+- NDEF tags can be made permanently read-only when writing (this cannot be undone)
+- History is now sorted by scan time, newest first
+- iOS: Reduced frame drops on some pages
+
 ## 2.9.0 - 2026-11-03
 
 ### 中文
