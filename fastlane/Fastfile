@@ -11,6 +11,16 @@ def prepare_app_store_version
   app = Spaceship::ConnectAPI::App.find(bundle_id)
   UI.user_error!("App #{bundle_id} not found in App Store Connect") if app.nil?
 
+  # ensure_version! renames whatever version is editable, and a version
+  # waiting for review counts as editable: it would turn the release under
+  # review into this one.
+  pending = app.get_edit_app_store_version(platform: platform)
+  if pending &&
+     pending.version_string != app_version &&
+     pending.app_version_state == Spaceship::ConnectAPI::AppStoreVersion::AppVersionState::WAITING_FOR_REVIEW
+    UI.user_error!("Version #{pending.version_string} is still waiting for review; let it finish or withdraw it before submitting #{app_version}")
+  end
+
   # deliver does the same before uploading; doing it first gives us the
   # version to fill in.
   app.ensure_version!(app_version, platform: platform)
@@ -35,19 +45,48 @@ def set_whats_new(version)
   end
 end
 
+# The App Clip the build embeds. App Store Connect still lists the clip the
+# app shipped before the rename (moe.neri.hinatago.ArcadeLink); a default
+# experience tied to that clip makes review submission fail with "The app clip
+# in the build does not match the app clip that is related to the app clip
+# version".
+APP_CLIP_BUNDLE_ID = "moe.neri.hinatago.prism"
+
+def app_clip_of_experience(experience_id)
+  Spaceship::ConnectAPI.get_app_clip_default_experience(
+    app_clip_default_experience_id: experience_id,
+    includes: "appClip"
+  ).body.dig("data", "relationships", "appClip", "data", "id")
+end
+
 def ensure_app_clip_default_experience(app, version, platform)
   tunes = Spaceship::ConnectAPI.client.tunes_request_client
+  app_clips = Spaceship::ConnectAPI.get_app_clips(app_id: app.id).body["data"]
+  return UI.message("App has no App Clip") if app_clips.empty?
+
+  app_clip = app_clips.find { |clip| clip.dig("attributes", "bundleId") == APP_CLIP_BUNDLE_ID }
+  if app_clip.nil?
+    listed = app_clips.map { |clip| clip.dig("attributes", "bundleId") }.join(", ")
+    UI.user_error!("App Clip #{APP_CLIP_BUNDLE_ID} not found in App Store Connect (found: #{listed})")
+  end
+
   current = tunes.get("v1/appStoreVersions/#{version.id}/appClipDefaultExperience").body["data"]
-  return UI.message("App Clip default experience already set") if current
+  if current
+    current_clip = app_clip_of_experience(current["id"])
+    return UI.message("App Clip default experience already set") if current_clip == app_clip["id"]
 
-  app_clip = Spaceship::ConnectAPI.get_app_clips(app_id: app.id).body["data"].first
-  return UI.message("App has no App Clip") if app_clip.nil?
+    # An experience of another clip cannot be pointed elsewhere; replace it.
+    UI.important("Default experience #{current["id"]} belongs to another App Clip; replacing it")
+    tunes.delete("v1/appClipDefaultExperiences/#{current["id"]}")
+  end
 
-  # Copy the experience of the live version, or else any earlier one.
+  # Copy the experience of the live version, or else any earlier one, as long
+  # as it belongs to the same clip.
   template = nil
   live_version = app.get_live_app_store_version(platform: platform)
   if live_version
-    template = tunes.get("v1/appStoreVersions/#{live_version.id}/appClipDefaultExperience").body["data"]
+    live = tunes.get("v1/appStoreVersions/#{live_version.id}/appClipDefaultExperience").body["data"]
+    template = live if live && app_clip_of_experience(live["id"]) == app_clip["id"]
   end
   template ||= tunes.get("v1/appClips/#{app_clip["id"]}/appClipDefaultExperiences").body["data"].first
   if template.nil?
