@@ -75,6 +75,46 @@ class HinataReader {
     if (firmTimeStamp >= _featuresSince) {
       pn532LongFrames = await _hasFeature(_featurePn532LongFrames);
     }
+    try {
+      await waitUntilReady();
+    } catch (_) {
+      // Older or busy firmware: the first PN532 command may still be lost.
+    }
+  }
+
+  /// The first firmware that answers kPCPROTO_GET_MAINLOOP_STATE.
+  static const _mainLoopStateSince = 2025091117;
+
+  /// The first firmware that counts its main-loop states from a new first
+  /// one (suspend prepare), so every state is one higher.
+  static const _mainLoopStatesShiftedSince = 2026051120;
+
+  /// Main-loop state once the PN532 is up, in firmware before the shift.
+  static const _mainLoopNormalBeforeShift = 11;
+
+  /// Waits until the firmware has brought up its PN532. Until then it drops
+  /// PN532 commands: for some 400 ms after starting it neither reads the
+  /// PN532's replies nor keeps the command, which its own PN532 set-up then
+  /// replaces.
+  ///
+  /// Returns true once ready, or straight away for firmware too old to report
+  /// its state; false when [timeout] passes first or the firmware reports an
+  /// invalid device, whose PN532 it never brings up.
+  Future<bool> waitUntilReady({
+    Duration timeout = const Duration(seconds: 3),
+  }) async {
+    if (firmTimeStamp < _mainLoopStateSince) return true;
+    final normal =
+        _mainLoopNormalBeforeShift +
+        (firmTimeStamp >= _mainLoopStatesShiftedSince ? 1 : 0);
+    final deadline = DateTime.now().add(timeout);
+    while (true) {
+      final state = await getMainLoopState();
+      if (state == normal) return true;
+      // The state after NORMAL is INVALID_DEVICE.
+      if (state > normal || DateTime.now().isAfter(deadline)) return false;
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
   }
 
   /// The first firmware that answers kPCPROTO_GET_FEATURES.
