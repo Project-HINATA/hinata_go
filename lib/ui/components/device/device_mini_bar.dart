@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_go/context_extensions.dart';
+import 'package:hinata_go/providers/firmware_provider.dart';
 import 'package:hinata_go/providers/hardware_device_provider.dart';
 
 import 'device_dashboard.dart';
@@ -29,9 +30,13 @@ class DeviceMiniBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deviceState = ref.watch(hardwareDeviceProvider);
+    final hasFirmwareUpdate = ref.watch(
+      firmwareProvider.select((s) => s.hasUpdate),
+    );
     final displayData = _DeviceMiniBarDisplayData.fromState(
       context,
       deviceState,
+      hasFirmwareUpdate: hasFirmwareUpdate,
     );
 
     if (displayData.hideOnCurrentPlatform) return const SizedBox.shrink();
@@ -41,6 +46,7 @@ class DeviceMiniBar extends ConsumerWidget {
         message: displayData.title,
         child: _CompactDeviceMiniBar(
           isConnected: displayData.isConnected,
+          hasFirmwareUpdate: displayData.hasFirmwareUpdate,
           deviceSvg: displayData.deviceSvg,
           colorScheme: displayData.colorScheme,
           onTap: () => _showDeviceSheet(context),
@@ -51,6 +57,7 @@ class DeviceMiniBar extends ConsumerWidget {
     if (railExpanded) {
       return _RailExpandedDeviceMiniBar(
         isConnected: displayData.isConnected,
+        hasFirmwareUpdate: displayData.hasFirmwareUpdate,
         deviceSvg: displayData.deviceSvg,
         colorScheme: displayData.colorScheme,
         title: displayData.title,
@@ -96,6 +103,7 @@ class DeviceMiniBar extends ConsumerWidget {
 class _DeviceMiniBarDisplayData {
   const _DeviceMiniBarDisplayData({
     required this.isConnected,
+    required this.hasFirmwareUpdate,
     required this.hideOnCurrentPlatform,
     required this.title,
     required this.subtitle,
@@ -105,8 +113,9 @@ class _DeviceMiniBarDisplayData {
 
   factory _DeviceMiniBarDisplayData.fromState(
     BuildContext context,
-    HardwareDeviceState deviceState,
-  ) {
+    HardwareDeviceState deviceState, {
+    required bool hasFirmwareUpdate,
+  }) {
     final l10n = context.l10n;
     final theme = context.theme;
     final hinataDevice = deviceState.connectedDevice;
@@ -119,6 +128,7 @@ class _DeviceMiniBarDisplayData {
 
     return _DeviceMiniBarDisplayData(
       isConnected: isConnected,
+      hasFirmwareUpdate: isConnected && hasFirmwareUpdate,
       hideOnCurrentPlatform: !shouldShowBottomFloatingDeviceBar(
         context,
         hidAvailable: deviceState.hidAvailable,
@@ -135,6 +145,7 @@ class _DeviceMiniBarDisplayData {
   }
 
   final bool isConnected;
+  final bool hasFirmwareUpdate;
   final bool hideOnCurrentPlatform;
   final String title;
   final String subtitle;
@@ -216,24 +227,27 @@ class _DeviceMiniBarIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: displayData.isConnected && displayData.deviceSvg != null
-          ? SvgPicture.asset(
-              displayData.deviceSvg!,
-              colorFilter: ColorFilter.mode(
-                displayData.colorScheme.primary,
-                BlendMode.srcIn,
+    return Badge(
+      isLabelVisible: displayData.hasFirmwareUpdate,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: displayData.isConnected && displayData.deviceSvg != null
+            ? SvgPicture.asset(
+                displayData.deviceSvg!,
+                colorFilter: ColorFilter.mode(
+                  displayData.colorScheme.primary,
+                  BlendMode.srcIn,
+                ),
+              )
+            : Icon(
+                displayData.isConnected ? Icons.usb : Icons.usb_off,
+                color: displayData.isConnected
+                    ? displayData.colorScheme.primary
+                    : displayData.colorScheme.outline,
+                size: size - 4,
               ),
-            )
-          : Icon(
-              displayData.isConnected ? Icons.usb : Icons.usb_off,
-              color: displayData.isConnected
-                  ? displayData.colorScheme.primary
-                  : displayData.colorScheme.outline,
-              size: size - 4,
-            ),
+      ),
     );
   }
 }
@@ -357,12 +371,14 @@ class _DeviceSheetHandle extends StatelessWidget {
 
 class _CompactDeviceMiniBar extends StatelessWidget {
   final bool isConnected;
+  final bool hasFirmwareUpdate;
   final String? deviceSvg;
   final ColorScheme colorScheme;
   final VoidCallback onTap;
 
   const _CompactDeviceMiniBar({
     required this.isConnected,
+    required this.hasFirmwareUpdate,
     required this.deviceSvg,
     required this.colorScheme,
     required this.onTap,
@@ -415,6 +431,19 @@ class _CompactDeviceMiniBar extends StatelessWidget {
                   ),
                 ),
               ),
+              if (hasFirmwareUpdate)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: colorScheme.error,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -425,6 +454,7 @@ class _CompactDeviceMiniBar extends StatelessWidget {
 
 class _RailExpandedDeviceMiniBar extends StatelessWidget {
   final bool isConnected;
+  final bool hasFirmwareUpdate;
   final String? deviceSvg;
   final ColorScheme colorScheme;
   final String title;
@@ -433,6 +463,7 @@ class _RailExpandedDeviceMiniBar extends StatelessWidget {
 
   const _RailExpandedDeviceMiniBar({
     required this.isConnected,
+    required this.hasFirmwareUpdate,
     required this.deviceSvg,
     required this.colorScheme,
     required this.title,
@@ -455,26 +486,29 @@ class _RailExpandedDeviceMiniBar extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: isConnected && deviceSvg != null
-                      ? SvgPicture.asset(
-                          deviceSvg!,
-                          colorFilter: ColorFilter.mode(
-                            colorScheme.primary,
-                            BlendMode.srcIn,
+                Badge(
+                  isLabelVisible: hasFirmwareUpdate,
+                  child: SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: isConnected && deviceSvg != null
+                        ? SvgPicture.asset(
+                            deviceSvg!,
+                            colorFilter: ColorFilter.mode(
+                              colorScheme.primary,
+                              BlendMode.srcIn,
+                            ),
+                          )
+                        : Icon(
+                            isConnected
+                                ? Icons.usb_rounded
+                                : Icons.usb_off_rounded,
+                            color: isConnected
+                                ? colorScheme.primary
+                                : colorScheme.outline,
+                            size: 24,
                           ),
-                        )
-                      : Icon(
-                          isConnected
-                              ? Icons.usb_rounded
-                              : Icons.usb_off_rounded,
-                          color: isConnected
-                              ? colorScheme.primary
-                              : colorScheme.outline,
-                          size: 24,
-                        ),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(

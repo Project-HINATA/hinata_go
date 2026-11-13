@@ -299,6 +299,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
 
   void resumeAfterExclusiveOperation() {
     if (_exclusiveHolds > 0) _exclusiveHolds--;
+    if (!ref.mounted) return;
     if (!_exclusiveOperation && !kIsWeb && Platform.isAndroid) {
       unawaited(startSession());
     }

@@ -241,6 +241,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
           final isUpdating = ref.read(firmwareProvider).isUpdating;
           if (state.connectedDevice == usbImpl && !isUpdating) {
             state = state.copyWith(clearDevice: true);
+            ref.read(firmwareProvider.notifier).reset();
           }
         }
       });
@@ -373,7 +374,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
 
   void resumeNfcPolling() {
     if (_pollingHolds > 0) _pollingHolds--;
-    if (_pollingHolds == 0) {
+    if (_pollingHolds == 0 && ref.mounted) {
       state = state.copyWith(isNfcPollingSuspended: false);
     }
   }
@@ -389,6 +390,7 @@ class HardwareDeviceNotifier extends Notifier<HardwareDeviceState> {
     ref
         .read(currentScanSessionProvider.notifier)
         .markCardRemoved(source: 'HINATA');
+    ref.read(firmwareProvider.notifier).reset();
     state = state.copyWith(clearDevice: true);
   }
 

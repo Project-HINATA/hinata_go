@@ -3,13 +3,18 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hinata_go/core/crypto/crypto1.dart';
+import 'package:hinata_go/core/crypto/mifare_key.dart';
 import 'package:hinata_go/core/crypto/spad0.dart';
 import 'package:hinata_go/core/engine/card_emulation.dart';
 import 'package:hinata_go/core/engine/card_reader_engine.dart';
 import 'package:hinata_go/core/engine/felica_dump_reader.dart';
 import 'package:hinata_go/core/engine/felica_tag.dart';
+import 'package:hinata_go/core/engine/mifare_classic_tag.dart';
 import 'package:hinata_go/core/engine/type3_ndef_tag.dart';
 import 'package:hinata_go/models/card/aic.dart';
+import 'package:hinata_go/models/card/aime.dart';
+import 'package:hinata_go/models/card/banapass.dart';
 import 'package:hinata_go/models/card/card.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/felica_dump.dart';
@@ -61,6 +66,153 @@ class _UnlistedChannel extends _FelicaTagChannel {
   }
 }
 
+/// Simulates a MIFARE Classic reader talking to [MifareClassicTag].
+class _MifareSimReader {
+  final MifareClassicTag tag;
+  late final int _uid =
+      (tag.uid[0] << 24) | (tag.uid[1] << 16) | (tag.uid[2] << 8) | tag.uid[3];
+  Crypto1? _crypto;
+  var _started = false;
+
+  _MifareSimReader(this.tag);
+
+  MifareFrame? _sendPlain(List<int> cmd) {
+    if (!_started) {
+      _started = true;
+      return tag.first(Uint8List.fromList(cmd));
+    }
+    final raw = [...cmd, ...crcA(cmd)];
+    final par = [for (final b in raw) oddParity8(b)];
+    return tag.handle(packParity(raw, par).$1);
+  }
+
+  MifareFrame? _sendCrypt(List<int> plain, {bool crc = true}) {
+    final crypto = _crypto!;
+    final data = crc ? [...plain, ...crcA(plain)] : plain;
+    final enc = <int>[];
+    final par = <int>[];
+    for (final b in data) {
+      final ks = crypto.byte();
+      enc.add(b ^ ks);
+      par.add(oddParity8(b) ^ crypto.peek());
+    }
+    return tag.handle(packParity(enc, par).$1);
+  }
+
+  (Uint8List, List<int>) _decrypt(Uint8List packed, int nbytes) {
+    final crypto = _crypto!;
+    final (enc, par) = unpackParity(packed, nbytes);
+    final plain = Uint8List(nbytes);
+    final ok = <int>[];
+    for (var i = 0; i < nbytes; i++) {
+      final ks = crypto.byte();
+      final p = enc[i] ^ ks;
+      final expectedPar = oddParity8(p) ^ crypto.peek();
+      plain[i] = p;
+      ok.add(par[i] == expectedPar ? 1 : 0);
+    }
+    return (plain, ok);
+  }
+
+  int _readNibble(int enc) {
+    final crypto = _crypto!;
+    var out = enc & 0x0F;
+    for (var i = 0; i < 4; i++) {
+      out ^= crypto.bit() << i;
+    }
+    return out;
+  }
+
+  bool auth(int cmd, int block, List<int> key, {int nr = 0x12345678}) {
+    final nested = _crypto != null;
+    final resp = nested ? _sendCrypt([cmd, block]) : _sendPlain([cmd, block]);
+    if (resp == null || resp.lastBits != 4) return false;
+
+    final nextCrypto = Crypto1.fromBytes(key);
+    int nt;
+    if (nested) {
+      final (ntEnc, _) = unpackParity(resp.raw, 4);
+      final ntEncWord =
+          (ntEnc[0] << 24) | (ntEnc[1] << 16) | (ntEnc[2] << 8) | ntEnc[3];
+      nt = ntEncWord ^ nextCrypto.word(_uid ^ ntEncWord, true);
+    } else {
+      final (ntBytes, ntPar) = unpackParity(resp.raw, 4);
+      for (var i = 0; i < 4; i++) {
+        if (ntPar[i] != oddParity8(ntBytes[i])) return false;
+      }
+      nt =
+          (ntBytes[0] << 24) |
+          (ntBytes[1] << 16) |
+          (ntBytes[2] << 8) |
+          ntBytes[3];
+      nextCrypto.word(nt ^ _uid);
+    }
+    _crypto = nextCrypto;
+
+    final nrEnc = <int>[];
+    final nrPar = <int>[];
+    for (var i = 3; i >= 0; i--) {
+      final b = (nr >> (8 * i)) & 0xFF;
+      nrEnc.add(b ^ nextCrypto.byte(b));
+      nrPar.add(oddParity8(b) ^ nextCrypto.peek());
+    }
+    final ar = prngSuccessor(nt, 64);
+    final arEnc = <int>[];
+    final arPar = <int>[];
+    for (var i = 3; i >= 0; i--) {
+      final b = (ar >> (8 * i)) & 0xFF;
+      arEnc.add(b ^ nextCrypto.byte());
+      arPar.add(oddParity8(b) ^ nextCrypto.peek());
+    }
+    final atExpected = prngSuccessor(ar, 32);
+
+    final atResp = tag.handle(
+      packParity([...nrEnc, ...arEnc], [...nrPar, ...arPar]).$1,
+    );
+    if (atResp == null) {
+      _crypto = null;
+      return false;
+    }
+    final (atBytes, ok) = _decrypt(atResp.raw, 4);
+    if (ok.contains(0)) return false;
+    final at =
+        (atBytes[0] << 24) |
+        (atBytes[1] << 16) |
+        (atBytes[2] << 8) |
+        atBytes[3];
+    return at == atExpected;
+  }
+
+  Uint8List? readBlock(int block) {
+    final resp = _sendCrypt([0x30, block]);
+    if (resp == null || resp.lastBits != 2) return null;
+    final (plain, ok) = _decrypt(resp.raw, 18);
+    if (ok.contains(0)) return null;
+    final body = Uint8List.sublistView(plain, 0, 16);
+    final crc = crcA(body);
+    if (plain[16] != crc[0] || plain[17] != crc[1]) return null;
+    return body;
+  }
+
+  bool writeBlock(int block, List<int> data) {
+    final resp1 = _sendCrypt([0xA0, block]);
+    if (resp1 == null || resp1.lastBits != 4) return false;
+    if (_readNibble(resp1.raw[0]) != MifareClassicTag.ack) return false;
+    final resp2 = _sendCrypt(data);
+    if (resp2 == null || resp2.lastBits != 4) return false;
+    return _readNibble(resp2.raw[0]) == MifareClassicTag.ack;
+  }
+
+  MifareFrame? halt() {
+    final resp = _crypto != null
+        ? _sendCrypt(const [0x50, 0x00])
+        : _sendPlain(const [0x50, 0x00]);
+    _crypto = null;
+    _started = false;
+    return resp;
+  }
+}
+
 Uint8List _hex(String hex) => Uint8List.fromList([
   for (var i = 0; i < hex.length; i += 2)
     int.parse(hex.substring(i, i + 2), radix: 16),
@@ -88,7 +240,7 @@ void main() {
     final target = emulationTargetFor(saved, type4MaxRead: 51);
     expect(target.type4, isNull);
 
-    final engine = CardReaderEngine(_FelicaTagChannel(target.felica));
+    final engine = CardReaderEngine(_FelicaTagChannel(target.felica!));
     // The first batch, S_PAD0 among it, already tells it apart.
     final basic = await engine.handleFelica(
       tag: Felica(idm, pmm, systemCodes),
@@ -107,7 +259,7 @@ void main() {
     expect(read.isExtendedInfoFullyLoaded, isTrue);
     expect((card as Aic).accessCodeString, '50012345678901234567');
     expect(card.id, idm);
-    expect(target.felica.takeMarkerRead(), isTrue);
+    expect(target.felica!.takeMarkerRead(), isTrue);
   });
 
   test('a FeliCa card answers polling with its saved identity', () {
@@ -116,7 +268,7 @@ void main() {
       _hex('0120220427674EFF'),
       Uint16List.fromList([0x0003, 0xFE00]),
     );
-    final tag = emulationTargetFor(felica, type4MaxRead: 51).felica;
+    final tag = emulationTargetFor(felica, type4MaxRead: 51).felica!;
 
     expect(tag.process(_hex('0000030100')), [
       0x01,
@@ -168,7 +320,7 @@ void main() {
         },
       ),
     );
-    final tag = emulationTargetFor(felica, type4MaxRead: 51).felica;
+    final tag = emulationTargetFor(felica, type4MaxRead: 51).felica!;
     Uint8List? check(int service, int block) => tag.process(
       Uint8List.fromList([
         0x06,
@@ -204,7 +356,7 @@ void main() {
       ),
     );
     final target = emulationTargetFor(saved, type4MaxRead: 51);
-    final engine = CardReaderEngine(_FelicaTagChannel(target.felica));
+    final engine = CardReaderEngine(_FelicaTagChannel(target.felica!));
 
     final progress = <ScannedCard>[];
     final read = await engine.handleFelica(
@@ -266,7 +418,7 @@ void main() {
       ),
     );
     final target = emulationTargetFor(saved, type4MaxRead: 51);
-    final engine = CardReaderEngine(_FelicaTagChannel(target.felica));
+    final engine = CardReaderEngine(_FelicaTagChannel(target.felica!));
 
     // Polling finds only system 0.
     final read = await engine.handleFelica(
@@ -281,13 +433,13 @@ void main() {
     // A system's services answer only to that system's IDm.
     final system1 = Uint8List.fromList(idm)..[0] = 0x11;
     expect(
-      target.felica.process(
+      target.felica!.process(
         Uint8List.fromList([0x06, ...system1, 1, 0x8B, 0x1A, 1, 0x80, 0]),
       ),
       [0x07, ...system1, 0, 0, 1, ...common],
     );
     expect(
-      target.felica.process(
+      target.felica!.process(
         Uint8List.fromList([0x06, ...idm, 1, 0x8B, 0x1A, 1, 0x80, 0]),
       ),
       [0x07, ...idm, 0x01, 0xA6],
@@ -320,7 +472,7 @@ void main() {
         ),
       );
       final engine = CardReaderEngine(
-        _FelicaTagChannel(emulationTargetFor(saved, type4MaxRead: 51).felica),
+        _FelicaTagChannel(emulationTargetFor(saved, type4MaxRead: 51).felica!),
       );
       final polled = Felica(idm, saved.pmm, Uint16List.fromList([0x0003]));
       final basic = await engine.handleFelica(tag: polled, readExtended: false);
@@ -389,7 +541,7 @@ void main() {
       ),
     );
     final channel = _FelicaTagChannel(
-      emulationTargetFor(saved, type4MaxRead: 51).felica,
+      emulationTargetFor(saved, type4MaxRead: 51).felica!,
     );
 
     final dump = await FelicaDumpReader(channel).read(saved);
@@ -414,7 +566,7 @@ void main() {
       ),
     );
     final channel = _FelicaTagChannel(
-      emulationTargetFor(saved, type4MaxRead: 51, felicaMaxBlocks: 4).felica,
+      emulationTargetFor(saved, type4MaxRead: 51, felicaMaxBlocks: 4).felica!,
     );
 
     final dump = await FelicaDumpReader(channel, blocksPerRead: 8).read(saved);
@@ -438,7 +590,7 @@ void main() {
         },
       ),
     );
-    final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
+    final tag = emulationTargetFor(saved, type4MaxRead: 51).felica!;
     // The system codes, two service searches, then one read of two blocks
     // before the card leaves.
     final channel = _FelicaTagChannel(tag, answers: 4);
@@ -467,7 +619,7 @@ void main() {
           },
         ),
       );
-      final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
+      final tag = emulationTargetFor(saved, type4MaxRead: 51).felica!;
       // The system codes, the history: a two-block read past its end, then
       // its one block and its end one at a time; three service searches,
       // then one read of two blocks of the next service before the card
@@ -490,7 +642,7 @@ void main() {
 
   test('a Lite-S reads back only the blocks it saved', () async {
     final saved = Aic.fromAccessCode(idm, pmm, systemCodes, accessCode);
-    final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
+    final tag = emulationTargetFor(saved, type4MaxRead: 51).felica!;
 
     final dump = await FelicaDumpReader(_FelicaTagChannel(tag)).read(saved);
 
@@ -525,7 +677,7 @@ void main() {
         },
       ),
     );
-    final tag = emulationTargetFor(saved, type4MaxRead: 51).felica;
+    final tag = emulationTargetFor(saved, type4MaxRead: 51).felica!;
     Uint8List? read(int block) => tag.process(
       Uint8List.fromList([0x06, ...idm, 1, 0x0B, 0x00, 1, 0x80, block]),
     );
@@ -549,6 +701,100 @@ void main() {
       isNull,
     );
     expect(emulationKindOf(Iso14443(_hex('01020304'), 0x08, 0x0004)), isNull);
+    expect(
+      emulationKindOf(
+        Aime(
+          accessCode,
+          physicalCard: Iso14443(_hex('01020304'), 0x08, 0x0004),
+        ),
+      ),
+      EmulationKind.mifareClassic,
+    );
+    expect(emulationKindOf(Aime(Uint8List(4))), isNull);
+  });
+
+  group('MIFARE Classic emulation', () {
+    test('9-bit parity framing round-trips arbitrary byte lengths', () {
+      for (final len in [1, 4, 8, 16, 18]) {
+        final data = [for (var i = 0; i < len; i++) (i * 37 + 13) & 0xFF];
+        final par = [for (var i = 0; i < len; i++) (i * 3) & 1];
+        final (packed, lastBits) = packParity(data, par);
+        expect(packed.length, (len * 9 + 7) ~/ 8);
+        expect(lastBits, (len * 9) & 7);
+        final (unpackedData, unpackedPar) = unpackParity(packed, len);
+        expect(unpackedData, data);
+        expect(unpackedPar, par);
+      }
+    });
+
+    test(
+      'emulates an Aime card with initial auth, read, write discard, and halt',
+      () {
+        final card = Aime(
+          _hex('01234567890123456789'),
+          physicalCard: Iso14443(_hex('12345678'), 0x08, 0x0004),
+        );
+        final target = emulationTargetFor(card, type4MaxRead: 51);
+        expect(target.kind, EmulationKind.mifareClassic);
+        final tag = target.mifare!;
+        // PN532 target mode forces uid[0] = 0x08.
+        expect(tag.uid, _hex('08345678'));
+
+        final reader = _MifareSimReader(tag);
+        expect(reader.auth(0x61, 3, aimeKey), isTrue);
+
+        final b0 = reader.readBlock(0)!;
+        expect(b0.sublist(0, 4), _hex('08345678'));
+        expect(b0[4], 0x08 ^ 0x34 ^ 0x56 ^ 0x78);
+        expect(tag.takeMarkerRead(), isFalse);
+
+        final b2 = reader.readBlock(2)!;
+        expect(b2.sublist(6, 16), _hex('01234567890123456789'));
+        expect(tag.takeMarkerRead(), isTrue);
+        expect(tag.takeMarkerRead(), isFalse);
+
+        // Trailer read masks Key A and Key B.
+        final b3 = reader.readBlock(3)!;
+        expect(b3.sublist(0, 6), List.filled(6, 0));
+        expect(b3.sublist(10, 16), List.filled(6, 0));
+
+        // Writes are acknowledged when permitted, but discarded.
+        final originalB1 = Uint8List.fromList(reader.readBlock(1)!);
+        expect(reader.writeBlock(1, List.filled(16, 0xAA)), isTrue);
+        expect(reader.readBlock(1), originalB1);
+
+        // Nested authentication into Sector 1 with default key FFFFFFFFFFFF.
+        expect(reader.auth(0x60, 4, List.filled(6, 0xFF)), isTrue);
+        expect(reader.readBlock(4), List.filled(16, 0));
+
+        expect(reader.halt(), isNull);
+      },
+    );
+
+    test('emulates single-key and dual-key Banapass cards', () {
+      final b1 = _hex('91015098323232323030303030303030');
+      final b2 = _hex('00877D00000000000000000000006B04');
+      final physical = Iso14443(_hex('11223344'), 0x08, 0x0004);
+
+      final singleKey = Banapass(b1, null, physicalCard: physical);
+      expect(emulationKindOf(singleKey), EmulationKind.mifareClassic);
+      final singleTag = emulationTargetFor(singleKey, type4MaxRead: 51).mifare!;
+      final singleReader = _MifareSimReader(singleTag);
+      expect(singleReader.auth(0x60, 1, banaKey), isTrue);
+      expect(singleReader.readBlock(1), b1);
+      expect(singleTag.takeMarkerRead(), isTrue);
+
+      final dualKey = Banapass(b1, b2, physicalCard: physical);
+      expect(emulationKindOf(dualKey), EmulationKind.mifareClassic);
+      final dualTag = emulationTargetFor(dualKey, type4MaxRead: 51).mifare!;
+      final dualReader = _MifareSimReader(dualTag);
+      // Rewritable dual-key Banapass uses Banapass key as Key A and Aime key as Key B.
+      expect(dualReader.auth(0x60, 1, banaKey), isTrue);
+      expect(dualReader.readBlock(1), b1);
+      expect(dualTag.takeMarkerRead(), isTrue);
+      expect(dualReader.auth(0x61, 2, aimeKey), isTrue);
+      expect(dualReader.readBlock(2), b2);
+    });
   });
 
   group('a FeliCa card holding NDEF', () {
@@ -640,7 +886,7 @@ void main() {
       expect(target.kind, EmulationKind.felica);
       expect(target.type4, isNotNull);
 
-      final tag = target.felica;
+      final tag = target.felica!;
       expect(tag.systemCodes, [0x88B4]);
       expect(tag.activationSystemCode, 0x12FC);
       expect(poll(tag, 0x12FC), [0x01, ...idm, ...pmm, 0x12, 0xFC]);
@@ -660,8 +906,8 @@ void main() {
       final blocks = {...type3, 0: Uint8List(16)};
       final target = emulationTargetFor(lite(blocks: blocks), type4MaxRead: 51);
       expect(target.type4, isNull);
-      expect(target.felica.activationSystemCode, 0x88B4);
-      expect(poll(target.felica, 0x12FC), isNull);
+      expect(target.felica!.activationSystemCode, 0x88B4);
+      expect(poll(target.felica!, 0x12FC), isNull);
     });
 
     test('a Standard card holds NDEF in its 0x12FC system only', () {
@@ -681,8 +927,8 @@ void main() {
       expect(ndefOf(card)!.message, message);
       final target = emulationTargetFor(card, type4MaxRead: 51);
       expect(target.type4, isNotNull);
-      expect(target.felica.aliasCodes, isEmpty);
-      expect(target.felica.activationSystemCode, 0x0003);
+      expect(target.felica!.aliasCodes, isEmpty);
+      expect(target.felica!.activationSystemCode, 0x0003);
 
       final elsewhere = Felica(
         idm,
@@ -714,7 +960,7 @@ void main() {
           ),
         );
         final engine = CardReaderEngine(
-          _FelicaTagChannel(emulationTargetFor(card, type4MaxRead: 51).felica),
+          _FelicaTagChannel(emulationTargetFor(card, type4MaxRead: 51).felica!),
         );
         final basic = await engine.handleFelica(
           tag: Felica(idm, card.pmm, Uint16List.fromList([0xFE00])),
@@ -743,7 +989,7 @@ void main() {
       ),
     );
     final engine = CardReaderEngine(
-      _UnlistedChannel(emulationTargetFor(saved, type4MaxRead: 51).felica),
+      _UnlistedChannel(emulationTargetFor(saved, type4MaxRead: 51).felica!),
     );
     final polled = Felica(idm, saved.pmm, Uint16List.fromList([0x0003]));
     final basic = await engine.handleFelica(tag: polled, readExtended: false);

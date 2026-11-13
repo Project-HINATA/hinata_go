@@ -99,6 +99,10 @@ class _EmulateDialog extends ConsumerWidget {
                       _InfoRow(text: l10n.cardEmulateNdef),
                     _InfoRow(text: l10n.cardEmulatePollOnly),
                   ],
+                  EmulationKind.mifareClassic => [
+                    _InfoRow(text: l10n.cardEmulateFelicaData),
+                    _InfoRow(text: l10n.cardEmulateMifareTimeout),
+                  ],
                   null => const <Widget>[],
                 },
                 _InfoRow(text: l10n.cardEmulatePollingPaused),

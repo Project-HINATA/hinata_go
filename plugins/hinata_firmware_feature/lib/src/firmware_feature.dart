@@ -30,6 +30,7 @@ abstract class FirmwareFeature {
     required int pid,
     required String currentVersion,
     required List<int> chipId,
+    String channel = 'stable',
   });
 
   Future<void> flashFirmware({
@@ -50,6 +51,7 @@ class StubFirmwareFeature extends FirmwareFeature {
     required int pid,
     required String currentVersion,
     required List<int> chipId,
+    String channel = 'stable',
   }) async {
     return null;
   }

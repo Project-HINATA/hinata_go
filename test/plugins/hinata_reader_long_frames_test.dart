@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,7 @@ import 'package:hinata_nfc/hinata_nfc.dart';
 /// ACK, 62 frame bytes to a report.
 class _LongFrameHidDevice implements HIDDevice {
   final List<int> response;
+  final Queue<List<int>> chainedResponses;
   Function(HIDInputReportEvent)? _callback;
 
   /// Each frame the host sent, joined from its reports.
@@ -17,7 +19,10 @@ class _LongFrameHidDevice implements HIDDevice {
   final commands = <int>[];
   final _frame = <int>[];
 
-  _LongFrameHidDevice(this.response);
+  _LongFrameHidDevice(
+    this.response, {
+    Iterable<List<int>> chainedResponses = const [],
+  }) : chainedResponses = Queue.of(chainedResponses);
 
   @override
   List<HIDCollectionInfo> get collections => const [];
@@ -52,6 +57,21 @@ class _LongFrameHidDevice implements HIDDevice {
       data.lengthInBytes,
     );
     commands.add(report[0]);
+    if (report[0] == 0xEC) {
+      var pos = 1;
+      while (pos + 5 <= report.length &&
+          report[pos] == 0x00 &&
+          report[pos + 1] == 0x00 &&
+          report[pos + 2] == 0xFF) {
+        final len = report[pos + 3] + 7;
+        frames.add(report.sublist(pos, pos + len));
+        pos += len;
+        _send(const [0, 0, 0xFF, 0, 0xFF, 0]);
+        final next = chainedResponses.removeFirst();
+        _send([...next, ...List.filled(62 - next.length, 0)]);
+      }
+      return;
+    }
     if (report[0] == 0xE2) {
       _frame
         ..clear()
@@ -109,4 +129,36 @@ void main() {
     expect(payload, [0x00, 1, 2]);
     expect(device.commands, [0xE2]);
   });
+
+  test(
+    'chained PN532 frames pack WriteRegister and TgResponseToInitiator in one 0xEC report',
+    () async {
+      final device = _LongFrameHidDevice(
+        const [],
+        chainedResponses: [
+          _frame(0x09, const []),
+          _frame(0x91, const [0x00]),
+        ],
+      );
+      final reader = HinataReader(device)..pn532Chain = true;
+
+      await reader.pn532Api.writeRegistersAndRespondToInitiator(
+        const [(0x633D, 0x04)],
+        const [0x11, 0x22, 0x33, 0x44, 0x05],
+      );
+
+      expect(device.commands, [0xEC]);
+      expect(device.frames, hasLength(2));
+      expect(device.frames[0].sublist(5, 10), [0xD4, 0x08, 0x63, 0x3D, 0x04]);
+      expect(device.frames[1].sublist(5, 12), [
+        0xD4,
+        0x90,
+        0x11,
+        0x22,
+        0x33,
+        0x44,
+        0x05,
+      ]);
+    },
+  );
 }

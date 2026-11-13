@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 
 import 'package:hinata_go/context_extensions.dart';
+import 'package:hinata_go/providers/firmware_provider.dart';
 import 'package:hinata_nfc/hinata_nfc.dart';
 import 'package:hinata_go/services/reader/usb_hinata_impl.dart';
 import 'package:hinata_go/services/notification_service.dart';
@@ -22,15 +23,26 @@ class DeviceDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isHinataLite = device.productName == "HINATA Lite";
+    final hasFirmwareUpdate = ref.watch(
+      firmwareProvider.select((s) => s.hasUpdate),
+    );
 
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.all(16.0),
-      children: _buildSections(context, isHinataLite),
+      children: _buildSections(
+        context,
+        isHinataLite,
+        hasFirmwareUpdate: hasFirmwareUpdate,
+      ),
     );
   }
 
-  List<Widget> _buildSections(BuildContext context, bool isHinataLite) {
+  List<Widget> _buildSections(
+    BuildContext context,
+    bool isHinataLite, {
+    required bool hasFirmwareUpdate,
+  }) {
     final l10n = context.l10n;
 
     return [
@@ -56,7 +68,10 @@ class DeviceDashboard extends ConsumerWidget {
         const SizedBox(height: 16),
         _DashboardSection(
           title: l10n.firmwareUpdate,
-          child: _buildSettingsSection(context),
+          child: _buildSettingsSection(
+            context,
+            hasFirmwareUpdate: hasFirmwareUpdate,
+          ),
         ),
       ],
       const SizedBox(height: 24),
@@ -67,14 +82,20 @@ class DeviceDashboard extends ConsumerWidget {
     ];
   }
 
-  Widget _buildSettingsSection(BuildContext context) {
+  Widget _buildSettingsSection(
+    BuildContext context, {
+    required bool hasFirmwareUpdate,
+  }) {
     final l10n = context.l10n;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: _DashboardSettingsTile(
         icon: Icons.system_update_alt,
         title: l10n.firmwareUpdate,
-        subtitle: l10n.checkLatestSoftware,
+        subtitle: hasFirmwareUpdate
+            ? l10n.newFirmwareAvailable
+            : l10n.checkLatestSoftware,
+        showBadge: hasFirmwareUpdate,
         onTap: () => context.push('/device_hub/firmware'),
       ),
     );
@@ -235,17 +256,19 @@ class _DashboardSettingsTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.showBadge = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool showBadge;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon),
+      leading: Badge(isLabelVisible: showBadge, child: Icon(icon)),
       title: Text(title),
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right),
