@@ -2,6 +2,24 @@
 
 HINATA Go for Android, iOS and the web (<https://go.neri.moe>).
 
+## 2.11.0 - 2026-11-13
+
+### 中文
+
+- 支持通过读卡器模拟 MIFARE Classic 1K 卡片，并优化 Felica 模拟时的波特率过滤（仅响应 212k/424k；模拟 NDEF 时同时响应 106k/212k/424k）
+- 全新卡片式固件更新界面，支持在固件更新页切换 stable / canary 更新通道，并在主页底部设备栏和设备面板显示新固件红点提示
+- 进入固件更新页面时自动暂停读卡器轮询，避免干扰固件检查与刷写
+- 修复顶部提示条显示时整行区域拦截点击的问题
+- 修复连接读卡器时未等待 PN532 就绪就开始使用的问题
+
+### English
+
+- Added MIFARE Classic 1K card emulation via the reader and refined FeliCa baud filtering (212k/424k only, or 106k/212k/424k when emulating NDEF)
+- Redesigned firmware update UI with a card-based layout, stable/canary channel selection on the update page, and update indicator badges on the bottom device bar and device panel
+- Suspended reader polling while the firmware update page is open
+- Fixed the top notification toast blocking taps across the full top row
+- Fixed reader initialization to wait until the device's PN532 is ready before use
+
 ## 2.10.0 - 2026-11-11
 
 ### 中文
