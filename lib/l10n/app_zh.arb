@@ -1279,5 +1279,6 @@
   "ndefRecordDelete": "删除这条内容",
   "ndefDiscardTitle": "放弃更改？",
   "ndefDiscardMessage": "未保存的更改将会丢失。",
-  "ndefDiscard": "放弃"
+  "ndefDiscard": "放弃",
+  "cardEmulateMifareTimeout": "仅支持超时较宽松的读卡设备，手机通常无法读取。"
 }

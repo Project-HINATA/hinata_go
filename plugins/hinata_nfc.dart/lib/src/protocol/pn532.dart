@@ -235,7 +235,11 @@ const int mifareKeyLength = 6;
 const int mifareBlockLength = 16;
 const standardAck = [0, 0, 0xFF, 0, 0xFF, 0];
 
+typedef WriteChainFunc =
+    Future<bool> Function(List<int> first, List<int> second);
+
 class Pn532Api extends IoBase {
+  final WriteChainFunc? _writeChain;
   final FutureOr<void> Function()? _onRequestComplete;
 
   /// [ackTimeout] bounds the wait for the ACK frame; [timeout] bounds every
@@ -256,64 +260,79 @@ class Pn532Api extends IoBase {
         payload: payload,
       );
       await write(packet.toList());
-
-      final responseTimeout = timeout == null
-          ? null
-          : Duration(milliseconds: timeout);
-      var acknowledged = ackTimeout == null;
-      var count = 0;
-
-      while (true) {
-        final effectiveTimeout = acknowledged
-            ? responseTimeout
-            : Duration(milliseconds: ackTimeout!);
-        late final List<int> res;
-        try {
-          final frame = read(timeout: effectiveTimeout);
-          res = cancel == null
-              ? await frame
-              : await Future.any([
-                  frame,
-                  cancel.then<List<int>>(
-                    (_) => throw const Pn532CancelledException(),
-                  ),
-                ]);
-        } on TimeoutException catch (error) {
-          final contextSuffix = context == null ? '' : ' ($context)';
-          throw TimeoutException(
-            'PN532 ${command.name}$contextSuffix timed out after '
-            '$count frame(s): ${error.message}',
-            error.duration ?? effectiveTimeout,
-          );
-        }
-        count++;
-        log("PN532 Stream: $count: $res");
-        if (res.length < 5) {
-          throw FormatException('PN532 response is shorter than its header');
-        }
-        if (res[3] == 0 && res[4] == 0xFF) {
-          acknowledged = true;
-          continue;
-        }
-        if (((res[3] + res[4]) & 0xFF) != 0) {
-          throw const FormatException('Invalid PN532 length checksum');
-        }
-        if (res[3] == 0) {
-          throw const FormatException('Unexpected empty PN532 frame');
-        }
-        if (res.length < 7) {
-          throw FormatException('PN532 response is shorter than its payload');
-        }
-        if (res[5] != 0xD5 || res[6] != command.toInt() + 1) {
-          continue;
-        }
-        return Pn532Packet.fromList(res);
-      }
+      return await _receive(
+        command,
+        timeout: timeout,
+        ackTimeout: ackTimeout,
+        cancel: cancel,
+        context: context,
+      );
     } finally {
       final onRequestComplete = _onRequestComplete;
       if (onRequestComplete != null) {
         await onRequestComplete();
       }
+    }
+  }
+
+  Future<Pn532Packet> _receive(
+    Pn532Command command, {
+    int? timeout = 1000,
+    int? ackTimeout,
+    Future<void>? cancel,
+    String? context,
+  }) async {
+    final responseTimeout = timeout == null
+        ? null
+        : Duration(milliseconds: timeout);
+    var acknowledged = ackTimeout == null;
+    var count = 0;
+
+    while (true) {
+      final effectiveTimeout = acknowledged
+          ? responseTimeout
+          : Duration(milliseconds: ackTimeout!);
+      late final List<int> res;
+      try {
+        final frame = read(timeout: effectiveTimeout);
+        res = cancel == null
+            ? await frame
+            : await Future.any([
+                frame,
+                cancel.then<List<int>>(
+                  (_) => throw const Pn532CancelledException(),
+                ),
+              ]);
+      } on TimeoutException catch (error) {
+        final contextSuffix = context == null ? '' : ' ($context)';
+        throw TimeoutException(
+          'PN532 ${command.name}$contextSuffix timed out after '
+          '$count frame(s): ${error.message}',
+          error.duration ?? effectiveTimeout,
+        );
+      }
+      count++;
+      log("PN532 Stream: $count: $res");
+      if (res.length < 5) {
+        throw FormatException('PN532 response is shorter than its header');
+      }
+      if (res[3] == 0 && res[4] == 0xFF) {
+        acknowledged = true;
+        continue;
+      }
+      if (((res[3] + res[4]) & 0xFF) != 0) {
+        throw const FormatException('Invalid PN532 length checksum');
+      }
+      if (res[3] == 0) {
+        throw const FormatException('Unexpected empty PN532 frame');
+      }
+      if (res.length < 7) {
+        throw FormatException('PN532 response is shorter than its payload');
+      }
+      if (res[5] != 0xD5 || res[6] != command.toInt() + 1) {
+        continue;
+      }
+      return Pn532Packet.fromList(res);
     }
   }
 
@@ -559,6 +578,75 @@ class Pn532Api extends IoBase {
     await _sendAndReceive(Pn532Command.setParameters, [flags]);
   }
 
+  Future<void> writeRegisters(
+    List<(int, int)> registers, {
+    int timeout = 1000,
+    int? ackTimeout,
+  }) async {
+    if (registers.isEmpty) return;
+    await _sendAndReceive(
+      Pn532Command.writeRegister,
+      [
+        for (final (address, value) in registers) ...[
+          (address >> 8) & 0xFF,
+          address & 0xFF,
+          value & 0xFF,
+        ],
+      ],
+      timeout: timeout,
+      ackTimeout: ackTimeout,
+    );
+  }
+
+  /// Writes [registers] and sends [data] as a raw target frame. When the
+  /// transport chains two PN532 frames in one report, both go out together.
+  Future<void> writeRegistersAndRespondToInitiator(
+    List<(int, int)> registers,
+    List<int> data, {
+    int timeout = 1000,
+    int ackTimeout = 1000,
+  }) async {
+    if (registers.isNotEmpty) {
+      final writeChain = _writeChain;
+      if (writeChain != null) {
+        final first = Pn532Packet(
+          direction: 0xD4,
+          command: Pn532Command.writeRegister,
+          payload: [
+            for (final (address, value) in registers) ...[
+              (address >> 8) & 0xFF,
+              address & 0xFF,
+              value & 0xFF,
+            ],
+          ],
+        ).toList();
+        final second = Pn532Packet(
+          direction: 0xD4,
+          command: Pn532Command.tgResponseToInitiator,
+          payload: data,
+        ).toList();
+        if (await writeChain(first, second)) {
+          try {
+            final res = await _receive(
+              Pn532Command.tgResponseToInitiator,
+              timeout: timeout,
+              ackTimeout: ackTimeout,
+            );
+            _checkTargetStatus(res.payload);
+            return;
+          } finally {
+            final onRequestComplete = _onRequestComplete;
+            if (onRequestComplete != null) {
+              await onRequestComplete();
+            }
+          }
+        }
+      }
+      await writeRegisters(registers, timeout: timeout, ackTimeout: ackTimeout);
+    }
+    await tgResponseToInitiator(data, timeout: timeout, ackTimeout: ackTimeout);
+  }
+
   /// Waits, after the ACK, for an initiator to activate the PN532 as a
   /// target, and returns the mode byte followed by the initiator's first
   /// command. A null [timeout] waits until [cancel] completes, which throws
@@ -678,6 +766,11 @@ class Pn532Api extends IoBase {
     return res;
   }
 
-  Pn532Api(super.write, super.read, {FutureOr<void> Function()? onComplete})
-    : _onRequestComplete = onComplete;
+  Pn532Api(
+    super.write,
+    super.read, {
+    WriteChainFunc? writeChain,
+    FutureOr<void> Function()? onComplete,
+  }) : _writeChain = writeChain,
+       _onRequestComplete = onComplete;
 }

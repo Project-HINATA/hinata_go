@@ -2653,6 +2653,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discard'**
   String get ndefDiscard;
+
+  /// No description provided for @cardEmulateMifareTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Only readers with lenient timeouts can read it; phones usually cannot.'**
+  String get cardEmulateMifareTimeout;
 }
 
 class _AppLocalizationsDelegate

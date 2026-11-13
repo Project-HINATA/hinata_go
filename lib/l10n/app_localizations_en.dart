@@ -1423,4 +1423,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ndefDiscard => 'Discard';
+
+  @override
+  String get cardEmulateMifareTimeout =>
+      'Only readers with lenient timeouts can read it; phones usually cannot.';
 }

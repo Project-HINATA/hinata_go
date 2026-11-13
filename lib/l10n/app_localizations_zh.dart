@@ -1358,4 +1358,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get ndefDiscard => '放弃';
+
+  @override
+  String get cardEmulateMifareTimeout => '仅支持超时较宽松的读卡设备，手机通常无法读取。';
 }

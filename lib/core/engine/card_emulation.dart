@@ -1,12 +1,18 @@
+import 'dart:typed_data';
+
 import '../../models/card/aic.dart';
+import '../../models/card/aime.dart';
+import '../../models/card/banapass.dart';
 import '../../models/card/card.dart';
 import '../../models/card/felica.dart';
 import '../../models/card/ndef.dart';
 import 'felica_tag.dart';
+import 'mifare_classic_tag.dart';
+import 'mifare_write_payload.dart';
 import 'type3_ndef_tag.dart';
 import 'type4_ndef_tag.dart';
 
-enum EmulationKind { ndef, felica, amusementIc }
+enum EmulationKind { ndef, felica, amusementIc, mifareClassic }
 
 /// What a reader finds when it polls the emulating PN532.
 class EmulationTarget {
@@ -15,24 +21,38 @@ class EmulationTarget {
   /// Answers Type A readers through ISO-DEP; without it they get nothing.
   /// An NDEF card has one, and so does a FeliCa card holding NDEF.
   final Type4NdefTag? type4;
-  final FelicaTag felica;
+  final FelicaTag? felica;
+  final MifareClassicTag? mifare;
 
-  const EmulationTarget({required this.kind, required this.felica, this.type4});
+  const EmulationTarget({
+    required this.kind,
+    this.felica,
+    this.type4,
+    this.mifare,
+  }) : assert((felica != null) != (mifare != null));
 }
 
 /// A Lite-S reads every block through both of its services.
 const _liteReadOnlyService = 0x000B;
 const _liteReadWriteService = 0x0009;
 
+final _defaultMifareTrailer = Uint8List.fromList(const [
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //
+  0xFF, 0x07, 0x80, 0x69,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+]);
+
 /// The kind [card] would be emulated as, or null when it cannot be.
-///
-/// Only data saved with the card is emulated, never data that needs
-/// authentication to read.
 EmulationKind? emulationKindOf(ICCard card) {
   if (card is NdefCard) {
     final length = card.message.length;
     return length > 0 && length <= Type4NdefTag.maxMessageSize
         ? EmulationKind.ndef
+        : null;
+  }
+  if (card is Aime || card is Banapass) {
+    return MifareCardWritePayload.canBuild(card)
+        ? EmulationKind.mifareClassic
         : null;
   }
   if (card is! Felica ||
@@ -72,6 +92,30 @@ EmulationTarget emulationTargetFor(
           message,
           idm: Type3NdefTag.randomIdm(),
           maxBlocksPerRead: felicaMaxBlocks,
+        ),
+      );
+    case EmulationKind.mifareClassic:
+      final payload = MifareCardWritePayload.fromCard(
+        card,
+        CardWriteMode.rewritable,
+      );
+      final uid = _mifareUidFor(card, payload);
+      final bcc = uid[0] ^ uid[1] ^ uid[2] ^ uid[3];
+      final block0 = Uint8List(16)
+        ..setAll(0, [uid[0], uid[1], uid[2], uid[3], bcc, 0x08, 0x04, 0x00]);
+      final blocks = List<Uint8List>.generate(64, (index) {
+        if (index == 0) return block0;
+        if (index == 3) return payload.trailer;
+        if (index < 3) return payload.dataBlocks[index] ?? Uint8List(16);
+        if (index & 3 == 3) return Uint8List.fromList(_defaultMifareTrailer);
+        return Uint8List(16);
+      });
+      return EmulationTarget(
+        kind: EmulationKind.mifareClassic,
+        mifare: MifareClassicTag(
+          uid: uid,
+          blocks: blocks,
+          markerBlock: card is Aime ? 2 : 1,
         ),
       );
     case final EmulationKind kind:
@@ -116,4 +160,21 @@ EmulationTarget emulationTargetFor(
     case null:
       throw ArgumentError.value(card.runtimeType, 'card', 'Cannot emulate');
   }
+}
+
+Uint8List _mifareUidFor(ICCard card, MifareCardWritePayload payload) {
+  if (card.id.length >= 4) {
+    final tail = card.id.sublist(card.id.length - 3);
+    if (tail.any((b) => b != 0)) {
+      return Uint8List.fromList([0x08, ...tail]);
+    }
+  }
+  final block = payload.dataBlocks[2] ?? payload.dataBlocks[1];
+  if (block != null) {
+    final tail = block.sublist(13, 16);
+    if (tail.any((b) => b != 0)) {
+      return Uint8List.fromList([0x08, ...tail]);
+    }
+  }
+  return Uint8List.fromList(const [0x08, 0x12, 0x34, 0x56]);
 }

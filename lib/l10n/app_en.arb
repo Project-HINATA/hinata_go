@@ -1303,5 +1303,6 @@
   "ndefRecordDelete": "Delete record",
   "ndefDiscardTitle": "Discard changes?",
   "ndefDiscardMessage": "Your unsaved changes will be lost.",
-  "ndefDiscard": "Discard"
+  "ndefDiscard": "Discard",
+  "cardEmulateMifareTimeout": "Only readers with lenient timeouts can read it; phones usually cannot."
 }

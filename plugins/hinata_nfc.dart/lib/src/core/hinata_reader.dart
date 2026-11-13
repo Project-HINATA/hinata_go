@@ -22,6 +22,10 @@ class HinataReader {
   /// Whether the firmware passes PN532 frames longer than one HID report,
   /// split over several.
   bool pn532LongFrames = false;
+
+  /// Whether the firmware accepts two chained PN532 frames in one `0xEC`
+  /// report, sending the second once the first one's response is in.
+  bool pn532Chain = false;
   List<int> commitHash = [];
   List<int> chipId = [];
 
@@ -73,25 +77,28 @@ class HinataReader {
       await _loadStartupConfig();
     }
     if (firmTimeStamp >= _featuresSince) {
-      pn532LongFrames = await _hasFeature(_featurePn532LongFrames);
+      final features = await _getFeatures();
+      pn532LongFrames = features & _featurePn532LongFrames != 0;
+      pn532Chain = features & _featurePn532Chain != 0;
     }
   }
 
   /// The first firmware that answers kPCPROTO_GET_FEATURES.
   static const _featuresSince = 2026110220;
   static const _featurePn532LongFrames = 0x01;
+  static const _featurePn532Chain = 0x02;
 
   /// PN532 bytes one passthrough report carries after its command byte.
   static const _pn532Chunk = 62;
+  static const _pn532ChainMax = 48;
 
-  /// Whether the firmware reports [feature]. Firmware that predates a
-  /// feature, or does not answer, lacks it.
-  Future<bool> _hasFeature(int feature) async {
+  /// The feature bitmask reported by the firmware, or 0 when unsupported.
+  Future<int> _getFeatures() async {
     try {
       final data = await sendReq(0xE7, [], timeout: 300);
-      return data.length > 1 && data[1] & feature != 0;
+      return data.length > 1 ? data[1] : 0;
     } catch (_) {
-      return false;
+      return 0;
     }
   }
 
@@ -138,6 +145,16 @@ class HinataReader {
         }
       }
       return frame;
+    },
+    writeChain: (first, second) async {
+      if (!pn532Chain ||
+          first.length + second.length > _pn532Chunk ||
+          second.length > _pn532ChainMax) {
+        return false;
+      }
+      _pn532Sub = _subscribe(0xE2, UnSubscribePolicy.never());
+      await sendReqWithoutRes(0xEC, [...first, ...second]);
+      return true;
     },
     onComplete: _clearPn532Subscription,
   );
