@@ -586,6 +586,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkLatestSoftware => 'Check for the latest software version';
 
   @override
+  String get newFirmwareAvailable => 'New firmware available';
+
+  @override
+  String get firmwareUpdateUnconnectedTitle => 'Device Not Connected';
+
+  @override
+  String get firmwareUpdateUnconnectedSubtitle =>
+      'Please connect a device first to check for firmware updates.';
+
+  @override
+  String get firmwareUpdateFetchErrorTitle => 'Update Check Failed';
+
+  @override
+  String get firmwareUpdateFetchErrorSubtitle =>
+      'Unable to connect to the update server. Please check your network and try again.';
+
+  @override
+  String get firmwareUpdateLoadingText => 'Checking for updates...';
+
+  @override
+  String get firmwareUpdateVersionHeader => 'Firmware Version';
+
+  @override
+  String get firmwareUpdateChannelStable => 'Stable';
+
+  @override
+  String get firmwareUpdateChannelCanary => 'Canary';
+
+  @override
+  String get firmwareUpdateChangelogTitle => 'Changelog';
+
+  @override
+  String get firmwareUpdateLatestBadge => 'Up to Date';
+
+  @override
+  String get firmwareUpdateInstallButton => 'Install Firmware';
+
+  @override
+  String get firmwareUpdateSuccessMessage => 'Update complete! Reconnecting...';
+
+  @override
+  String get firmwareUpdateBusyWarning =>
+      'Please wait until firmware update is complete.';
+
+  @override
   String get configureLighting => 'Configure lighting effects';
 
   @override

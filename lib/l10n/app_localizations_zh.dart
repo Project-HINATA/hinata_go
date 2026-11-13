@@ -576,6 +576,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get checkLatestSoftware => '检查并下载最新固件';
 
   @override
+  String get newFirmwareAvailable => '有新固件';
+
+  @override
+  String get firmwareUpdateUnconnectedTitle => '未连接设备';
+
+  @override
+  String get firmwareUpdateUnconnectedSubtitle => '请先连接设备以检查固件更新。';
+
+  @override
+  String get firmwareUpdateFetchErrorTitle => '检查更新失败';
+
+  @override
+  String get firmwareUpdateFetchErrorSubtitle => '无法连接到更新服务器，请检查网络后重试。';
+
+  @override
+  String get firmwareUpdateLoadingText => '正在检查更新…';
+
+  @override
+  String get firmwareUpdateVersionHeader => '固件版本';
+
+  @override
+  String get firmwareUpdateChannelStable => 'Stable';
+
+  @override
+  String get firmwareUpdateChannelCanary => 'Canary';
+
+  @override
+  String get firmwareUpdateChangelogTitle => '更新日志';
+
+  @override
+  String get firmwareUpdateLatestBadge => '已是最新版本';
+
+  @override
+  String get firmwareUpdateInstallButton => '安装固件';
+
+  @override
+  String get firmwareUpdateSuccessMessage => '更新成功！正在为您重新连接设备...';
+
+  @override
+  String get firmwareUpdateBusyWarning => '请等待固件更新完成。';
+
+  @override
   String get configureLighting => '配置灯效与颜色';
 
   @override

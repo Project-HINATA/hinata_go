@@ -1136,6 +1136,90 @@ abstract class AppLocalizations {
   /// **'Check for the latest software version'**
   String get checkLatestSoftware;
 
+  /// No description provided for @newFirmwareAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'New firmware available'**
+  String get newFirmwareAvailable;
+
+  /// No description provided for @firmwareUpdateUnconnectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Device Not Connected'**
+  String get firmwareUpdateUnconnectedTitle;
+
+  /// No description provided for @firmwareUpdateUnconnectedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Please connect a device first to check for firmware updates.'**
+  String get firmwareUpdateUnconnectedSubtitle;
+
+  /// No description provided for @firmwareUpdateFetchErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Check Failed'**
+  String get firmwareUpdateFetchErrorTitle;
+
+  /// No description provided for @firmwareUpdateFetchErrorSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to connect to the update server. Please check your network and try again.'**
+  String get firmwareUpdateFetchErrorSubtitle;
+
+  /// No description provided for @firmwareUpdateLoadingText.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for updates...'**
+  String get firmwareUpdateLoadingText;
+
+  /// No description provided for @firmwareUpdateVersionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Firmware Version'**
+  String get firmwareUpdateVersionHeader;
+
+  /// No description provided for @firmwareUpdateChannelStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Stable'**
+  String get firmwareUpdateChannelStable;
+
+  /// No description provided for @firmwareUpdateChannelCanary.
+  ///
+  /// In en, this message translates to:
+  /// **'Canary'**
+  String get firmwareUpdateChannelCanary;
+
+  /// No description provided for @firmwareUpdateChangelogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Changelog'**
+  String get firmwareUpdateChangelogTitle;
+
+  /// No description provided for @firmwareUpdateLatestBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to Date'**
+  String get firmwareUpdateLatestBadge;
+
+  /// No description provided for @firmwareUpdateInstallButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Firmware'**
+  String get firmwareUpdateInstallButton;
+
+  /// No description provided for @firmwareUpdateSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Update complete! Reconnecting...'**
+  String get firmwareUpdateSuccessMessage;
+
+  /// No description provided for @firmwareUpdateBusyWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait until firmware update is complete.'**
+  String get firmwareUpdateBusyWarning;
+
   /// Description of the lighting feature
   ///
   /// In en, this message translates to:

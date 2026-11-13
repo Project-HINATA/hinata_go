@@ -812,6 +812,20 @@
   "@checkLatestSoftware": {
     "description": "Description of the firmware check feature"
   },
+  "newFirmwareAvailable": "New firmware available",
+  "firmwareUpdateUnconnectedTitle": "Device Not Connected",
+  "firmwareUpdateUnconnectedSubtitle": "Please connect a device first to check for firmware updates.",
+  "firmwareUpdateFetchErrorTitle": "Update Check Failed",
+  "firmwareUpdateFetchErrorSubtitle": "Unable to connect to the update server. Please check your network and try again.",
+  "firmwareUpdateLoadingText": "Checking for updates...",
+  "firmwareUpdateVersionHeader": "Firmware Version",
+  "firmwareUpdateChannelStable": "Stable",
+  "firmwareUpdateChannelCanary": "Canary",
+  "firmwareUpdateChangelogTitle": "Changelog",
+  "firmwareUpdateLatestBadge": "Up to Date",
+  "firmwareUpdateInstallButton": "Install Firmware",
+  "firmwareUpdateSuccessMessage": "Update complete! Reconnecting...",
+  "firmwareUpdateBusyWarning": "Please wait until firmware update is complete.",
   "configureLighting": "Configure lighting effects",
   "@configureLighting": {
     "description": "Description of the lighting feature"

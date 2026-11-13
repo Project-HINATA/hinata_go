@@ -809,6 +809,20 @@
   "@checkLatestSoftware": {
     "description": "固件更新功能说明"
   },
+  "newFirmwareAvailable": "有新固件",
+  "firmwareUpdateUnconnectedTitle": "未连接设备",
+  "firmwareUpdateUnconnectedSubtitle": "请先连接设备以检查固件更新。",
+  "firmwareUpdateFetchErrorTitle": "检查更新失败",
+  "firmwareUpdateFetchErrorSubtitle": "无法连接到更新服务器，请检查网络后重试。",
+  "firmwareUpdateLoadingText": "正在检查更新…",
+  "firmwareUpdateVersionHeader": "固件版本",
+  "firmwareUpdateChannelStable": "Stable",
+  "firmwareUpdateChannelCanary": "Canary",
+  "firmwareUpdateChangelogTitle": "更新日志",
+  "firmwareUpdateLatestBadge": "已是最新版本",
+  "firmwareUpdateInstallButton": "安装固件",
+  "firmwareUpdateSuccessMessage": "更新成功！正在为您重新连接设备...",
+  "firmwareUpdateBusyWarning": "请等待固件更新完成。",
   "configureLighting": "配置灯效与颜色",
   "@configureLighting": {
     "description": "灯光设置入口"
