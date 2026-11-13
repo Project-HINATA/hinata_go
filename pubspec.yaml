@@ -38,7 +38,7 @@ dependencies:
   flutter_nfc_kit: ^3.6.0
   ndef: ^0.4.0
   shared_preferences: ^2.5.4
-  mobile_scanner: ^7.2.0
+  mobile_scanner: ^7.5.0
   http: ^1.6.0
   cached_network_image: ^3.4.1
   uuid: ^4.5.3
