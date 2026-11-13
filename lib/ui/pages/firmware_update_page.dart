@@ -1,23 +1,45 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hinata_firmware_feature/hinata_firmware_feature.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:hinata_go/context_extensions.dart';
+import 'package:hinata_go/providers/firmware_provider.dart';
+import 'package:hinata_go/providers/hardware_device_provider.dart';
+import 'package:hinata_go/providers/nfc_provider.dart';
 import 'package:hinata_go/services/notification_service.dart';
 
-import '../../providers/firmware_provider.dart';
 import '../components/firmware/firmware_status_view.dart';
 import '../widgets/app_scaffold.dart';
 
-class FirmwareUpdatePage extends ConsumerWidget {
+class FirmwareUpdatePage extends HookConsumerWidget {
   const FirmwareUpdatePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Pause reader and phone NFC polling while the firmware update page is open.
+    useEffect(() {
+      final hardware = ref.read(hardwareDeviceProvider.notifier);
+      final nfc = ref.read(nfcProvider.notifier);
+      Future.microtask(() {
+        unawaited(hardware.suspendNfcPolling());
+        unawaited(nfc.suspendForExclusiveOperation());
+      });
+      return () => Future.microtask(() {
+        hardware.resumeNfcPolling();
+        nfc.resumeAfterExclusiveOperation();
+      });
+    }, const []);
+
+    final l10n = context.l10n;
+
     if (!firmwareFeatureEnabled) {
       return AppScaffold(
-        title: 'Firmware Update',
+        title: l10n.firmwareUpdate,
         body: SafeArea(
           top: useCupertinoChrome,
           bottom: false,
@@ -42,7 +64,7 @@ class FirmwareUpdatePage extends ConsumerWidget {
         }
       },
       child: AppScaffold(
-        title: 'Firmware Update',
+        title: l10n.firmwareUpdate,
         nativeLeading: isFlashing ? null : NativeToolbarLeading.close,
         onNativeLeadingTap: isFlashing ? null : () => context.pop(),
         leading: IconButton(
@@ -52,7 +74,7 @@ class FirmwareUpdatePage extends ConsumerWidget {
         body: SafeArea(
           top: useCupertinoChrome,
           bottom: false,
-          child: _buildBody(),
+          child: const FirmwareStatusView(),
         ),
       ),
     );
@@ -61,15 +83,6 @@ class FirmwareUpdatePage extends ConsumerWidget {
   void _showFlashWarning(BuildContext context, WidgetRef ref) {
     ref
         .read(notificationServiceProvider)
-        .showInfo('Please wait until firmware update is complete.');
-  }
-
-  Widget _buildBody() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24.0),
-        child: FirmwareStatusView(),
-      ),
-    );
+        .showInfo(context.l10n.firmwareUpdateBusyWarning);
   }
 }

@@ -13,6 +13,13 @@ analyzer:
   exclude:
     - local_plugins/**
     - plugins/libusb/**
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   # The lint rules applied to this project can be customized in the
