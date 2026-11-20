@@ -46,10 +46,12 @@ final class PrismAPI {
   var unregistered = [String]()
   var startUnregistered = false
   func atOrigin(_ origin: URL) -> PrismAPI { self }
+  var byPath: [String: [String: Any]] = [:]
   func request<T: Decodable>(_ path: String) async throws -> T {
     reads += 1
     if fail { throw URLError(.notConnectedToInternet) }
-    return try JSONDecoder().decode(T.self, from: JSONSerialization.data(withJSONObject: snapshot))
+    let body = byPath.first(where: { path.hasSuffix($0.key) })?.value ?? snapshot
+    return try JSONDecoder().decode(T.self, from: JSONSerialization.data(withJSONObject: body))
   }
   func registerStartToken(clientId: String, token: String) async throws {}
   func unregisterStartToken(clientId: String) async throws { startUnregistered = true }
@@ -142,6 +144,20 @@ final class PrismAPI {
     later.activityState = .ended
     await manager.finishCheckout(receipt: receipt, shopCode: "shop", api: api)
     precondition(later.dismissedImmediately && showing[0].content.state.bill?.amountCents == 1234)
-    print("Live Activity recovery, final receipt, outlived activity, and logout checks passed")
+    // The activity follows the visit from its bill alone, whatever the page's refresh does;
+    // two syncs at once (back in the app and an entry) start it once.
+    api.byPath["/player/me"] = ["activeSession": ["id": "fresh", "startedAt": "2026-01-01T00:00:00Z"], "wallet": [Any]()]
+    async let one: Void = manager.sync(shopCode: "shop", shopName: "Shop", origin: api.baseURL, api: api)
+    async let two: Void = manager.sync(shopCode: "shop", shopName: "Shop", origin: api.baseURL, api: api)
+    _ = await (one, two)
+    let fresh = Activity<StoreVisitAttributes>.activities.filter { $0.attributes.sessionId == "fresh" && $0.activityState == .active }
+    precondition(fresh.count == 1 && fresh[0].content.state.bill?.amountCents == 600)
+    // A visit over leaves no activity behind.
+    api.byPath["/player/me"] = ["activeSession": NSNull(), "wallet": [Any]()]
+    api.snapshot = ["phase": "ended", "startedAtUnix": 10, "endedAtUnix": 200,
+      "bill": ["amountCents": 700, "planLabel": "", "asOfUnix": 300]]
+    await manager.sync(shopCode: "shop", shopName: "Shop", origin: api.baseURL, api: api)
+    precondition(fresh[0].activityState == .ended && fresh[0].content.state.bill?.amountCents == 700)
+    print("Live Activity recovery, final receipt, outlived activity, sync and logout checks passed")
   }
 }

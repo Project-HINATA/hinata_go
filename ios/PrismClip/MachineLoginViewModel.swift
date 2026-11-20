@@ -538,6 +538,24 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
+  /// The visit changed here (an entry, a checkout): the Live Activity follows from the bill
+  /// at once, whatever becomes of the page's own refresh.
+  private func syncLiveActivity() {
+    guard let shopCode else { return }
+    let api = self.api
+    let name = visit?.shop.name ?? machine?.shop.name
+    // Only HTTPS origins can carry a universal link; debug loopback origins are skipped.
+    let origin = api.baseURL.scheme?.lowercased() == "https" ? api.baseURL : nil
+    Task { await StoreVisitLiveActivityManager.shared.sync(shopCode: shopCode, shopName: name, origin: origin, api: api) }
+  }
+
+  /// A refresh something newer interrupted: the read it was making is still owed, or the visit an
+  /// entry just started would not be seen until the next full read (and its Live Activity not started).
+  private func superseded(_ version: Int) {
+    liveActivityTrace("Refresh superseded; another is owed")
+    if version == invocationVersion { refreshPending = true }
+  }
+
   private func scheduleRefresh() {
     // A scanned page reads itself when told it changed, and once a minute while open in case a push was
     // lost. Binding completion ends a shop link's binding polling; ordinary bill pages do not poll.
@@ -554,20 +572,23 @@ final class MachineLoginViewModel: ObservableObject {
       guard let self, self.sceneActive, !Task.isCancelled else { return }
       self.polling = nil
       if self.deviceBusy { self.scheduleRefresh(); return }
-      await self.refreshVisit(silent: true, dynamicOnly: true)
+      // An owed read is a full one: only that sees a visit an entry started.
+      let owed = self.refreshPending
+      self.refreshPending = false
+      await self.refreshVisit(silent: true, dynamicOnly: !owed)
     }
   }
 
   func refreshVisit(silent: Bool = false, dynamicOnly: Bool = false, initialIdentity: PrismUser? = nil) async {
-    guard !checkoutCelebrating else { return }
+    guard !checkoutCelebrating else { liveActivityTrace("Refresh skipped: checkout celebrating"); return }
     let api = self.api
     // Shop-only mode has no machine, so the machine gate cannot apply there.
     guard sceneActive || state == .loadingCards, machine?.capabilities != nil || isShopOnly,
-          state != .unauthenticated else { return }
+          state != .unauthenticated else { liveActivityTrace("Refresh skipped: scene \(sceneActive) state \(state) shopOnly \(isShopOnly)"); return }
     // Foreground/replayed invocations cannot bypass an outage or Retry-After cooldown.
-    if silent && readBackoff.remaining() > 0 { scheduleRefresh(); return }
+    if silent && readBackoff.remaining() > 0 { liveActivityTrace("Refresh skipped: backoff"); scheduleRefresh(); return }
     // Foreground events and manual refreshes share the same serial read loop.
-    guard !refreshRunning else { refreshPending = true; return }
+    guard !refreshRunning else { liveActivityTrace("Refresh deferred: one is running"); refreshPending = true; return }
     refreshRunning = true
     defer {
       refreshRunning = false
@@ -580,6 +601,7 @@ final class MachineLoginViewModel: ObservableObject {
     polling?.cancel()
     polling = nil
     let revision = visitRevision
+    liveActivityTrace("Refresh visit (silent \(silent), dynamic \(dynamicOnly))")
     let version = invocationVersion
     do {
       if !silent { await api.invalidateReads(); readBackoff.succeed() }
@@ -599,7 +621,7 @@ final class MachineLoginViewModel: ObservableObject {
           if let page, value.movedBilling(from: page) {
             fullRead = true
             await api.invalidateReads()
-            guard version == invocationVersion, revision == visitRevision else { return }
+            guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
           }
           pageReadAt = Date()
           slowNetwork = false
@@ -630,18 +652,18 @@ final class MachineLoginViewModel: ObservableObject {
         guard let currentShop = visit else { return }
         shop = currentShop; me = MeResponse(user: user)
       }
-      guard version == invocationVersion, revision == visitRevision else { return }
+      guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
       if fullRead, me.user?.id != userId {
         await api.invalidateReads()
         shop = try await api.request(shopPath())
-        guard version == invocationVersion, revision == visitRevision else { return }
+        guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
         if !userId.isEmpty {
           cards = []; assets = []; history = []; historyNextOffset = nil; checkoutPreview = nil
           billLoaded = false; binding = nil; pageCode = nil; settlement = nil; summary = nil
           user = me.user; userId = me.user?.id ?? ""
           if !isShopOnly && me.user != nil {
             let currentCards = try await api.cards()
-            guard version == invocationVersion, revision == visitRevision else { return }
+            guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
             cards = currentCards.cards.filter { $0.disabledAt == nil }
           }
         }
@@ -670,13 +692,14 @@ final class MachineLoginViewModel: ObservableObject {
         let result: PrismLatestCheckout = try await api.request(shopPath("player/checkout/latest"))
         latest = result.receipt
       }
-      guard version == invocationVersion, revision == visitRevision else { return }
+      guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
       playerStateLoaded = true
       if isShopOnly { checkoutPreview = currentPreview; settlement = latest; billLoaded = true }
       if userId != me.user!.id { assets = []; history = []; historyNextOffset = nil }
       userId = me.user!.id
       summary = currentSummary; user = me.user
       StoreVisitLiveActivityManager.shared.startPushToStartTracking(api: api)
+      liveActivityTrace("Visit read: full \(fullRead), active session \(currentSummary?.activeSession?.id ?? "none"), shop \(self.shopCode ?? "none")")
       if let shopCode = self.shopCode {
         await StoreVisitLiveActivityManager.shared.reconcile(
           session: currentSummary?.activeSession,
@@ -688,13 +711,13 @@ final class MachineLoginViewModel: ObservableObject {
           receipt: latest
         )
       }
-      guard version == invocationVersion, revision == visitRevision else { return }
+      guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
       if !needsPlatformBinding { binding = nil }
       polling?.cancel()
       if needsPlatformBinding, binding.flatMap({ prismParsedDate($0.expiresAt) }) ?? .distantPast <= Date() {
         binding = nil
         let value: PrismBinding = try await api.request(shopPath("platform-binding"), body: [:])
-        guard version == invocationVersion, revision == visitRevision else { return }
+        guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
         binding = value
       }
       if errorMessage == refreshError { errorMessage = nil }
@@ -821,7 +844,7 @@ final class MachineLoginViewModel: ObservableObject {
           unansweredActions[key] = nil
           pageReadAt = Date()
           // The bill and the Live Activity follow what this changed.
-          if let page, answer.page.movedBilling(from: page) { refreshPending = true }
+          if let page, answer.page.movedBilling(from: page) { refreshPending = true; syncLiveActivity() }
           show(answer.page)
           return answer
         }
@@ -1062,6 +1085,7 @@ final class MachineLoginViewModel: ObservableObject {
     guard isShopOnly else { return }
     await perform("entry") {
       _ = try await operation("entry.remote", path: shopPath("player/remote-entry"), body: ["consent": true], requiresLocation: requiresLocation)
+      syncLiveActivity()
       await refreshVisit(silent: true)
     }
   }
@@ -1076,7 +1100,10 @@ final class MachineLoginViewModel: ObservableObject {
     defer {
       if version == invocationVersion {
         deviceBusy = false
-        scheduleRefresh()
+        if refreshPending && sceneActive {
+          refreshPending = false
+          Task { [weak self] in await self?.refreshVisit(silent: true) }
+        } else { scheduleRefresh() }
       }
     }
     if section == 0 {

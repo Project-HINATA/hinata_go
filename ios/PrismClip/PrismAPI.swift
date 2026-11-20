@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 enum PrismAPIError: LocalizedError, PrismRetryAfterProviding {
   case invalidURL
@@ -247,17 +248,33 @@ final class PrismAPI {
     let _: EmptyResponse = try await send(request)
   }
 
-  /// Persistent anonymous client installation identifier, used to distinguish multiple
-  /// devices belonging to the same user and avoid self-push races on local checkout/checkin.
-  static var clientId: String {
+  /// Persistent anonymous identifier of this app on this phone, used to tell a user's phones
+  /// apart and avoid pushing a phone its own entry. Kept in the Keychain, which outlives the
+  /// app: a reinstall stays the same client, instead of leaving a stale one the server keeps
+  /// pushing Live Activity starts to. The id an earlier version kept in UserDefaults moves over.
+  static let clientId: String = {
     let key = "prism.client-id"
-    if let existing = UserDefaults.standard.string(forKey: key) {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: key,
+      kSecAttrAccount as String: "client",
+    ]
+    var found: CFTypeRef?
+    var lookup = query
+    lookup[kSecReturnData as String] = true
+    if SecItemCopyMatching(lookup as CFDictionary, &found) == errSecSuccess,
+       let data = found as? Data, let existing = String(data: data, encoding: .utf8), !existing.isEmpty {
       return existing
     }
-    let newId = UUID().uuidString
-    UserDefaults.standard.set(newId, forKey: key)
-    return newId
-  }
+    let id = UserDefaults.standard.string(forKey: key) ?? UUID().uuidString
+    var item = query
+    item[kSecValueData as String] = Data(id.utf8)
+    // Readable when a Live Activity push wakes the app on a locked phone.
+    item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+    SecItemAdd(item as CFDictionary, nil)
+    UserDefaults.standard.set(id, forKey: key)
+    return id
+  }()
 
   /// Debug builds talk to the APNs sandbox; everything else uses production.
   private static var liveActivityEnvironment: String {

@@ -1,6 +1,26 @@
 import ActivityKit
 import Foundation
 import OSLog
+#if canImport(UIKit)
+import UIKit
+#endif
+
+/// Live Activity decisions in the system log. Debug builds also append them to
+/// Library/Caches/live-activity.log, so a launch no debugger saw (a cold start from a link)
+/// can be read back from the device.
+func liveActivityTrace(_ message: String) {
+  Logger(subsystem: Bundle.main.bundleIdentifier ?? "PRiSM", category: "LiveActivity").notice("\(message, privacy: .public)")
+  #if DEBUG
+  guard let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else { return }
+  let url = dir.appendingPathComponent("live-activity.log")
+  let line = "\(ISO8601DateFormatter().string(from: Date())) [\(ProcessInfo.processInfo.processIdentifier)] \(message)\n"
+  if let handle = try? FileHandle(forWritingTo: url) {
+    handle.seekToEndOfFile(); handle.write(Data(line.utf8)); try? handle.close()
+  } else {
+    try? Data(line.utf8).write(to: url)
+  }
+  #endif
+}
 
 @MainActor
 final class StoreVisitLiveActivityManager {
@@ -42,13 +62,64 @@ final class StoreVisitLiveActivityManager {
     let endedAtUnix: Double?
   }
 
+  /// One reconcile at a time per shop: two at once would each find no activity and start one.
+  private var reconciling: [String: Task<Void, Never>] = [:]
+  private var foregroundObserver: NSObjectProtocol?
+
   private init() {}
+
+  /// Brings this phone's activity for a shop in line with the player's visit, apart from any
+  /// page: on opening a link, coming back to the app, and after an entry or checkout. The
+  /// activity only needs the visit and its bill, so a page refresh that something newer cut
+  /// short (or one that only reads the page) never leaves a visit without its activity.
+  func sync(shopCode: String, shopName: String?, origin: URL?, api: PrismAPI) async {
+    do {
+      let summary: PrismSummary = try await api.request("/api/v1/shops/\(shopCode)/player/me")
+      var name = shopName
+      if summary.activeSession != nil, name == nil {
+        let shop: PrismShopResponse? = try? await api.request("/api/v1/shops/\(shopCode)")
+        name = shop?.shop.name
+      }
+      liveActivityTrace("Sync shop \(shopCode): visit \(summary.activeSession?.id ?? "none")")
+      await reconcile(session: summary.activeSession, shopCode: shopCode, shopName: name ?? "PRiSM", origin: origin, api: api)
+    } catch {
+      liveActivityTrace("Sync shop \(shopCode) failed: \(String(describing: error))")
+    }
+  }
+
+  /// Back in the app, wherever it is: every shop this phone shows a visit for, and the shop
+  /// it last opened (an entry made elsewhere has no activity here yet).
+  func syncKnownShops(fallbackAPI: PrismAPI = .shared) async {
+    var shops: [String: (origin: String?, name: String?)] = [:]
+    for activity in Activity<StoreVisitAttributes>.activities {
+      shops[activity.attributes.shopCode] = (activity.attributes.origin, activity.attributes.shopName)
+    }
+    if let link = UserDefaults.standard.string(forKey: Self.lastLinkKey).flatMap(URL.init(string:)),
+       let invocation = InvocationParser.shopInvocation(from: link) ?? InvocationParser.invocation(from: link).map({ PrismShopInvocation(origin: $0.origin, shopCode: $0.shopCode) }),
+       shops[invocation.shopCode] == nil {
+      shops[invocation.shopCode] = (invocation.origin.absoluteString, nil)
+    }
+    for (shopCode, shop) in shops {
+      let origin = shop.origin.flatMap(URL.init(string:))
+      let api = origin.map { fallbackAPI.atOrigin($0) } ?? fallbackAPI
+      await sync(shopCode: shopCode, shopName: shop.name, origin: origin, api: api)
+    }
+  }
 
   /// Starts global activity tracking across the app lifecycle.
   /// Hooks activityUpdates and recovers existing activities.
   func startGlobalActivityTracking(fallbackAPI: PrismAPI = .shared) {
     recoverExistingActivities(api: fallbackAPI)
     Task { await dismissOutlived() }
+    #if canImport(UIKit)
+    if foregroundObserver == nil {
+      foregroundObserver = NotificationCenter.default.addObserver(
+        forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+      ) { _ in
+        Task { @MainActor in await StoreVisitLiveActivityManager.shared.syncKnownShops(fallbackAPI: fallbackAPI) }
+      }
+    }
+    #endif
 
     guard activityUpdatesTask == nil else { return }
     activityUpdatesTask = Task { [weak self] in
@@ -109,12 +180,33 @@ final class StoreVisitLiveActivityManager {
     api: PrismAPI,
     receipt: PrismCheckoutResult? = nil
   ) async {
+    let previous = reconciling[shopCode]
+    let task = Task { @MainActor in
+      await previous?.value
+      await self.reconcileNow(session: session, shopCode: shopCode, shopName: shopName, origin: origin, api: api, receipt: receipt)
+    }
+    reconciling[shopCode] = task
+    await task.value
+    if reconciling[shopCode] == task { reconciling[shopCode] = nil }
+  }
+
+  private func reconcileNow(
+    session: PrismSummary.Session?,
+    shopCode: String,
+    shopName: String,
+    origin: URL?,
+    api: PrismAPI,
+    receipt: PrismCheckoutResult?
+  ) async {
     let originValue = origin?.absoluteString
     await dismissOutlived()
     let activities = Activity<StoreVisitAttributes>.activities.filter {
       $0.attributes.shopCode == shopCode && ($0.attributes.origin == nil || $0.attributes.origin == originValue)
         && ($0.activityState == .active || $0.activityState == .stale)
     }
+
+    let seen = Activity<StoreVisitAttributes>.activities.map { "\($0.attributes.sessionId)/\($0.attributes.shopCode):\($0.activityState)" }
+    liveActivityTrace("Reconcile shop \(shopCode) visit \(session?.id ?? "none"); activities \(seen)")
 
     // Strategy 3: Deduplicate any duplicate Live Activities with the same sessionId on device
     var seenSessions = Set<String>()
@@ -131,7 +223,10 @@ final class StoreVisitLiveActivityManager {
 
     if let session {
       let current = activities.first(where: { $0.attributes.sessionId == session.id })
-      if current == nil, let retry = startRetryAfter[session.id], retry > Date() { return }
+      if current == nil, let retry = startRetryAfter[session.id], retry > Date() {
+        liveActivityTrace("Not retrying the Live Activity start yet")
+        return
+      }
       // APNs owns background updates; ordinary screen refreshes must not poll billing.
       let needsBill = current == nil || current?.content.state.bill == nil || current?.activityState == .stale
       let billing: BillResponse? = needsBill ? try? await api.request("/api/v1/shops/\(shopCode)/player/live-activity/bill") : nil
@@ -141,6 +236,7 @@ final class StoreVisitLiveActivityManager {
           let state = StoreVisitAttributes.ContentState(phase: existing.content.state.phase, startedAtUnix: existing.content.state.startedAtUnix, endedAtUnix: billing?.endedAtUnix, bill: bill, nextBill: billing?.nextBill)
           await existing.update(ActivityContent(state: state, staleDate: staleDate))
         }
+        liveActivityTrace("Visit already shown by \(existing.id), push token \(existing.pushToken == nil ? "missing" : "present")")
         // Already showing this visit (either created locally or remotely started via push-to-start).
         // Ensure token observer is active and current token is reported to the current deployment.
         ensureTokenTracking(
@@ -163,10 +259,11 @@ final class StoreVisitLiveActivityManager {
         return
       }
       guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-        logger.notice("Cannot start Live Activity: activities are disabled")
+        liveActivityTrace("Cannot start Live Activity: activities are disabled")
         await startFailed(session: session.id, shopCode: shopCode, error: "activities disabled", api: api)
         return
       }
+      liveActivityTrace("Starting a Live Activity for visit \(session.id)")
       do {
         let activity = try Activity.request(
           attributes: StoreVisitAttributes(sessionId: session.id, shopCode: shopCode, shopName: shopName, origin: originValue),
@@ -176,6 +273,7 @@ final class StoreVisitLiveActivityManager {
           ),
           pushType: .token
         )
+        liveActivityTrace("Started \(activity.id) state \(activity.activityState)")
         ensureTokenTracking(
           for: activity,
           shopCode: shopCode,
@@ -189,7 +287,7 @@ final class StoreVisitLiveActivityManager {
         }
         startRetryAfter[session.id] = nil
       } catch {
-        logger.error("Failed to start Live Activity: \(String(describing: error), privacy: .public)")
+        liveActivityTrace("Failed to start Live Activity: \(String(describing: error))")
         await startFailed(session: session.id, shopCode: shopCode, error: String(describing: error), api: api)
       }
     } else {
@@ -251,6 +349,7 @@ final class StoreVisitLiveActivityManager {
       stateTasks[activity.id] = Task { [weak self] in
         for await state in activity.activityStateUpdates {
           guard let self else { return }
+          liveActivityTrace("\(activity.id) is now \(state)")
           if state == .dismissed || state == .ended {
             self.cleanupTracking(for: activity.id)
             if Self.outlived(activity) { await activity.end(nil, dismissalPolicy: .immediate) }
@@ -336,9 +435,7 @@ final class StoreVisitLiveActivityManager {
       "shopName": shopName,
     ]
     if let origin { attributes["origin"] = origin }
-    logger.notice(
-      "Registering Live Activity token for shop \(shopCode, privacy: .public) via \(api.baseURL.absoluteString, privacy: .public) (token \(token.count) chars)"
-    )
+    liveActivityTrace("Registering token for \(activity.id) visit \(sessionId)")
     var delay: UInt64 = 1_000_000_000
     for attempt in 1...3 {
       guard !Task.isCancelled, activity.activityState == .active || activity.activityState == .stale else { return }
@@ -354,7 +451,7 @@ final class StoreVisitLiveActivityManager {
         registeredTokenOrigins[activity.id] = api.baseURL.absoluteString
         return
       } catch {
-        logger.error("Attempt \(attempt) failed to register Live Activity push token: \(String(describing: error), privacy: .public)")
+        liveActivityTrace("Attempt \(attempt) to register \(activity.id) failed: \(String(describing: error))")
         if attempt < 3 {
           let retryAfter = (error as? PrismRetryAfterProviding)?.retryAfter ?? 0
           let deadline = Date().addingTimeInterval(max(Double(delay) / 1_000_000_000, retryAfter))
