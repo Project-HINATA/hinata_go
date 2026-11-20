@@ -45,7 +45,15 @@ import Combine
   func startGlobalActivityTracking(fallbackAPI: PrismAPI = .shared) {
     self.lastApi = fallbackAPI
   }
+  /// The shops whose activity the page asked to follow the visit (an entry, a checkout).
+  private(set) var synced: [String] = []
+  func sync(shopCode: String, shopName: String?, origin: URL?, api: PrismAPI) async {
+    synced.append(shopCode)
+    self.lastApi = api
+  }
 }
+
+func liveActivityTrace(_ message: String) {}
 
 @MainActor final class PasskeyAuthenticationService {
   static var cancelRegistration = false
