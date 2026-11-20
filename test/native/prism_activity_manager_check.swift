@@ -13,6 +13,7 @@ struct ActivityAuthorizationInfo { var areActivitiesEnabled = true }
   let attributes: Attributes
   var content: ActivityContent<Attributes.ContentState>
   var activityState = ActivityState.active
+  var dismissedImmediately = false
   var pushToken: Data? = nil
   var pushTokenUpdates: AsyncStream<Data> { AsyncStream { $0.finish() } }
   var activityStateUpdates: AsyncStream<ActivityState> { AsyncStream { $0.finish() } }
@@ -31,6 +32,7 @@ struct ActivityAuthorizationInfo { var areActivitiesEnabled = true }
   func update(_ content: ActivityContent<Attributes.ContentState>) async { self.content = content }
   func end(_ content: ActivityContent<Attributes.ContentState>?, dismissalPolicy: ActivityUIDismissalPolicy) async {
     if let content { self.content = content }
+    if case .immediate = dismissalPolicy { dismissedImmediately = true }
     activityState = .ended
   }
 }
@@ -53,6 +55,8 @@ final class PrismAPI {
   func unregisterStartToken(clientId: String) async throws { startUnregistered = true }
   func registerLiveActivity(shopCode: String, activityId: String, token: String, sessionId: String?, attributes: [String: Any]) async throws {}
   func unregisterLiveActivity(shopCode: String, activityId: String) async throws { unregistered.append(activityId) }
+  var startFailures = [String]()
+  func reportLiveActivityStartFailure(shopCode: String, sessionId: String, error: String) async throws { startFailures.append(sessionId) }
 }
 
 @main enum ManagerCheck {
@@ -118,6 +122,26 @@ final class PrismAPI {
     precondition(preloaded.content.staleDate == Date(timeIntervalSince1970: 161))
     await manager.finishCheckout(receipt: receipt, shopCode: "shop", api: api)
     precondition(preloaded.content.state.nextBill == nil && preloaded.content.state.bill?.amountCents == 1234)
-    print("Live Activity recovery, final receipt, and logout checks passed")
+    // iOS ends an activity after eight hours and leaves it frozen on the Lock Screen.
+    // The app takes it off and shows a visit still going on with a new activity; a
+    // receipt it ended itself keeps its minute.
+    let outlived = try Activity<StoreVisitAttributes>.request(attributes: activity.attributes,
+      content: .init(state: .init(phase: "active", startedAtUnix: 10, endedAtUnix: nil, bill: bill), staleDate: nil), pushType: .token)
+    outlived.activityState = .ended
+    precondition(!preloaded.dismissedImmediately)
+    await manager.reconcile(session: .init(id: "visit", startedAt: "2026-01-01T00:00:00Z"),
+      shopCode: "shop", shopName: "Shop", origin: api.baseURL, api: api)
+    precondition(outlived.dismissedImmediately && !preloaded.dismissedImmediately)
+    let showing = Activity<StoreVisitAttributes>.activities.filter {
+      $0.attributes.sessionId == "visit" && $0.activityState == .active
+    }
+    precondition(showing.count == 1 && showing[0] !== outlived)
+    // Checkout takes one off too, where the app had not been opened since.
+    let later = try Activity<StoreVisitAttributes>.request(attributes: activity.attributes,
+      content: .init(state: .init(phase: "active", startedAtUnix: 10, endedAtUnix: nil, bill: bill), staleDate: nil), pushType: .token)
+    later.activityState = .ended
+    await manager.finishCheckout(receipt: receipt, shopCode: "shop", api: api)
+    precondition(later.dismissedImmediately && showing[0].content.state.bill?.amountCents == 1234)
+    print("Live Activity recovery, final receipt, outlived activity, and logout checks passed")
   }
 }

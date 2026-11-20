@@ -22,6 +22,12 @@ final class StoreVisitLiveActivityManager {
   private var registeredTokens: [String: String] = [:]
   private var registeredTokenOrigins: [String: String] = [:]
 
+  /// A visit whose activity iOS just refused to start is not retried (nor its bill fetched)
+  /// on every refresh; the server pushes it a start when the phone shows none.
+  private var startRetryAfter: [String: Date] = [:]
+  private var reportedStartFailures: Set<String> = []
+  static let startRetryInterval: TimeInterval = 30
+
   /// Push-to-start observer and registration state
   private var startTokenTask: Task<Void, Never>?
   private var registeredStartToken: String?
@@ -42,6 +48,7 @@ final class StoreVisitLiveActivityManager {
   /// Hooks activityUpdates and recovers existing activities.
   func startGlobalActivityTracking(fallbackAPI: PrismAPI = .shared) {
     recoverExistingActivities(api: fallbackAPI)
+    Task { await dismissOutlived() }
 
     guard activityUpdatesTask == nil else { return }
     activityUpdatesTask = Task { [weak self] in
@@ -103,6 +110,7 @@ final class StoreVisitLiveActivityManager {
     receipt: PrismCheckoutResult? = nil
   ) async {
     let originValue = origin?.absoluteString
+    await dismissOutlived()
     let activities = Activity<StoreVisitAttributes>.activities.filter {
       $0.attributes.shopCode == shopCode && ($0.attributes.origin == nil || $0.attributes.origin == originValue)
         && ($0.activityState == .active || $0.activityState == .stale)
@@ -123,6 +131,7 @@ final class StoreVisitLiveActivityManager {
 
     if let session {
       let current = activities.first(where: { $0.attributes.sessionId == session.id })
+      if current == nil, let retry = startRetryAfter[session.id], retry > Date() { return }
       // APNs owns background updates; ordinary screen refreshes must not poll billing.
       let needsBill = current == nil || current?.content.state.bill == nil || current?.activityState == .stale
       let billing: BillResponse? = needsBill ? try? await api.request("/api/v1/shops/\(shopCode)/player/live-activity/bill") : nil
@@ -155,6 +164,7 @@ final class StoreVisitLiveActivityManager {
       }
       guard ActivityAuthorizationInfo().areActivitiesEnabled else {
         logger.notice("Cannot start Live Activity: activities are disabled")
+        await startFailed(session: session.id, shopCode: shopCode, error: "activities disabled", api: api)
         return
       }
       do {
@@ -177,14 +187,23 @@ final class StoreVisitLiveActivityManager {
         if let target = StoreVisitAttributes(sessionId: session.id, shopCode: shopCode, shopName: shopName, origin: originValue).shopURL {
           UserDefaults.standard.set(target.absoluteString, forKey: Self.lastLinkKey)
         }
+        startRetryAfter[session.id] = nil
       } catch {
         logger.error("Failed to start Live Activity: \(String(describing: error), privacy: .public)")
+        await startFailed(session: session.id, shopCode: shopCode, error: String(describing: error), api: api)
       }
     } else {
       for activity in activities {
         await recover(activity, api: api, receipt: receipt)
       }
     }
+  }
+
+  /// Waits before trying the visit again, and tells the server why once per visit.
+  private func startFailed(session: String, shopCode: String, error: String, api: PrismAPI) async {
+    startRetryAfter[session] = Date().addingTimeInterval(Self.startRetryInterval)
+    guard reportedStartFailures.insert(session).inserted else { return }
+    try? await api.reportLiveActivityStartFailure(shopCode: shopCode, sessionId: session, error: error)
   }
 
   /// Retires this deployment's activities across shops before sign-out.
@@ -234,6 +253,7 @@ final class StoreVisitLiveActivityManager {
           guard let self else { return }
           if state == .dismissed || state == .ended {
             self.cleanupTracking(for: activity.id)
+            if Self.outlived(activity) { await activity.end(nil, dismissalPolicy: .immediate) }
             break
           }
         }
@@ -369,8 +389,28 @@ final class StoreVisitLiveActivityManager {
     }
   }
 
+  /// An activity iOS ended by itself while it still showed a visit going on: the
+  /// system ends every Live Activity after eight hours and leaves it on the Lock
+  /// Screen for up to four more, frozen as it was. Nothing can update or end it by
+  /// push after that, so the visit's later bill or checkout would sit beside it.
+  /// One this app ended always shows the ended phase.
+  static func outlived(_ activity: Activity<StoreVisitAttributes>) -> Bool {
+    activity.activityState == .ended && activity.content.state.phase != "ended"
+  }
+
+  /// Takes outlived activities off the Lock Screen. A visit still going on is shown
+  /// by a new activity (`reconcile`), one that ended by its receipt.
+  func dismissOutlived() async {
+    for activity in Activity<StoreVisitAttributes>.activities where Self.outlived(activity) {
+      logger.notice("Dismissing a Live Activity iOS ended after its time limit")
+      cleanupTracking(for: activity.id)
+      await activity.end(nil, dismissalPolicy: .immediate)
+    }
+  }
+
   /// A successful checkout already carries authoritative data. Never refetch it.
   func finishCheckout(receipt: PrismCheckoutResult, shopCode: String, api: PrismAPI) async {
+    await dismissOutlived()
     for activity in Activity<StoreVisitAttributes>.activities
       where activity.attributes.shopCode == shopCode &&
         (activity.attributes.origin == nil || activity.attributes.origin == api.baseURL.absoluteString) {

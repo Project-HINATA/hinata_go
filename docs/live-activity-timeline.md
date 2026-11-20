@@ -64,7 +64,7 @@ Swift 实现位于 `ios/LiveActivityShared/StoreVisitActivityView.swift`，由�
 `StoreVisitActivityView.swift` 内有锁屏、expanded 与 compact 的 Xcode `#Preview`，展开预览包含计费、封顶、暂停及旧载荷缺失上一事件四种状态。
 
 - `sh test/native/run-prism-activity-check.sh`：旧数据解码、新字段往返、非法/未知区间、刷新不改变事件起点、系统倒计时到点不反向增长。
-- `sh test/native/run-prism-activity-manager-check.sh`：恢复活动、最终账单、退出登录的原有行为。
+- `sh test/native/run-prism-activity-manager-check.sh`：恢复活动、最终账单、退出登录的原有行为，以及被 iOS 在 8 小时上限结束、仍冻结在锁屏上的活动会被立即移除，在店中则换一张新卡。
 - 两个扩展均应执行 simulator Debug build。
 - 真机仍需检查摄像头边缘、长店名/大金额、大字体以及跨事件时的实际推送表现。
 

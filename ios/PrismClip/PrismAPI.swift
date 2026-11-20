@@ -202,6 +202,15 @@ final class PrismAPI {
     )
   }
 
+  /// Tells the server iOS refused to start the visit's activity, and why: only the phone
+  /// knows, and the server otherwise sees a phone that simply shows nothing.
+  func reportLiveActivityStartFailure(shopCode: String, sessionId: String, error: String) async throws {
+    let _: EmptyResponse = try await requestSelfSigned(
+      path: "/api/v1/shops/\(shopCode)/player/live-activity/start-failed",
+      body: ["sessionId": sessionId, "error": String(error.prefix(500))]
+    )
+  }
+
   /// Retires a token when the activity ends or the player signs out, so a dead activity is
   /// never pushed to.
   func unregisterLiveActivity(shopCode: String, activityId: String) async throws {
