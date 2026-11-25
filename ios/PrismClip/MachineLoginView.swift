@@ -68,7 +68,7 @@ struct MachineLoginView: View {
           case .expired:
             ClipExpiredPage()
           case .completed: ClipExpiredPage()
-          case .unauthenticated, .loadingCards, .cardsFailed, .ready, .locating, .sending:
+          case .unauthenticated, .loadingCards, .ready, .locating, .sending:
             // The card is the content width: the page's own 20-point margins, capped like the
             // stack above. Deriving it here means the cover knows its width on the first
             // layout pass, so it never renders at a provisional size.
@@ -185,13 +185,6 @@ private struct ClipLoadingPage: View {
   }
 }
 
-private struct ClipLabelTint: ViewModifier {
-  let color: Color?
-  @ViewBuilder func body(content: Content) -> some View {
-    if let color { content.foregroundStyle(color) } else { content }
-  }
-}
-
 private struct ClipSlowNetwork: View {
   var body: some View {
     Text("网络较慢，正在重试").font(.subheadline).foregroundStyle(.secondary)
@@ -226,8 +219,6 @@ private struct ClipSessionPage: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   /// Width the shop card will occupy, known before the first layout pass.
   let cardWidth: CGFloat
-  /// The blocks the player has agreed to. The only state a page keeps of its own.
-  @State private var agreed: Set<String> = []
 
   var body: some View {
     VStack(spacing: 52) {
@@ -255,40 +246,21 @@ private struct ClipSessionPage: View {
         if model.slowNetwork { ClipSlowNetwork() }
         if model.isShopOnly {
           if [.ready, .locating, .sending].contains(model.state) { ClipShopControls() }
-        } else if [.ready, .locating, .sending].contains(model.state) {
+        } else if [.ready, .locating, .sending].contains(model.state)
+          || (model.state == .unauthenticated && model.page != nil) {
           pageBlocks
         }
 
         switch model.state {
         case .unauthenticated:
-          VStack(spacing: 14) {
-            Button { Task { await model.authenticateWithMunet() } } label: {
-              actionLabel(model.authenticating == "munet" ? "正在连接 MuNET…" : "使用 MuNET 登录",
-                          icon: Image("MuNETLogo").renderingMode(.original),
-                          busy: model.authenticating == "munet")
-            }
-            .clipActionStyle(primary: true)
-            Button { Task { await model.authenticateWithPasskey() } } label: {
-              actionLabel(model.authenticating == "passkey" ? "正在验证 Passkey…" : "使用 Passkey 登录",
-                          icon: Image(systemName: "touchid"),
-                          busy: model.authenticating == "passkey")
-            }
-            .clipActionStyle()
+          if model.isShopOnly || model.page == nil {
+            ClipSignInButtons(methods: ClipSignInButtons.standard)
           }
-          .disabled(model.authenticating != nil)
         case .ready, .locating, .sending:
           // Every outcome on a scanned page shows under its own block.
           if model.isShopOnly { AnchoredNotice(AnchoredNotice.page) }
         case .loadingCards:
           ProgressView().accessibilityLabel(model.isShopOnly ? "正在加载" : "正在加载卡片")
-        case .cardsFailed(let message):
-          VStack(spacing: 20) {
-            ClipStatusMessage(title: "无法加载卡片", message: message, symbol: "exclamationmark.triangle")
-            Button { Task { await model.reloadCards() } } label: {
-              Text("重新加载卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
-            }
-            .clipActionStyle(primary: true)
-          }
         case .idle, .loadingMachine, .loadingShop, .failed, .completed, .expired:
           EmptyView()
         }
@@ -296,200 +268,15 @@ private struct ClipSessionPage: View {
     }
   }
 
-  /// What the platform says this page is. Blocks this build does not know are skipped.
+  /// What the platform says this page is.
   @ViewBuilder private var pageBlocks: some View {
     if let page = model.page {
-      VStack(alignment: .leading, spacing: 28) {
-        ForEach(page.blocks) { block in pageBlock(block) }
-      }
-      // Coming back to confirming later starts unticked.
-      .onChange(of: page.asksConsent) { if !page.asksConsent { agreed = [] } }
+      ClipPage(page: page)
     } else if model.errorMessage != nil {
       Button { Task { model.clearError(); await model.refreshVisit() } } label: {
         Text("重试").frame(maxWidth: .infinity).padding(.vertical, 12)
       }.clipActionStyle()
     } else { ProgressView().frame(maxWidth: .infinity).accessibilityLabel("正在加载") }
-  }
-
-  private var busy: Bool { model.deviceBusy || [.loadingCards, .locating, .sending].contains(model.state) }
-
-  @ViewBuilder private func pageBlock(_ block: PrismPageBlock) -> some View {
-    switch block {
-    case .text(_, let text, let heading, let error):
-      if heading {
-        Text(verbatim: text).font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
-      } else if error {
-        Text(verbatim: text).font(.subheadline).foregroundStyle(.red)
-      } else {
-        Text(verbatim: text).font(.subheadline).foregroundStyle(.secondary)
-          .frame(maxWidth: .infinity).multilineTextAlignment(.center)
-      }
-    case .signin, .unknown:
-      EmptyView()
-    case .binding:
-      ClipPlatformBinding()
-      AnchoredNotice(["binding"])
-    case .pricing(_, let rules, let changes):
-      ClipResourcePricing(rules: rules, changes: changes)
-    case .consent(let id, let text):
-      let ticked = agreed.contains(id)
-      Button { if ticked { agreed.remove(id) } else { agreed.insert(id) } } label: {
-        HStack(alignment: .top, spacing: 12) {
-          Image(systemName: ticked ? "checkmark.square.fill" : "square").foregroundStyle(ticked ? Color.blue : .secondary)
-          Text(verbatim: text).font(.subheadline).foregroundStyle(.primary).multilineTextAlignment(.leading)
-        }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-      }.buttonStyle(.plain).accessibilityValue(ticked ? "✓" : "—").disabled(busy)
-    case .climate(_, let state, _):
-      ClipClimateCard(state: state)
-      AnchoredNotice(["climate"])
-    case .table(let table):
-      ClipMahjongTable(table: table)
-    case .cards(let block):
-      pageCards(block)
-    case .button(let button):
-      pageButton(button)
-    }
-  }
-
-  @ViewBuilder private func pageButton(_ button: PrismPageButton) -> some View {
-    // Adding a card takes the place of what is done with one.
-    if !(model.cardCapture != nil && button.icon == "coin") {
-      VStack(spacing: 12) {
-        if button.againLabel != nil, let code = model.pageCode {
-          VStack(spacing: 16) {
-            Text(verbatim: code.title).font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
-            Text(verbatim: code.value).font(.system(size: 36, design: .monospaced)).tracking(4).textSelection(.enabled)
-            Text(verbatim: code.expiresLabel + " " + prismDisplayClock(code.expiresAt, seconds: true)).font(.caption).foregroundStyle(.secondary)
-            Text(verbatim: code.hint).font(.subheadline).foregroundStyle(.secondary)
-          }.frame(maxWidth: .infinity).padding(.vertical, 12)
-        }
-        let note = button.answerOnButton == true && button.enabled && model.inlineNoticeAnchor == button.id ? model.inlineNotice : nil
-        let waiting = model.pressing == button.id || (button.action == "power.on" && model.waitingPower)
-        let off = busy || waiting || !button.enabled || (button.requires.map { !agreed.contains($0) } ?? false)
-        Button { Task { await model.press(button) } } label: {
-          HStack(spacing: 10) {
-            if waiting { ProgressView() }
-            else if let note { Image(systemName: noticeSymbol(note.level)) }
-            else if let symbol = Self.buttonSymbols[button.icon ?? ""] { Image(systemName: symbol) }
-            Text(verbatim: note?.body ?? (model.pageCode != nil ? button.againLabel : nil) ?? button.label)
-          }
-          // Left to the button style when it has to show being disabled, which a set colour would hide.
-          .modifier(ClipLabelTint(color: note.map { noticeColor($0.level) } ?? (button.style == "primary" || off ? nil : Color.primary)))
-          .frame(maxWidth: .infinity).padding(.vertical, 12)
-        }
-        .clipActionStyle(primary: button.style == "primary")
-        .disabled(off)
-        if button.answerOnButton != true { AnchoredNotice([button.id]) }
-      }
-    }
-  }
-
-  private static let buttonSymbols = ["coin": "centsign.circle", "power": "power", "door": "door.left.hand.open"]
-
-  @ViewBuilder private func pageCards(_ block: PrismPageCards) -> some View {
-    VStack(spacing: 28) {
-      ZStack(alignment: .trailing) {
-        Text(model.cardCapture == nil ? "选择卡片" : "添加卡片").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
-        if block.capture, model.cardCapture == nil {
-          Button { Task { await model.startCardCapture() } } label: {
-            Image(systemName: "plus").font(.title3.weight(.semibold)).frame(width: 44, height: 44)
-          }
-          .accessibilityLabel("添加卡片")
-          .disabled(model.deviceBusy || model.state != .ready)
-        }
-      }.padding(.bottom, 2)
-      if let capture = model.cardCapture { ClipCardCapture(capture: capture, machineName: model.page?.resource ?? "") }
-      else { cardsView.disabled(model.deviceBusy || !block.enabled) }
-    }
-  }
-
-  private func actionLabel(_ title: LocalizedStringKey, icon: Image, busy: Bool) -> some View {
-    HStack(spacing: 10) {
-      Group {
-        if busy { ProgressView().tint(.primary) }
-        else { icon.resizable().scaledToFit() }
-      }
-      .frame(width: 24, height: 24)
-      .accessibilityHidden(true)
-      Text(title).multilineTextAlignment(.center)
-    }.frame(maxWidth: .infinity).padding(.vertical, 12)
-  }
-
-  private var cardsView: some View {
-    VStack(spacing: 0) {
-      if model.cards.isEmpty {
-        Text("还没有可用卡片，请先在 Prism 添加卡片")
-          .foregroundStyle(.secondary).multilineTextAlignment(.center)
-        Link(destination: model.api.baseURL.appendingPathComponent("cards")) {
-          Text("添加卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
-        }
-        .clipActionStyle().padding(.top, 16)
-        Button { Task { await model.reloadCards() } } label: {
-          Text("重新加载卡片").frame(maxWidth: .infinity).padding(.vertical, 12)
-        }
-        .clipActionStyle().padding(.top, 24)
-      } else {
-        VStack(spacing: 0) {
-          ForEach(Array(model.cards.enumerated()), id: \.element.id) { index, card in
-            if index > 0 { Divider().padding(.leading, 24) }
-            let active = model.activeCardId == card.id
-            // A swipe's outcome stays on the row the player tapped; nothing else waits for it.
-            let feedback = model.cardFeedback?.cardId == card.id ? model.cardFeedback : nil
-            Button { Task { await model.login(card: card) } } label: {
-              HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                  Text(card.label).font(.title3.weight(.semibold)).foregroundStyle(.primary)
-                  if let feedback {
-                    feedbackText(feedback).font(.body.weight(.semibold)).multilineTextAlignment(.leading)
-                  } else {
-                    Text(active ? rowDetail(card) : cardEnding(card))
-                      .font(.body).foregroundStyle(.secondary)
-                  }
-                }
-                Spacer(minLength: 0)
-                if let feedback {
-                  Image(systemName: noticeSymbol(feedback.level))
-                    .font(.title2).foregroundStyle(noticeColor(feedback.level))
-                } else if active && [.locating, .sending].contains(model.state) {
-                  ProgressView()
-                } else {
-                  Image(systemName: "chevron.right").font(.subheadline).foregroundStyle(.tertiary)
-                }
-              }
-              .padding(.horizontal, 24).padding(.vertical, 16)
-              .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
-              .animation(.easeOut(duration: 0.2), value: feedback)
-              .contentShape(Rectangle())
-            }
-            .buttonStyle(.borderless)
-            .tint(.primary)
-            .disabled(model.state != .ready)
-            .opacity(model.state != .ready && !active ? 0.45 : 1)
-          }
-        }
-        .background(prismCardFill)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-      }
-    }
-  }
-
-  private func rowDetail(_ card: ArcadeCard) -> String {
-    switch model.state {
-    case .locating: return String(localized: "确认位置…")
-    case .sending: return String(localized: "正在登录…")
-    default: return cardEnding(card)
-    }
-  }
-
-  private func feedbackText(_ feedback: CardFeedback) -> Text {
-    feedback.parts.enumerated().reduce(Text(verbatim: "")) { text, item in
-      let part = Text(item.element.text).foregroundStyle(noticeColor(item.element.level))
-      return item.offset == 0 ? part : text + Text(verbatim: " · ").foregroundStyle(.secondary) + part
-    }
-  }
-
-  private func cardEnding(_ card: ArcadeCard) -> String {
-    String.localizedStringWithFormat(NSLocalizedString("尾号 %@", comment: "Last four card digits"), String(card.accessCode.suffix(4)))
   }
 }
 
@@ -612,69 +399,6 @@ struct ClipShopHero: View {
   }
 }
 
-private struct ClipStatusMessage: View {
-  let title: LocalizedStringKey
-  let message: String
-  let symbol: String
-
-  var body: some View {
-    if #available(iOS 17.0, *) {
-      ContentUnavailableView {
-        Label { Text(title).font(.title2) } icon: { Image(systemName: symbol) }
-      } description: { Text(message) }
-        .fixedSize(horizontal: false, vertical: true)
-    } else {
-      VStack(spacing: 12) {
-        Image(systemName: symbol).font(.largeTitle).foregroundStyle(.secondary)
-        Text(title).font(.title2)
-        Text(message).foregroundStyle(.secondary)
-      }
-      .multilineTextAlignment(.center)
-      .frame(maxWidth: .infinity)
-    }
-  }
-}
-
-/// Action buttons render as Liquid Glass on iOS 26+ (prominent for the main action,
-/// regular glass for secondary ones) and keep the flat pill on earlier systems.
-private struct ClipActionModifier: ViewModifier {
-  var primary = false
-
-  @ViewBuilder func body(content: Content) -> some View {
-    if #available(iOS 26.0, *) {
-      if primary {
-        content.font(.headline).buttonStyle(.glassProminent).tint(.blue).buttonBorderShape(.capsule)
-      } else {
-        content.font(.headline).buttonStyle(.glass).buttonBorderShape(.capsule)
-      }
-    } else {
-      content.buttonStyle(ClipActionStyle(primary: primary))
-    }
-  }
-}
-
-/// Fallback used below iOS 26, where glass button styles are unavailable.
-private struct ClipActionStyle: ButtonStyle {
-  var primary = false
-  @Environment(\.isEnabled) private var enabled
-
-  func makeBody(configuration: Configuration) -> some View {
-    configuration.label
-      .font(.system(size: 18, weight: .semibold))
-      .foregroundStyle(primary ? Color.white : Color.primary)
-      .padding(.horizontal, 24)
-      .frame(maxWidth: .infinity, minHeight: 58)
-      .background(primary ? Color.blue : Color.primary.opacity(0.065), in: Capsule())
-      .opacity(!enabled ? 0.5 : configuration.isPressed ? 0.7 : 1)
-  }
-}
-
-private extension View {
-  func clipActionStyle(primary: Bool = false) -> some View {
-    modifier(ClipActionModifier(primary: primary))
-  }
-}
-
 /// What replaces the device controls on a shop link. Admission is not offered here: entry
 /// proves physical presence, and only a scanned machine ticket does that, so a player who has
 /// not checked in is pointed at the machine QR instead. A shop no longer has a billing switch
@@ -688,7 +412,7 @@ private struct ClipShopControls: View {
         if model.shopHasActiveSession, let preview = model.checkoutPreview {
           ClipBillContent(preview: preview).padding(.horizontal, 4)
         } else if model.needsPlatformBinding {
-          ClipPlatformBinding()
+          ClipPlatformBinding(labels: .shopLink)
         } else if model.errorMessage != nil {
           Button { Task { model.clearError(); await model.refreshVisit() } } label: {
             Text("重试").frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -827,315 +551,6 @@ private struct ClipPasskeySetup: View {
         Text("跳过，继续游玩").frame(maxWidth: .infinity).padding(.vertical, 12)
       }.clipActionStyle().disabled(model.addingPasskey)
     }
-  }
-}
-
-private struct ClipPlatformBinding: View {
-  @EnvironmentObject private var model: MachineLoginViewModel
-  @State private var copied = false
-  var body: some View {
-    VStack(alignment: .leading, spacing: 24) {
-      Text("绑定平台身份").font(.title2).frame(maxWidth: .infinity).multilineTextAlignment(.center)
-      VStack(alignment: .leading, spacing: 18) {
-        if let binding = model.binding {
-          let lines = prismBindingPromptLines(binding.botContact, code: binding.code) ?? [
-            PrismBindingPromptLine(text: String(localized: "向店铺 Bot 发送"), command: false),
-            PrismBindingPromptLine(text: "bind \(binding.code)", command: true),
-          ]
-          ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-            if line.command {
-              HStack(spacing: 12) {
-                Text(verbatim: line.text).font(.system(size: 21, design: .monospaced)).textSelection(.enabled)
-                Spacer(minLength: 0)
-                Button(copied ? "已复制" : "复制") {
-                  UIPasteboard.general.string = line.text
-                  copied = true
-                  Task { try? await Task.sleep(nanoseconds: 2_000_000_000); copied = false }
-                }.buttonStyle(.bordered)
-              }
-            } else {
-              Text(verbatim: line.text).font(.subheadline)
-            }
-          }
-          Text(String(localized: "有效期至") + " " + prismTime(binding.expiresAt)).font(.caption).foregroundStyle(.secondary)
-        }
-        if model.errorMessage != nil {
-          Button("重试") { Task { await model.bindPlatformIdentity() } }.disabled(model.deviceBusy)
-        } else if model.binding == nil { ProgressView() }
-      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(prismCardFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-  }
-}
-
-private struct ClipMahjongTable: View {
-  let table: PrismPageTable
-  var body: some View {
-    VStack(spacing: 16) {
-      HStack(alignment: .center) {
-        VStack(alignment: .leading, spacing: 4) {
-          Text(verbatim: table.title).font(.title3.weight(.semibold))
-          Text(verbatim: table.status).font(.subheadline).foregroundStyle(.secondary)
-        }
-        Spacer()
-        HStack(alignment: .firstTextBaseline, spacing: 3) {
-          Text("\(table.seats.count)").font(.title2.weight(.semibold))
-          Text("/ \(table.capacity)").font(.body).foregroundStyle(.secondary)
-        }.monospacedDigit()
-      }
-      LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 10)], spacing: 10) {
-        ForEach(0..<table.capacity, id: \.self) { index in
-          let seat = index < table.seats.count ? table.seats[index] : nil
-          VStack(alignment: .leading, spacing: 6) {
-            if let seat { Text(verbatim: seat.name).font(.body.weight(.medium)) }
-            else { Text(verbatim: table.emptyLabel).font(.body).foregroundStyle(.tertiary) }
-            if seat?.mine == true { Text(verbatim: table.mineLabel).font(.caption).foregroundStyle(.secondary) }
-          }
-          .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-          .padding(16)
-          .background(prismCardFill.opacity(seat == nil ? 0 : 1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-          .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.primary.opacity(seat?.mine == true ? 0.3 : seat == nil ? 0.08 : 0), lineWidth: seat?.mine == true ? 1.5 : 1))
-        }
-      }
-    }.frame(maxWidth: .infinity)
-  }
-}
-
-/// The player's air conditioner, matching the Web device page. Off, it is one button; on,
-/// the target temperature is the centre with round − and + either side, and mode and fan
-/// speed are segmented rows underneath. The card takes the running mode's colour.
-///
-/// A choice is shown at once and gives way to what Home Assistant reports, or falls back
-/// after a few seconds if it never does. Quick − / + presses are sent as one temperature, so
-/// an on-site location fix is not taken for every step.
-private struct ClipClimateCard: View {
-  @EnvironmentObject private var model: MachineLoginViewModel
-  let state: PrismClimate?
-  @State private var draftMode: String?
-  @State private var draftFan: String?
-  @State private var draftTemperature: Double?
-  @State private var sendTemperature: Task<Void, Never>?
-  @State private var expireDraft: Task<Void, Never>?
-
-  private static let modeNames: [String: LocalizedStringKey] = [
-    "off": "已关闭", "cool": "制冷", "heat": "制热", "dry": "除湿", "fan_only": "送风", "auto": "自动", "heat_cool": "自动冷暖",
-  ]
-  private static let modeSymbols: [String: String] = [
-    "cool": "snowflake", "heat": "sun.max", "dry": "drop", "fan_only": "fan",
-    "auto": "arrow.triangle.2.circlepath", "heat_cool": "arrow.triangle.2.circlepath",
-  ]
-  private static let fanNames: [String: LocalizedStringKey] = [
-    "auto": "自动", "silent": "静音", "quiet": "静音", "low": "低风", "medium": "中风", "middle": "中风",
-    "high": "高风", "strong": "强劲", "turbo": "强劲",
-  ]
-  private func modeName(_ mode: String) -> Text { Self.modeNames[mode].map { Text($0) } ?? Text(verbatim: mode) }
-  private func fanName(_ mode: String) -> Text { Self.fanNames[mode.lowercased()].map { Text($0) } ?? Text(verbatim: mode) }
-
-  private var mode: String { draftMode ?? state?.mode ?? "off" }
-  private var fanMode: String? { draftFan ?? state?.fanMode }
-  private var temperature: Double? { draftTemperature ?? state?.temperature }
-  private var isOn: Bool { state?.isOn == true }
-  private var busy: Bool { model.deviceBusy || [.locating, .sending].contains(model.state) }
-
-  private var accent: Color {
-    guard isOn else { return .secondary }
-    switch mode {
-    case "heat": return Color(red: 0.91, green: 0.44, blue: 0.16)
-    case "dry": return Color(red: 0.10, green: 0.60, blue: 0.54)
-    case "fan_only": return Color(red: 0.37, green: 0.45, blue: 0.53)
-    case "auto", "heat_cool": return Color(red: 0.48, green: 0.35, blue: 0.84)
-    default: return .blue
-    }
-  }
-
-  private func degrees(_ value: Double) -> String {
-    value.formatted(.number.precision(.fractionLength(0...1)))
-  }
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 20) {
-      HStack(alignment: .center, spacing: 12) {
-        VStack(alignment: .leading, spacing: 4) {
-          Text("空调").font(.title3.weight(.semibold))
-          status.font(.subheadline).foregroundStyle(.secondary)
-        }
-        Spacer(minLength: 0)
-        if isOn {
-          Button { send("climate.off") } label: {
-            Label("关空调", systemImage: "power").font(.subheadline.weight(.semibold))
-              .padding(.horizontal, 14).padding(.vertical, 9)
-              .background(Color.primary.opacity(0.07), in: Capsule())
-          }.buttonStyle(.plain)
-        }
-      }
-      if state == nil {
-        HStack(spacing: 10) { powerButton(on: true); powerButton(on: false) }
-      } else if !isOn {
-        powerButton(on: true)
-      } else {
-        if let temperature { temperatureRow(temperature) }
-        if let state, !state.choosableModes.isEmpty {
-          segments(title: "模式", options: state.choosableModes, selected: mode, tall: true) { option in
-            if let symbol = Self.modeSymbols[option] { Image(systemName: symbol).font(.system(size: 18)) }
-            modeName(option)
-          } choose: { option in
-            draftMode = option; hold(); send("climate.set_mode", ["mode": option])
-          }
-        }
-        if let fans = state?.fanModes, !fans.isEmpty {
-          segments(title: "风速", options: fans, selected: fanMode ?? "", tall: false) { option in
-            fanName(option)
-          } choose: { option in
-            draftFan = option; hold(); send("climate.set_fan_mode", ["fanMode": option])
-          }
-        }
-      }
-    }
-    .padding(20)
-    .background(accent.opacity(isOn ? 0.08 : 0.06), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-    .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(accent.opacity(isOn ? 0.18 : 0.08)))
-    .animation(.easeInOut(duration: 0.25), value: mode)
-    .onChange(of: state) {
-      if draftMode == state?.mode { draftMode = nil }
-      if draftFan == state?.fanMode { draftFan = nil }
-      if draftTemperature == state?.temperature { draftTemperature = nil }
-    }
-    .onDisappear { sendTemperature?.cancel(); expireDraft?.cancel() }
-  }
-
-  private var status: Text {
-    guard let state else { return Text("空调状态未知") }
-    let room = state.currentTemperature.map { Text(" · ") + Text("室温 \(degrees($0))°") } ?? Text(verbatim: "")
-    return (isOn ? modeName(mode) : Text("已关闭")) + room
-  }
-
-  private func powerButton(on: Bool) -> some View {
-    Button { send(on ? "climate.on" : "climate.off") } label: {
-      HStack(spacing: 10) {
-        if busy { ProgressView() } else { Image(systemName: "power") }
-        Text(on ? "开空调" : "关空调")
-      }.frame(maxWidth: .infinity).padding(.vertical, 12)
-    }.clipActionStyle(primary: on)
-  }
-
-  private func temperatureRow(_ value: Double) -> some View {
-    HStack(spacing: 12) {
-      round("minus", label: "调低温度", disabled: value <= (state?.minTemperature ?? 16)) { nudge(-1) }
-      Spacer(minLength: 0)
-      VStack(spacing: 2) {
-        HStack(alignment: .top, spacing: 2) {
-          Text(verbatim: degrees(value)).font(.system(size: 64, weight: .light, design: .rounded)).monospacedDigit()
-            .contentTransition(.numericText(value: value))
-          Text(verbatim: "°").font(.system(size: 30, weight: .light, design: .rounded)).padding(.top, 6)
-        }.foregroundStyle(accent)
-        Text("设定温度").font(.footnote).foregroundStyle(.secondary)
-      }
-      .accessibilityElement(children: .combine)
-      Spacer(minLength: 0)
-      round("plus", label: "调高温度", disabled: value >= (state?.maxTemperature ?? 30)) { nudge(1) }
-    }
-    .animation(.snappy, value: value)
-  }
-
-  private func round(_ symbol: String, label: LocalizedStringKey, disabled: Bool, action: @escaping () -> Void) -> some View {
-    Button(action: action) {
-      Image(systemName: symbol).font(.title2.weight(.medium)).foregroundStyle(accent)
-        .frame(width: 56, height: 56)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: Circle())
-        .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
-    }
-    .buttonStyle(.plain)
-    .opacity(disabled ? 0.35 : 1)
-    .disabled(disabled)
-    .accessibilityLabel(label)
-  }
-
-  private func segments<Content: View>(
-    title: LocalizedStringKey, options: [String], selected: String, tall: Bool,
-    @ViewBuilder label: @escaping (String) -> Content, choose: @escaping (String) -> Void
-  ) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text(title).font(.footnote.weight(.medium)).foregroundStyle(.secondary)
-      // Up to six options share one row; a longer list wraps instead of crushing labels.
-      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: min(options.count, 6)), spacing: 4) {
-        ForEach(options, id: \.self) { option in
-          let on = option == selected
-          Button { if !on { choose(option) } } label: {
-            VStack(spacing: 4) { label(option) }
-              .font(tall ? .footnote : .subheadline).fontWeight(on ? .semibold : .regular)
-              .lineLimit(1).minimumScaleFactor(0.8)
-              .frame(maxWidth: .infinity, minHeight: tall ? 56 : 42)
-              .foregroundStyle(on ? accent : Color.primary.opacity(0.7))
-              .background(on ? Color(uiColor: .secondarySystemGroupedBackground) : .clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-              .shadow(color: .black.opacity(on ? 0.1 : 0), radius: 3, y: 1)
-          }
-          .buttonStyle(.plain)
-          .accessibilityAddTraits(on ? .isSelected : [])
-        }
-      }
-      .padding(4)
-      .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-      .accessibilityElement(children: .contain)
-      .accessibilityLabel(title)
-    }
-  }
-
-  private func send(_ action: String, _ extra: [String: Any] = [:]) {
-    Task { await model.climate(action, extra) }
-  }
-
-  /// Keep a choice on screen while Home Assistant catches up, but not forever.
-  private func hold() {
-    expireDraft?.cancel()
-    expireDraft = Task {
-      try? await Task.sleep(for: .seconds(6))
-      guard !Task.isCancelled else { return }
-      draftMode = nil; draftFan = nil; draftTemperature = nil
-    }
-  }
-
-  private func nudge(_ direction: Int) {
-    guard let state, let current = temperature else { return }
-    let next = state.nudged(current, by: direction)
-    guard next != current else { return }
-    draftTemperature = next
-    hold()
-    sendTemperature?.cancel()
-    sendTemperature = Task {
-      // Presses are gathered: each one starts the wait again, so stepping through several
-      // degrees sends one request instead of one per press.
-      try? await Task.sleep(for: .milliseconds(1000))
-      // A press made while another action runs waits for it rather than being dropped.
-      while !Task.isCancelled && busy { try? await Task.sleep(for: .milliseconds(200)) }
-      guard !Task.isCancelled, let wanted = draftTemperature else { return }
-      hold()
-      await model.climate("climate.set_temperature", ["temperature": wanted])
-    }
-  }
-}
-
-/// Adding a card at the cabinet's reader: waiting for the card, then what came of it.
-private struct ClipCardCapture: View {
-  @EnvironmentObject private var model: MachineLoginViewModel
-  let capture: MachineLoginViewModel.CardCapture
-  let machineName: String
-  var body: some View {
-    VStack(spacing: 16) {
-      switch capture {
-      case .starting, .waiting:
-        ProgressView().controlSize(.large)
-        Text(capture == .starting ? String(localized: "正在连接机台…") : String(format: String(localized: "请把卡片放在「%@」的读卡器上"), machineName))
-          .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-        Button { model.dismissCardCapture() } label: { Text("取消").frame(maxWidth: .infinity).padding(.vertical, 12) }.clipActionStyle()
-      case .done(let level, let message):
-        Image(systemName: noticeSymbol(level)).font(.largeTitle).foregroundStyle(noticeColor(level))
-        Text(message).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-        Button { model.dismissCardCapture() } label: { Text("完成").frame(maxWidth: .infinity).padding(.vertical, 12) }.clipActionStyle()
-      }
-    }
-    .frame(maxWidth: .infinity)
-    .padding(24)
-    .background(prismCardFill, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-    .accessibilityElement(children: .contain)
   }
 }
 
@@ -1308,32 +723,10 @@ private struct ClipCheckoutButton: View {
 }
 
 private func prismDate(_ value: String) -> String { prismDisplayDate(value) }
-private func prismTime(_ value: String) -> String { prismDisplayClock(value, seconds: true) }
 private struct PrismLabeledRow: View {
   let title: String; let value: String
   init(_ title: String, value: String) { self.title = title; self.value = value }
   var body: some View { HStack(alignment: .firstTextBaseline) { Text(title); Spacer(); Text(value) }.padding(.vertical, 12) }
-}
-
-/// The symbol of a notice level, shared by the card row, the coin button and the controls.
-func noticeSymbol(_ level: String) -> String {
-  switch level {
-  case "success": return "checkmark.circle"
-  case "error": return "xmark.circle"
-  case "info": return "info.circle"
-  default: return "exclamationmark.circle"
-  }
-}
-
-/// The colour of a notice level, shared by the card row and the controls. Success takes the
-/// app's accent blue; info stays quiet.
-func noticeColor(_ level: String) -> Color {
-  switch level {
-  case "success": return .blue
-  case "warning": return .orange
-  case "error": return .red
-  default: return .secondary
-  }
 }
 
 /// A server notice that interrupts: its own title, body and buttons. Hidden while an
@@ -1366,34 +759,5 @@ private struct NoticeAlert: ViewModifier {
   private func buttons(_ notice: PrismNotice) -> [PrismNotice.Action] {
     let shown = notice.actions.filter { $0.kind != "retry" || model.canRetryNotice }
     return shown.isEmpty ? [.init(kind: "dismiss", label: String(localized: "知道了"))] : shown
-  }
-}
-
-/// An action's expected outcome, shown where the player acted instead of in an alert:
-/// a coloured line with its icon, no box around it.
-struct InlineNotice: View {
-  let notice: PrismNotice
-  var body: some View {
-    Label {
-      Text(notice.body)
-    } icon: {
-      Image(systemName: noticeSymbol(notice.level))
-    }
-    .font(.subheadline.weight(.semibold))
-    .foregroundStyle(noticeColor(notice.level))
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .accessibilityAddTraits(.updatesFrequently)
-  }
-}
-
-/// The current inline notice, when it belongs to one of these controls.
-private struct AnchoredNotice: View {
-  @EnvironmentObject private var model: MachineLoginViewModel
-  let anchors: Set<String>
-  init(_ anchors: Set<String>) { self.anchors = anchors }
-  /// Every control on the page itself; the account sheet shows its own.
-  static let page: Set<String> = ["entry", "binding"]
-  var body: some View {
-    if let note = model.inlineNotice, anchors.contains(model.inlineNoticeAnchor) { InlineNotice(notice: note) }
   }
 }

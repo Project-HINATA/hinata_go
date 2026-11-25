@@ -1,6 +1,12 @@
 import Foundation
 import Combine
 
+/// How long to sleep until something the platform timed. A far-off time is cut to a day: in
+/// nanoseconds it would not fit, and converting it ends the app.
+private func prismSleepNanoseconds(_ seconds: TimeInterval) -> UInt64 {
+  UInt64(min(max(0, seconds), 86_400) * 1_000_000_000)
+}
+
 @MainActor
 final class MachineLoginViewModel: ObservableObject {
   enum State: Equatable {
@@ -10,7 +16,6 @@ final class MachineLoginViewModel: ObservableObject {
     case loadingShop
     case unauthenticated
     case loadingCards
-    case cardsFailed(String)
     case completed
     case expired
     case ready
@@ -44,7 +49,9 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var history: [PrismHistory.Record] = []
   @Published private(set) var historyNextOffset: Int?
   @Published private(set) var user: PrismUser?
-  @Published private(set) var waitingPower = false
+  @Published private(set) var waitingButtonId: String? = nil
+  @Published private(set) var cardsLoading = false
+  @Published private(set) var cardsError: String? = nil
   @Published private(set) var checkoutPreview: PrismCheckout?
   /// Whether the bill for this invocation has been read at least once. The page shows "暂无待
   /// 结账单" for an empty preview, so it needs to tell that apart from a bill not yet read.
@@ -64,6 +71,10 @@ final class MachineLoginViewModel: ObservableObject {
   /// While waiting for the reader: asks what became of the card.
   private var askCapture: (() -> Void)?
   var capturing: Bool { cardCapture == .starting || cardCapture == .waiting }
+  /// The cards could not be read: the page offers nothing but reading them again.
+  var cardsLoadFailed: Bool { cardsError != nil && !cardsLoading && cardCapture == nil }
+  /// The wording of the window that is open, kept so it outlasts the page block that started it.
+  private var captureText: PrismPageCards.CaptureUi?
   private var cardFeedbackTask: Task<Void, Never>?
   /// A problem that needs the player: shown as an alert with the server's buttons.
   @Published private(set) var dialogNotice: PrismNotice?
@@ -218,8 +229,9 @@ final class MachineLoginViewModel: ObservableObject {
     await api.invalidateReads()
     guard version == invocationVersion else { return }
     assets = []; history = []; historyNextOffset = nil
-    visit = nil; page = nil; pageCode = nil; pressing = nil; summary = nil; binding = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; checkoutCelebrating = false; user = nil; waitingPower = false
+    visit = nil; page = nil; pageCode = nil; pressing = nil; summary = nil; binding = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; checkoutCelebrating = false; user = nil; waitingButtonId = nil
     powerWaitTask?.cancel(); inlineNotice = nil; cardFeedbackTask?.cancel(); cardFeedback = nil
+    cardsLoading = false; cardsError = nil
     captureRun += 1; cardCapture = nil
     self.shopCode = shopCode
     self.publicId = publicId
@@ -253,14 +265,23 @@ final class MachineLoginViewModel: ObservableObject {
       guard version == invocationVersion else { return }
       user = me.user
       guard me.user != nil else {
-        // Nothing to operate and nothing to confirm needs no account; the page says so.
-        if machine?.idle == true, let ticket {
-          let idle: PrismPage? = try? await api.request("/api/v1/devices/session/page?ticket=\(ticket)")
-          guard version == invocationVersion else { return }
-          page = idle
-          state = .ready
-          PrismPageReport.shared.opened()
-        } else { state = .unauthenticated }
+        if let ticket {
+          if let current: PrismPage = try? await api.request("/api/v1/devices/session/page?ticket=\(ticket)") {
+            guard version == invocationVersion else { return }
+            page = current
+            if current.asksToSignIn {
+              state = .unauthenticated
+            } else {
+              state = .ready
+              PrismPageReport.shared.opened()
+            }
+          } else {
+            guard version == invocationVersion else { return }
+            state = .unauthenticated
+          }
+        } else {
+          state = .unauthenticated
+        }
         return
       }
       userId = me.user!.id
@@ -356,7 +377,8 @@ final class MachineLoginViewModel: ObservableObject {
       _ = try await api.requestJSON(path: "/api/v1/auth/logout", body: [:])
       guard version == invocationVersion else { return }
       invocationVersion += 1
-    closeLiveState()
+      let nextVersion = invocationVersion
+      closeLiveState()
       polling?.cancel()
       // A shop link keeps its card across sign-out: the shop is public data, and the player
       // should still see which shop they are dealing with above the sign-in buttons.
@@ -366,11 +388,17 @@ final class MachineLoginViewModel: ObservableObject {
         state = ticket == nil ? .expired : .unauthenticated
       }
       cards = []
+      cardsLoading = false; cardsError = nil
+      waitingButtonId = nil; powerWaitTask?.cancel()
       suggestPasskey = false; addingPasskey = false
       user = nil; userId = ""; summary = nil; checkoutPreview = nil; billLoaded = false
       playerStateLoaded = false; settlement = nil; checkoutCelebrating = false; binding = nil; pageCode = nil
       assets = []; history = []; historyNextOffset = nil; page = nil; notice = nil
       errorMessage = nil
+      if !isShopOnly, let ticket {
+        let signedOutPage: PrismPage? = try? await api.request("/api/v1/devices/session/page?ticket=\(ticket)")
+        if nextVersion == invocationVersion { page = signedOutPage }
+      }
     } catch { guard version == invocationVersion else { return }; errorMessage = String(localized: "退出账号失败，请重试") }
   }
 
@@ -379,21 +407,52 @@ final class MachineLoginViewModel: ObservableObject {
     let version = invocationVersion
     if state != .loadingCards { state = .loadingCards }
     errorMessage = nil
-    do {
-      readBackoff.succeed()
-      async let context: Void = refreshVisit(silent: true, initialIdentity: initialIdentity)
-      if !isShopOnly {
+    cardsError = nil
+    readBackoff.succeed()
+    async let context: Void = refreshVisit(silent: true, initialIdentity: initialIdentity)
+    if !isShopOnly {
+      cardsLoading = true
+      do {
         let response = try await api.cards()
-        guard version == invocationVersion else { return }
-        cards = response.cards.filter { $0.disabledAt == nil }
+        if version == invocationVersion {
+          cards = response.cards.filter { $0.disabledAt == nil }
+          cardsLoading = false
+        }
+      } catch {
+        if version == invocationVersion {
+          cardsLoading = false
+          if (error as? PrismAPIError)?.isSessionExpired == true {
+            expire()
+            return
+          }
+          cardsError = friendlyMessage(error)
+        }
       }
+    }
+    await context
+    guard version == invocationVersion else { return }
+    if state == .loadingCards { state = .ready }
+  }
+
+  func refreshCards() async {
+    guard !isShopOnly, !cardsLoading else { return }
+    let api = self.api
+    let version = invocationVersion
+    cardsLoading = true
+    cardsError = nil
+    do {
+      let response = try await api.cards()
       guard version == invocationVersion else { return }
-      if state == .loadingCards { state = .ready }
-      await context
+      cards = response.cards.filter { $0.disabledAt == nil }
+      cardsLoading = false
     } catch {
       guard version == invocationVersion else { return }
-      let message = friendlyMessage(error)
-      state = (error as? PrismAPIError)?.isSessionExpired == true ? .expired : .cardsFailed(message)
+      cardsLoading = false
+      if (error as? PrismAPIError)?.isSessionExpired == true {
+        expire()
+      } else {
+        cardsError = friendlyMessage(error)
+      }
     }
   }
 
@@ -521,8 +580,9 @@ final class MachineLoginViewModel: ObservableObject {
       if state != .loadingCards { visitRevision += 1 }
       // Nobody may be here now, and a card put down could be anyone's.
       if cardCapture == .waiting {
+        let leftText = captureText?.leftPageText ?? ""
         dismissCardCapture()
-        cardCapture = .done(level: "error", message: String(localized: "离开页面后已取消添加，请重新添加"))
+        cardCapture = .done(level: "error", message: leftText)
       }
       polling?.cancel()
       polling = nil
@@ -626,7 +686,7 @@ final class MachineLoginViewModel: ObservableObject {
           pageReadAt = Date()
           slowNetwork = false
           if value.asksToSignIn {
-            state = .unauthenticated; user = nil; userId = ""; cards = []; page = nil; closeLiveState()
+            state = .unauthenticated; user = nil; userId = ""; cards = []; page = value; closeLiveState()
             return
           }
           show(value)
@@ -743,7 +803,10 @@ final class MachineLoginViewModel: ObservableObject {
 
   private func show(_ next: PrismPage) {
     page = next
-    if !next.offersPowerOn, waitingPower { waitingPower = false; powerWaitTask?.cancel() }
+    if let waitingButtonId, !next.hasButton(id: waitingButtonId) {
+      self.waitingButtonId = nil
+      powerWaitTask?.cancel()
+    }
   }
 
   /// Keeps the channel that says when to read the page. Nothing here reads anything about the device.
@@ -889,7 +952,8 @@ final class MachineLoginViewModel: ObservableObject {
   func expire() { ticket = nil; state = .expired; activeCardId = nil; captureRun += 1; cardCapture = nil; polling?.cancel(); closeLiveState(); errorMessage = nil }
 
   func startCardCapture() async {
-    guard let ticket, !deviceBusy, !capturing, ![.locating, .sending].contains(state) else { return }
+    guard let ticket, let text = page?.cards?.captureUi, !deviceBusy, !capturing, ![.locating, .sending].contains(state) else { return }
+    captureText = text
     captureRun += 1
     let run = captureRun, version = invocationVersion, api = self.api
     let current = { [weak self] in self?.captureRun == run && self?.invocationVersion == version }
@@ -909,13 +973,14 @@ final class MachineLoginViewModel: ObservableObject {
       guard let status = try await captureOutcome(captureId: started.captureId, ticket: ticket, until: deadline, current: current),
             current() else { return }
       let added = ["added", "bound", "exists"].contains(status)
-      let message: String
-      if added { message = String(localized: "已添加卡片") }
-      else if status == "taken" { message = String(localized: "这张卡已绑定到本店的其他玩家") }
-      else if status == "unsupported" { message = String(localized: "不支持这种卡片") }
-      else { message = String(localized: "没有读到卡片") }
+      let outcomes = text.outcomes
+      let message = added ? outcomes.added
+        : status == "taken" ? outcomes.taken
+        : status == "unsupported" ? outcomes.unsupported
+        : outcomes.expired
       cardCapture = .done(level: added ? "success" : "error", message: message)
       if added {
+        cardsError = nil
         let response = try await api.cards()
         guard current() else { return }
         cards = response.cards.filter { $0.disabledAt == nil }
@@ -934,7 +999,7 @@ final class MachineLoginViewModel: ObservableObject {
     let asks = AsyncStream<Void>(bufferingPolicy: .bufferingNewest(1)) { tell = $0 }
     let told = tell!
     let timer = Task {
-      try? await Task.sleep(nanoseconds: UInt64(max(0, deadline.timeIntervalSinceNow) * 1_000_000_000))
+      try? await Task.sleep(nanoseconds: prismSleepNanoseconds(deadline.timeIntervalSinceNow))
       told.yield()
     }
     askCapture = { told.yield() }
@@ -1022,19 +1087,23 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   /// A button the page offered. Its outcome shows under it, or on it if the page says so.
-  func press(_ button: PrismPageButton) async {
+  func press(_ button: PrismPageButton, collected: [String: Any] = [:]) async {
     guard let ticket else { expire(); return }
     await perform(button.id) {
       pressing = button.id
       defer { pressing = nil }
-      var payload = (button.payload ?? [:]).mapValues(\.json)
+      var payload = collected
+      for (key, value) in (button.payload ?? [:]) {
+        payload[key] = value.json
+      }
       if button.requires != nil { payload["consent"] = true }
       let position: LocationSample? = button.needsLocation ? try await location.currentLocation() : nil
       let answer = try await pageAction(button.action, payload: payload, location: position, ticket: ticket)
       if let code = answer.code { showCode(code) }
       showNotices(answer.notices, anchor: button.id)
-      // Still off, the page waits for the machine to say on; the hub tells it when that happens.
-      if button.action == "power.on", answer.ok, answer.page.offersPowerOn { waitForPower() }
+      if let wait = button.wait, answer.ok, answer.page.hasButton(id: button.id) {
+        waitForButton(id: button.id, wait: wait)
+      }
     }
   }
 
@@ -1049,31 +1118,33 @@ final class MachineLoginViewModel: ObservableObject {
     pageCode = code
     guard let expires = prismParsedDate(code.expiresAt) else { return }
     Task { [weak self] in
-      try? await Task.sleep(nanoseconds: UInt64(max(0, expires.timeIntervalSinceNow) * 1_000_000_000))
+      try? await Task.sleep(nanoseconds: prismSleepNanoseconds(expires.timeIntervalSinceNow))
       if self?.pageCode?.value == code.value { self?.pageCode = nil }
     }
   }
 
-  /// The power button spins until the machine reports on; if it never does, the player
+  /// The button spins until the page moves off it; if it never does, the player
   /// gets the button back with a word instead of a spinner that never ends.
-  private func waitForPower() {
-    waitingPower = true
+  private func waitForButton(id: String, wait: PrismPageButton.Wait) {
+    waitingButtonId = id
     powerWaitTask?.cancel()
     powerWaitTask = Task { [weak self] in
-      try? await Task.sleep(nanoseconds: 15_000_000_000)
-      guard let self, !Task.isCancelled, self.waitingPower else { return }
-      self.waitingPower = false
-      self.showInline(PrismNotice(code: "POWER_NOT_SEEN", level: "warning", display: "inline", flow: "none",
-                                  body: String(localized: "未检测到开机，请重试")), anchor: "power")
+      try? await Task.sleep(nanoseconds: prismSleepNanoseconds(Double(wait.ms) / 1000))
+      guard let self, !Task.isCancelled, self.waitingButtonId == id else { return }
+      self.waitingButtonId = nil
+      self.showInline(
+        PrismNotice(code: "BUTTON_WAIT_TIMEOUT", level: "warning", display: "inline", flow: "none", body: wait.timeoutMessage),
+        anchor: id
+      )
     }
   }
   /// Send an air conditioner action. The controls keep the choice until the page agrees with it.
-  func climate(_ action: String, _ extra: [String: Any] = [:]) async {
+  func climate(_ action: String, _ extra: [String: Any] = [:], blockId: String = "climate") async {
     guard let ticket else { return }
-    await perform("climate") {
-      let position: LocationSample? = page?.climateNeedsLocation == true ? try await location.currentLocation() : nil
+    await perform(blockId) {
+      let position: LocationSample? = page?.climate(id: blockId)?.needsLocation == true ? try await location.currentLocation() : nil
       let answer = try await pageAction(action, payload: extra, location: position, ticket: ticket)
-      showNotices(answer.notices, anchor: "climate")
+      showNotices(answer.notices, anchor: blockId)
     }
   }
 

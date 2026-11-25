@@ -9,14 +9,15 @@ final class ScanScreenshots: XCTestCase {
     XCTAssertTrue(app.staticTexts["测试机台"].exists)
     attach(app, name: "scan-auth-loading")
   }
-  func testCardsBeforePower() {
+  func testScannedPage() {
     let app = XCUIApplication()
-    app.launchArguments = ["power-held", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
     app.launch()
     XCTAssertTrue(app.staticTexts["测试 Aime"].waitForExistence(timeout: 20))
     XCTAssertTrue(app.staticTexts["测试店铺"].exists)
+    XCTAssertTrue(app.staticTexts["选择卡片"].exists && app.buttons["投币"].exists)
     XCTAssertFalse(app.alerts.firstMatch.exists)
-    attach(app, name: "scan-cards-before-power")
+    attach(app, name: "scan-page")
   }
   func testInsufficientBalanceChinese() {
     checkBalance(language: "zh-Hans", locale: "zh_CN", button: "结账", copy: "余额不足，请充值后重试", dismiss: "知道了")

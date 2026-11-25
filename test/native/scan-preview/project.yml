@@ -15,9 +15,14 @@ targets:
     sources:
       - App
       - ../prism_visit_fixtures.swift
+      - path: ../fixtures/prism-page/pages.json
+        buildPhase: resources
       - ../../../ios/PrismClip/InvocationParser.swift
       - ../../../ios/PrismClip/InvocationRouter.swift
       - ../../../ios/PrismClip/Models.swift
+      - ../../../ios/PrismClip/PrismPage.swift
+      - ../../../ios/PrismClip/PrismPageForm.swift
+      - ../../../ios/PrismClip/Page
       - ../../../ios/PrismClip/PrismAPI.swift
       - ../../../ios/PrismClip/MachineLoginViewModel.swift
       - ../../../ios/PrismClip/MachineLoginView.swift
