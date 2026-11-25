@@ -16,6 +16,7 @@ final class ScanCounts {
   }
 
   @MainActor static func main() async throws {
+    refuseKeychainDialogs()
     for failure in [
       PrismAPIError.api(code: "INSUFFICIENT_BALANCE", message: "legacy diagnostic"),
       .http(status: 409, code: "INSUFFICIENT_BALANCE", message: "Insufficient currency holdings for this operation."),
@@ -45,7 +46,7 @@ final class ScanCounts {
     let origin = URL(string: "https://link-beta.neri.moe")!
     let api = PrismAPI(configuration: config, origin: origin)
     var unavailable = false
-    var stateLimited = false
+    var pageLimited = false
     FixtureProtocol.handler = { request in
       let path = request.url!.path
       counts.increment(path)
@@ -57,17 +58,12 @@ final class ScanCounts {
       case "/api/v1/machines/session/start":
         return ok(["ticket": "v1.opaque-ticket", "expiresIn": 300, "machine": ["publicId": "device", "name": "测试机台", "capabilities": ["card": true, "power": true, "mahjong": true], "shop": ["name": "测试店铺", "latitude": 35, "longitude": 139, "radiusMeters": 80, "machineGeo": false, "billingEnabled": false]]])
       case "/api/v1/cards": return ok(["cards": [["id": "card", "label": "测试 Aime", "accessCode": "01234567890123456789"]]])
-      case "/api/v1/devices/session/state":
-        if stateLimited { return (429, ["error": ["code": "RATE_LIMITED", "message": "稍后重试"], "headers": ["Retry-After": "60"]]) }
-        let query = request.url!.query!
-        precondition(query.contains("includePower=0") && query.contains("includeClimate=0"))
-        // The device is not live, so the first read says nothing of its power: no key, not null.
-        return ok(["gate": "ready", "power": "unmanaged", "mahjong": ["capacity": 4, "seats": []], "climate": NSNull(),
-                   "device": ["watching": false]])
-      // With no hub channel the page reads the state once after a moment; Home Assistant can be slow, so cards must not wait for it.
-      case "/api/v1/devices/session/device": return ok(["watching": false, "power": "on", "climate": NSNull()])
-      // A server without live state: the page keeps polling.
+      case "/api/v1/devices/session/page":
+        if pageLimited { return (429, ["error": ["code": "RATE_LIMITED", "message": "稍后重试"], "headers": ["Retry-After": "60"]]) }
+        return ok(PageFixtures.page("cards"))
+      // No hub channel: the page is then only as fresh as its own reads.
       case "/api/v1/devices/session/ws": return (404, ["error": ["code": "NOT_FOUND", "message": "Not found"]])
+      case "/api/v1/devices/report": return ok([:])
       case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": false, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": NSNull(), "entryPricing": []])
       case "/api/v1/auth/passkey": return ok(["ok": true])
       default: preconditionFailure("Unexpected path: \(path)")
@@ -109,45 +105,46 @@ final class ScanCounts {
     // Observe production state publication while both slow boundaries are held.
     counts.reset()
     FixtureProtocol.holdNextIdentityResponse = true
-    FixtureProtocol.holdNextPowerResponse = true
+    FixtureProtocol.holdNextPageResponse = true
     let model = MachineLoginViewModel(api: api)
     let launch = Task { await model.handleResolvedInvocation(origin.appendingPathComponent("t/store/device")) }
     try await waitUntil { model.machine != nil && FixtureProtocol.heldIdentityReply != nil }
-    precondition(model.state == .loadingCards && model.machine?.shop.name == "测试店铺")
+    precondition(model.state == .loadingCards && model.machine?.shop.name == "测试店铺", "The shop shows while sign-in is still being read")
     let identityReply = FixtureProtocol.heldIdentityReply!; FixtureProtocol.heldIdentityReply = nil; identityReply()
+    // The cards are asked for beside the page, so a slow page read does not hold them back.
+    try await waitUntil { FixtureProtocol.heldPageReply != nil && model.cards.count == 1 && !model.cardsLoading }
+    precondition(model.state == .loadingCards && model.page == nil, "Nothing is operable before the platform says what the page is")
+    let pageReply = FixtureProtocol.heldPageReply!; FixtureProtocol.heldPageReply = nil; pageReply()
     await launch.value
-    try await waitUntil { FixtureProtocol.heldPowerReply != nil }
-    precondition(model.state == .ready && model.canUseCards && model.cards.count == 1)
-    precondition(model.playerStateLoaded && model.errorMessage == nil, "Initial context must decode and settle")
-    // The header says the power is being asked for while the cards are already usable.
-    precondition(model.checkingPower, "The page names the power read it is waiting on")
+    try await waitUntil { model.state == .ready && model.playerStateLoaded }
+    precondition(model.page?.cards != nil && model.errorMessage == nil, "Initial context must decode and settle")
+    // A page is told when it changed; it does not poll, even while its channel keeps failing.
     try await Task.sleep(nanoseconds: 6_500_000_000)
-    precondition(counts.read("/api/v1/devices/session/state") >= 2)
+    precondition(counts.read("/api/v1/devices/session/ws") >= 2, "The channel is tried again: \(counts.read("/api/v1/devices/session/ws"))")
+    precondition(counts.read("/api/v1/devices/session/page") == 1, "Page reads: \(counts.read("/api/v1/devices/session/page"))")
     precondition(counts.read("/api/v1/shops/store") == 1, "Shop reads: \(counts.read("/api/v1/shops/store"))")
     precondition(counts.read("/api/v1/me") == 1, "Identity reads: \(counts.read("/api/v1/me"))")
-    precondition(counts.read("/api/v1/devices/session/device") == 1, "Slow HA must not overlap or block cards")
-    precondition(counts.read("/api/v1/devices/session/power") == 0, "The old power polling endpoint is no longer used")
-    let powerReply = FixtureProtocol.heldPowerReply!; FixtureProtocol.heldPowerReply = nil; powerReply()
-    try await waitUntil { model.deviceState?.power == "on" && !model.checkingPower }
-    // Once asked, the state is not polled: the page is not kept live by reading.
-    try await Task.sleep(nanoseconds: 3_500_000_000)
-    precondition(counts.read("/api/v1/devices/session/device") == 1, "The power is asked for once")
+    precondition(counts.read("/api/v1/devices/session/state") == 0 && counts.read("/api/v1/devices/session/device") == 0,
+                 "Only the page says what the device shows")
+    // In the background nothing is read, not even by the channel's retries.
     await model.setSceneActive(false)
-    let beforeBackground = counts.read("/api/v1/devices/session/state")
+    let beforeBackground = counts.read("/api/v1/devices/session/page")
+    await model.refreshVisit()
     try await Task.sleep(nanoseconds: 3_300_000_000)
-    precondition(counts.read("/api/v1/devices/session/state") == beforeBackground)
-    // Returning to the app or replaying the link must preserve the server cooldown.
+    precondition(counts.read("/api/v1/devices/session/page") == beforeBackground)
     await model.setSceneActive(true)
-    stateLimited = true
+    precondition(counts.read("/api/v1/devices/session/page") == beforeBackground + 1, "Coming back reads the page once")
+    // Returning to the app or replaying the link must preserve the server cooldown.
+    pageLimited = true
     await model.refreshVisit(silent: true, dynamicOnly: true)
-    let limitedReads = counts.read("/api/v1/devices/session/state")
-    precondition(model.state == .ready && model.errorMessage == nil)
+    let limitedReads = counts.read("/api/v1/devices/session/page")
+    precondition(model.state == .ready && model.errorMessage == nil && model.page?.cards != nil, "A limited read keeps the page as it is")
     await model.setSceneActive(false)
     await model.setSceneActive(true)
     await model.handleResolvedInvocation(origin.appendingPathComponent("t/store/device"))
-    precondition(counts.read("/api/v1/devices/session/state") == limitedReads,
+    precondition(counts.read("/api/v1/devices/session/page") == limitedReads,
                  "Foreground and link replay must respect Retry-After")
     await model.setSceneActive(false)
-    print("PRiSM scan checks passed: opaque fallback, error status, cache, first paint and isolated polling")
+    print("PRiSM scan checks passed: opaque fallback, error status, cache, first paint, no polling and Retry-After")
   }
 }

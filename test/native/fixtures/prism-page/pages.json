@@ -1,0 +1,941 @@
+{
+  "pages": {
+    "signin": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "blocks": [
+        {
+          "kind": "signin",
+          "id": "signin",
+          "methods": [
+            {
+              "id": "munet",
+              "provider": "munet",
+              "label": "使用 MuNET 登录",
+              "busyLabel": "正在连接 MuNET…",
+              "style": "primary"
+            },
+            {
+              "id": "passkey",
+              "provider": "passkey",
+              "label": "使用 Passkey 登录",
+              "busyLabel": "正在验证 Passkey…",
+              "unsupportedText": "当前浏览器不支持 Passkey，请使用 MuNET 登录"
+            }
+          ]
+        }
+      ]
+    },
+    "empty": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "blocks": [
+        {
+          "kind": "text",
+          "id": "empty",
+          "text": "这里没有可操作的设备"
+        }
+      ]
+    },
+    "disabled": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "text",
+          "id": "disabled",
+          "text": "你在本店的玩家资格已停用，请联系店员",
+          "level": "error"
+        }
+      ]
+    },
+    "binding": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "binding",
+          "id": "binding",
+          "title": "绑定平台身份",
+          "expiresLabel": "有效期至",
+          "copyLabel": "复制",
+          "copiedLabel": "已复制",
+          "retryLabel": "重试"
+        }
+      ]
+    },
+    "entryDoor": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "text",
+          "id": "entry-title",
+          "text": "计费规则",
+          "style": "heading"
+        },
+        {
+          "kind": "pricing",
+          "id": "pricing",
+          "rules": {
+            "source": {
+              "kind": "resource"
+            },
+            "timeZone": "Asia/Tokyo",
+            "plans": [
+              {
+                "role": "resource",
+                "config": {
+                  "id": "fee",
+                  "kind": "charge.fixed",
+                  "name": "入场费",
+                  "enabled": true,
+                  "status": "active",
+                  "provider": {
+                    "id": "fee",
+                    "label": "入场费",
+                    "amount": 12
+                  }
+                }
+              }
+            ],
+            "caps": {
+              "unsettled": 0,
+              "plans": [],
+              "shared": []
+            }
+          },
+          "changes": {
+            "pricingConfigId": "fee",
+            "planName": "入场费",
+            "changed": true,
+            "revision": "rev-1",
+            "started": [
+              {
+                "planId": "fee",
+                "planName": "入场费"
+              }
+            ],
+            "stopped": [],
+            "kept": []
+          },
+          "labels": {
+            "title": "计费规则",
+            "sharedCapsTitle": "跨方案封顶",
+            "stoppedTitle": "确认后结束",
+            "startedTag": "新增",
+            "keptTag": "保留",
+            "fixedFee": "单次收取",
+            "notBilled": "不计费",
+            "notCovered": "未覆盖",
+            "uncapped": "不封顶",
+            "capReached": "已达封顶",
+            "accumulated": "累计",
+            "cap": "封顶",
+            "minuteUnit": "分钟",
+            "listSeparator": "、"
+          }
+        },
+        {
+          "kind": "consent",
+          "id": "consent",
+          "text": "确认开始计费，离店前请结账。关闭页面不会停止计费。"
+        },
+        {
+          "kind": "button",
+          "id": "door",
+          "label": "入场并获取开门密码",
+          "action": "entry",
+          "icon": "door",
+          "againLabel": "重新获取密码",
+          "style": "primary",
+          "payload": {
+            "expectedRevision": "rev-1",
+            "openDoor": true
+          },
+          "requires": "consent",
+          "needsLocation": true,
+          "enabled": true
+        }
+      ]
+    },
+    "entryError": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "text",
+          "id": "entry-title",
+          "text": "暂时无法使用",
+          "style": "heading"
+        },
+        {
+          "kind": "text",
+          "id": "entry-error",
+          "text": "没有配置计费",
+          "level": "error"
+        }
+      ]
+    },
+    "door": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": true,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "button",
+          "id": "door",
+          "label": "获取开门密码",
+          "action": "door.open",
+          "againLabel": "重新获取密码",
+          "icon": "door",
+          "style": "primary",
+          "needsLocation": true,
+          "enabled": true
+        }
+      ]
+    },
+    "doorCardsCoin": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": true,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "button",
+          "id": "door",
+          "label": "获取开门密码",
+          "action": "door.open",
+          "againLabel": "重新获取密码",
+          "icon": "door",
+          "style": "primary",
+          "needsLocation": false,
+          "enabled": true
+        },
+        {
+          "kind": "cards",
+          "id": "cards",
+          "enabled": true,
+          "capture": false,
+          "action": "card.swipe",
+          "needsLocation": false,
+          "title": "选择卡片",
+          "loadingLabel": "正在加载卡片",
+          "locatingLabel": "确认位置…",
+          "swipingLabel": "正在登录…",
+          "endingTemplate": "尾号 {digits}",
+          "empty": {
+            "text": "还没有可用卡片",
+            "actions": [
+              {
+                "id": "refresh",
+                "label": "刷新",
+                "action": "cards.reload"
+              }
+            ]
+          },
+          "loadError": {
+            "title": "无法加载卡片",
+            "actions": [
+              {
+                "id": "refresh",
+                "label": "刷新",
+                "action": "cards.reload",
+                "style": "primary"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "button",
+          "id": "coin",
+          "label": "投币",
+          "action": "coin",
+          "icon": "coin",
+          "enabled": true,
+          "answerOnButton": true,
+          "hideDuringCapture": true,
+          "needsLocation": false
+        }
+      ]
+    },
+    "cards": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "cards",
+          "id": "cards",
+          "enabled": true,
+          "capture": false,
+          "action": "card.swipe",
+          "needsLocation": false,
+          "title": "选择卡片",
+          "loadingLabel": "正在加载卡片",
+          "locatingLabel": "确认位置…",
+          "swipingLabel": "正在登录…",
+          "endingTemplate": "尾号 {digits}",
+          "empty": {
+            "text": "还没有可用卡片",
+            "actions": [
+              {
+                "id": "refresh",
+                "label": "刷新",
+                "action": "cards.reload"
+              }
+            ]
+          },
+          "loadError": {
+            "title": "无法加载卡片",
+            "actions": [
+              {
+                "id": "refresh",
+                "label": "刷新",
+                "action": "cards.reload",
+                "style": "primary"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "cardsCapture": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "cards",
+          "id": "cards",
+          "enabled": true,
+          "capture": true,
+          "action": "card.swipe",
+          "needsLocation": false,
+          "title": "选择卡片",
+          "loadingLabel": "正在加载卡片",
+          "locatingLabel": "确认位置…",
+          "swipingLabel": "正在登录…",
+          "endingTemplate": "尾号 {digits}",
+          "empty": {
+            "text": "还没有可用卡片，请先添加卡片",
+            "actions": [
+              {
+                "id": "capture",
+                "label": "添加卡片",
+                "action": "cards.capture"
+              },
+              {
+                "id": "refresh",
+                "label": "刷新",
+                "action": "cards.reload"
+              }
+            ]
+          },
+          "loadError": {
+            "title": "无法加载卡片",
+            "actions": [
+              {
+                "id": "refresh",
+                "label": "刷新",
+                "action": "cards.reload",
+                "style": "primary"
+              }
+            ]
+          },
+          "captureUi": {
+            "title": "添加卡片",
+            "addLabel": "添加卡片",
+            "startingText": "正在连接机台…",
+            "waitingText": "请把卡片放在「Device」的读卡器上",
+            "cancelLabel": "取消",
+            "doneLabel": "完成",
+            "leftPageText": "离开页面后已取消添加，请重新添加",
+            "outcomes": {
+              "added": "已添加卡片",
+              "taken": "这张卡已绑定到本店的其他玩家",
+              "unsupported": "不支持这种卡片",
+              "expired": "没有读到卡片"
+            }
+          }
+        },
+        {
+          "kind": "button",
+          "id": "coin",
+          "label": "投币",
+          "action": "coin",
+          "icon": "coin",
+          "enabled": true,
+          "answerOnButton": true,
+          "hideDuringCapture": true,
+          "needsLocation": false
+        }
+      ]
+    },
+    "coinFull": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "button",
+          "id": "coin",
+          "label": "达到机台投币上限",
+          "action": "coin",
+          "icon": "coin",
+          "enabled": false,
+          "answerOnButton": true,
+          "hideDuringCapture": true,
+          "needsLocation": false
+        }
+      ]
+    },
+    "ioWaiting": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "text",
+          "id": "io-waiting",
+          "text": "等待机台连接",
+          "style": "heading"
+        }
+      ]
+    },
+    "tableEmpty": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "table",
+          "id": "table",
+          "title": "桌游",
+          "status": "等待玩家",
+          "capacity": 4,
+          "emptyLabel": "空位",
+          "mineLabel": "你",
+          "seats": []
+        },
+        {
+          "kind": "button",
+          "id": "seat",
+          "label": "上桌",
+          "action": "table.join",
+          "style": "primary",
+          "needsLocation": false,
+          "enabled": true
+        }
+      ]
+    },
+    "tableMine": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "table",
+          "id": "table",
+          "title": "桌游",
+          "status": "等待玩家",
+          "capacity": 4,
+          "emptyLabel": "空位",
+          "mineLabel": "你",
+          "seats": [
+            {
+              "name": "Player",
+              "mine": true
+            }
+          ]
+        },
+        {
+          "kind": "button",
+          "id": "seat",
+          "label": "下桌",
+          "action": "table.leave",
+          "needsLocation": false,
+          "enabled": true
+        }
+      ]
+    },
+    "climate": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "climate",
+          "id": "climate",
+          "state": {
+            "mode": "off",
+            "modes": [
+              "off",
+              "cool",
+              "heat",
+              "dry",
+              "fan_only",
+              "auto"
+            ],
+            "temperature": 26,
+            "currentTemperature": 28.5,
+            "minTemperature": 16,
+            "maxTemperature": 30,
+            "temperatureStep": 1,
+            "fanMode": "auto",
+            "fanModes": [
+              "auto",
+              "low",
+              "high"
+            ]
+          },
+          "needsLocation": false,
+          "title": "空调",
+          "unknownStatus": "空调状态未知",
+          "offLabel": "已关闭",
+          "roomText": "室温 28.5°",
+          "currentModeLabel": "已关闭",
+          "turnOnLabel": "开空调",
+          "turnOffLabel": "关空调",
+          "temperatureLabel": "设定温度",
+          "lowerTemperatureLabel": "调低温度",
+          "raiseTemperatureLabel": "调高温度",
+          "modeLabel": "模式",
+          "fanLabel": "风速",
+          "modes": [
+            {
+              "value": "cool",
+              "label": "制冷",
+              "icon": "cool"
+            },
+            {
+              "value": "heat",
+              "label": "制热",
+              "icon": "heat"
+            },
+            {
+              "value": "dry",
+              "label": "除湿",
+              "icon": "dry"
+            },
+            {
+              "value": "fan_only",
+              "label": "送风",
+              "icon": "fan"
+            },
+            {
+              "value": "auto",
+              "label": "自动",
+              "icon": "auto"
+            }
+          ],
+          "fanModes": [
+            {
+              "value": "auto",
+              "label": "自动"
+            },
+            {
+              "value": "low",
+              "label": "低风"
+            },
+            {
+              "value": "high",
+              "label": "高风"
+            }
+          ],
+          "actions": {
+            "on": "climate.on",
+            "off": "climate.off",
+            "setMode": "climate.set_mode",
+            "setTemperature": "climate.set_temperature",
+            "setFanMode": "climate.set_fan_mode"
+          }
+        }
+      ]
+    },
+    "climateOnSite": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "climate",
+          "id": "climate",
+          "state": {
+            "mode": "off",
+            "modes": [
+              "off",
+              "cool",
+              "heat",
+              "dry",
+              "fan_only",
+              "auto"
+            ],
+            "temperature": 26,
+            "currentTemperature": 28.5,
+            "minTemperature": 16,
+            "maxTemperature": 30,
+            "temperatureStep": 1,
+            "fanMode": "auto",
+            "fanModes": [
+              "auto",
+              "low",
+              "high"
+            ]
+          },
+          "needsLocation": true,
+          "title": "空调",
+          "unknownStatus": "空调状态未知",
+          "offLabel": "已关闭",
+          "roomText": "室温 28.5°",
+          "currentModeLabel": "已关闭",
+          "turnOnLabel": "开空调",
+          "turnOffLabel": "关空调",
+          "temperatureLabel": "设定温度",
+          "lowerTemperatureLabel": "调低温度",
+          "raiseTemperatureLabel": "调高温度",
+          "modeLabel": "模式",
+          "fanLabel": "风速",
+          "modes": [
+            {
+              "value": "cool",
+              "label": "制冷",
+              "icon": "cool"
+            },
+            {
+              "value": "heat",
+              "label": "制热",
+              "icon": "heat"
+            },
+            {
+              "value": "dry",
+              "label": "除湿",
+              "icon": "dry"
+            },
+            {
+              "value": "fan_only",
+              "label": "送风",
+              "icon": "fan"
+            },
+            {
+              "value": "auto",
+              "label": "自动",
+              "icon": "auto"
+            }
+          ],
+          "fanModes": [
+            {
+              "value": "auto",
+              "label": "自动"
+            },
+            {
+              "value": "low",
+              "label": "低风"
+            },
+            {
+              "value": "high",
+              "label": "高风"
+            }
+          ],
+          "actions": {
+            "on": "climate.on",
+            "off": "climate.off",
+            "setMode": "climate.set_mode",
+            "setTemperature": "climate.set_temperature",
+            "setFanMode": "climate.set_fan_mode"
+          }
+        }
+      ]
+    },
+    "climateUnknown": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "climate",
+          "id": "climate",
+          "state": null,
+          "needsLocation": false,
+          "title": "空调",
+          "unknownStatus": "空调状态未知",
+          "offLabel": "已关闭",
+          "roomText": null,
+          "currentModeLabel": null,
+          "turnOnLabel": "开空调",
+          "turnOffLabel": "关空调",
+          "temperatureLabel": "设定温度",
+          "lowerTemperatureLabel": "调低温度",
+          "raiseTemperatureLabel": "调高温度",
+          "modeLabel": "模式",
+          "fanLabel": "风速",
+          "modes": [],
+          "fanModes": [],
+          "actions": {
+            "on": "climate.on",
+            "off": "climate.off",
+            "setMode": "climate.set_mode",
+            "setTemperature": "climate.set_temperature",
+            "setFanMode": "climate.set_fan_mode"
+          }
+        }
+      ]
+    },
+    "powerOff": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "text",
+          "id": "power-off",
+          "text": "设备尚未开机",
+          "style": "heading"
+        },
+        {
+          "kind": "button",
+          "id": "power",
+          "label": "开机",
+          "action": "power.on",
+          "icon": "power",
+          "style": "primary",
+          "wait": {
+            "ms": 15000,
+            "timeoutMessage": "未检测到开机，请重试"
+          },
+          "needsLocation": false,
+          "enabled": true
+        }
+      ]
+    },
+    "powerOn": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "blocks": [
+        {
+          "kind": "text",
+          "id": "empty",
+          "text": "这里没有可操作的设备"
+        }
+      ]
+    },
+    "components": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "Device",
+      "publicId": "device",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "blocks": [
+        {
+          "kind": "banner",
+          "id": "banner",
+          "body": "请确认时段后提交",
+          "level": "warning",
+          "title": "提示"
+        },
+        {
+          "kind": "section",
+          "id": "section",
+          "title": "预约",
+          "style": "card",
+          "blocks": [
+            {
+              "kind": "kv",
+              "id": "kv",
+              "items": [
+                {
+                  "label": "当前状态",
+                  "value": "可预约",
+                  "tone": "success"
+                }
+              ]
+            },
+            {
+              "kind": "divider",
+              "id": "divider"
+            },
+            {
+              "kind": "image",
+              "id": "image",
+              "url": "/assets/event.png",
+              "alt": "活动",
+              "aspectRatio": 1.78
+            },
+            {
+              "kind": "text",
+              "id": "caption",
+              "text": "小字说明",
+              "style": "caption"
+            },
+            {
+              "kind": "select",
+              "id": "slot",
+              "required": true,
+              "options": [
+                {
+                  "value": "a",
+                  "label": "14:00"
+                },
+                {
+                  "value": "full",
+                  "label": "15:00",
+                  "disabled": true
+                }
+              ]
+            },
+            {
+              "kind": "input",
+              "id": "pin",
+              "name": "code",
+              "inputType": "number",
+              "maxLength": 4,
+              "required": true
+            },
+            {
+              "kind": "toggle",
+              "id": "remind",
+              "label": "到期提醒",
+              "defaultValue": true
+            },
+            {
+              "kind": "consent",
+              "id": "agree",
+              "text": "我已阅读说明"
+            }
+          ]
+        },
+        {
+          "kind": "row",
+          "id": "row",
+          "blocks": [
+            {
+              "kind": "button",
+              "id": "cancel",
+              "label": "释放",
+              "action": "booking.cancel",
+              "style": "destructive",
+              "enabled": true,
+              "needsLocation": false
+            },
+            {
+              "kind": "button",
+              "id": "submit",
+              "label": "确认预约",
+              "action": "booking.create",
+              "style": "primary",
+              "requires": "agree",
+              "collect": [
+                "slot",
+                "pin",
+                "remind"
+              ],
+              "payload": {
+                "remind": false,
+                "plan": "vip"
+              },
+              "confirm": {
+                "title": "确认预约",
+                "body": "提交后将锁定名额",
+                "confirmLabel": "确认",
+                "cancelLabel": "取消"
+              },
+              "enabled": true,
+              "needsLocation": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "code": {
+    "title": "开门密码",
+    "value": "12345678",
+    "expiresAt": "2999-01-01T00:00:00Z",
+    "expiresLabel": "有效期至",
+    "hint": "在门锁上输入密码后按 #"
+  }
+}

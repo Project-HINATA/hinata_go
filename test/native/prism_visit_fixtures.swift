@@ -55,6 +55,18 @@ import Combine
 
 func liveActivityTrace(_ message: String) {}
 
+#if os(macOS)
+import Security
+#endif
+/// `PrismAPI.clientId` lives in the Keychain. To macOS every rebuilt check is another program, so reading
+/// the item an earlier build made raises a permission dialog and the check waits on it for ever. Refusing
+/// dialogs makes that read fail instead, and the client id falls back to the one in the defaults.
+func refuseKeychainDialogs() {
+  #if os(macOS)
+  SecKeychainSetUserInteractionAllowed(false)
+  #endif
+}
+
 @MainActor final class PasskeyAuthenticationService {
   static var cancelRegistration = false
   func authenticate(options: PasskeyRequestOptions) async throws -> PasskeyAssertion { throw CancellationError() }
@@ -85,8 +97,8 @@ final class FixtureProtocol: URLProtocol {
   static var heldReply: (() -> Void)?
   static var holdNextIdentityResponse = false
   static var heldIdentityReply: (() -> Void)?
-  static var holdNextPowerResponse = false
-  static var heldPowerReply: (() -> Void)?
+  static var holdNextPageResponse = false
+  static var heldPageReply: (() -> Void)?
   override class func canInit(with request: URLRequest) -> Bool { true }
   override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
   override func startLoading() {
@@ -105,10 +117,37 @@ final class FixtureProtocol: URLProtocol {
         Self.heldReply = reply
       } else if Self.holdNextIdentityResponse && request.url?.path == "/api/v1/me" {
         Self.holdNextIdentityResponse = false; Self.heldIdentityReply = reply
-      } else if Self.holdNextPowerResponse && request.url?.path == "/api/v1/devices/session/device" {
-        Self.holdNextPowerResponse = false; Self.heldPowerReply = reply
+      } else if Self.holdNextPageResponse && request.url?.path == "/api/v1/devices/session/page" {
+        Self.holdNextPageResponse = false; Self.heldPageReply = reply
       } else { reply() }
     } catch { client?.urlProtocol(self, didFailWithError: error) }
   }
   override func stopLoading() {}
+}
+
+/// Scanned pages as the platform makes them: PRiSM's `scripts/swift-page-fixtures.ts` writes them with the
+/// server's own `renderPage`, so these checks fail when the page changes and the Swift models do not follow.
+enum PageFixtures {
+  /// The preview app carries the file as a resource; the command-line checks run from the repository root.
+  private static let file: [String: Any] = {
+    let url = Bundle.main.url(forResource: "pages", withExtension: "json")
+      ?? URL(fileURLWithPath: "test/native/fixtures/prism-page/pages.json")
+    return try! JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+  }()
+  private static var pages: [String: Any] { file["pages"] as! [String: Any] }
+  static var names: [String] { pages.keys.sorted() }
+  static func page(_ name: String) -> [String: Any] {
+    guard let page = pages[name] as? [String: Any] else { preconditionFailure("No page fixture named \(name)") }
+    return page
+  }
+  static var code: [String: Any] { file["code"] as! [String: Any] }
+  /// `page` with the first block of `kind` changed, for a state the platform would send next.
+  static func changing(_ page: [String: Any], kind: String, _ change: (inout [String: Any]) -> Void) -> [String: Any] {
+    var page = page
+    var blocks = page["blocks"] as! [[String: Any]]
+    guard let index = blocks.firstIndex(where: { $0["kind"] as? String == kind }) else { preconditionFailure("The page has no \(kind) block") }
+    change(&blocks[index])
+    page["blocks"] = blocks
+    return page
+  }
 }

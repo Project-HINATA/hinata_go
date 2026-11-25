@@ -113,6 +113,23 @@ private func platformIsWatching() -> Bool {
   print("  FAIL  timed out waiting for \(what)"); exit(1)
 }
 
+// What the player is shown, read from the page the platform sent.
+@MainActor private func air(_ model: MachineLoginViewModel) -> PrismClimate? { model.page?.climate(id: "climate")?.state }
+@MainActor private func offersPowerOn(_ model: MachineLoginViewModel) -> Bool { model.page?.hasButton(id: "power") == true }
+@MainActor private func unreadable(_ model: MachineLoginViewModel) -> Bool {
+  model.page?.allBlocks().contains { if case .unknown = $0 { return true }; return false } ?? true
+}
+@MainActor private func shown(_ model: MachineLoginViewModel) -> String {
+  "blocks=\(model.page?.allBlocks().map(\.id) ?? [])"
+}
+/// Presses a button the page offers, as a tap on it does.
+@MainActor private func press(_ model: MachineLoginViewModel, _ id: String) async {
+  for block in model.page?.allBlocks() ?? [] {
+    if case .button(let button) = block, button.id == id { await model.press(button); return }
+  }
+  print("  FAIL  the page offers no button \(id): \(shown(model))"); exit(1)
+}
+
 @MainActor private func player(_ origin: URL) -> MachineLoginViewModel {
   let configuration = URLSessionConfiguration.ephemeral
   configuration.httpCookieStorage!.setCookie(HTTPCookie(properties: [
@@ -123,6 +140,7 @@ private func platformIsWatching() -> Bool {
 
 @main struct PrismRealCheck {
   @MainActor static func main() async throws {
+    refuseKeychainDialogs()
     let origin = URL(string: setting("PRISM_E2E_ORIGIN"))!
     let shop = setting("PRISM_E2E_SHOP")
     let io = IoSim()
@@ -131,35 +149,44 @@ private func platformIsWatching() -> Bool {
     try await HA.reset()
     await waitUntil("nothing watched", seconds: 20) { !platformIsWatching() }
 
-    print("== 休息室：没有 IO 监听（无状态）")
+    print("== 休息室：没有 IO 监听（读页面时当场问 HA）")
     do {
       let since = Date()
       let model = player(origin)
       await model.start(shopCode: shop, publicId: setting("PRISM_E2E_LOUNGE"))
       check(model.state == .ready && model.ticket != nil && model.errorMessage == nil, "扫码进入页面", detail: "\(model.state) \(String(describing: model.errorMessage))")
-      await waitUntil("the one read") { !model.checkingPower && model.deviceState?.power == "off" }
-      check(model.deviceState?.device?.hasPower == false, "首屏不等 HA：没人监听的设备不带电源，由 Hub 随后补发")
-      check(model.deviceState?.climate?.mode == "heat" && model.deviceState?.climate?.temperature == 20, "空调状态来自 HA（制热 20°）", detail: "\(String(describing: model.deviceState?.climate))")
-      try await Task.sleep(nanoseconds: 500_000_000)
+      check(!unreadable(model), "平台下发的每个区块 App Clip 都认得", detail: shown(model))
+      check(offersPowerOn(model), "页面按 HA 的实际状态给出开机按钮", detail: shown(model))
+      check(air(model)?.mode == "heat" && air(model)?.temperature == 20, "空调状态来自 HA（制热 20°）", detail: "\(String(describing: air(model)))")
+      try await Task.sleep(nanoseconds: 3_500_000_000)
       let reads = HA.platformReads(since: since)
-      check(reads == ["climate.heatpump", "input_boolean.lounge_power"], "HA 只收到休息室两个实体各 1 次读取", detail: "\(reads)")
+      check(reads == ["climate.heatpump", "input_boolean.lounge_power"], "读一次页面，HA 只收到休息室两个实体各 1 次读取，之后不轮询", detail: "\(reads)")
 
       let beforeAction = Date()
-      await model.device("power.on")
+      await press(model, "power")
       let on = try await HA.state("input_boolean.lounge_power").state
-      check(on == "on" && model.deviceState?.power == "on" && !model.waitingPower, "开机：HA 真的打开了，页面按后端的读回继续", detail: "\(on) \(String(describing: model.deviceState?.power))")
+      check(on == "on" && !offersPowerOn(model) && model.waitingButtonId == nil, "开机：HA 真的打开了，操作的回答已经是开机后的页面", detail: "HA=\(on) \(shown(model)) \(String(describing: model.inlineNotice))")
       await model.climate("climate.set_temperature", ["temperature": 22.0])
       try await Task.sleep(nanoseconds: 800_000_000)
       let temperature = try await HA.state("climate.heatpump").attributes["temperature"] as? Double
-      check(temperature == 22 && model.deviceState?.climate?.temperature == 22, "调温：HA 的温度变成 22°，页面显示后端读回的值", detail: "HA=\(String(describing: temperature)) page=\(String(describing: model.deviceState?.climate))")
+      check(temperature == 22 && air(model)?.temperature == 22, "调温：HA 的温度变成 22°，页面显示后端读回的值", detail: "HA=\(String(describing: temperature)) page=\(String(describing: air(model))) \(String(describing: model.inlineNotice))")
       let after = HA.platformReads(since: beforeAction)
       check(!after.isEmpty && Set(after).isSubset(of: ["climate.heatpump", "input_boolean.lounge_power"]), "开机和调温之后后端只回读这台设备", detail: "\(after)")
+      await model.setSceneActive(false)
     }
 
     print("\n== 机台A：IO 在监听（事件驱动，真实 WebSocket）")
     do {
+      // The platform remembers what it last saw of this machine. An IO that connects to find off a
+      // machine last seen on is held as if the power had just gone — a state a real IO, powered by that
+      // machine, cannot be in, but the simulator can. So whatever an earlier run left behind, first let
+      // the platform watch the machine go off.
       try await HA.reset()
+      try io.start()
+      await waitUntil("the platform to watch the machine while on", seconds: 30) { platformIsWatching() }
       try await HA.call("switch", "turn_off", ["entity_id": "switch.decorative_lights"])
+      await waitUntil("it to see the machine go off", seconds: 10) { !platformIsWatching() }
+      io.stop()
       try io.start()
       await waitUntil("the platform to watch", seconds: 25) { platformIsWatching() }
       try await Task.sleep(nanoseconds: 800_000_000)
@@ -167,44 +194,63 @@ private func platformIsWatching() -> Bool {
       let model = player(origin)
       await model.start(shopCode: shop, publicId: setting("PRISM_E2E_A"))
       check(model.state == .ready && model.errorMessage == nil, "扫码进入页面", detail: "\(model.state) \(String(describing: model.errorMessage))")
-      check(model.deviceState?.device?.hasPower == true && model.deviceState?.power == "off", "bootstrap 就带着已监听的当前电源（关）", detail: "\(String(describing: model.deviceState))")
-      check(!model.checkingPower, "已监听的设备不会去读电源")
+      check(!unreadable(model) && offersPowerOn(model) && air(model)?.temperature == 21, "页面带着已监听的当前状态（关机 / 21°）", detail: shown(model))
       try await Task.sleep(nanoseconds: 1_500_000_000)
 
-      await model.device("power.on")
-      check(model.waitingPower || model.deviceState?.power == "on", "开机后以后端读回或推送为准（不是 HA 回 200 就算数）")
-      await waitUntil("the push that says it is on") { !model.waitingPower && model.deviceState?.power == "on" }
-      check(try await HA.state("switch.decorative_lights").state == "on", "收到推送后页面才往下走，HA 里确实已开")
+      await press(model, "power")
+      check(model.waitingButtonId == "power" || !offersPowerOn(model), "开机后以后端读回或推送为准（不是 HA 回 200 就算数）", detail: "\(shown(model)) \(String(describing: model.inlineNotice))")
+      await waitUntil("the page that says it is on") { model.waitingButtonId == nil && !offersPowerOn(model) }
+      check(try await HA.state("switch.decorative_lights").state == "on", "页面往下走时，HA 里确实已开")
+      check(model.page?.cards?.captureUi != nil, "开机后页面给出刷卡和在读卡器上添加卡片", detail: shown(model))
 
-      try await HA.call("switch", "turn_off", ["entity_id": "switch.decorative_lights"])
-      await waitUntil("the push of the switch-off", seconds: 4) { model.deviceState?.power == "off" }
-      check(true, "HA 里把机台关掉：页面通过 WebSocket 推送立刻变成关机")
       try await HA.call("climate", "set_temperature", ["entity_id": "climate.hvac", "temperature": 25])
-      await waitUntil("the push of the temperature", seconds: 4) { model.deviceState?.climate?.temperature == 25 }
-      check(true, "HA 里把空调设成 25°：页面立刻显示 25°")
+      await waitUntil("the push of the temperature", seconds: 4) { air(model)?.temperature == 25 }
+      check(true, "HA 里把空调设成 25°：页面经 WebSocket 得知变化，立刻显示 25°")
       let quiet = HA.platformReads(since: since)
-      check(quiet.isEmpty, "整个过程平台没有向 HA 读取任何东西", detail: "\(quiet)")
+      check(quiet.isEmpty, "监听期间平台没有向 HA 读取任何东西", detail: "\(quiet)")
 
-      // The IO goes away: the hub says the device is no longer watched and the page asks once.
-      let lost = Date()
-      try await HA.call("climate", "set_temperature", ["entity_id": "climate.hvac", "temperature": 27])
-      await waitUntil("the push of 27", seconds: 4) { model.deviceState?.climate?.temperature == 27 }
+      // Switched off elsewhere: the page is told, and since the IO lives in that machine the platform
+      // stops counting on it at once. From then on the page's reads ask Home Assistant.
+      let off = Date()
+      try await HA.call("switch", "turn_off", ["entity_id": "switch.decorative_lights"])
+      await waitUntil("the push of the switch-off", seconds: 4) { offersPowerOn(model) }
+      check(true, "HA 里把机台关掉：页面立刻回到开机页")
+      await waitUntil("the watch of a machine without power to be released", seconds: 10) { !platformIsWatching() }
+      try await Task.sleep(nanoseconds: 3_000_000_000)
+      let afterOff = HA.platformReads(since: off)
+      check(Set(afterOff).isSubset(of: ["climate.hvac", "switch.decorative_lights"]), "机台断电后监听立刻撤销，读取只涉及这台机台", detail: "\(afterOff)")
       io.stop()
-      await waitUntil("its one read", seconds: 20) { HA.platformReads(since: lost).count >= 2 }
-      try await Task.sleep(nanoseconds: 800_000_000)
-      let reads = HA.platformReads(since: lost)
-      check(reads == ["climate.hvac", "switch.decorative_lights"], "IO 掉线：hub 告知不再监听，页面只读 1 次（电源和空调各 1 个请求）", detail: "\(reads)")
-      check(model.deviceState?.power == "off" && model.deviceState?.climate?.temperature == 27, "读到的是 HA 此刻的值（关机 / 27°）", detail: "\(String(describing: model.deviceState))")
 
-      // It returns: watched again, with the state the platform has, and no more reads.
+      // On again and watched again, to see the IO leave while the machine stays on.
       try await HA.call("switch", "turn_on", ["entity_id": "switch.decorative_lights"])
-      let back = Date()
       try io.start()
-      await waitUntil("the hello that says it is on", seconds: 30) { model.deviceState?.power == "on" }
-      check(true, "IO 回来：页面收到 hub 带来的当前电源（开），而不是自己去读")
+      await waitUntil("the platform to watch again", seconds: 30) { platformIsWatching() }
+      await waitUntil("the page that says it is on", seconds: 30) { !offersPowerOn(model) && model.page?.cards != nil }
+      check(true, "机台重新开机、IO 回来：页面回到刷卡页")
+      try await Task.sleep(nanoseconds: 1_500_000_000)
+      try await HA.call("climate", "set_temperature", ["entity_id": "climate.hvac", "temperature": 27])
+      await waitUntil("the push of 27", seconds: 4) { air(model)?.temperature == 27 }
+
+      // The IO goes away: the hub says the page changed, and reading it asks Home Assistant.
+      let lost = Date()
+      io.stop()
+      await waitUntil("the read after the IO left", seconds: 20) { HA.platformReads(since: lost).count >= 2 }
+      try await Task.sleep(nanoseconds: 3_000_000_000)
+      let reads = HA.platformReads(since: lost)
+      check(Set(reads) == ["climate.hvac", "switch.decorative_lights"], "IO 掉线：页面重读时只向 HA 问这台机台的两个实体", detail: "\(reads)")
+      try await Task.sleep(nanoseconds: 4_000_000_000)
+      check(HA.platformReads(since: lost) == reads, "读完就停，不轮询", detail: "\(HA.platformReads(since: lost))")
+      check(!offersPowerOn(model) && air(model)?.temperature == 27, "读到的是 HA 此刻的值（开机 / 27°）", detail: "\(shown(model)) \(String(describing: air(model)))")
+
+      // It returns: watched again, told by push, and nothing is asked of Home Assistant.
+      try io.start()
+      await waitUntil("the platform to watch once more", seconds: 30) { platformIsWatching() }
+      try await Task.sleep(nanoseconds: 2_000_000_000)
+      let back = Date()
       try await HA.call("climate", "set_temperature", ["entity_id": "climate.hvac", "temperature": 22])
-      await waitUntil("the push of 22", seconds: 4) { model.deviceState?.climate?.temperature == 22 }
-      check(HA.platformReads(since: back).isEmpty, "重新监听之后又靠推送更新，平台不再读 HA")
+      await waitUntil("the push of 22", seconds: 4) { air(model)?.temperature == 22 }
+      check(HA.platformReads(since: back).isEmpty, "重新监听之后又靠推送更新，平台不再读 HA", detail: "\(HA.platformReads(since: back))")
+      await model.setSceneActive(false)
     }
     print("\n\(passed) real-platform checks passed")
   }

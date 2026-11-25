@@ -78,6 +78,7 @@ struct ClipResourcePricing: View {
   let rules: PrismResourceBilling.Rules
   /// What confirming starts, ends and keeps.
   var changes: PrismResourceBilling.Preview? = nil
+  let labels: PrismPagePricingLabels
   @State private var segments: [[PrismDaySegment]] = []
 
   private var zone: TimeZone { TimeZone(identifier: rules.timeZone) ?? .current }
@@ -95,19 +96,20 @@ struct ClipResourcePricing: View {
         ClipPlanLane(
           name: plan.config.name,
           fixedAmount: plan.config.kind == "charge.fixed" ? plan.config.provider.amount ?? 0 : nil,
-          tag: tag(plan.config.id),
+          tag: tag(plan.config.id, labels: labels),
           color: prismPlanColor(index),
           segments: index < segments.count ? segments[index] : [],
           nowMinute: now.minute,
-          caps: rules.caps?.plans.filter { $0.pricingConfigId == plan.config.id } ?? []
+          caps: rules.caps?.plans.filter { $0.pricingConfigId == plan.config.id } ?? [],
+          labels: labels
         )
       }
       if !shared.isEmpty {
         VStack(alignment: .leading, spacing: 16) {
-          Text("跨方案封顶").font(.caption).foregroundStyle(.secondary).padding(.bottom, -8)
+          Text(verbatim: labels.sharedCapsTitle).font(.caption).foregroundStyle(.secondary).padding(.bottom, -8)
           ForEach(Array(shared.enumerated()), id: \.offset) { index, cap in
             let at = rules.plans.count + index
-            ClipCapLane(cap: cap, segments: at < segments.count ? segments[at] : [], nowMinute: now.minute)
+            ClipCapLane(cap: cap, segments: at < segments.count ? segments[at] : [], nowMinute: now.minute, labels: labels)
           }
         }
         .padding(.top, 12)
@@ -118,9 +120,9 @@ struct ClipResourcePricing: View {
       // The running bill is not repeated here: the account menu has it, in full.
       if !stopped.isEmpty {
         HStack(alignment: .firstTextBaseline) {
-          Text("确认后结束").foregroundStyle(.secondary)
+          Text(verbatim: labels.stoppedTitle).foregroundStyle(.secondary)
           Spacer(minLength: 12)
-          Text(stopped.map(\.planName).joined(separator: "、")).lineLimit(1)
+          Text(verbatim: stopped.map(\.planName).joined(separator: labels.listSeparator)).lineLimit(1)
         }
         .font(.subheadline)
         .padding(.top, 12)
@@ -130,7 +132,7 @@ struct ClipResourcePricing: View {
     .padding(16)
     .background(prismCardFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     .accessibilityElement(children: .contain)
-    .accessibilityLabel(Text("计费规则"))
+    .accessibilityLabel(Text(verbatim: labels.title))
     // Each plan's day is worked out here, from the plan's own rules, as the web page does.
     .task(id: now.date + rules.timeZone + rules.plans.map(\.config.id).joined() + shared.map(\.pricingConfigId).joined()) {
       let date = now.date, zone = rules.timeZone
@@ -141,9 +143,9 @@ struct ClipResourcePricing: View {
     }
   }
 
-  private func tag(_ planId: String) -> LocalizedStringKey? {
-    if changes?.started.contains(where: { $0.planId == planId }) == true { return "新增" }
-    if changes?.kept.contains(where: { $0.planId == planId }) == true { return "保留" }
+  private func tag(_ planId: String, labels: PrismPagePricingLabels) -> String? {
+    if changes?.started.contains(where: { $0.planId == planId }) == true { return labels.startedTag }
+    if changes?.kept.contains(where: { $0.planId == planId }) == true { return labels.keptTag }
     return nil
   }
 }
@@ -163,18 +165,18 @@ private func prismIsNow(_ row: PrismPeriodRow?, _ nowMinute: Int) -> Bool {
   row?.pieces.contains { nowMinute >= $0.startMinute && nowMinute < $0.endMinute } == true
 }
 
-private func prismCapText(paidBefore: Double, priceCap: Double) -> String {
+private func prismCapText(paidBefore: Double, priceCap: Double, labels: PrismPagePricingLabels) -> String {
   paidBefore >= priceCap
-    ? String(localized: "已达封顶") + " " + prismMoney(priceCap)
-    : String(localized: "累计") + " " + prismMoney(paidBefore) + " / " + String(localized: "封顶") + " " + prismMoney(priceCap)
+    ? labels.capReached + " " + prismMoney(priceCap)
+    : labels.accumulated + " " + prismMoney(paidBefore) + " / " + labels.cap + " " + prismMoney(priceCap)
 }
 
-private func prismPriceText(_ s: PrismDaySegment) -> String {
-  if s.isClosed == true { return String(localized: "不计费") }
+private func prismPriceText(_ s: PrismDaySegment, labels: PrismPagePricingLabels) -> String {
+  if s.isClosed == true { return labels.notBilled }
   if let pricing = s.pricing {
-    return prismMoney(pricing.unitPrice) + " / " + pricing.unitMinutes.formatted() + " " + String(localized: "分钟")
+    return prismMoney(pricing.unitPrice) + " / " + pricing.unitMinutes.formatted() + " " + labels.minuteUnit
   }
-  if let cap = s.priceCap { return String(localized: "封顶") + " " + prismMoney(cap) }
+  if let cap = s.priceCap { return labels.cap + " " + prismMoney(cap) }
   return s.label
 }
 
@@ -183,11 +185,12 @@ private struct ClipPlanLane: View {
   let name: String
   /// A fixed charge has no day to draw: it is billed once for the visit.
   var fixedAmount: Double? = nil
-  let tag: LocalizedStringKey?
+  let tag: String?
   let color: Color
   let segments: [PrismDaySegment]
   let nowMinute: Int
   let caps: [PrismResourceBilling.Rules.CapProgress]
+  let labels: PrismPagePricingLabels
   @State private var picked = PickedRow()
 
   var body: some View {
@@ -200,17 +203,17 @@ private struct ClipPlanLane: View {
     }
     let top = segments.map(rate).max() ?? 0
     VStack(alignment: .leading, spacing: 8) {
-      ClipLaneHeader(value: fixedAmount.map(prismMoney) ?? first.map(prismPriceText) ?? "") {
+      ClipLaneHeader(value: fixedAmount.map(prismMoney) ?? first.map { prismPriceText($0, labels: labels) } ?? "") {
         Circle().fill(color).frame(width: 10, height: 10).accessibilityHidden(true)
         Text(name).fontWeight(.semibold).lineLimit(1)
         if let tag {
-          Text(tag).font(.caption2).foregroundStyle(.secondary)
+          Text(verbatim: tag).font(.caption2).foregroundStyle(.secondary)
             .padding(.horizontal, 8).padding(.vertical, 2)
             .background(Color.primary.opacity(0.06), in: Capsule())
         }
       }
       if fixedAmount != nil {
-        Text("单次收取").font(.caption).foregroundStyle(.secondary)
+        Text(verbatim: labels.fixedFee).font(.caption).foregroundStyle(.secondary)
       } else {
       ClipDayStrip(segments: segments, rows: rows, nowMinute: nowMinute, height: 10, accent: color,
                    picked: tapped ? row : nil, pick: { pick($0, rows: rows, tapped: tapped ? row : nil) }) { s in
@@ -219,13 +222,13 @@ private struct ClipPlanLane: View {
       }
       if let row, let first {
         let capLine: String = {
-          if let cap { return " · " + prismCapText(paidBefore: cap.paidBefore, priceCap: cap.priceCap) }
+          if let cap { return " · " + prismCapText(paidBefore: cap.paidBefore, priceCap: cap.priceCap, labels: labels) }
           if first.isClosed != true, let limit = first.pricing?.priceCap, limit > 0, limit < 9007199254740991 {
-            return " · " + String(localized: "封顶") + " " + prismMoney(limit)
+            return " · " + labels.cap + " " + prismMoney(limit)
           }
           return ""
         }()
-        Text((first.isClosed == true ? String(localized: "不计费") : first.label) + " " + row.startLabel + "–" + row.endLabel + capLine)
+        Text(verbatim: (first.isClosed == true ? labels.notBilled : first.label) + " " + row.startLabel + "–" + row.endLabel + capLine)
           .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
       }
       }
@@ -244,6 +247,7 @@ private struct ClipCapLane: View {
   let cap: PrismResourceBilling.Rules.SharedCap
   let segments: [PrismDaySegment]
   let nowMinute: Int
+  let labels: PrismPagePricingLabels
   @State private var picked = PickedRow()
 
   var body: some View {
@@ -268,7 +272,7 @@ private struct ClipCapLane: View {
     let counted = row?.pieces.contains(where: inWindow) == true
     VStack(alignment: .leading, spacing: 8) {
       ClipLaneHeader(value: first.map { first in
-        counted ? prismCapText(paidBefore: cap.paidBefore, priceCap: cap.priceCap) : capWindowText(first)
+        counted ? prismCapText(paidBefore: cap.paidBefore, priceCap: cap.priceCap, labels: labels) : capWindowText(first)
       } ?? "", quiet: true) {
         Text(cap.name).fontWeight(.semibold).lineLimit(1)
       }
@@ -280,11 +284,11 @@ private struct ClipCapLane: View {
                    },
                    // A gap no window covers is outlined, so it reads as uncovered rather than as nothing.
                    outlined: { $0.isClosed == true },
-                   name: { $0.isClosed == true ? String(localized: "未覆盖") : $0.label }) { s in
+                   name: { $0.isClosed == true ? labels.notCovered : $0.label }) { s in
         AnyShapeStyle(s.isClosed == true ? Color.clear : Color.primary.opacity(0.12))
       }
       if let row, let first {
-        Text((first.isClosed == true ? String(localized: "未覆盖") : first.label) + " " + row.startLabel + "–" + row.endLabel)
+        Text(verbatim: (first.isClosed == true ? labels.notCovered : first.label) + " " + row.startLabel + "–" + row.endLabel)
           .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
       }
     }
@@ -292,8 +296,8 @@ private struct ClipCapLane: View {
 
   /// A cap window not yet counting: its cap, or none when no window covers it or its cap is 0.
   private func capWindowText(_ s: PrismDaySegment) -> String {
-    s.isClosed == true ? String(localized: "未覆盖")
-      : (s.priceCap ?? 0) > 0 ? String(localized: "封顶") + " " + prismMoney(s.priceCap ?? 0) : String(localized: "不封顶")
+    s.isClosed == true ? labels.notCovered
+      : (s.priceCap ?? 0) > 0 ? labels.cap + " " + prismMoney(s.priceCap ?? 0) : labels.uncapped
   }
 }
 

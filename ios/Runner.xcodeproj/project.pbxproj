@@ -86,6 +86,30 @@
 		CDC41510304F0F2B000BCB4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		E0C7EC6A900846209454DF9E /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF425FBD0BA44528796FEA8 /* LocationService.swift */; };
 		E2C01C24144A55EDAC6C5ADC /* PrismURLBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AF5A4F2ED44122568D6750 /* PrismURLBridge.swift */; };
+		E4AA7EB986A798CD356C9E78 /* PrismPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E959805B97026A1394C7EA /* PrismPage.swift */; };
+		465219ADD52B7D4DD5A8A0AA /* PrismPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E959805B97026A1394C7EA /* PrismPage.swift */; };
+		58CCB80524A5ABB4D255DB36 /* PrismPageForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55ED40FED9FBA1789DA6E34C /* PrismPageForm.swift */; };
+		C002BBFD6D18E788AF1908D5 /* PrismPageForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55ED40FED9FBA1789DA6E34C /* PrismPageForm.swift */; };
+		CA9E096836F28458CC2F1E0D /* ClipBindingBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D7CC97227FDBA422819549B /* ClipBindingBlock.swift */; };
+		96DB80861178A0CFD023DE8E /* ClipBindingBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D7CC97227FDBA422819549B /* ClipBindingBlock.swift */; };
+		22402F551A84D7799769213C /* ClipButtonBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1DB5659C07708F8DBEC0E19 /* ClipButtonBlock.swift */; };
+		46783818613E443761E1BCE4 /* ClipButtonBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1DB5659C07708F8DBEC0E19 /* ClipButtonBlock.swift */; };
+		F01D15BCC5A17F3E9AD7AB7D /* ClipCardsBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B1DDFC5712C9326792E424C /* ClipCardsBlock.swift */; };
+		41EA4E5177A57E7250EC1CED /* ClipCardsBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B1DDFC5712C9326792E424C /* ClipCardsBlock.swift */; };
+		2DAD15203F6E3BF38687E419 /* ClipClimateBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9C01B59DF528E905A2C123E /* ClipClimateBlock.swift */; };
+		0789F1BCFA9DB07F95C77CEF /* ClipClimateBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9C01B59DF528E905A2C123E /* ClipClimateBlock.swift */; };
+		ABDD3C6A39FEE92BD8C5C19D /* ClipComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77F594442DB57315128B1C31 /* ClipComponents.swift */; };
+		AB574539D2004A224FF6F2C8 /* ClipComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77F594442DB57315128B1C31 /* ClipComponents.swift */; };
+		60E9EB40A5C585FF481E8ACA /* ClipContentBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDED5601EA7288D23D8AA8B7 /* ClipContentBlocks.swift */; };
+		1DBB787D5ECCEEB39780BAB9 /* ClipContentBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDED5601EA7288D23D8AA8B7 /* ClipContentBlocks.swift */; };
+		B66EB97E8BA71449CA5026EA /* ClipFieldBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0948EBE0CA4A522F68A965E /* ClipFieldBlocks.swift */; };
+		A88084BEEFA07378FB72DB1D /* ClipFieldBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0948EBE0CA4A522F68A965E /* ClipFieldBlocks.swift */; };
+		6746C5928A07272F82BD8B08 /* ClipPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF45F669B5FBEEFBB150899D /* ClipPageView.swift */; };
+		654311597EF68807183933B1 /* ClipPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF45F669B5FBEEFBB150899D /* ClipPageView.swift */; };
+		54F341DC9BB1C1D96AA8C74C /* ClipSignInButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5BBFCD60C1F151ED14A974 /* ClipSignInButtons.swift */; };
+		5EF289768D94664829F796F0 /* ClipSignInButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5BBFCD60C1F151ED14A974 /* ClipSignInButtons.swift */; };
+		0C264DF3A815C3921932A7B0 /* ClipTableBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFD48A3AB7D950CD636E491 /* ClipTableBlock.swift */; };
+		CED5B4124BB758F190316B13 /* ClipTableBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFD48A3AB7D950CD636E491 /* ClipTableBlock.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -220,6 +244,18 @@
 		D1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../PrismClip/MunetAuthenticationService.swift; sourceTree = "<group>"; };
 		E1C000000000000000000001 /* PrismClipLiveActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrismClipLiveActivity.entitlements; sourceTree = "<group>"; };
 		FA100BF03C7C425DBFABB85A /* PRiSM Link.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PRiSM Link.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		63E959805B97026A1394C7EA /* PrismPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismPage.swift; sourceTree = "<group>"; };
+		55ED40FED9FBA1789DA6E34C /* PrismPageForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismPageForm.swift; sourceTree = "<group>"; };
+		6D7CC97227FDBA422819549B /* ClipBindingBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipBindingBlock.swift; sourceTree = "<group>"; };
+		C1DB5659C07708F8DBEC0E19 /* ClipButtonBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipButtonBlock.swift; sourceTree = "<group>"; };
+		3B1DDFC5712C9326792E424C /* ClipCardsBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipCardsBlock.swift; sourceTree = "<group>"; };
+		A9C01B59DF528E905A2C123E /* ClipClimateBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipClimateBlock.swift; sourceTree = "<group>"; };
+		77F594442DB57315128B1C31 /* ClipComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipComponents.swift; sourceTree = "<group>"; };
+		BDED5601EA7288D23D8AA8B7 /* ClipContentBlocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipContentBlocks.swift; sourceTree = "<group>"; };
+		E0948EBE0CA4A522F68A965E /* ClipFieldBlocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipFieldBlocks.swift; sourceTree = "<group>"; };
+		BF45F669B5FBEEFBB150899D /* ClipPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipPageView.swift; sourceTree = "<group>"; };
+		7E5BBFCD60C1F151ED14A974 /* ClipSignInButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipSignInButtons.swift; sourceTree = "<group>"; };
+		8AFD48A3AB7D950CD636E491 /* ClipTableBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipTableBlock.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -293,6 +329,9 @@
 			isa = PBXGroup;
 			children = (
 				13FD60C866B1FF0D110DE6F1 /* ResourcePricingView.swift */,
+				63E959805B97026A1394C7EA /* PrismPage.swift */,
+				55ED40FED9FBA1789DA6E34C /* PrismPageForm.swift */,
+				FFEC0CA4D63646512D24997D /* Page */,
 				A6E8701D9AE4F80CEDA38D70 /* BillTimelineView.swift */,
 				C2C00000000000000000000B /* ../LiveActivityShared/StoreVisitAttributes.swift */,
 				C2C00000000000000000000C /* ../LiveActivityShared/StoreVisitLiveActivityManager.swift */,
@@ -414,6 +453,23 @@
 				E1C000000000000000000001 /* PrismClipLiveActivity.entitlements */,
 			);
 			path = PrismClipLiveActivityExtension;
+			sourceTree = "<group>";
+		};
+		FFEC0CA4D63646512D24997D /* Page */ = {
+			isa = PBXGroup;
+			children = (
+				6D7CC97227FDBA422819549B /* ClipBindingBlock.swift */,
+				C1DB5659C07708F8DBEC0E19 /* ClipButtonBlock.swift */,
+				3B1DDFC5712C9326792E424C /* ClipCardsBlock.swift */,
+				A9C01B59DF528E905A2C123E /* ClipClimateBlock.swift */,
+				77F594442DB57315128B1C31 /* ClipComponents.swift */,
+				BDED5601EA7288D23D8AA8B7 /* ClipContentBlocks.swift */,
+				E0948EBE0CA4A522F68A965E /* ClipFieldBlocks.swift */,
+				BF45F669B5FBEEFBB150899D /* ClipPageView.swift */,
+				7E5BBFCD60C1F151ED14A974 /* ClipSignInButtons.swift */,
+				8AFD48A3AB7D950CD636E491 /* ClipTableBlock.swift */,
+			);
+			path = Page;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -686,6 +742,18 @@
 				74DE941C77D94C35809D93CD /* MachineLoginViewModel.swift in Sources */,
 				B043ADAE26D84ED38AA21563 /* PasskeyAuthenticationService.swift in Sources */,
 				B1C000000000000000000006 /* MunetAuthenticationService.swift in Sources */,
+				E4AA7EB986A798CD356C9E78 /* PrismPage.swift in Sources */,
+				58CCB80524A5ABB4D255DB36 /* PrismPageForm.swift in Sources */,
+				CA9E096836F28458CC2F1E0D /* ClipBindingBlock.swift in Sources */,
+				22402F551A84D7799769213C /* ClipButtonBlock.swift in Sources */,
+				F01D15BCC5A17F3E9AD7AB7D /* ClipCardsBlock.swift in Sources */,
+				2DAD15203F6E3BF38687E419 /* ClipClimateBlock.swift in Sources */,
+				ABDD3C6A39FEE92BD8C5C19D /* ClipComponents.swift in Sources */,
+				60E9EB40A5C585FF481E8ACA /* ClipContentBlocks.swift in Sources */,
+				B66EB97E8BA71449CA5026EA /* ClipFieldBlocks.swift in Sources */,
+				6746C5928A07272F82BD8B08 /* ClipPageView.swift in Sources */,
+				54F341DC9BB1C1D96AA8C74C /* ClipSignInButtons.swift in Sources */,
+				0C264DF3A815C3921932A7B0 /* ClipTableBlock.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -724,6 +792,18 @@
 				B1C000000000000000000003 /* ../PrismClip/Models.swift in Sources */,
 				B1C000000000000000000004 /* ../PrismClip/MunetAuthenticationService.swift in Sources */,
 				B1C000000000000000000007 /* PasskeyAuthenticationService.swift in Sources */,
+				465219ADD52B7D4DD5A8A0AA /* PrismPage.swift in Sources */,
+				C002BBFD6D18E788AF1908D5 /* PrismPageForm.swift in Sources */,
+				96DB80861178A0CFD023DE8E /* ClipBindingBlock.swift in Sources */,
+				46783818613E443761E1BCE4 /* ClipButtonBlock.swift in Sources */,
+				41EA4E5177A57E7250EC1CED /* ClipCardsBlock.swift in Sources */,
+				0789F1BCFA9DB07F95C77CEF /* ClipClimateBlock.swift in Sources */,
+				AB574539D2004A224FF6F2C8 /* ClipComponents.swift in Sources */,
+				1DBB787D5ECCEEB39780BAB9 /* ClipContentBlocks.swift in Sources */,
+				A88084BEEFA07378FB72DB1D /* ClipFieldBlocks.swift in Sources */,
+				654311597EF68807183933B1 /* ClipPageView.swift in Sources */,
+				5EF289768D94664829F796F0 /* ClipSignInButtons.swift in Sources */,
+				CED5B4124BB758F190316B13 /* ClipTableBlock.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

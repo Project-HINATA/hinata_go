@@ -853,23 +853,6 @@
         }
       }
     },
-    "取消" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancel"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "取消"
-          }
-        }
-      }
-    },
     "可以关闭此页面" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -954,22 +937,6 @@
         }
       }
     },
-    "向店铺 Bot 发送" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send to the store bot"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "向店铺 Bot 发送"
-          }
-        }
-      }
-    },
     "在店" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1033,23 +1000,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "复制"
-          }
-        }
-      }
-    },
-    "完成" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Done"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完成"
           }
         }
       }
@@ -1118,23 +1068,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "封顶"
-          }
-        }
-      }
-    },
-    "尾号 %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ending in %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "尾号 %@"
           }
         }
       }
@@ -1270,23 +1203,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "网络异常，请重试"
-          }
-        }
-      }
-    },
-    "未检测到开机，请重试" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Power-on not detected. Retry."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未检测到开机，请重试"
           }
         }
       }
@@ -1914,23 +1830,6 @@
         }
       }
     },
-    "无法加载卡片" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Could not load cards"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无法加载卡片"
-          }
-        }
-      }
-    },
     "无法加载账号设置" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2540,23 +2439,6 @@
         }
       }
     },
-    "正在登录…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Signing in…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在登录…"
-          }
-        }
-      }
-    },
     "正在获取当前位置，请稍后再试" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2727,23 +2609,6 @@
         }
       }
     },
-    "添加卡片" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add card"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加卡片"
-          }
-        }
-      }
-    },
     "现在" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2842,23 +2707,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "确定退出当前账号吗？"
-          }
-        }
-      }
-    },
-    "确认位置…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Checking location…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "确认位置…"
           }
         }
       }
@@ -3615,23 +3463,6 @@
         }
       }
     },
-    "跨方案封顶" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Combined cap"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "跨方案封顶"
-          }
-        }
-      }
-    },
     "跳过，继续游玩" : {
       "localizations" : {
         "en" : {
@@ -3681,9 +3512,6 @@
           }
         }
       }
-    },
-    "还没有可用卡片，请先在 Prism 添加卡片" : {
-
     },
     "还没有可用卡片，请先在 PRiSM 添加卡片" : {
       "extractionState" : "manual",
@@ -3906,40 +3734,6 @@
         }
       }
     },
-    "选择卡片" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Select a card"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择卡片"
-          }
-        }
-      }
-    },
-    "重新加载卡片" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reload cards"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新加载卡片"
-          }
-        }
-      }
-    },
     "重新生成验证码" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4092,375 +3886,6 @@
         }
       }
     },
-    "空调" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Air conditioner"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "空调"
-          }
-        }
-      }
-    },
-    "开空调" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Turn on"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "开空调"
-          }
-        }
-      }
-    },
-    "关空调" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Turn off"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "关空调"
-          }
-        }
-      }
-    },
-    "已关闭" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Off"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已关闭"
-          }
-        }
-      }
-    },
-    "空调状态未知" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Air conditioner state unknown"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "空调状态未知"
-          }
-        }
-      }
-    },
-    "设定温度" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Target temperature"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "设定温度"
-          }
-        }
-      }
-    },
-    "调低温度" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lower temperature"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "调低温度"
-          }
-        }
-      }
-    },
-    "调高温度" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raise temperature"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "调高温度"
-          }
-        }
-      }
-    },
-    "模式" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mode"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "模式"
-          }
-        }
-      }
-    },
-    "风速" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fan speed"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "风速"
-          }
-        }
-      }
-    },
-    "制冷" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cool"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "制冷"
-          }
-        }
-      }
-    },
-    "制热" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Heat"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "制热"
-          }
-        }
-      }
-    },
-    "除湿" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dry"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "除湿"
-          }
-        }
-      }
-    },
-    "送风" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fan"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "送风"
-          }
-        }
-      }
-    },
-    "自动" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auto"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "自动"
-          }
-        }
-      }
-    },
-    "自动冷暖" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Heat/cool"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "自动冷暖"
-          }
-        }
-      }
-    },
-    "静音" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quiet"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "静音"
-          }
-        }
-      }
-    },
-    "低风" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Low"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "低风"
-          }
-        }
-      }
-    },
-    "中风" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Medium"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "中风"
-          }
-        }
-      }
-    },
-    "高风" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "High"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "高风"
-          }
-        }
-      }
-    },
-    "强劲" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Turbo"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "强劲"
-          }
-        }
-      }
-    },
-    "室温 %@°" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Room %@°"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "室温 %@°"
-          }
-        }
-      }
-    },
-    "计费规则" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pricing rules"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "计费规则"
-          }
-        }
-      }
-    },
     "暂时无法使用" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4512,125 +3937,6 @@
         }
       }
     },
-    "正在连接机台…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connecting to the cabinet…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在连接机台…"
-          }
-        }
-      }
-    },
-    "请把卡片放在「%@」的读卡器上" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Put your card on the reader of %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请把卡片放在「%@」的读卡器上"
-          }
-        }
-      }
-    },
-    "已添加卡片" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Card added"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已添加卡片"
-          }
-        }
-      }
-    },
-    "这张卡已绑定到本店的其他玩家" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This card belongs to another player here"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "这张卡已绑定到本店的其他玩家"
-          }
-        }
-      }
-    },
-    "不支持这种卡片" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This kind of card is not supported"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "不支持这种卡片"
-          }
-        }
-      }
-    },
-    "离开页面后已取消添加，请重新添加" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adding was cancelled because you left the page. Please try again."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "离开页面后已取消添加，请重新添加"
-          }
-        }
-      }
-    },
-    "没有读到卡片" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No card was read"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "没有读到卡片"
-          }
-        }
-      }
-    },
     "新增方案" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4644,40 +3950,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新增方案"
-          }
-        }
-      }
-    },
-    "累计" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "So far"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "累计"
-          }
-        }
-      }
-    },
-    "确认后结束" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ends when you confirm"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "确认后结束"
           }
         }
       }
@@ -4729,108 +4001,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已计"
-          }
-        }
-      }
-    },
-    "已达封顶" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cap reached"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已达封顶"
-          }
-        }
-      }
-    },
-    "不计费" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not billed"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "不计费"
-          }
-        }
-      }
-    },
-    "不封顶" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uncapped"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "不封顶"
-          }
-        }
-      }
-    },
-    "未覆盖" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not covered"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未覆盖"
-          }
-        }
-      }
-    },
-    "新增" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新增"
-          }
-        }
-      }
-    },
-    "保留" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kept"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "保留"
           }
         }
       }
@@ -4967,23 +4137,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "封顶结束"
-          }
-        }
-      }
-    },
-    "单次收取" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flat fee"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "单次收取"
           }
         }
       }
