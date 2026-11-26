@@ -99,6 +99,8 @@ final class FixtureProtocol: URLProtocol {
   static var heldIdentityReply: (() -> Void)?
   static var holdNextPageResponse = false
   static var heldPageReply: (() -> Void)?
+  static var holdNextShopPageResponse = false
+  static var heldShopPageReply: (() -> Void)?
   override class func canInit(with request: URLRequest) -> Bool { true }
   override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
   override func startLoading() {
@@ -119,6 +121,8 @@ final class FixtureProtocol: URLProtocol {
         Self.holdNextIdentityResponse = false; Self.heldIdentityReply = reply
       } else if Self.holdNextPageResponse && request.url?.path == "/api/v1/devices/session/page" {
         Self.holdNextPageResponse = false; Self.heldPageReply = reply
+      } else if Self.holdNextShopPageResponse && request.url?.path == "/api/v1/shops/store/player/page" {
+        Self.holdNextShopPageResponse = false; Self.heldShopPageReply = reply
       } else { reply() }
     } catch { client?.urlProtocol(self, didFailWithError: error) }
   }
@@ -135,12 +139,19 @@ enum PageFixtures {
     return try! JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
   }()
   private static var pages: [String: Any] { file["pages"] as! [String: Any] }
+  private static var shopPages: [String: Any] { file["shopPages"] as! [String: Any] }
   static var names: [String] { pages.keys.sorted() }
+  static var shopPageNames: [String] { shopPages.keys.sorted() }
   static func page(_ name: String) -> [String: Any] {
     guard let page = pages[name] as? [String: Any] else { preconditionFailure("No page fixture named \(name)") }
     return page
   }
+  static func shopPage(_ name: String) -> [String: Any] {
+    guard let page = shopPages[name] as? [String: Any] else { preconditionFailure("No shopPage fixture named \(name)") }
+    return page
+  }
   static var code: [String: Any] { file["code"] as! [String: Any] }
+  static var celebration: [String: Any] { file["celebration"] as! [String: Any] }
   /// `page` with the first block of `kind` changed, for a state the platform would send next.
   static func changing(_ page: [String: Any], kind: String, _ change: (inout [String: Any]) -> Void) -> [String: Any] {
     var page = page

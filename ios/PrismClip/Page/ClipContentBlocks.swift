@@ -26,11 +26,13 @@ struct ClipTextBlock: View {
 }
 
 struct ClipSectionBlock: View {
+  @Environment(\.prismInCard) private var inCard
   let section: PrismPageSection
   let depth: Int
   let context: ClipPageContext
 
   var body: some View {
+    let isCard = section.style == "card"
     let content = VStack(alignment: .leading, spacing: 16) {
       if section.title != nil || section.subtitle != nil {
         VStack(alignment: .leading, spacing: 4) {
@@ -39,9 +41,10 @@ struct ClipSectionBlock: View {
         }
       }
       ClipPageBlockList(blocks: section.blocks, depth: depth + 1, context: context)
+        .environment(\.prismInCard, inCard || isCard)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    if section.style == "card" {
+    if isCard {
       content.padding(20).background(prismCardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     } else {
       content
@@ -71,17 +74,66 @@ struct ClipKeyValueBlock: View {
     VStack(spacing: 0) {
       ForEach(Array(kv.items.enumerated()), id: \.offset) { index, item in
         if index > 0 { Divider() }
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-          Text(verbatim: item.label).font(.subheadline).foregroundStyle(.secondary)
-          Spacer(minLength: 12)
-          Text(verbatim: item.value)
-            .font(.subheadline.weight(item.tone == "muted" ? .regular : .semibold))
-            .monospacedDigit()
-            .foregroundStyle(color(item.tone))
-            .multilineTextAlignment(.trailing)
+        let iconName = symbol(for: item.icon)
+        let badgeText = item.badge.flatMap { $0.isEmpty ? nil : $0 }
+        if iconName != nil || badgeText != nil {
+          let badgeColor = color(item.badgeTone ?? item.tone)
+          HStack(alignment: .center, spacing: 14) {
+            if let iconName {
+              Image(systemName: iconName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(badgeColor)
+                .frame(width: 38, height: 38)
+                .background(badgeColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 6) {
+              Text(verbatim: item.label)
+                .font(.body.weight(.medium))
+                .foregroundStyle(.primary)
+              if let badgeText {
+                Text(verbatim: badgeText)
+                  .font(.caption.weight(.semibold))
+                  .foregroundStyle(badgeColor)
+                  .padding(.horizontal, 9)
+                  .padding(.vertical, 3)
+                  .background(badgeColor.opacity(0.12), in: Capsule())
+              }
+            }
+            Spacer(minLength: 12)
+            Text(verbatim: item.value)
+              .font(.headline.weight(item.tone == "muted" ? .regular : .semibold))
+              .monospacedDigit()
+              .foregroundStyle(color(item.tone))
+              .multilineTextAlignment(.trailing)
+          }
+          .padding(.vertical, 18)
+        } else {
+          HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(verbatim: item.label).font(.subheadline).foregroundStyle(.secondary)
+            Spacer(minLength: 12)
+            Text(verbatim: item.value)
+              .font(.subheadline.weight(item.tone == "muted" ? .regular : .semibold))
+              .monospacedDigit()
+              .foregroundStyle(color(item.tone))
+              .multilineTextAlignment(.trailing)
+          }
+          .padding(.vertical, 18)
         }
-        .padding(.vertical, 12)
       }
+    }
+  }
+
+  private func symbol(for icon: String?) -> String? {
+    switch icon {
+    case "wallet": return "wallet.pass.fill"
+    case "gift": return "gift.fill"
+    case "coins": return "banknote.fill"
+    case "coupon": return "ticket.fill"
+    case "pass": return "checkmark.seal.fill"
+    case "ticket": return "tag.fill"
+    case "asset": return "sparkles"
+    default: return nil
     }
   }
 
@@ -92,6 +144,7 @@ struct ClipKeyValueBlock: View {
     case "success": return .green
     case "warning": return .orange
     case "error": return .red
+    case "purple": return .purple
     default: return .primary
     }
   }

@@ -100,6 +100,34 @@ final class PrismAPI {
     return try await send(request)
   }
 
+  private func encodedPathSegment(_ raw: String) -> String {
+    raw.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/?#%"))) ?? raw
+  }
+
+  func shopPage(shopCode: String, view: String = "shop", item: String? = nil, cursor: String? = nil) async throws -> PrismPage {
+    var items = [URLQueryItem(name: "view", value: view)]
+    if let item, !item.isEmpty { items.append(URLQueryItem(name: "item", value: item)) }
+    if let cursor, !cursor.isEmpty { items.append(URLQueryItem(name: "cursor", value: cursor)) }
+    var query = URLComponents()
+    query.queryItems = items
+    let suffix = query.percentEncodedQuery.map { "?\($0)" } ?? ""
+    return try await request("/api/v1/shops/\(encodedPathSegment(shopCode))/player/page\(suffix)")
+  }
+
+  func shopPageAction(
+    shopCode: String,
+    view: String,
+    operationId: String,
+    action: String,
+    payload: [String: Any]? = nil,
+    location: [String: Double]? = nil
+  ) async throws -> PrismActionAnswer {
+    var body: [String: Any] = ["view": view, "operationId": operationId, "action": action]
+    if let payload { body["payload"] = payload }
+    if let location { body["location"] = location }
+    return try await request("/api/v1/shops/\(encodedPathSegment(shopCode))/player/action", body: body)
+  }
+
   func me() async throws -> MeResponse {
     try await send(makeRequest(path: "/api/v1/me"))
   }
@@ -382,7 +410,7 @@ final class PrismAPI {
     // From a shop's China Mobile line a new connection to Cloudflare can stall for seconds or forever
     // while another tried a moment later goes straight through, so nothing waits long on one attempt.
     if method == "GET" || path.hasSuffix("/machines/session/start") { request.timeoutInterval = 5 }
-    else if path.hasSuffix("/session/action") { request.timeoutInterval = 10 }
+    else if path.hasSuffix("/session/action") || path.hasSuffix("/player/action") { request.timeoutInterval = 10 }
     return request
   }
 
