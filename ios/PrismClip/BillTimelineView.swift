@@ -13,24 +13,25 @@ private func cappedAt(_ track: Timeline.Track, _ at: TimeInterval) -> Bool {
 struct ClipBillTotal: View {
   let total: Double
   let timeline: PrismBillTimeline?
+  var labels: PrismPageBillLabels? = nil
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
-      Text("合计").font(.subheadline).foregroundStyle(.secondary)
+      Text(verbatim: labels?.totalLabel ?? String(localized: "合计")).font(.subheadline).foregroundStyle(.secondary)
       Text(total.formatted(.number.precision(.fractionLength(2)))).font(.largeTitle.bold()).monospacedDigit()
       if timeline?.tracks.contains(where: { !($0.capped ?? []).isEmpty }) == true {
         HStack(spacing: 20) {
-          legend("计费") { Capsule().fill(Color.secondary).frame(width: 3, height: 12) }
-          legend("封顶中") { ClipRailLine(dotted: true).stroke(Color.secondary, style: ClipRailLine.style(dotted: true)).frame(width: 3, height: 12) }
+          legend(labels?.billingLegend ?? String(localized: "计费")) { Capsule().fill(Color.secondary).frame(width: 3, height: 12) }
+          legend(labels?.cappedLegend ?? String(localized: "封顶中")) { ClipRailLine(dotted: true).stroke(Color.secondary, style: ClipRailLine.style(dotted: true)).frame(width: 3, height: 12) }
         }
         .font(.caption).foregroundStyle(.secondary).padding(.top, 8)
-        .accessibilityElement(children: .combine).accessibilityLabel(Text("图例"))
+        .accessibilityElement(children: .combine).accessibilityLabel(Text(verbatim: labels?.legendLabel ?? String(localized: "图例")))
       }
     }
   }
 
-  private func legend<Mark: View>(_ title: LocalizedStringKey, @ViewBuilder mark: () -> Mark) -> some View {
-    HStack(spacing: 8) { mark().accessibilityHidden(true); Text(title) }
+  private func legend<Mark: View>(_ title: String, @ViewBuilder mark: () -> Mark) -> some View {
+    HStack(spacing: 8) { mark().accessibilityHidden(true); Text(verbatim: title) }
   }
 }
 
@@ -39,23 +40,40 @@ struct ClipBillTotal: View {
 /// charging is dotted. The date is written once a day, on its first event.
 struct ClipBillTimeline: View {
   let timeline: PrismBillTimeline
+  var timeZone: String? = nil
+  var labels: PrismPageBillLabels? = nil
+
+  private var displayZone: TimeZone {
+    timeZone.flatMap(TimeZone.init(identifier:)) ?? .current
+  }
 
   var body: some View {
+    let zone = displayZone
     VStack(spacing: 0) {
       ForEach(Array(timeline.events.enumerated()), id: \.offset) { index, event in
         ClipBillEvent(
           event: event, tracks: timeline.tracks,
           newer: index > 0 ? timeline.events[index - 1].at : nil,
-          older: index + 1 < timeline.events.count ? timeline.events[index + 1].at : nil
+          older: index + 1 < timeline.events.count ? timeline.events[index + 1].at : nil,
+          timeZone: zone,
+          labels: labels
         )
       }
     }
   }
 }
 
-private let headings: [(String, LocalizedStringKey)] = [
-  ("current", "现在"), ("end", "结束计费"), ("start", "开始计费"), ("switch", "切换计费规则"), ("over", "封顶结束"),
-]
+private let headingOrder = ["current", "end", "start", "switch", "over"]
+private func defaultHeading(for kind: String) -> String? {
+  switch kind {
+  case "current": return String(localized: "现在")
+  case "end": return String(localized: "结束计费")
+  case "start": return String(localized: "开始计费")
+  case "switch": return String(localized: "切换计费规则")
+  case "over": return String(localized: "封顶结束")
+  default: return nil
+  }
+}
 
 /// A rail's piece: a solid line, or a dotted one while a cap keeps the plan from charging.
 private struct ClipRailLine: Shape {
@@ -76,20 +94,22 @@ private struct ClipBillEvent: View {
   let tracks: [Timeline.Track]
   let newer: String?
   let older: String?
+  let timeZone: TimeZone
+  let labels: PrismPageBillLabels?
   private var lanes: Int { max(1, (tracks.map(\.lane).max() ?? 0) + 1) }
 
   var body: some View {
     let kinds = Set(event.entries.map(\.kind))
-    let heading = headings.first { kinds.contains($0.0) }?.1
-    let day = { (at: String) in prismLocalDay(at) }
+    let heading = headingOrder.first { kinds.contains($0) }.flatMap { labels?.headings.label(for: $0) ?? defaultHeading(for: $0) }
+    let day = { (at: String) in prismLocalDay(at, timeZone: timeZone) }
     let showDate = older.map { day($0) != day(event.at) } ?? true
     let startsOnly = event.entries.allSatisfy { $0.kind == "start" }
     VStack(alignment: .leading, spacing: 12) {
       HStack(alignment: .firstTextBaseline) {
-        (Text(prismDisplayClock(event.at)) + (heading.map { Text(" · ") + Text($0) } ?? Text(verbatim: "")))
+        (Text(prismDisplayClock(event.at, timeZone: timeZone)) + (heading.map { Text(verbatim: " · " + $0) } ?? Text(verbatim: "")))
           .font(.subheadline.bold())
         Spacer(minLength: 8)
-        if showDate { Text(prismDisplayDay(event.at)).font(.caption).foregroundStyle(.secondary) }
+        if showDate { Text(prismDisplayDay(event.at, timeZone: timeZone)).font(.caption).foregroundStyle(.secondary) }
       }
       if startsOnly {
         ClipFlowRow(spacing: 16) {
@@ -104,7 +124,7 @@ private struct ClipBillEvent: View {
         .font(.subheadline)
       } else {
         ForEach(Array(event.entries.enumerated()), id: \.offset) { _, entry in
-          ClipBillEntry(entry: entry, color: entry.trackId.map { color($0) })
+          ClipBillEntry(entry: entry, color: entry.trackId.map { color($0) }, timeZone: timeZone, labels: labels)
         }
       }
     }
@@ -159,16 +179,18 @@ private struct ClipPlanDot: View {
 private struct ClipBillEntry: View {
   let entry: Timeline.Entry
   let color: Color?
+  let timeZone: TimeZone
+  let labels: PrismPageBillLabels?
 
   var body: some View {
     if entry.kind == "start" {
       EmptyView()
     } else if entry.kind == "full", entry.trackId == nil {
       HStack(alignment: .firstTextBaseline) {
-        Text(entry.name + String(localized: "已满")).fontWeight(.medium).foregroundStyle(prismAccent)
+        Text(verbatim: entry.name + (labels?.capFullSuffix ?? String(localized: "已满"))).fontWeight(.medium).foregroundStyle(prismAccent)
         Spacer(minLength: 12)
         if let until = entry.until {
-          Text(String(localized: "封顶到") + " " + clock(until)).font(.caption).foregroundStyle(.secondary)
+          Text(verbatim: (labels?.capUntilLabel ?? String(localized: "封顶到")) + " " + clock(until)).font(.caption).foregroundStyle(.secondary)
         }
       }
       .font(.footnote)
@@ -200,13 +222,15 @@ private struct ClipBillEntry: View {
         }
         .font(.subheadline)
         if entry.trackId != nil, let unitMinutes = entry.unitMinutes, let unitPrice = entry.unitPrice {
+          let hourUnit = labels?.hourUnit ?? String(localized: "小时")
+          let minuteUnit = labels?.minuteUnit ?? String(localized: "分钟")
           HStack(spacing: 10) {
             if let fills = entry.unitFills, let color {
-              ClipUnitBlocks(fills: fills, pending: entry.pending ?? nil, color: color)
+              ClipUnitBlocks(fills: fills, pending: entry.pending ?? nil, color: color, unitLabel: labels?.billingUnitLabel)
             } else if let units = entry.units {
               Text(verbatim: "× " + units.formatted())
             }
-            Text(prismMoney(unitPrice) + " / " + (unitMinutes == 60 ? String(localized: "小时") : unitMinutes.formatted() + " " + String(localized: "分钟")))
+            Text(verbatim: prismMoney(unitPrice) + " / " + (unitMinutes == 60 ? hourUnit : unitMinutes.formatted() + " " + minuteUnit))
           }
           .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
         }
@@ -221,12 +245,12 @@ private struct ClipBillEntry: View {
   private var rule: String? {
     guard let rule = entry.rule else { return nil }
     if let next = entry.nextRule { return rule + " → " + next }
-    return entry.kind == "split" ? String(localized: "新的一天") : rule
+    return entry.kind == "split" ? (labels?.newDayLabel ?? String(localized: "新的一天")) : rule
   }
 
   /// A cap's end as a clock time; one ending at midnight ends at 24:00.
   private func clock(_ at: String) -> String {
-    let time = prismDisplayClock(at)
+    let time = prismDisplayClock(at, timeZone: timeZone)
     return time == "00:00" ? "24:00" : time
   }
 }
@@ -237,6 +261,7 @@ private struct ClipUnitBlocks: View {
   let fills: [Double]
   let pending: Double?
   let color: Color
+  var unitLabel: String? = nil
 
   var body: some View {
     if fills.count + (pending == nil ? 0 : 1) > 24 {
@@ -249,7 +274,7 @@ private struct ClipUnitBlocks: View {
         if let pending { block(fill: pending, outlined: true) }
       }
       .accessibilityElement(children: .ignore)
-      .accessibilityLabel(Text(verbatim: "× \(fills.count)"))
+      .accessibilityLabel(Text(verbatim: unitLabel.map { "\(fills.count) \($0)" } ?? "× \(fills.count)"))
     }
   }
 

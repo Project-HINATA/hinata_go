@@ -69,8 +69,11 @@ enum PersistentCookieCheck {
     var historyReads = 0, assetReads = 0
     var failBillRead = true
     var cardReads = 0, previewReads = 0, serverPreviewReads = 0
+    var shopPageReads = 0, shopActionCalls = 0, bindingsRefreshReads = 0
+    var redeemCalls = 0, sheetHistoryReads = 0
     var cardsFail = false
     var shopStatus = 200, previewStatus = 200
+    let checkoutGeo = true
     /// A shop whose billing only the server can compute: the phone falls back to the server's preview.
     var clientBillingUnavailable = false
     var htmlOutage = false
@@ -79,9 +82,11 @@ enum PersistentCookieCheck {
     var checkoutCalls = 0, sessionStarts = 0
     var checkoutIds: [String] = []
     var lastReceipt: [String: Any]?
+    var redeemed = false
     let testUser = UUID().uuidString
     // Everything the page's buttons sent, and how the platform answers the next ones.
     var actions: [[String: Any]] = []
+    var shopActions: [[String: Any]] = []
     /// Replies lost on the way back, and replies saying the same operation is still running.
     var lostReplies = 0, pendingReplies = 0
     var swipeRefused = false
@@ -103,6 +108,147 @@ enum PersistentCookieCheck {
             page["blocks"] = blocks
         }
         return page
+    }
+    func liveSnapshotPayload() -> [String: Any] {
+      ["playerId": "player", "billingSnapshot": [
+        "version": 1, "capturedAt": "2026-09-12T01:00:00.000Z", "assetDefinitions": [], "pricingReleases": [],
+        "currentPricingConfigs": [["id": "fee", "kind": "charge.fixed", "name": "入场费", "enabled": true, "status": "active",
+          "versionId": "fee-v1", "version": 1, "provider": ["id": "fee", "label": "入场费", "amount": 12],
+          "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z"]],
+        "players": [["playerId": "player", "holdings": [], "pastAppliedAdjustments": [], "pricingPaidHistory": [:], "capPaidHistory": [:],
+          "sessions": [["id": "entry", "playerId": "player", "startedAt": "2026-09-12T00:00:00.123Z", "status": "active",
+            "pricingConfigIds": ["fee"], "pricingConfigId": "fee", "paymentStatus": "unpaid", "label": "entry"]]]],
+      ]]
+    }
+    func makeSettledBillPage(title: String? = nil, backLabel: String? = nil, resource: String = "结账成功", includeAccountMenu: Bool = true, receipt: [String: Any]) -> [String: Any] {
+      var page = PageFixtures.shopPage("shopSettled")
+      page["resource"] = resource
+      if let title { page["title"] = title }
+      if let backLabel { page["backLabel"] = backLabel }
+      if !includeAccountMenu { page.removeValue(forKey: "accountMenu") }
+      var bill = (page["blocks"] as! [[String: Any]])[0]
+      let settlement = receipt["playerSettlement"] as! [String: Any]
+      bill["settledAt"] = settlement["settledAt"]
+      if let wallet = receipt["wallet"] as? [String: Any], let after = wallet["balanceAfter"] {
+        bill["balanceAfter"] = after
+      } else {
+        bill.removeValue(forKey: "balanceAfter")
+      }
+      var preview: [String: Any] = [
+        "settlementPreview": ["total": settlement["total"] ?? 0],
+        "chargeItems": receipt["chargeItems"] ?? [],
+        "adjustments": receipt["adjustments"] ?? [],
+      ]
+      if let timeline = receipt["timeline"] { preview["timeline"] = timeline }
+      bill["preview"] = preview
+      page["blocks"] = [bill]
+      return page
+    }
+    func makeShopViewPage(view: String, item: String? = nil, cursor: String? = nil) -> [String: Any] {
+      let needsBinding = billing && identityBindingRequired && (!member || !identityBound)
+      switch view {
+      case "shop":
+        if !signedIn { return PageFixtures.shopPage("shopSignIn") }
+        if needsBinding && !active { return PageFixtures.shopPage("shopBinding") }
+        if active {
+          var page = PageFixtures.shopPage(clientBillingUnavailable ? "shopLivePreview" : "shopLive")
+          if !clientBillingUnavailable {
+            var blocks = page["blocks"] as! [[String: Any]]
+            blocks[0]["billingInputs"] = liveSnapshotPayload()
+            page["blocks"] = blocks
+          }
+          var footer = page["footer"] as! [[String: Any]]
+          footer[0]["needsLocation"] = checkoutGeo
+          page["footer"] = footer
+          return page
+        }
+        if let lastReceipt { return makeSettledBillPage(receipt: lastReceipt) }
+        return PageFixtures.shopPage("shopEmpty")
+      case "bill":
+        if needsBinding && !active {
+          var page = PageFixtures.shopPage("shopBinding")
+          page["title"] = "账单"
+          page.removeValue(forKey: "accountMenu")
+          return page
+        }
+        if active {
+          var page = PageFixtures.shopPage("billSheet")
+          if !clientBillingUnavailable {
+            var blocks = page["blocks"] as! [[String: Any]]
+            blocks[0].removeValue(forKey: "preview")
+            blocks[0]["billingInputs"] = liveSnapshotPayload()
+            page["blocks"] = blocks
+          }
+          var footer = page["footer"] as! [[String: Any]]
+          footer[0]["needsLocation"] = checkoutGeo
+          page["footer"] = footer
+          return page
+        }
+        if let lastReceipt {
+          return makeSettledBillPage(title: "账单", resource: "", includeAccountMenu: false, receipt: lastReceipt)
+        }
+        var empty = PageFixtures.shopPage("shopEmpty")
+        empty["title"] = "账单"
+        empty["resource"] = ""
+        empty.removeValue(forKey: "accountMenu")
+        empty["blocks"] = [["kind": "text", "id": "bill-empty", "text": "暂无待结账单", "style": "body", "level": "muted"]]
+        return empty
+      case "redeem":
+        return PageFixtures.shopPage(redeemed ? "redeemDone" : "redeemForm")
+      case "history":
+        if let item {
+          if item == "bill:old" {
+            let oldReceipt: [String: Any] = [
+              "playerSettlement": ["total": 12, "settledAt": "2026-09-12T01:00:00Z"],
+              "chargeItems": [],
+              "adjustments": [],
+            ]
+            return makeSettledBillPage(title: "账单详情", resource: "", includeAccountMenu: false, receipt: oldReceipt)
+          }
+          let newReceipt = lastReceipt ?? [
+            "timeline": ["tracks": [], "events": [], "totals": []],
+            "playerSettlement": ["total": 12, "settledAt": "2026-09-12T01:00:00Z"],
+            "chargeItems": [],
+            "adjustments": [],
+            "wallet": ["balanceAfter": 88],
+          ]
+          return makeSettledBillPage(title: "账单详情", resource: "", includeAccountMenu: false, receipt: newReceipt)
+        }
+        var page = PageFixtures.shopPage("historyList")
+        var list = (page["blocks"] as! [[String: Any]])[0]
+        if cursor != nil {
+          list["items"] = [[
+            "id": "bill:old",
+            "group": "9月12日",
+            "title": "09:00 – 10:00",
+            "titleMeta": "1小时",
+            "subtitle": "资产结算",
+            "trailing": "12.00",
+            "open": ["view": "history", "item": "bill:old"],
+          ]]
+          list.removeValue(forKey: "moreLabel")
+          list.removeValue(forKey: "moreTarget")
+        } else {
+          list["items"] = [[
+            "id": "bill:new",
+            "group": "9月12日",
+            "title": "09:00 – 10:00",
+            "titleMeta": "1小时",
+            "subtitle": "资产结算",
+            "trailing": "12.00",
+            "open": ["view": "history", "item": "bill:new"],
+          ]]
+          list["moreTarget"] = ["view": "history", "cursor": "30"]
+        }
+        page["blocks"] = [list]
+        return page
+      case "wallet":
+        return PageFixtures.shopPage("wallet")
+      case "bindings":
+        return PageFixtures.shopPage("bindings")
+      default:
+        preconditionFailure("Unexpected shop page view: \(view)")
+      }
     }
     func notice(_ code: String, _ level: String, _ body: String) -> [String: Any] {
         ["code": code, "level": level, "display": "inline", "flow": "none", "body": body, "actions": []]
@@ -263,6 +409,69 @@ enum PersistentCookieCheck {
           "wallet":["balanceBefore":100,"balanceAfter":88],
         ]
         return ok(lastReceipt!)
+      case "/api/v1/shops/store/player/page":
+        let queryItems = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        let view = queryItems.first(where: { $0.name == "view" })?.value ?? "shop"
+        let item = queryItems.first(where: { $0.name == "item" })?.value
+        let cursor = queryItems.first(where: { $0.name == "cursor" })?.value
+        if view == "shop" { shopPageReads += 1 }
+        if view == "history" { sheetHistoryReads += 1 }
+        if htmlOutage { return (503, ["rawHTML": "<html>Service temporarily unavailable</html>"]) }
+        if shopStatus != 200 { return (shopStatus, ["error": ["code": "SHOP_NOT_FOUND", "message": "没有找到店铺"]]) }
+        if previewStatus != 200 && (view == "shop" || view == "bill") {
+          return (previewStatus, ["error": ["code": "PREVIEW_UNAVAILABLE", "message": "账单暂不可用"]])
+        }
+        if failNextStatusRead && view == "shop" { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
+        return ok(makeShopViewPage(view: view, item: item, cursor: cursor))
+      case "/api/v1/shops/store/player/action":
+        precondition(UUID(uuidString: body["operationId"] as? String ?? "") != nil, "Every shop action carries an operation id")
+        let view = (body["view"] as? String) ?? "shop"
+        let actionName = body["action"] as! String
+        shopActionCalls += 1
+        shopActions.append(body)
+        if lostReplies > 0 { lostReplies -= 1; throw URLError(.networkConnectionLost) }
+        if pendingReplies > 0 {
+          pendingReplies -= 1
+          return ok(["ok": false, "page": makeShopViewPage(view: view), "notices": [notice("OPERATION_PENDING", "info", "处理中")]])
+        }
+        switch actionName {
+        case "page.refresh":
+          if view == "bindings" { bindingsRefreshReads += 1 }
+          return ok(["ok": true, "page": makeShopViewPage(view: view), "notices": []])
+        case "redeem.submit":
+          redeemCalls += 1
+          let payload = body["payload"] as? [String: Any]
+          let codeValue = (payload?["code"] as? String) ?? ""
+          if codeValue == "BAD" {
+            return ok(["ok": false, "page": makeShopViewPage(view: view), "notices": [notice("INVALID_REDEEM_CODE", "error", "兑换码无效")]])
+          }
+          redeemed = true
+          return ok(["ok": true, "page": makeShopViewPage(view: view), "notices": []])
+        case "checkout.confirm":
+          checkoutIds.append(body["operationId"] as! String); checkoutCalls += 1
+          if checkoutCalls == 1 {
+            return (409, ["error": ["code": "INSUFFICIENT_BALANCE", "message": "Insufficient currency holdings for this operation."]])
+          }
+          if checkoutCalls == 2 { throw URLError(.networkConnectionLost) }
+          active = false
+          lastReceipt = [
+            "timeline": ["tracks": [], "events": [], "totals": [["name": "入场费", "amount": 12]]],
+            "playerSettlement": ["total": 12, "settledAt": "2026-09-12T01:00:00Z"],
+            "chargeItems": [["id": "c1", "label": "入场费", "amount": 12]],
+            "adjustments": [],
+            "settlements": [["settlement": ["sessionId": "entry", "startedAt": "2026-09-12T00:00:00.123Z", "endedAt": "2026-09-12T01:00:00Z"]]],
+            "wallet": ["balanceBefore": 100, "balanceAfter": 88],
+          ]
+          return ok([
+            "ok": true,
+            "page": makeShopViewPage(view: view),
+            "notices": [],
+            "celebration": PageFixtures.celebration,
+            "receipt": lastReceipt!,
+          ])
+        default:
+          preconditionFailure("Unexpected shop action: \(actionName)")
+        }
       // No hub channel here: pages are read when the check asks, and once a minute.
       case "/api/v1/devices/session/ws": return (404, ["error": ["code": "NOT_FOUND", "message": "Not found"]])
       default: preconditionFailure("Unexpected API path: \(path)")
@@ -280,17 +489,100 @@ enum PersistentCookieCheck {
     for fixture in PageFixtures.names {
       let raw = PageFixtures.page(fixture)
       let decoded = try decodePage(raw).allBlocks().map(name)
-      precondition(decoded == kinds(raw["blocks"] as! [[String: Any]]), "\(fixture) decodes as \(decoded)")
+      let expected = kinds(raw["blocks"] as! [[String: Any]]) + kinds((raw["footer"] as? [[String: Any]]) ?? [])
+      precondition(decoded == expected, "\(fixture) decodes as \(decoded)")
     }
+    for fixture in PageFixtures.shopPageNames {
+      let raw = PageFixtures.shopPage(fixture)
+      let decoded = try decodePage(raw).allBlocks().map(name)
+      let expected = kinds(raw["blocks"] as! [[String: Any]]) + kinds((raw["footer"] as? [[String: Any]]) ?? [])
+      precondition(decoded == expected, "\(fixture) decodes as \(decoded)")
+    }
+    let decodedDoor = try decodePage(PageFixtures.page("door"))
+    precondition(decodedDoor.accountMenu?.billingBadge == "计费中")
+    precondition(decodedDoor.accountMenu?.tabs.map(\.id) == ["bill", "redeem", "history", "wallet", "bindings"])
+    precondition(decodedDoor.accountMenu?.tabs.last?.label == "身份")
+    precondition(decodedDoor.accountMenu?.logoutLabel == "退出登录")
+
+    let decodedShopLive = try decodePage(PageFixtures.shopPage("shopLive"))
+    precondition(decodedShopLive.accountMenu?.billingBadge == "计费中")
+    precondition(decodedShopLive.accountMenu?.tabs.map(\.id) == ["redeem", "history", "wallet", "bindings"])
+    precondition(decodedShopLive.bill()?.mode == "live" && decodedShopLive.bill()?.billingInputs?.playerId == "p1")
+    precondition(decodedShopLive.bill()?.labels.estimateError == "账单预估失败，请刷新后重试")
+    precondition(decodedShopLive.hasButton(id: "checkout") && decodedShopLive.buttonIds == ["checkout"])
+
+    let decodedShopLivePreview = try decodePage(PageFixtures.shopPage("shopLivePreview"))
+    precondition(decodedShopLivePreview.bill()?.billingInputs == nil && decodedShopLivePreview.bill()?.preview?.settlementPreview.total == 12)
+
+    let decodedShopSettled = try decodePage(PageFixtures.shopPage("shopSettled"))
+    precondition(decodedShopSettled.bill()?.mode == "settled" && decodedShopSettled.bill()?.balanceAfter == 76)
+    precondition(decodedShopSettled.bill()?.settledAt == "2026-10-02T03:00:00.000Z")
+    precondition(decodedShopSettled.bill()?.preview?.timeline?.tracks.count == 1)
+
+    let decodedHistoryList = try decodePage(PageFixtures.shopPage("historyList"))
+    let historyBlock = decodedHistoryList.list(id: "history-list")!
+    precondition(historyBlock.timeZone == "Asia/Tokyo" && historyBlock.emptyIcon == "receipt")
+    precondition(historyBlock.moreLabel == "加载更多" && historyBlock.moreTarget == PrismPageTarget(view: "history", cursor: "20"))
+    precondition(historyBlock.items.count == 2)
+    precondition(historyBlock.items[0].group == "10月2日" && historyBlock.items[0].title == "11:00 – 12:00" && historyBlock.items[0].titleMeta == "1小时")
+    precondition(historyBlock.items[0].subtitle == "资产结算" && historyBlock.items[0].trailing == "24.00" && historyBlock.items[0].trailingStrikethrough == "30.00")
+    precondition(historyBlock.items[0].open == PrismPageTarget(view: "history", item: "co-1"))
+    precondition(historyBlock.items[1].group == "10月1日" && historyBlock.items[1].subtitle == "现场收款 · 微信 · 2 项" && historyBlock.items[1].trailingStrikethrough == nil)
+
+    let decodedHistoryDetail = try decodePage(PageFixtures.shopPage("historyDetail"))
+    precondition(decodedHistoryDetail.title == "账单详情" && decodedHistoryDetail.backLabel == nil)
+
+    let decodedWallet = try decodePage(PageFixtures.shopPage("wallet"))
+    if case .kv(let walletKv) = decodedWallet.blocks.first {
+      precondition(walletKv.items.map(\.id) == ["h-paid", "h-free", "h-coupon", "h-pass", "h-ticket"])
+      precondition(walletKv.items[0].icon == "wallet" && walletKv.items[0].badge == "充值余额" && walletKv.items[0].badgeTone == "success")
+      precondition(walletKv.items[1].icon == "gift" && walletKv.items[1].badge == "赠送余额" && walletKv.items[1].badgeTone == "accent")
+      precondition(walletKv.items[2].icon == "coupon" && walletKv.items[2].badge == "优惠券" && walletKv.items[2].badgeTone == "warning")
+      precondition(walletKv.items[3].icon == "pass" && walletKv.items[3].badge == "通行证" && walletKv.items[3].badgeTone == "purple")
+      precondition(walletKv.items[4].icon == "ticket" && walletKv.items[4].badge == "票券" && walletKv.items[4].badgeTone == "accent")
+    } else {
+      preconditionFailure("wallet fixture must decode as kv")
+    }
+
+    let decodedCelebration = try JSONDecoder().decode(PrismPageCelebration.self, from: JSONSerialization.data(withJSONObject: PageFixtures.celebration))
+    precondition(decodedCelebration == PrismPageCelebration(title: "结账成功", subtitle: "计费已结束，离店前无需再做其他操作。", effect: "checkout"))
+
     // What only annotates a block cannot take the block with it.
     let unreadableChanges = try decodePage(PageFixtures.changing(PageFixtures.page("entryDoor"), kind: "pricing") { $0["changes"] = ["revision": 1] })
     precondition(unreadableChanges.allBlocks().contains { if case .pricing(let block) = $0 { return block.changes == nil }; return false },
                  "Pricing stays readable when what confirming changes is not")
     let unreadableState = try decodePage(PageFixtures.changing(PageFixtures.page("climate"), kind: "climate") { $0["state"] = "warm" })
     precondition(unreadableState.climate(id: "climate") != nil && unreadableState.climate(id: "climate")?.state == nil)
+    let unreadableBillPreview = try decodePage(PageFixtures.changing(PageFixtures.shopPage("shopLivePreview"), kind: "bill") { $0["preview"] = ["bad": true] })
+    precondition(unreadableBillPreview.bill()?.preview == nil && unreadableBillPreview.allBlocks().map(name) == ["bill", "button"])
+    let unlabelledBill = try decodePage(PageFixtures.changing(PageFixtures.shopPage("shopSettled"), kind: "bill") { $0["labels"] = nil })
+    precondition(unlabelledBill.bill() == nil && unlabelledBill.allBlocks().map(name) == ["unknown"])
     // A block missing what it must have is skipped whole, not drawn with words made up on the phone.
     let unlabelled = try decodePage(PageFixtures.changing(PageFixtures.page("cards"), kind: "cards") { $0["title"] = nil })
     precondition(unlabelled.cards == nil && unlabelled.allBlocks().map(name) == ["unknown"])
+
+    // Forms walk both body blocks and sticky footer blocks together.
+    let footerFormRaw: [String: Any] = [
+      "shop": "Store", "shopCode": "store", "heroUrl": NSNull(), "resource": "", "publicId": "", "billingActive": true,
+      "blocks": [
+        ["kind": "input", "id": "note", "name": "note", "required": true],
+        ["kind": "consent", "id": "agree-body", "text": "同意"],
+      ],
+      "footer": [
+        ["kind": "toggle", "id": "opt", "label": "提醒", "defaultValue": true],
+        ["kind": "button", "id": "footer-submit", "label": "提交", "action": "footer.submit", "enabled": true, "needsLocation": false, "requires": "agree-body", "collect": ["note", "opt"]],
+      ],
+    ]
+    let footerFormPage = try decodePage(footerFormRaw)
+    precondition(footerFormPage.fieldIds == Set(["note", "agree-body", "opt"]))
+    precondition(footerFormPage.buttonIds == ["footer-submit"] && footerFormPage.hasButton(id: "footer-submit"))
+    let footerSubmit = footerFormPage.allBlocks().compactMap { if case .button(let b) = $0 { return b }; return nil }.first!
+    var footerValues = footerFormPage.reconciledValues(from: [:])
+    precondition(!footerFormPage.canSubmit(footerSubmit, values: footerValues))
+    footerValues["agree-body"] = .bool(true); footerValues["note"] = .string("ok")
+    precondition(footerFormPage.canSubmit(footerSubmit, values: footerValues))
+    let footerCollected = footerFormPage.collectedPayload(for: footerSubmit, values: footerValues)
+    precondition(footerCollected["note"] as? String == "ok" && footerCollected["opt"] as? Bool == true)
 
     let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [FixtureProtocol.self]
     let model = MachineLoginViewModel(api: PrismAPI(configuration: config))
@@ -388,38 +680,69 @@ enum PersistentCookieCheck {
     await model.login(card: model.cards[0])
     precondition(cardReads == readsBeforeRefusal + 1 && model.cardFeedback?.parts.first?.level == "error" && model.state == .ready)
     swipeRefused = false
-    precondition(historyReads == 0 && assetReads == 0, "Status, admission and device operations must not fetch wallet/history")
-    try await model.loadAccountSection(0)
-    precondition(historyReads == 0 && assetReads == 0, "Bill must not fetch unrelated account data")
-    try await model.loadAccountSection(2)
-    precondition(historyReads == 1 && assetReads == 0)
-    try await model.loadAccountSection(3)
-    precondition(historyReads == 1 && assetReads == 1)
-    precondition(model.history.first?.sessionCount == 2 && model.historyNextOffset == 30)
-    let historicalReceipt = try await model.loadCheckoutReceipt("bill:new")
-    precondition(historicalReceipt.wallet?.balanceAfter == 88 && historicalReceipt.timeline != nil)
-    await model.loadMoreHistory()
-    precondition(model.history.count == 2 && model.historyNextOffset == nil)
-    let oldReceipt = try await model.loadCheckoutReceipt("bill:old")
-    precondition(oldReceipt.wallet == nil && oldReceipt.timeline == nil && oldReceipt.playerSettlement.total == 12)
-    await model.previewCheckout(); precondition(model.checkoutPreview?.settlementPreview.total == 12)
-    precondition(serverPreviewReads == 0 && model.checkoutPreview?.timeline?.totals.first?.name == "入场计费", "The phone computes the bill from the billing inputs")
+    precondition(historyReads == 0 && assetReads == 0 && sheetHistoryReads == 0, "Status, admission and device operations must not fetch wallet/history")
+    // Account sheets are server-driven through `/player/page` and `/player/action`.
+    await model.openAccountSheet(view: "bill")
+    precondition(historyReads == 0 && assetReads == 0 && sheetHistoryReads == 0, "Bill sheet must not fetch unrelated account data")
+    let liveBillBlock = model.sheetPage?.bill()
+    precondition(liveBillBlock?.mode == "live" && liveBillBlock?.billingInputs?.billingSnapshot != nil)
+    let localBillPreview = try PrismCheckoutEngine.preview(
+      snapshot: liveBillBlock!.billingInputs!.billingSnapshot!,
+      playerId: liveBillBlock!.billingInputs!.playerId
+    ).view()
+    precondition(localBillPreview.settlementPreview.total == 12 && localBillPreview.timeline.totals.first?.name == "入场计费",
+                 "The phone computes the live bill block from billingInputs")
     clientBillingUnavailable = true
-    await model.previewCheckout()
-    precondition(serverPreviewReads == 1 && model.checkoutPreview?.settlementPreview.total == 12, "A shop the phone cannot bill falls back to the server's preview")
+    await model.openAccountSheet(view: "bill")
+    precondition(model.sheetPage?.bill()?.billingInputs == nil && model.sheetPage?.bill()?.preview?.settlementPreview.total == 12,
+                 "A shop the phone cannot bill falls back to the server preview")
     clientBillingUnavailable = false
-    await model.checkout()
-    precondition(model.errorMessage == "余额不足，请充值后重试")
-    precondition(model.summary?.activeSession != nil && model.checkoutPreview?.settlementPreview.total == 12)
-    precondition(model.state == .ready && model.ticket != nil && checkoutCalls == 1, "Balance rejection must retain the session without retrying checkout")
-    await model.checkout(); await model.checkout()
-    precondition(checkoutIds[0] != checkoutIds[1] && checkoutIds[1] == checkoutIds[2])
-    precondition(model.summary?.activeSession == nil && model.checkoutPreview == nil)
-    precondition(model.checkoutCelebrating)
-    await model.finishCheckout()
-    precondition(model.isShopOnly && model.machine == nil && model.ticket == nil)
-    precondition(StoreVisitLiveActivityManager.shared.session == nil)
+    await model.openAccountSheet(view: "history")
+    precondition(sheetHistoryReads == 1 && assetReads == 0)
+    let initialHistoryList = model.sheetPage?.list(id: "history-list")
+    precondition(initialHistoryList?.items.count == 1 && initialHistoryList?.moreTarget == PrismPageTarget(view: "history", cursor: "30"))
+    await model.loadMoreSheetList(blockId: "history-list", target: initialHistoryList!.moreTarget!)
+    precondition(model.sheetPage?.list(id: "history-list")?.items.map(\.id) == ["bill:new", "bill:old"])
+    precondition(model.sheetPage?.list(id: "history-list")?.moreTarget == nil)
+    await model.openSheetTarget(PrismPageTarget(view: "history", item: "bill:new"))
+    precondition(model.sheetStack.count == 2 && model.sheetPage?.title == "账单详情" && model.sheetPage?.backLabel == nil)
+    precondition(model.sheetPage?.bill()?.balanceAfter == 88 && model.sheetPage?.bill()?.preview?.timeline != nil)
+    await model.popSheetTarget()
+    precondition(model.sheetStack.count == 1 && model.sheetPage?.title == "记录")
+    await model.openSheetTarget(PrismPageTarget(view: "history", item: "bill:old"))
+    precondition(model.sheetPage?.bill()?.balanceAfter == nil && model.sheetPage?.bill()?.preview?.timeline == nil && model.sheetPage?.bill()?.preview?.settlementPreview.total == 12)
+    await model.openAccountSheet(view: "wallet")
+    precondition(model.sheetPage?.title == "钱包")
+    await model.openAccountSheet(view: "bindings")
+    precondition(model.sheetPage?.title == "身份")
+    precondition(model.sheetPage!.allBlocks().contains { if case .button = $0 { return true }; return false } == false)
+    let pageRefreshBtn = PrismPageButton(id: "bindings-refresh", label: "刷新", againLabel: nil, icon: nil, style: nil, enabled: true, action: "page.refresh", answerOnButton: nil, payload: nil, requires: nil, needsLocation: false)
+    let refreshBefore = bindingsRefreshReads
+    await model.pressSheet(pageRefreshBtn)
+    precondition(bindingsRefreshReads == refreshBefore + 1 && model.sheetPage?.title == "身份")
+    await model.openAccountSheet(view: "redeem")
+    let redeemBtn = model.sheetPage!.allBlocks().compactMap { if case .button(let b) = $0 { return b }; return nil }.first!
+    await model.pressSheet(redeemBtn, collected: ["code": "BAD"])
+    precondition(model.sheetInlineNotice?.body == "兑换码无效" && model.sheetInlineNoticeAnchor == "redeem-submit")
+    await model.pressSheet(redeemBtn, collected: ["code": "GOOD"])
+    precondition(redeemCalls == 2 && model.sheetPage?.allBlocks().contains { if case .banner(let b) = $0 { return b.id == "redeem-done" }; return false } == true)
+    redeemed = false
+    await model.openAccountSheet(view: "bill")
+    let sheetCheckout = model.sheetPage!.allBlocks().compactMap { if case .button(let b) = $0, b.id == "checkout" { return b }; return nil }.first!
+    await model.pressSheet(sheetCheckout)
+    precondition(model.sheetError == "余额不足，请充值后重试")
+    precondition(model.sheetPage?.billingActive == true && checkoutCalls == 1, "Balance rejection must retain the bill without retrying checkout")
+    lostReplies = 5
+    await model.pressSheet(sheetCheckout)
+    precondition(model.sheetInlineNotice?.code == "DEVICE_RESULT_UNKNOWN" && model.sheetInlineNoticeAnchor == "checkout")
+    await model.pressSheet(sheetCheckout)
+    let sheetCheckoutIds = shopActions.filter { $0["action"] as? String == "checkout.confirm" }.map { $0["operationId"] as! String }
+    precondition(sheetCheckoutIds.count == 8 && sheetCheckoutIds[0] != sheetCheckoutIds[1] && Set(sheetCheckoutIds.dropFirst()).count == 1)
+    precondition(model.checkoutCelebrating && model.celebration?.title == "结账成功")
     precondition(StoreVisitLiveActivityManager.shared.finishedReceipt?.playerSettlement.total == 12)
+    await model.finishCheckout()
+    precondition(model.isShopOnly && model.machine == nil && model.ticket == nil && !model.checkoutCelebrating && model.celebration == nil)
+    precondition(StoreVisitLiveActivityManager.shared.session == nil)
     // Confirming a checkout checks that the player is there, once per try, and so did entering.
     precondition(LocationService.calls == 4, "location calls: \(LocationService.calls)")
     // A page with only cards, and a shop that bills nothing: no visit card, no other controls.
@@ -560,42 +883,40 @@ enum PersistentCookieCheck {
     precondition(model.state == .ready && model.page?.cards == nil && text("empty") == "这里没有可操作的设备")
     scene = "doorCardsCoin"
     await model.setSceneActive(false)
-    // A bare shop link opens the settle-only surface: no machine, no ticket, no admission.
+    // A bare shop link opens the server-driven shop surface: no machine, no ticket, no admission.
     billing = true; member = true; active = false; identityBindingRequired = true
     let shopOnly = MachineLoginViewModel(api: PrismAPI(configuration: config))
     let machineCardReads = cardReads
+    let initialShopPageReads = shopPageReads
     // Before any data is in hand the shop link must sit on its loading state, not render the
     // session page without a card: that is what made the cover appear small and then grow.
     let pendingShop = Task { await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store")) }
-    // The task starts on another executor, so yield until it has entered its loading state.
-    // This waits for the state machine, not for a duration.
     for _ in 0..<200 where shopOnly.state == .idle { await Task.yield() }
     precondition(shopOnly.state == .loadingShop, "The shop page must wait for its data")
-    precondition(shopOnly.visit == nil, "No card is rendered before the shop is loaded")
+    precondition(shopOnly.page == nil && shopOnly.lastShopHero == nil, "No card is rendered before the shop page is loaded")
     await pendingShop.value
     precondition(shopOnly.isShopOnly && shopOnly.ticket == nil && shopOnly.machine == nil)
-    precondition(shopOnly.state == .ready && shopOnly.summary?.activeSession == nil)
+    precondition(shopOnly.state == .ready && !shopOnly.shopHasActiveSession)
+    precondition(shopPageReads == initialShopPageReads + 1, "Opening a shop reads /player/page once")
     precondition(cardReads == machineCardReads, "A shop must never depend on the machine card endpoint")
-    precondition(shopOnly.visit != nil, "The card data is present before the page is shown")
-    // The card's subtitle carries the billing state where a device card shows the machine name.
+    precondition(shopOnly.page != nil && shopOnly.lastShopHero?.name == "Store", "The card data is present before the page is shown")
+    precondition(shopOnly.page?.accountMenu?.tabs.map(\.id) == ["redeem", "history", "wallet", "bindings"])
+    // The card's subtitle carries the billing state from page.resource.
     precondition(shopOnly.shopBillingState == "结账成功")
     precondition(shopOnly.canUseShopSurface && !shopOnly.shopHasActiveSession)
-    // The shop card needs the cover the shop page now returns, the same as a device card.
-    precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
-    // A player who has not verified with the Bot gets the binding explanation.
+    precondition(shopOnly.page?.heroUrl == "/api/v1/shops/store/hero?v=abc123")
+
+    // A player who has not verified with the Bot gets the server binding block.
     member = false
-    let readsBeforeReplay = statusReads
-    await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store"))
-    precondition(statusReads == readsBeforeReplay, "A repeated link reuses fresh metadata")
     await shopOnly.refreshVisit()
-    precondition(shopOnly.visit?.membership == nil && !shopOnly.canUseShopSurface)
-    precondition(shopOnly.playerStateLoaded, "Missing membership is a completed read, not a spinner")
-    precondition(shopOnly.binding?.code == "ABC12345" && shopOnly.needsPlatformBinding, "Shop platform binding must reuse the machine flow")
+    precondition(shopOnly.needsPlatformBinding && !shopOnly.canUseShopSurface)
+    precondition(shopOnly.playerStateLoaded, "Binding page is a completed read, not a spinner")
+    precondition(shopOnly.binding?.code == "ABC12345", "Shop platform binding must reuse the machine flow")
     // A registered player may still be unbound after optional admission.
     member = true; identityBound = false
     let requestsBeforeMembership = bindingRequests
     await shopOnly.refreshVisit()
-    precondition(shopOnly.visit?.membership?.identityBound == false && shopOnly.needsPlatformBinding)
+    precondition(shopOnly.needsPlatformBinding)
     precondition(shopOnly.binding?.code == "ABC12345" && bindingRequests == requestsBeforeMembership,
                  "Existing unbound membership must retain the valid code")
     identityBindingRequired = false
@@ -607,18 +928,18 @@ enum PersistentCookieCheck {
     precondition(shopOnly.needsPlatformBinding && bindingRequests == requestsBeforeMembership + 1)
     // Foreground/manual events must queue one follow-up behind an outstanding read.
     await shopOnly.api.invalidateReads()
-    FixtureProtocol.holdNextShopResponse = true
+    FixtureProtocol.holdNextShopPageResponse = true
     let outstandingRead = Task { await shopOnly.refreshVisit(silent: true) }
-    await waitUntil { FixtureProtocol.heldReply != nil }
-    precondition(FixtureProtocol.heldReply != nil)
-    let beforeConcurrentEvents = statusReads
+    await waitUntil { FixtureProtocol.heldShopPageReply != nil }
+    precondition(FixtureProtocol.heldShopPageReply != nil)
+    let beforeConcurrentEvents = shopPageReads
     await shopOnly.refreshVisit(silent: true)
     await shopOnly.refreshVisit(silent: true)
-    precondition(statusReads == beforeConcurrentEvents, "An outstanding read must not overlap foreground reads")
-    let reply = FixtureProtocol.heldReply!; FixtureProtocol.heldReply = nil; reply()
+    precondition(shopPageReads == beforeConcurrentEvents, "An outstanding read must not overlap foreground reads")
+    let reply = FixtureProtocol.heldShopPageReply!; FixtureProtocol.heldShopPageReply = nil; reply()
     await outstandingRead.value
     try await Task.sleep(nanoseconds: 100_000_000)
-    precondition(statusReads == beforeConcurrentEvents, "Coalesced follow-up must reuse the completed shop read")
+    precondition(shopPageReads > beforeConcurrentEvents, "Coalesced follow-up runs after the held read completes")
     // Manual foreground refresh must also retain the valid command.
     let requestsBeforeManualRefresh = bindingRequests
     await shopOnly.bindPlatformIdentity()
@@ -634,34 +955,33 @@ enum PersistentCookieCheck {
     precondition(bindingRequests == requestsBeforeRenewal + 1 && shopOnly.binding?.expiresAt == bindingExpiry)
     await shopOnly.refreshVisit()
     precondition(bindingRequests == requestsBeforeRenewal + 1)
-    // Existing unbound members are polled, and an HTTP outage cannot break the loop. The poll after
-    // the outage waits out a jittered backoff, so the check waits for it rather than a fixed time.
-    let beforeOutage = bindingStatusReads
+    // Existing unbound members are polled, and an HTTP outage cannot break the loop.
+    let beforeOutage = shopPageReads
     await shopOnly.api.invalidateReads()
     shopStatus = 503
     await shopOnly.refreshVisit(silent: true)
     precondition(shopOnly.errorMessage == nil && shopOnly.binding != nil)
     shopStatus = 200; identityBound = true
-    await waitUntil(seconds: 20) { bindingStatusReads > beforeOutage && !shopOnly.needsPlatformBinding && shopOnly.binding == nil }
-    precondition(bindingStatusReads > beforeOutage, "Polling resumes after an outage")
+    await waitUntil({ shopPageReads > beforeOutage && !shopOnly.needsPlatformBinding && shopOnly.binding == nil }, seconds: 20)
+    precondition(shopPageReads > beforeOutage, "Polling resumes after an outage")
     precondition(!shopOnly.needsPlatformBinding && shopOnly.binding == nil,
                  "A verified identity on any platform completes binding")
-    let afterBinding = statusReads
+    let afterBinding = shopPageReads
     try await Task.sleep(nanoseconds: 3_300_000_000)
-    precondition(statusReads == afterBinding, "Binding completion must stop binding polling")
+    precondition(shopPageReads == afterBinding, "Binding completion must stop binding polling")
     await shopOnly.setSceneActive(false)
     let beforeShopBackground = identityReads
     try await Task.sleep(nanoseconds: 3_300_000_000)
     precondition(identityReads == beforeShopBackground)
     await shopOnly.setSceneActive(true)
-    precondition(identityReads > beforeShopBackground, "Foreground must refresh identity while retaining cached shop metadata")
+    precondition(identityReads > beforeShopBackground, "Foreground must refresh identity alongside the shop page")
     identityBound = false; bindingStatus = 500
     await shopOnly.refreshVisit()
     precondition(shopOnly.needsPlatformBinding && shopOnly.binding == nil && shopOnly.errorMessage != nil)
     bindingStatus = 200
     await shopOnly.bindPlatformIdentity()
     precondition(shopOnly.binding?.code == "ABC12345" && shopOnly.errorMessage == nil, "Failed generation must be retryable")
-    // Admission comes from the machine flow, so the shop link reads the bill it opened.
+    // Admission comes from the machine flow, so the shop link reads the live bill page.
     active = true
     await shopOnly.refreshVisit()
     precondition(shopOnly.shopHasActiveSession && shopOnly.shopBillingState == "计费中")
@@ -672,28 +992,31 @@ enum PersistentCookieCheck {
     precondition(StoreVisitLiveActivityManager.shared.origin?.absoluteString == "https://link-beta.neri.moe")
     precondition(StoreVisitLiveActivityManager.shared.lastApi?.baseURL == origin, "Manager must receive origin-scoped API instance")
     precondition(StoreVisitLiveActivityManager.shared.trackingPushToStart, "Push-to-start tracking must be active for logged-in user")
-    precondition(shopOnly.checkoutPreview != nil && shopOnly.billLoaded,
-                 "A shop refresh must include the bill without a view-triggered second read")
-    let readsBeforeRefresh = previewReads
-    await shopOnly.refreshVisit()
-    precondition(previewReads == readsBeforeRefresh + 1 && shopOnly.checkoutPreview != nil)
-    // Settling keeps a receipt on screen; without it the page snapped back to admission.
-    await shopOnly.checkout()
-    precondition(shopOnly.settlement?.playerSettlement.total == 12)
-    precondition(shopOnly.settlement?.wallet?.balanceAfter == 88)
-    precondition(shopOnly.settlement?.chargeItems.first?.label == "入场费")
-    precondition(shopOnly.summary?.activeSession == nil, "The session is settled server-side")
-    precondition(shopOnly.settlement != nil, "The receipt must outlive the refresh that clears the session")
-    precondition(shopOnly.checkoutCelebrating)
+    precondition(shopOnly.page?.bill()?.mode == "live" && shopOnly.page?.hasButton(id: "checkout") == true,
+                 "A live shop page delivers its bill block and sticky footer checkout button")
+    let liveBill = shopOnly.page!.bill()!
+    let liveTotal = try PrismCheckoutEngine.preview(
+      snapshot: liveBill.billingInputs!.billingSnapshot!,
+      playerId: liveBill.billingInputs!.playerId
+    ).view().settlementPreview.total
+    precondition(liveTotal == 12)
+    // Settling via the footer checkout button shows celebration, updates Live Activity, and retains the settled receipt page.
+    checkoutCalls = 2
+    let shopCheckoutButton = shopOnly.page!.allBlocks().compactMap { if case .button(let b) = $0, b.id == "checkout" { return b }; return nil }.first!
+    await shopOnly.press(shopCheckoutButton)
+    precondition(shopOnly.checkoutCelebrating && shopOnly.celebration?.title == "结账成功")
+    precondition(shopOnly.settlement?.playerSettlement.total == 12 && shopOnly.settlement?.wallet?.balanceAfter == 88)
     await shopOnly.finishCheckout()
     precondition(!shopOnly.checkoutCelebrating && shopOnly.shopBillingState == "结账成功")
+    precondition(shopOnly.page?.bill()?.mode == "settled" && shopOnly.page?.bill()?.balanceAfter == 88)
     let reopenedShop = MachineLoginViewModel(api: PrismAPI(configuration: config, origin: origin))
     await reopenedShop.startShop(shopCode: "store")
-    precondition(reopenedShop.settlement?.playerSettlement.total == 12, "A fresh page must restore the server receipt")
-    precondition(reopenedShop.settlement?.bill.timeline?.totals.first?.amount == 12, "Receipt uses the same timeline model as the preview")
+    precondition(reopenedShop.page?.bill()?.mode == "settled" && reopenedShop.page?.bill()?.preview?.settlementPreview.total == 12,
+                 "A fresh page must restore the server settled bill")
     active = true
     await reopenedShop.refreshVisit()
-    precondition(reopenedShop.settlement == nil && reopenedShop.checkoutPreview != nil, "Admission supersedes the previous receipt")
+    precondition(reopenedShop.settlement == nil && reopenedShop.page?.bill()?.mode == "live",
+                 "Admission supersedes the previous receipt")
 
     // A machine link afterwards must leave shop-only mode behind.
     await shopOnly.handleResolvedInvocation(origin.appendingPathComponent("t/store/device"))
@@ -768,40 +1091,40 @@ enum PersistentCookieCheck {
     // 6. Re-tapping the open link refreshes in place, so a settled receipt survives it.
     active = true
     await shopOnly.handleResolvedInvocation(shopB)
-    try await shopOnly.loadAccountSection(0)
-    await shopOnly.checkout()
+    checkoutCalls = 2
+    let replayCheckoutBtn = shopOnly.page!.allBlocks().compactMap { if case .button(let b) = $0, b.id == "checkout" { return b }; return nil }.first!
+    await shopOnly.press(replayCheckoutBtn)
     precondition(shopOnly.settlement != nil)
     await shopOnly.finishCheckout()
     await shopOnly.handleResolvedInvocation(shopB)
-    precondition(shopOnly.settlement != nil, "A replayed link must not discard the settlement receipt")
+    precondition(shopOnly.page?.bill()?.mode == "settled", "A replayed link must not discard the settled receipt")
 
     // Observe actual state transitions instead of asserting source-code snippets.
     let freshShop = MachineLoginViewModel(api: PrismAPI(configuration: config))
     active = true
     var shopStates: [MachineLoginViewModel.State] = []
     let observation = freshShop.$state.sink { shopStates.append($0) }
-    let previewsBeforeOpen = previewReads
+    let readsBeforeOpen = shopPageReads
     await freshShop.handleResolvedInvocation(shopB)
     precondition(shopStates == [.idle, .loadingShop, .loadingCards, .ready])
-    precondition(freshShop.playerStateLoaded && freshShop.billLoaded && freshShop.checkoutPreview != nil)
-    precondition(previewReads == previewsBeforeOpen + 1, "Opening a shop reads the bill once")
+    precondition(freshShop.playerStateLoaded && freshShop.page?.bill()?.mode == "live")
+    precondition(shopPageReads == readsBeforeOpen + 1, "Opening a shop reads /player/page once")
     observation.cancel()
-    // A missing shop or a failed bill must be retryable, never a permanent loading state.
+    // A missing shop or a failed read must be retryable, never a permanent loading state.
     shopStatus = 404
     let failedShop = MachineLoginViewModel(api: PrismAPI(configuration: config))
     await failedShop.handleResolvedInvocation(shopB)
     if case .failed = failedShop.state {} else { preconditionFailure("Public shop failure must be visible") }
     shopStatus = 200
     await failedShop.handleResolvedInvocation(shopB)
-    precondition(failedShop.state == .ready && failedShop.checkoutPreview != nil)
+    precondition(failedShop.state == .ready && failedShop.page?.bill()?.mode == "live")
     let billFailure = MachineLoginViewModel(api: PrismAPI(configuration: config))
     previewStatus = 400
     await billFailure.handleResolvedInvocation(shopB)
-    precondition(billFailure.state == .ready && billFailure.errorMessage != nil && !billFailure.playerStateLoaded)
+    if case .failed = billFailure.state {} else { preconditionFailure("Shop page error must surface") }
     previewStatus = 200
-    billFailure.clearError()
-    await billFailure.refreshVisit()
-    precondition(billFailure.billLoaded && billFailure.checkoutPreview != nil)
+    await billFailure.handleResolvedInvocation(shopB)
+    precondition(billFailure.state == .ready && billFailure.page?.bill()?.mode == "live")
 
     let activating = MachineLoginViewModel(api: PrismAPI(configuration: config))
     FixtureProtocol.holdNextIdentityResponse = true
@@ -815,34 +1138,29 @@ enum PersistentCookieCheck {
     await activating.setSceneActive(true)
     let activationReply = FixtureProtocol.heldIdentityReply!; FixtureProtocol.heldIdentityReply = nil; activationReply()
     await opening.value
-    precondition(activating.state == .ready && activating.checkoutPreview != nil,
+    precondition(activating.state == .ready && activating.page?.bill()?.mode == "live",
                  "An activation transition during account loading must not strand the page")
-    billing = false; member = false
+    active = false; lastReceipt = nil
     await freshShop.refreshVisit()
-    precondition(freshShop.playerStateLoaded && freshShop.checkoutPreview == nil)
-    // No shop-wide billing switch: a player with nothing running is simply not checked in.
+    precondition(freshShop.playerStateLoaded && freshShop.page?.bill() == nil)
     precondition(freshShop.shopBillingState == "未入场")
-    billing = true; member = true
 
-    // Signing out on a shop page keeps the shop card: the shop is public data, and the
-    // player must still see which shop they are dealing with above the sign-in buttons.
+    // Signing out on a shop page keeps the shop hero card and shows the server sign-in block.
     member = true
     await shopOnly.handleResolvedInvocation(shopB)
     await shopOnly.logout()
     precondition(StoreVisitLiveActivityManager.shared.unregisteredAll, "Logout must trigger unregisterAllPushTokens")
     precondition(StoreVisitLiveActivityManager.shared.lastApi?.baseURL == origin, "Unregister must use origin-scoped API")
     precondition(shopOnly.state == .unauthenticated)
-    precondition(shopOnly.user == nil && shopOnly.summary == nil && shopOnly.checkoutPreview == nil && shopOnly.settlement == nil, "Logout must clear private account state")
-    precondition(shopOnly.visit != nil, "Sign-out must not remove the shop card")
-    precondition(shopOnly.visit?.shop.heroUrl == "/api/v1/shops/store/hero?v=abc123")
+    precondition(shopOnly.user == nil && shopOnly.summary == nil && shopOnly.settlement == nil, "Logout must clear private account state")
+    precondition(shopOnly.lastShopHero?.name == "Store" && shopOnly.page?.asksToSignIn == true, "Sign-out must keep the shop card and show sign-in")
+    precondition(shopOnly.lastShopHero?.heroUrl == "/api/v1/shops/store/hero?v=abc123")
 
-    // Signing back in afterwards completes: the visit has to refresh, or the page hangs.
-    // `reloadCards` is where the machine flow lands after signing in, so it is the call that
-    // has to carry the shop page past its loading state.
+    // Signing back in afterwards completes via reloadCards().
     signedIn = true
     await shopOnly.reloadCards()
-    precondition(shopOnly.state == .ready && shopOnly.visit != nil, "Sign-in on a shop page must complete")
-    precondition(shopOnly.summary != nil, "The signed-in shop page must have loaded the player's state")
+    precondition(shopOnly.state == .ready && shopOnly.page != nil && !shopOnly.page!.asksToSignIn, "Sign-in on a shop page must complete")
+    precondition(shopOnly.playerStateLoaded, "The signed-in shop page must have loaded the player's state")
 
     // Registration stays on the invocation: no new machine ticket or physical operation.
     scene = "cards"

@@ -72,15 +72,20 @@ struct ClipActionStyle: ButtonStyle {
   @Environment(\.isEnabled) private var enabled
 
   func makeBody(configuration: Configuration) -> some View {
-    let foreground: Color = primary ? .white : (destructive ? .red : .primary)
-    let background: Color = primary ? .blue : (destructive ? Color.red.opacity(0.12) : Color.primary.opacity(0.065))
+    let disabledPrimary = primary && !enabled
+    let foreground: Color = disabledPrimary
+      ? Color.primary.opacity(0.35)
+      : (primary ? .white : (destructive ? .red : .primary))
+    let background: Color = disabledPrimary
+      ? Color.primary.opacity(0.08)
+      : (primary ? .blue : (destructive ? Color.red.opacity(0.12) : Color.primary.opacity(0.065)))
     configuration.label
       .font(.system(size: 18, weight: .semibold))
       .foregroundStyle(foreground)
       .padding(.horizontal, 24)
       .frame(maxWidth: .infinity, minHeight: 58)
       .background(background, in: Capsule())
-      .opacity(!enabled ? 0.5 : configuration.isPressed ? 0.7 : 1)
+      .opacity(!enabled && !primary ? 0.5 : configuration.isPressed ? 0.7 : 1)
   }
 }
 

@@ -22,10 +22,18 @@ struct ClipButtonBlock: View {
   var body: some View {
     // Adding a card takes the place of what is done with one.
     if !(model.cardCapture != nil && button.hideDuringCapture == true) {
+      let inline = button.answerOnButton != true && context.inlineNoticeAnchor == button.id ? context.inlineNotice : nil
       VStack(spacing: 12) {
         if button.againLabel != nil, let code = model.pageCode { doorCode(code) }
+        if context.noticeAboveButton, let inline {
+          InlineNotice(notice: inline)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        }
         control
-        if button.answerOnButton != true { AnchoredNotice([button.id]) }
+        if !context.noticeAboveButton, let inline { InlineNotice(notice: inline) }
       }
     }
   }
@@ -40,9 +48,9 @@ struct ClipButtonBlock: View {
   }
 
   private var control: some View {
-    let note = button.answerOnButton == true && button.enabled && model.inlineNoticeAnchor == button.id ? model.inlineNotice : nil
-    let waiting = model.pressing == button.id || model.waitingButtonId == button.id
-    let off = model.pageBusy || waiting || !context.page.canSubmit(button, values: context.values)
+    let note = button.answerOnButton == true && button.enabled && context.inlineNoticeAnchor == button.id ? context.inlineNotice : nil
+    let waiting = context.pressingId == button.id || context.waitingButtonId == button.id
+    let off = context.busy || waiting || !context.page.canSubmit(button, values: context.values)
     let isPrimary = button.style == "primary"
     let isDestructive = button.style == "destructive"
     return Button {
@@ -50,7 +58,7 @@ struct ClipButtonBlock: View {
         context.confirm(button)
       } else {
         let collected = context.page.collectedPayload(for: button, values: context.values)
-        Task { await model.press(button, collected: collected) }
+        context.press(button, collected)
       }
     } label: {
       HStack(spacing: 10) {

@@ -17,10 +17,13 @@ struct ClipInputBlock: View {
       }
       TextField(input.placeholder ?? "", text: $text)
         .keyboardType(input.inputType == "number" ? .decimalPad : .default)
-        .padding(.horizontal, 16).padding(.vertical, 14)
+        .textInputAutocapitalization(.never)
+        .autocorrectionDisabled()
+        .submitLabel(.done)
+        .onSubmit { submitOnReturn() }
+        .padding(.horizontal, 16).padding(.vertical, 15)
         .background(prismCardFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.12)))
-        .disabled(model.pageBusy || input.enabled == false)
+        .disabled(context.busy || input.enabled == false)
         .onChange(of: text) {
           if let limit = input.maxLength, limit > 0, text.count > limit { text = String(text.prefix(limit)) }
           else if text != current { context.setValue(input.id, .string(text)) }
@@ -32,6 +35,21 @@ struct ClipInputBlock: View {
       }
     }
   }
+
+  private func submitOnReturn() {
+    let matching = context.page.allBlocks().compactMap { block -> PrismPageButton? in
+      guard case .button(let button) = block,
+            button.collect?.contains(input.id) == true else { return nil }
+      return button
+    }
+    guard matching.count == 1, let button = matching.first else { return }
+    guard !context.busy && context.page.canSubmit(button, values: context.values) else { return }
+    if button.confirm != nil {
+      context.confirm(button)
+    } else {
+      context.press(button, context.page.collectedPayload(for: button, values: context.values))
+    }
+  }
 }
 
 struct ClipSelectBlock: View {
@@ -41,7 +59,7 @@ struct ClipSelectBlock: View {
 
   private var selected: String { context.page.stringValue(for: select.id, in: context.values) }
   private func isDisabled(_ option: PrismPageSelect.Option) -> Bool {
-    model.pageBusy || select.enabled == false || option.disabled == true
+    context.busy || select.enabled == false || option.disabled == true
   }
 
   var body: some View {
@@ -129,7 +147,7 @@ struct ClipToggleBlock: View {
         }
       }
     }
-    .disabled(model.pageBusy || toggle.enabled == false)
+    .disabled(context.busy || toggle.enabled == false)
   }
 }
 
@@ -146,6 +164,6 @@ struct ClipConsentBlock: View {
         Image(systemName: ticked ? "checkmark.square.fill" : "square").foregroundStyle(ticked ? Color.blue : .secondary)
         Text(verbatim: text).font(.subheadline).foregroundStyle(.primary).multilineTextAlignment(.leading)
       }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-    }.buttonStyle(.plain).accessibilityValue(ticked ? "✓" : "—").disabled(model.pageBusy)
+    }.buttonStyle(.plain).accessibilityValue(ticked ? "✓" : "—").disabled(context.busy)
   }
 }

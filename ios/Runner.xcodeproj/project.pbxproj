@@ -110,6 +110,10 @@
 		5EF289768D94664829F796F0 /* ClipSignInButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5BBFCD60C1F151ED14A974 /* ClipSignInButtons.swift */; };
 		0C264DF3A815C3921932A7B0 /* ClipTableBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFD48A3AB7D950CD636E491 /* ClipTableBlock.swift */; };
 		CED5B4124BB758F190316B13 /* ClipTableBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFD48A3AB7D950CD636E491 /* ClipTableBlock.swift */; };
+		D1A000000000000000000001 /* ClipBillBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B000000000000000000001 /* ClipBillBlock.swift */; };
+		D1A000000000000000000002 /* ClipBillBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B000000000000000000001 /* ClipBillBlock.swift */; };
+		D1A000000000000000000003 /* ClipListBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B000000000000000000002 /* ClipListBlock.swift */; };
+		D1A000000000000000000004 /* ClipListBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B000000000000000000002 /* ClipListBlock.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -256,6 +260,8 @@
 		BF45F669B5FBEEFBB150899D /* ClipPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipPageView.swift; sourceTree = "<group>"; };
 		7E5BBFCD60C1F151ED14A974 /* ClipSignInButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipSignInButtons.swift; sourceTree = "<group>"; };
 		8AFD48A3AB7D950CD636E491 /* ClipTableBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipTableBlock.swift; sourceTree = "<group>"; };
+		D1B000000000000000000001 /* ClipBillBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipBillBlock.swift; sourceTree = "<group>"; };
+		D1B000000000000000000002 /* ClipListBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipListBlock.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -458,6 +464,7 @@
 		FFEC0CA4D63646512D24997D /* Page */ = {
 			isa = PBXGroup;
 			children = (
+				D1B000000000000000000001 /* ClipBillBlock.swift */,
 				6D7CC97227FDBA422819549B /* ClipBindingBlock.swift */,
 				C1DB5659C07708F8DBEC0E19 /* ClipButtonBlock.swift */,
 				3B1DDFC5712C9326792E424C /* ClipCardsBlock.swift */,
@@ -465,6 +472,7 @@
 				77F594442DB57315128B1C31 /* ClipComponents.swift */,
 				BDED5601EA7288D23D8AA8B7 /* ClipContentBlocks.swift */,
 				E0948EBE0CA4A522F68A965E /* ClipFieldBlocks.swift */,
+				D1B000000000000000000002 /* ClipListBlock.swift */,
 				BF45F669B5FBEEFBB150899D /* ClipPageView.swift */,
 				7E5BBFCD60C1F151ED14A974 /* ClipSignInButtons.swift */,
 				8AFD48A3AB7D950CD636E491 /* ClipTableBlock.swift */,
@@ -754,6 +762,8 @@
 				6746C5928A07272F82BD8B08 /* ClipPageView.swift in Sources */,
 				54F341DC9BB1C1D96AA8C74C /* ClipSignInButtons.swift in Sources */,
 				0C264DF3A815C3921932A7B0 /* ClipTableBlock.swift in Sources */,
+				D1A000000000000000000001 /* ClipBillBlock.swift in Sources */,
+				D1A000000000000000000003 /* ClipListBlock.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -804,6 +814,8 @@
 				654311597EF68807183933B1 /* ClipPageView.swift in Sources */,
 				5EF289768D94664829F796F0 /* ClipSignInButtons.swift in Sources */,
 				CED5B4124BB758F190316B13 /* ClipTableBlock.swift in Sources */,
+				D1A000000000000000000002 /* ClipBillBlock.swift in Sources */,
+				D1A000000000000000000004 /* ClipListBlock.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

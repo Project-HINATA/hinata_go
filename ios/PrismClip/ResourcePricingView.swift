@@ -18,11 +18,14 @@ let prismAccent = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
 /// Every card's fill. On a page it is the solid grouped card colour, the white (or raised dark)
 /// panel on the grey grouped background, as Settings and Wallet draw content on iOS 26: Liquid
 /// Glass belongs to the controls floating above content, not to the content itself. Inside a
-/// sheet, whose background is the system glass at the medium detent, it is translucent instead,
-/// so the card reads as a shade of that glass rather than a solid panel set into it.
+/// sheet (whose background is the system glass at the medium detent) or nested inside a card
+/// section, it is translucent instead, so the inner control or card separates cleanly from the
+/// surface behind it.
 struct PrismCardFill: ShapeStyle {
   func resolve(in environment: EnvironmentValues) -> Color {
-    environment.prismInSheet ? Color(.tertiarySystemFill) : Color(.secondarySystemGroupedBackground)
+    (environment.prismInSheet || environment.prismInCard)
+      ? Color(.tertiarySystemFill)
+      : Color(.secondarySystemGroupedBackground)
   }
 }
 
@@ -32,11 +35,21 @@ private struct PrismInSheetKey: EnvironmentKey {
   static let defaultValue = false
 }
 
+private struct PrismInCardKey: EnvironmentKey {
+  static let defaultValue = false
+}
+
 extension EnvironmentValues {
   /// Set on a sheet's content, so cards there take the translucent fill.
   var prismInSheet: Bool {
     get { self[PrismInSheetKey.self] }
     set { self[PrismInSheetKey.self] = newValue }
+  }
+
+  /// Set inside a `card` section, so nested inputs and card-styled controls contrast with it.
+  var prismInCard: Bool {
+    get { self[PrismInCardKey.self] }
+    set { self[PrismInCardKey.self] = newValue }
   }
 }
 

@@ -1,6 +1,7 @@
 import Foundation
 
-/// What the player fills in on a page and what a button sends back. The same rules as the web's.
+/// What the player fills in on a page (both body `blocks` and `footer`) and what a button sends back.
+/// The same rules as the web's (`allPageBlocks(page)`).
 extension PrismPage {
   var fieldIds: Set<String> {
     var ids = Set<String>()

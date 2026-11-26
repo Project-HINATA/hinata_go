@@ -62,7 +62,14 @@ struct PrismPageButton: Decodable {
 /// A field read as nothing, instead of failing its whole block, when this build cannot read it.
 @propertyWrapper struct PrismLenient<Value: Decodable>: Decodable {
   var wrappedValue: Value?
+  init(wrappedValue: Value? = nil) { self.wrappedValue = wrappedValue }
   init(from decoder: Decoder) throws { wrappedValue = try? Value(from: decoder) }
+}
+
+extension KeyedDecodingContainer {
+  func decode<Value: Decodable>(_ type: PrismLenient<Value>.Type, forKey key: Key) throws -> PrismLenient<Value> {
+    (try? decodeIfPresent(type, forKey: key)) ?? PrismLenient(wrappedValue: nil)
+  }
 }
 
 struct PrismPageSignIn: Decodable {
@@ -75,6 +82,7 @@ struct PrismPageSignIn: Decodable {
     let label: String
     let busyLabel: String
     var style: String? = nil
+    var unsupportedText: String? = nil
   }
 }
 
@@ -231,12 +239,12 @@ struct PrismPageSection: Decodable {
   var title: String? = nil
   var subtitle: String? = nil
   var style: String? = nil
-  let blocks: [PrismPageBlock]
+  var blocks: [PrismPageBlock]
 }
 
 struct PrismPageRow: Decodable {
   let id: String
-  let blocks: [PrismPageBlock]
+  var blocks: [PrismPageBlock]
 }
 
 struct PrismPageKeyValue: Decodable {
@@ -248,6 +256,9 @@ struct PrismPageKeyValue: Decodable {
     let label: String
     let value: String
     var tone: String? = nil
+    var icon: String? = nil
+    var badge: String? = nil
+    var badgeTone: String? = nil
   }
 }
 
@@ -307,6 +318,106 @@ struct PrismPageToggle: Decodable {
   var enabled: Bool? = nil
 }
 
+struct PrismPageBillLabels: Decodable {
+  let totalLabel: String
+  let legendLabel: String
+  let billingLegend: String
+  let cappedLegend: String
+  let settledTitle: String
+  let balanceAfterLabel: String
+  let headings: Headings
+  let capFullSuffix: String
+  let capUntilLabel: String
+  let newDayLabel: String
+  let hourUnit: String
+  let minuteUnit: String
+  let billingUnitLabel: String
+  let estimateError: String
+  let retryLabel: String
+
+  struct Headings: Decodable {
+    let current: String
+    let end: String
+    let start: String
+    let `switch`: String
+    let over: String
+
+    func label(for kind: String) -> String? {
+      switch kind {
+      case "current": return current
+      case "end": return end
+      case "start": return start
+      case "switch": return `switch`
+      case "over": return over
+      default: return nil
+      }
+    }
+  }
+}
+
+struct PrismPageBill: Decodable {
+  let id: String
+  let mode: String
+  var timeZone: String? = nil
+  var billingInputs: BillingInputs? = nil
+  @PrismLenient var preview: PrismCheckout?
+  var settledAt: String? = nil
+  var balanceAfter: Double? = nil
+  let labels: PrismPageBillLabels
+
+  struct BillingInputs: Decodable {
+    let playerId: String
+    @PrismLenient var billingSnapshot: PrismBillingSnapshot?
+  }
+}
+
+struct PrismPageTarget: Decodable, Equatable, Hashable {
+  let view: String
+  var item: String? = nil
+  var cursor: String? = nil
+}
+
+struct PrismPageListItem: Decodable, Identifiable {
+  let id: String
+  var group: String? = nil
+  let title: String
+  var titleMeta: String? = nil
+  var subtitle: String? = nil
+  var titleTimestamp: String? = nil
+  var subtitleTimestamp: String? = nil
+  var subtitlePrefix: String? = nil
+  var trailing: String? = nil
+  var trailingStrikethrough: String? = nil
+  var open: PrismPageTarget? = nil
+}
+
+struct PrismPageList: Decodable {
+  let id: String
+  var items: [PrismPageListItem]
+  var timeZone: String? = nil
+  var emptyText: String? = nil
+  var emptyIcon: String? = nil
+  var moreLabel: String? = nil
+  var moreTarget: PrismPageTarget? = nil
+}
+
+struct PrismPageAccountTab: Decodable, Identifiable, Equatable {
+  let id: String
+  let label: String
+}
+
+struct PrismPageAccountMenu: Decodable, Equatable {
+  var billingBadge: String? = nil
+  let tabs: [PrismPageAccountTab]
+  let logoutLabel: String
+}
+
+struct PrismPageCelebration: Decodable, Equatable {
+  let title: String
+  let subtitle: String
+  var effect: String? = nil
+}
+
 /// One block of the page. A block this build cannot read, a new kind or a changed one, is `unknown`
 /// and is skipped: the platform can add to the page without breaking a released App Clip.
 indirect enum PrismPageBlock: Decodable, Identifiable {
@@ -326,6 +437,8 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
   case consent(id: String, text: String)
   case climate(PrismPageClimate)
   case table(PrismPageTable)
+  case bill(PrismPageBill)
+  case list(PrismPageList)
   case cards(PrismPageCards)
   case button(PrismPageButton)
   case unknown(id: String)
@@ -360,6 +473,8 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
       case "consent": self = .consent(id: id, text: try keyed.decode(String.self, forKey: .text))
       case "climate": self = .climate(try PrismPageClimate(from: decoder))
       case "table", "mahjong": self = .table(try PrismPageTable(from: decoder))
+      case "bill": self = .bill(try PrismPageBill(from: decoder))
+      case "list": self = .list(try PrismPageList(from: decoder))
       case "cards": self = .cards(try PrismPageCards(from: decoder))
       case "button": self = .button(try PrismPageButton(from: decoder))
       default: self = .unknown(id: id)
@@ -375,6 +490,24 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
     case .section(let section): return section.id == target || section.blocks.contains { $0.contains(id: target) }
     case .row(let row): return row.id == target || row.blocks.contains { $0.contains(id: target) }
     default: return id == target
+    }
+  }
+
+  func mergingListBlock(id blockId: String, replacement: PrismPageList) -> PrismPageBlock {
+    switch self {
+    case .list(let existing) where existing.id == blockId:
+      let seen = Set(existing.items.map(\.id))
+      var merged = replacement
+      merged.items = existing.items + replacement.items.filter { !seen.contains($0.id) }
+      return .list(merged)
+    case .section(var section):
+      section.blocks = section.blocks.map { $0.mergingListBlock(id: blockId, replacement: replacement) }
+      return .section(section)
+    case .row(var row):
+      row.blocks = row.blocks.map { $0.mergingListBlock(id: blockId, replacement: replacement) }
+      return .row(row)
+    default:
+      return self
     }
   }
 
@@ -395,6 +528,8 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
     case .pricing(let pricing): return pricing.id
     case .climate(let climate): return climate.id
     case .table(let table): return table.id
+    case .bill(let bill): return bill.id
+    case .list(let list): return list.id
     case .cards(let cards): return cards.id
     case .button(let button): return button.id
     }
@@ -413,9 +548,14 @@ struct PrismPage: Decodable {
   let publicId: String
   /// The player has something billing at this shop, here or elsewhere.
   let billingActive: Bool
-  let blocks: [PrismPageBlock]
+  var offerPasskeySetup: Bool? = nil
+  var title: String? = nil
+  var backLabel: String? = nil
+  var accountMenu: PrismPageAccountMenu? = nil
+  var blocks: [PrismPageBlock]
+  var footer: [PrismPageBlock]? = nil
 
-  /// Flattens container blocks (`section`, `row`) up to `maxDepth` levels.
+  /// Flattens container blocks (`section`, `row`) across body `blocks` and sticky `footer` up to `maxDepth` levels.
   func allBlocks(maxDepth: Int = PrismPage.maxDepth) -> [PrismPageBlock] {
     var out: [PrismPageBlock] = []
     func visit(_ items: [PrismPageBlock], depth: Int) {
@@ -429,7 +569,7 @@ struct PrismPage: Decodable {
         }
       }
     }
-    visit(blocks, depth: 0)
+    visit(blocks + (footer ?? []), depth: 0)
     return out
   }
 
@@ -440,6 +580,23 @@ struct PrismPage: Decodable {
   func climate(id: String) -> PrismPageClimate? {
     for block in allBlocks() { if case .climate(let climate) = block, climate.id == id { return climate } }
     return nil
+  }
+  func list(id: String) -> PrismPageList? {
+    for block in allBlocks() { if case .list(let list) = block, list.id == id { return list } }
+    return nil
+  }
+  func bill(id: String? = nil) -> PrismPageBill? {
+    for block in allBlocks() {
+      if case .bill(let bill) = block, id == nil || bill.id == id { return bill }
+    }
+    return nil
+  }
+  func mergingListBlock(id blockId: String, from incoming: PrismPage) -> PrismPage {
+    guard let replacement = incoming.list(id: blockId) else { return self }
+    var next = self
+    next.blocks = next.blocks.map { $0.mergingListBlock(id: blockId, replacement: replacement) }
+    next.footer = next.footer?.map { $0.mergingListBlock(id: blockId, replacement: replacement) }
+    return next
   }
   var asksToSignIn: Bool { allBlocks().contains { if case .signin = $0 { return true }; return false } }
   var needsBinding: Bool { allBlocks().contains { if case .binding = $0 { return true }; return false } }
@@ -470,4 +627,8 @@ struct PrismActionAnswer: Decodable {
   let page: PrismPage
   let notices: [PrismNotice]
   var code: PrismPageCode? = nil
+  var celebration: PrismPageCelebration? = nil
+  @PrismLenient var receipt: PrismCheckoutResult?
 }
+
+typealias PrismPageActionAnswer = PrismActionAnswer

@@ -39,6 +39,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": false,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "text",
@@ -55,6 +59,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "text",
@@ -72,11 +80,15 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "binding",
           "id": "binding",
-          "title": "绑定平台身份",
+          "title": "绑定身份",
           "expiresLabel": "有效期至",
           "copyLabel": "复制",
           "copiedLabel": "已复制",
@@ -92,6 +104,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "text",
@@ -192,6 +208,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "text",
@@ -215,6 +235,32 @@
       "publicId": "device",
       "billingActive": true,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "billingBadge": "计费中",
+        "tabs": [
+          {
+            "id": "bill",
+            "label": "账单"
+          },
+          {
+            "id": "redeem",
+            "label": "兑换"
+          },
+          {
+            "id": "history",
+            "label": "记录"
+          },
+          {
+            "id": "wallet",
+            "label": "钱包"
+          },
+          {
+            "id": "bindings",
+            "label": "身份"
+          }
+        ],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "button",
@@ -237,6 +283,32 @@
       "publicId": "device",
       "billingActive": true,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "billingBadge": "计费中",
+        "tabs": [
+          {
+            "id": "bill",
+            "label": "账单"
+          },
+          {
+            "id": "redeem",
+            "label": "兑换"
+          },
+          {
+            "id": "history",
+            "label": "记录"
+          },
+          {
+            "id": "wallet",
+            "label": "钱包"
+          },
+          {
+            "id": "bindings",
+            "label": "身份"
+          }
+        ],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "button",
@@ -304,6 +376,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "cards",
@@ -349,6 +425,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "cards",
@@ -425,6 +505,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "button",
@@ -447,6 +531,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "text",
@@ -464,6 +552,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "table",
@@ -494,6 +586,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "table",
@@ -528,6 +624,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "climate",
@@ -626,6 +726,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "climate",
@@ -724,6 +828,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "climate",
@@ -762,6 +870,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "text",
@@ -793,6 +905,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": false,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "text",
@@ -809,6 +925,10 @@
       "publicId": "device",
       "billingActive": false,
       "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [],
+        "logoutLabel": "退出登录"
+      },
       "blocks": [
         {
           "kind": "banner",
@@ -931,11 +1051,711 @@
       ]
     }
   },
+  "shopPages": {
+    "shopSignIn": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "blocks": [
+        {
+          "kind": "signin",
+          "id": "signin",
+          "methods": [
+            {
+              "id": "munet",
+              "provider": "munet",
+              "label": "使用 MuNET 登录",
+              "busyLabel": "正在连接 MuNET…",
+              "style": "primary"
+            },
+            {
+              "id": "passkey",
+              "provider": "passkey",
+              "label": "使用 Passkey 登录",
+              "busyLabel": "正在验证 Passkey…",
+              "unsupportedText": "当前浏览器不支持 Passkey，请使用 MuNET 登录"
+            }
+          ]
+        }
+      ]
+    },
+    "shopBinding": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "未入场",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "accountMenu": {
+        "tabs": [
+          {
+            "id": "redeem",
+            "label": "兑换"
+          },
+          {
+            "id": "history",
+            "label": "记录"
+          },
+          {
+            "id": "wallet",
+            "label": "钱包"
+          },
+          {
+            "id": "bindings",
+            "label": "身份"
+          }
+        ],
+        "logoutLabel": "退出登录"
+      },
+      "blocks": [
+        {
+          "kind": "binding",
+          "id": "binding",
+          "title": "绑定身份",
+          "expiresLabel": "有效期至",
+          "copyLabel": "复制",
+          "copiedLabel": "已复制",
+          "retryLabel": "重试"
+        }
+      ]
+    },
+    "shopLive": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "计费中",
+      "publicId": "",
+      "billingActive": true,
+      "offerPasskeySetup": true,
+      "accountMenu": {
+        "billingBadge": "计费中",
+        "tabs": [
+          {
+            "id": "redeem",
+            "label": "兑换"
+          },
+          {
+            "id": "history",
+            "label": "记录"
+          },
+          {
+            "id": "wallet",
+            "label": "钱包"
+          },
+          {
+            "id": "bindings",
+            "label": "身份"
+          }
+        ],
+        "logoutLabel": "退出登录"
+      },
+      "blocks": [
+        {
+          "kind": "bill",
+          "id": "bill",
+          "mode": "live",
+          "timeZone": "Asia/Tokyo",
+          "billingInputs": {
+            "playerId": "p1",
+            "billingSnapshot": {
+              "version": 1,
+              "players": []
+            }
+          },
+          "labels": {
+            "totalLabel": "合计",
+            "legendLabel": "图例",
+            "billingLegend": "计费",
+            "cappedLegend": "封顶中",
+            "settledTitle": "结账成功",
+            "balanceAfterLabel": "结账后余额",
+            "headings": {
+              "current": "现在",
+              "end": "结束计费",
+              "start": "开始计费",
+              "switch": "切换计费规则",
+              "over": "封顶结束"
+            },
+            "capFullSuffix": "已满",
+            "capUntilLabel": "封顶到",
+            "newDayLabel": "新的一天",
+            "hourUnit": "小时",
+            "minuteUnit": "分钟",
+            "billingUnitLabel": "个计费单位",
+            "estimateError": "账单预估失败，请刷新后重试",
+            "retryLabel": "重试"
+          }
+        }
+      ],
+      "footer": [
+        {
+          "kind": "button",
+          "id": "checkout",
+          "label": "结账",
+          "action": "checkout.confirm",
+          "style": "primary",
+          "needsLocation": true,
+          "enabled": true
+        }
+      ]
+    },
+    "shopLivePreview": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "计费中",
+      "publicId": "",
+      "billingActive": true,
+      "offerPasskeySetup": true,
+      "accountMenu": {
+        "billingBadge": "计费中",
+        "tabs": [
+          {
+            "id": "redeem",
+            "label": "兑换"
+          },
+          {
+            "id": "history",
+            "label": "记录"
+          },
+          {
+            "id": "wallet",
+            "label": "钱包"
+          },
+          {
+            "id": "bindings",
+            "label": "身份"
+          }
+        ],
+        "logoutLabel": "退出登录"
+      },
+      "blocks": [
+        {
+          "kind": "bill",
+          "id": "bill",
+          "mode": "live",
+          "timeZone": "Asia/Tokyo",
+          "preview": {
+            "settlementPreview": {
+              "total": 12
+            },
+            "chargeItems": [
+              {
+                "id": "c1",
+                "label": "入场费",
+                "amount": 12
+              }
+            ],
+            "adjustments": []
+          },
+          "labels": {
+            "totalLabel": "合计",
+            "legendLabel": "图例",
+            "billingLegend": "计费",
+            "cappedLegend": "封顶中",
+            "settledTitle": "结账成功",
+            "balanceAfterLabel": "结账后余额",
+            "headings": {
+              "current": "现在",
+              "end": "结束计费",
+              "start": "开始计费",
+              "switch": "切换计费规则",
+              "over": "封顶结束"
+            },
+            "capFullSuffix": "已满",
+            "capUntilLabel": "封顶到",
+            "newDayLabel": "新的一天",
+            "hourUnit": "小时",
+            "minuteUnit": "分钟",
+            "billingUnitLabel": "个计费单位",
+            "estimateError": "账单预估失败，请刷新后重试",
+            "retryLabel": "重试"
+          }
+        }
+      ],
+      "footer": [
+        {
+          "kind": "button",
+          "id": "checkout",
+          "label": "结账",
+          "action": "checkout.confirm",
+          "style": "primary",
+          "needsLocation": false,
+          "enabled": true
+        }
+      ]
+    },
+    "shopSettled": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "结账成功",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [
+          {
+            "id": "redeem",
+            "label": "兑换"
+          },
+          {
+            "id": "history",
+            "label": "记录"
+          },
+          {
+            "id": "wallet",
+            "label": "钱包"
+          },
+          {
+            "id": "bindings",
+            "label": "身份"
+          }
+        ],
+        "logoutLabel": "退出登录"
+      },
+      "blocks": [
+        {
+          "kind": "bill",
+          "id": "bill",
+          "mode": "settled",
+          "timeZone": "Asia/Tokyo",
+          "preview": {
+            "timeline": {
+              "tracks": [
+                {
+                  "id": "fee",
+                  "name": "入场费",
+                  "lane": 0,
+                  "color": 0,
+                  "startedAt": "2026-10-02T02:00:00.000Z",
+                  "endedAt": "2026-10-02T03:00:00.000Z"
+                }
+              ],
+              "events": [],
+              "totals": [
+                {
+                  "name": "入场费",
+                  "amount": 24
+                }
+              ]
+            },
+            "settlementPreview": {
+              "total": 24
+            },
+            "chargeItems": [
+              {
+                "id": "c1",
+                "label": "入场费",
+                "amount": 24
+              }
+            ],
+            "adjustments": []
+          },
+          "settledAt": "2026-10-02T03:00:00.000Z",
+          "balanceAfter": 76,
+          "labels": {
+            "totalLabel": "合计",
+            "legendLabel": "图例",
+            "billingLegend": "计费",
+            "cappedLegend": "封顶中",
+            "settledTitle": "结账成功",
+            "balanceAfterLabel": "结账后余额",
+            "headings": {
+              "current": "现在",
+              "end": "结束计费",
+              "start": "开始计费",
+              "switch": "切换计费规则",
+              "over": "封顶结束"
+            },
+            "capFullSuffix": "已满",
+            "capUntilLabel": "封顶到",
+            "newDayLabel": "新的一天",
+            "hourUnit": "小时",
+            "minuteUnit": "分钟",
+            "billingUnitLabel": "个计费单位",
+            "estimateError": "账单预估失败，请刷新后重试",
+            "retryLabel": "重试"
+          }
+        }
+      ]
+    },
+    "shopEmpty": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "未入场",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": true,
+      "accountMenu": {
+        "tabs": [
+          {
+            "id": "redeem",
+            "label": "兑换"
+          },
+          {
+            "id": "history",
+            "label": "记录"
+          },
+          {
+            "id": "wallet",
+            "label": "钱包"
+          },
+          {
+            "id": "bindings",
+            "label": "身份"
+          }
+        ],
+        "logoutLabel": "退出登录"
+      },
+      "blocks": [
+        {
+          "kind": "text",
+          "id": "shop-empty",
+          "text": "请碰一下 NFC 或扫描机台上的二维码",
+          "style": "body",
+          "level": "muted"
+        }
+      ]
+    },
+    "billSheet": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "",
+      "publicId": "",
+      "billingActive": true,
+      "offerPasskeySetup": false,
+      "title": "账单",
+      "blocks": [
+        {
+          "kind": "bill",
+          "id": "bill",
+          "mode": "live",
+          "timeZone": "Asia/Tokyo",
+          "preview": {
+            "settlementPreview": {
+              "total": 12
+            },
+            "chargeItems": [
+              {
+                "id": "c1",
+                "label": "入场费",
+                "amount": 12
+              }
+            ],
+            "adjustments": []
+          },
+          "labels": {
+            "totalLabel": "合计",
+            "legendLabel": "图例",
+            "billingLegend": "计费",
+            "cappedLegend": "封顶中",
+            "settledTitle": "结账成功",
+            "balanceAfterLabel": "结账后余额",
+            "headings": {
+              "current": "现在",
+              "end": "结束计费",
+              "start": "开始计费",
+              "switch": "切换计费规则",
+              "over": "封顶结束"
+            },
+            "capFullSuffix": "已满",
+            "capUntilLabel": "封顶到",
+            "newDayLabel": "新的一天",
+            "hourUnit": "小时",
+            "minuteUnit": "分钟",
+            "billingUnitLabel": "个计费单位",
+            "estimateError": "账单预估失败，请刷新后重试",
+            "retryLabel": "重试"
+          }
+        }
+      ],
+      "footer": [
+        {
+          "kind": "button",
+          "id": "checkout",
+          "label": "结账",
+          "action": "checkout.confirm",
+          "style": "primary",
+          "needsLocation": true,
+          "enabled": true
+        }
+      ]
+    },
+    "redeemForm": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "title": "兑换",
+      "blocks": [
+        {
+          "kind": "input",
+          "id": "code",
+          "name": "code",
+          "placeholder": "兑换码",
+          "required": true
+        },
+        {
+          "kind": "button",
+          "id": "redeem-submit",
+          "label": "兑换",
+          "action": "redeem.submit",
+          "style": "primary",
+          "collect": [
+            "code"
+          ],
+          "enabled": true,
+          "needsLocation": false
+        }
+      ]
+    },
+    "redeemDone": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "title": "兑换",
+      "blocks": [
+        {
+          "kind": "banner",
+          "id": "redeem-done",
+          "body": "兑换成功",
+          "level": "success"
+        }
+      ]
+    },
+    "historyList": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "title": "记录",
+      "blocks": [
+        {
+          "kind": "list",
+          "id": "history-list",
+          "items": [
+            {
+              "id": "co-1",
+              "group": "10月2日",
+              "title": "11:00 – 12:00",
+              "titleMeta": "1小时",
+              "subtitle": "资产结算",
+              "trailing": "24.00",
+              "trailingStrikethrough": "30.00",
+              "open": {
+                "view": "history",
+                "item": "co-1"
+              }
+            },
+            {
+              "id": "co-2",
+              "group": "10月1日",
+              "title": "19:30 – 21:00",
+              "titleMeta": "1小时30分",
+              "subtitle": "现场收款 · 微信 · 2 项",
+              "trailing": "36.00",
+              "open": {
+                "view": "history",
+                "item": "co-2"
+              }
+            }
+          ],
+          "timeZone": "Asia/Tokyo",
+          "emptyText": "暂无结账记录",
+          "emptyIcon": "receipt",
+          "moreLabel": "加载更多",
+          "moreTarget": {
+            "view": "history",
+            "cursor": "20"
+          }
+        }
+      ]
+    },
+    "historyDetail": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "title": "账单详情",
+      "blocks": [
+        {
+          "kind": "bill",
+          "id": "history-detail",
+          "mode": "settled",
+          "timeZone": "Asia/Tokyo",
+          "preview": {
+            "timeline": {
+              "tracks": [
+                {
+                  "id": "fee",
+                  "name": "入场费",
+                  "lane": 0,
+                  "color": 0,
+                  "startedAt": "2026-10-02T02:00:00.000Z",
+                  "endedAt": "2026-10-02T03:00:00.000Z"
+                }
+              ],
+              "events": [],
+              "totals": [
+                {
+                  "name": "入场费",
+                  "amount": 24
+                }
+              ]
+            },
+            "settlementPreview": {
+              "total": 24
+            },
+            "chargeItems": [
+              {
+                "id": "c1",
+                "label": "入场费",
+                "amount": 24
+              }
+            ],
+            "adjustments": []
+          },
+          "settledAt": "2026-10-02T03:00:00.000Z",
+          "balanceAfter": 76,
+          "labels": {
+            "totalLabel": "合计",
+            "legendLabel": "图例",
+            "billingLegend": "计费",
+            "cappedLegend": "封顶中",
+            "settledTitle": "结账成功",
+            "balanceAfterLabel": "结账后余额",
+            "headings": {
+              "current": "现在",
+              "end": "结束计费",
+              "start": "开始计费",
+              "switch": "切换计费规则",
+              "over": "封顶结束"
+            },
+            "capFullSuffix": "已满",
+            "capUntilLabel": "封顶到",
+            "newDayLabel": "新的一天",
+            "hourUnit": "小时",
+            "minuteUnit": "分钟",
+            "billingUnitLabel": "个计费单位",
+            "estimateError": "账单预估失败，请刷新后重试",
+            "retryLabel": "重试"
+          }
+        }
+      ]
+    },
+    "wallet": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "title": "钱包",
+      "blocks": [
+        {
+          "kind": "kv",
+          "id": "wallet-holdings",
+          "items": [
+            {
+              "id": "h-paid",
+              "label": "储值余额",
+              "value": "76",
+              "icon": "wallet",
+              "badge": "充值余额",
+              "badgeTone": "success"
+            },
+            {
+              "id": "h-free",
+              "label": "赠送余额",
+              "value": "20",
+              "icon": "gift",
+              "badge": "赠送余额",
+              "badgeTone": "accent"
+            },
+            {
+              "id": "h-coupon",
+              "label": "免费畅玩券",
+              "value": "2",
+              "icon": "coupon",
+              "badge": "优惠券",
+              "badgeTone": "warning"
+            },
+            {
+              "id": "h-pass",
+              "label": "月度通行证",
+              "value": "1",
+              "icon": "pass",
+              "badge": "通行证",
+              "badgeTone": "purple"
+            },
+            {
+              "id": "h-ticket",
+              "label": "活动票券",
+              "value": "3",
+              "icon": "ticket",
+              "badge": "票券",
+              "badgeTone": "accent"
+            }
+          ]
+        }
+      ]
+    },
+    "bindings": {
+      "shop": "Store",
+      "shopCode": "store",
+      "heroUrl": "/api/v1/shops/store/hero?v=abc123",
+      "resource": "",
+      "publicId": "",
+      "billingActive": false,
+      "offerPasskeySetup": false,
+      "title": "身份",
+      "blocks": [
+        {
+          "kind": "kv",
+          "id": "bindings-list",
+          "items": [
+            {
+              "id": "onebot:123456",
+              "label": "onebot · Player",
+              "value": "123456"
+            }
+          ]
+        }
+      ]
+    }
+  },
   "code": {
     "title": "开门密码",
     "value": "12345678",
     "expiresAt": "2999-01-01T00:00:00Z",
     "expiresLabel": "有效期至",
     "hint": "在门锁上输入密码后按 #"
+  },
+  "celebration": {
+    "title": "结账成功",
+    "subtitle": "计费已结束，离店前无需再做其他操作。",
+    "effect": "checkout"
   }
 }

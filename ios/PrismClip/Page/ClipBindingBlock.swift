@@ -3,7 +3,7 @@ import SwiftUI
 extension PrismPageBinding {
   /// The shop link has no page from the platform, so it brings its own wording.
   static var shopLink: PrismPageBinding {
-    PrismPageBinding(id: "binding", title: String(localized: "绑定平台身份"), expiresLabel: String(localized: "有效期至"),
+    PrismPageBinding(id: "binding", title: String(localized: "绑定身份"), expiresLabel: String(localized: "有效期至"),
                      copyLabel: String(localized: "复制"), copiedLabel: String(localized: "已复制"), retryLabel: String(localized: "重试"))
   }
 }
@@ -41,7 +41,7 @@ struct ClipPlatformBinding: View {
             Task { await model.bindPlatformIdentity() }
           }.disabled(model.deviceBusy)
         } else if model.binding == nil { ProgressView() }
-      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(prismCardFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+      }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(prismCardFill, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
   }
 }
