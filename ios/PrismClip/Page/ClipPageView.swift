@@ -52,7 +52,16 @@ struct ClipPage: View {
   var body: some View {
     let context = context
     VStack(alignment: .leading, spacing: 28) {
-      ClipPageBlockList(blocks: page.blocks, depth: 0, context: context)
+      if let notice = context.inlineNotice, notice.presentation == "page" {
+        ClipStatusMessage(titleText: Text(verbatim: notice.title ?? notice.body), message: notice.title == nil ? nil : notice.body, symbol: "exclamationmark.triangle")
+        ForEach(notice.actions, id: \.self) { action in
+          if action.kind == "refresh" {
+            Button { model.dropInlineError(sheet: sheetMode); context.refresh() } label: {
+              Text(verbatim: action.label).frame(maxWidth: .infinity).padding(.vertical, 12)
+            }.clipActionStyle()
+          }
+        }
+      } else { ClipPageBlockList(blocks: page.blocks, depth: 0, context: context) }
     }
     // Reconcile field defaults and prune removed field IDs when leaving a step.
     .onChange(of: page.fieldIds) { form.values = page.reconciledValues(from: form.values) }
@@ -88,8 +97,8 @@ struct ClipPageFooter: View {
   var body: some View {
     if let footer = page.footer, !footer.isEmpty {
       let context = makeClipPageContext(page: page, form: form, model: model, sheetMode: sheetMode, noticeAboveButton: true)
-      VStack(spacing: 12) {
-        ClipPageBlockList(blocks: footer, depth: 0, context: context)
+      if context.inlineNotice?.presentation != "page" {
+        VStack(spacing: 12) { ClipPageBlockList(blocks: footer, depth: 0, context: context) }
       }
     }
   }

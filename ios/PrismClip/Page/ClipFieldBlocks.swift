@@ -30,6 +30,7 @@ struct ClipInputBlock: View {
         }
         // The page can set the value too: its first read, or a field coming back.
         .onChange(of: current, initial: true) { if text != current { text = current } }
+      if context.inlineNoticeAnchor == input.id, let notice = context.inlineNotice { InlineNotice(notice: notice) }
       if let helper = input.helperText {
         Text(verbatim: helper).font(.caption).foregroundStyle(.secondary)
       }
@@ -159,11 +160,14 @@ struct ClipConsentBlock: View {
 
   var body: some View {
     let ticked = context.page.boolValue(for: id, in: context.values)
+    VStack(alignment: .leading, spacing: 8) {
     Button { context.setValue(id, .bool(!ticked)) } label: {
       HStack(alignment: .top, spacing: 12) {
         Image(systemName: ticked ? "checkmark.square.fill" : "square").foregroundStyle(ticked ? Color.blue : .secondary)
         Text(verbatim: text).font(.subheadline).foregroundStyle(.primary).multilineTextAlignment(.leading)
       }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
     }.buttonStyle(.plain).accessibilityValue(ticked ? "✓" : "—").disabled(context.busy)
+    if context.inlineNoticeAnchor == id, let notice = context.inlineNotice { InlineNotice(notice: notice) }
+    }
   }
 }

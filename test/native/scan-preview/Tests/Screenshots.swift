@@ -87,6 +87,11 @@ final class ScanScreenshots: XCTestCase {
         case "card": target = app.buttons.containing(.staticText, identifier: "测试 Aime").firstMatch
         case "coin": target = app.buttons["投币"]
         case "capture": target = app.buttons["添加卡片"].firstMatch
+        case "consent":
+          let consent = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "确认开始计费")).firstMatch
+          XCTAssertTrue(consent.waitForExistence(timeout: 20), code)
+          consent.tap()
+          target = app.buttons["入场并获取开门密码"]
         case "redeem":
           let input = app.textFields["兑换码"]
           XCTAssertTrue(input.waitForExistence(timeout: 20), code)
@@ -115,10 +120,21 @@ final class ScanScreenshots: XCTestCase {
         } else {
           XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", item["body"] as! String)).firstMatch.waitForExistence(timeout: 10), code)
           XCTAssertEqual(app.alerts.firstMatch.exists, item["display"] as? String == "dialog", code)
+          if code == "INVALID_REDEEM_CODE" {
+            let note = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", item["body"] as! String)).firstMatch
+            XCTAssertGreaterThanOrEqual(note.frame.minY, app.textFields["兑换码"].frame.maxY)
+            XCTAssertLessThan(note.frame.maxY, app.buttons["兑换"].frame.minY)
+          }
+          if code == "DEVICE_UNAVAILABLE" { XCTAssertFalse(app.buttons["获取开门密码"].exists) }
+          if code == "DEVICE_RESULT_UNKNOWN" { XCTAssertTrue(app.alerts.buttons["刷新状态"].exists) }
+          if code == "LOCATION_REQUIRED" { XCTAssertTrue(app.alerts.buttons["前往设置"].exists) }
         }
       }
       if item["presentation"] as? String == "page", let body = item["body"] as? String, !body.isEmpty {
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", body)).firstMatch.waitForExistence(timeout: 10), code)
+      }
+      if code.hasPrefix("PRICING_") {
+        XCTAssertTrue(app.staticTexts[item["body"] as! String].exists, code)
       }
       if code == "PLATFORM_BINDING_REQUIRED" {
         XCTAssertTrue(app.staticTexts["bind ABC12345"].waitForExistence(timeout: 10))

@@ -191,6 +191,7 @@ struct PrismNotice: Codable, Equatable {
   let level: String
   let display: String
   var presentation: String? = nil
+  var fieldId: String? = nil
   var durationMs: Int? = nil
   var controlDurationMs: Int? = nil
   let flow: String

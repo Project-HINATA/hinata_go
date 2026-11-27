@@ -154,6 +154,7 @@ struct ClipToast: View {
       Label(notice.body, systemImage: noticeSymbol(notice.level))
         .font(.subheadline.weight(.medium))
         .foregroundStyle(.primary)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))

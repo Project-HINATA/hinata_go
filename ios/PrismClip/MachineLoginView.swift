@@ -671,8 +671,12 @@ private struct NoticeAlert: ViewModifier {
         presenting: model.dialogNotice
       ) { notice in
         ForEach(buttons(notice), id: \.self) { action in
-          Button(action.label, role: action.kind == "retry" ? nil : .cancel) {
-            model.dismissNotice(retrying: action.kind == "retry")
+          Button(action.label, role: action.kind == "dismiss" ? .cancel : nil) {
+            if action.kind == "refresh" { model.refreshNoticeState() }
+            else if action.kind == "settings" {
+              model.dismissNotice(retrying: false)
+              if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+            } else { model.dismissNotice(retrying: action.kind == "retry") }
           }
         }
       } message: { notice in

@@ -862,7 +862,7 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     adding = Task { await model.startCardCapture() }
     await waitUntil { model.cardCapture == .waiting }
     await model.setSceneActive(false)
-    precondition(model.cardCapture == .done(level: "error", message: "离开页面后已取消添加，请重新添加"))
+    precondition(model.cardCapture == .done(level: "info", message: "离开页面后已取消添加，请重新添加"))
     await adding.value
     await waitUntil { captureCancels == 2 }
     precondition(captureCancels == 2)

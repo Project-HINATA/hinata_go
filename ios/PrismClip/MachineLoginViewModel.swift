@@ -615,7 +615,10 @@ final class MachineLoginViewModel: ObservableObject {
   private func applyNoticeFlow(_ flow: String, notice: PrismNotice? = nil) {
     switch flow {
     case "expired": expire(notice: notice)
-    case "refresh": Task { [weak self] in await self?.refreshVisit() }
+    case "refresh": Task { [weak self] in
+      guard let self else { return }
+      if sheetPage != nil { await reloadAccountSheet() } else { await refreshVisit() }
+    }
     case "signin":
       state = .unauthenticated; user = nil; userId = ""; cards = []; page = nil; closeLiveState()
       closeAccountSheet()
@@ -651,6 +654,11 @@ final class MachineLoginViewModel: ObservableObject {
     return inline("CLIENT", "error", friendlyMessage(error))
   }
 
+  func refreshNoticeState() {
+    dialogNotice = nil
+    Task { if sheetPage != nil { await reloadAccountSheet() } else { await refreshVisit() } }
+  }
+
   var canRetryNotice: Bool { dialogRetry != nil }
 
   func dismissNotice(retrying: Bool) {
@@ -679,7 +687,7 @@ final class MachineLoginViewModel: ObservableObject {
     let onControl = answersOnButton(anchor, in: page) && (notice.presentation == nil || notice.presentation == "control")
     if onControl { notice.presentation = "control" }
     inlineNotice = notice
-    inlineNoticeAnchor = anchor
+    inlineNoticeAnchor = notice.presentation == "field" ? notice.fieldId ?? anchor : anchor
     inlineNoticeTask?.cancel()
     guard let lasts = noticeDuration(notice, onControl: onControl) else { inlineNoticeTask = nil; return }
     inlineNoticeTask = Task { [weak self] in
@@ -716,7 +724,7 @@ final class MachineLoginViewModel: ObservableObject {
       if cardCapture == .waiting {
         let leftText = captureText?.leftPageText ?? ""
         dismissCardCapture()
-        cardCapture = .done(level: "error", message: leftText)
+        cardCapture = .done(level: "info", message: leftText)
       }
       polling?.cancel()
       polling = nil
@@ -1259,7 +1267,7 @@ final class MachineLoginViewModel: ObservableObject {
         : status == "taken" ? outcomes.taken
         : status == "unsupported" ? outcomes.unsupported
         : outcomes.expired
-      cardCapture = .done(level: added ? "success" : "error", message: message)
+      cardCapture = .done(level: added ? "success" : ["taken", "unsupported"].contains(status) ? "error" : "info", message: message)
       if added {
         cardsError = nil
         let response = try await api.cards()
@@ -1429,7 +1437,7 @@ final class MachineLoginViewModel: ObservableObject {
     let onControl = answersOnButton(anchor, in: sheetPage) && (notice.presentation == nil || notice.presentation == "control")
     if onControl { notice.presentation = "control" }
     sheetInlineNotice = notice
-    sheetInlineNoticeAnchor = anchor
+    sheetInlineNoticeAnchor = notice.presentation == "field" ? notice.fieldId ?? anchor : anchor
     sheetInlineNoticeTask?.cancel()
     guard let lasts = noticeDuration(notice, onControl: onControl) else { sheetInlineNoticeTask = nil; return }
     sheetInlineNoticeTask = Task { [weak self] in
