@@ -45,16 +45,11 @@ final class MachineLoginViewModel: ObservableObject {
   /// An attempt got no answer and another is under way.
   @Published private(set) var slowNetwork = false
   @Published private(set) var summary: PrismSummary?
-  @Published private(set) var assets: [PrismAssets.Holding] = []
-  @Published private(set) var history: [PrismHistory.Record] = []
-  @Published private(set) var historyNextOffset: Int?
   @Published private(set) var user: PrismUser?
   @Published private(set) var waitingButtonId: String? = nil
   @Published private(set) var cardsLoading = false
   @Published private(set) var cardsError: String? = nil
-  @Published private(set) var checkoutPreview: PrismCheckout?
   /// Whether the bill for this invocation has been read at least once.
-  @Published private(set) var billLoaded = false
   @Published private(set) var binding: PrismBinding?
   @Published private(set) var suggestPasskey = false
   @Published private(set) var addingPasskey = false
@@ -92,6 +87,11 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var sheetPressing: String?
   @Published private(set) var sheetWaitingButtonId: String?
   @Published private(set) var sheetLoadingMoreId: String?
+  @Published private(set) var sheetLoadMoreError: (blockId: String, message: String)?
+  /// Each level of the sheet keeps the page it showed, so going back shows it as it was left.
+  private var sheetKeptPages: [PrismPage?] = []
+  /// The row a level was left from, scrolled back into view on returning to it.
+  @Published private(set) var sheetReturnAnchor: String?
   @Published private(set) var sheetError: String?
   @Published private(set) var sheetInlineNotice: PrismNotice?
   @Published private(set) var sheetInlineNoticeAnchor = ""
@@ -110,8 +110,29 @@ final class MachineLoginViewModel: ObservableObject {
   private var socketFailures = 0
   private var socketConnectingAt = Date.distantPast
   private var pageReadAt = Date.distantPast
-  /// Operation ids of what got no answer, so pressing again cannot do it twice.
+  /// Operation ids of what got no answer, so pressing again cannot do it twice. Kept on disk
+  /// as well, so a retry after the App Clip is relaunched is still the same operation.
   private var unansweredActions: [String: String] = [:]
+
+  private func unansweredStorageKey(_ key: String) -> String {
+    "prism.page-op.\(api.baseURL.absoluteString).\(userId).\(key)"
+  }
+
+  /// The id still waiting for an answer for this action, or a new one.
+  private func takeOperationId(_ key: String) -> String {
+    let id = unansweredActions[key]
+      ?? UserDefaults.standard.string(forKey: unansweredStorageKey(key))
+      ?? UUID().uuidString
+    unansweredActions[key] = id
+    UserDefaults.standard.set(id, forKey: unansweredStorageKey(key))
+    return id
+  }
+
+  /// The action got its answer.
+  private func settleOperation(_ key: String) {
+    unansweredActions[key] = nil
+    UserDefaults.standard.removeObject(forKey: unansweredStorageKey(key))
+  }
   @Published private(set) var deviceBusy = false
   @Published private(set) var notice: String?
   /// The latest settled bill, retained until a new admission supersedes it.
@@ -247,8 +268,7 @@ final class MachineLoginViewModel: ObservableObject {
     if let publicId { PrismPageReport.shared.start(publicId: publicId) }
     await api.invalidateReads()
     guard version == invocationVersion else { return }
-    assets = []; history = []; historyNextOffset = nil
-    visit = nil; page = nil; pageCode = nil; pressing = nil; summary = nil; binding = nil; checkoutPreview = nil; billLoaded = false; notice = nil; settlement = nil; celebration = nil; pendingCelebrationPage = nil; pendingCelebrationFromShop = false; checkoutCelebrating = false; lastShopHero = nil; user = nil; waitingButtonId = nil
+    visit = nil; page = nil; pageCode = nil; pressing = nil; summary = nil; binding = nil; notice = nil; settlement = nil; celebration = nil; pendingCelebrationPage = nil; pendingCelebrationFromShop = false; checkoutCelebrating = false; lastShopHero = nil; user = nil; waitingButtonId = nil
     powerWaitTask?.cancel(); inlineNotice = nil; cardFeedbackTask?.cancel(); cardFeedback = nil
     cardsLoading = false; cardsError = nil
     captureRun += 1; cardCapture = nil
@@ -435,9 +455,9 @@ final class MachineLoginViewModel: ObservableObject {
       cardsLoading = false; cardsError = nil
       waitingButtonId = nil; powerWaitTask?.cancel()
       suggestPasskey = false; addingPasskey = false
-      user = nil; userId = ""; summary = nil; checkoutPreview = nil; billLoaded = false
+      user = nil; userId = ""; summary = nil
       playerStateLoaded = false; settlement = nil; celebration = nil; pendingCelebrationPage = nil; pendingCelebrationFromShop = false; checkoutCelebrating = false; binding = nil; pageCode = nil
-      assets = []; history = []; historyNextOffset = nil; page = nil; notice = nil
+      page = nil; notice = nil
       errorMessage = nil
       if isShopOnly, let shopCode {
         let signedOutPage: PrismPage? = try? await api.shopPage(shopCode: shopCode, view: "shop")
@@ -799,8 +819,8 @@ final class MachineLoginViewModel: ObservableObject {
         lastShopHero = (value.shop, value.heroUrl)
         guard let signedInUser = me.user, !value.asksToSignIn else {
           state = .unauthenticated
-          user = nil; userId = ""; cards = []; summary = nil; checkoutPreview = nil; billLoaded = false; playerStateLoaded = false
-          assets = []; history = []; historyNextOffset = nil; settlement = nil; celebration = nil
+          user = nil; userId = ""; cards = []; summary = nil; playerStateLoaded = false
+          settlement = nil; celebration = nil
           binding = nil; pageCode = nil; closeAccountSheet(); closeLiveState()
           if value.asksToSignIn {
             page = value
@@ -811,7 +831,7 @@ final class MachineLoginViewModel: ObservableObject {
           return
         }
         if !userId.isEmpty && signedInUser.id != userId {
-          assets = []; history = []; historyNextOffset = nil; settlement = nil; binding = nil; pageCode = nil; closeAccountSheet()
+          settlement = nil; binding = nil; pageCode = nil; closeAccountSheet()
         }
         user = signedInUser
         userId = signedInUser.id
@@ -885,8 +905,8 @@ final class MachineLoginViewModel: ObservableObject {
         shop = try await api.request(shopPath())
         guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
         if !userId.isEmpty {
-          cards = []; assets = []; history = []; historyNextOffset = nil; checkoutPreview = nil
-          billLoaded = false; binding = nil; pageCode = nil; settlement = nil; summary = nil; closeAccountSheet()
+          cards = []
+          binding = nil; pageCode = nil; settlement = nil; summary = nil; closeAccountSheet()
           user = me.user; userId = me.user?.id ?? ""
           if me.user != nil {
             let currentCards = try await api.cards()
@@ -898,17 +918,21 @@ final class MachineLoginViewModel: ObservableObject {
       visit = shop
       guard me.user != nil else {
         state = .unauthenticated
-        user = nil; userId = ""; cards = []; summary = nil; checkoutPreview = nil; billLoaded = false; playerStateLoaded = false; assets = []; history = []; historyNextOffset = nil; settlement = nil
+        user = nil; userId = ""; cards = []; summary = nil; playerStateLoaded = false; settlement = nil
         binding = nil; pageCode = nil; page = nil; closeLiveState(); closeAccountSheet()
         return
       }
       var currentSummary: PrismSummary? = fullRead ? nil : summary
       if fullRead && shop.shop.billingEnabled && shop.membership != nil {
-        currentSummary = try await api.request(shopPath("player/me"))
+        do {
+          currentSummary = try await api.request(shopPath("player/me"))
+        } catch let error as PrismAPIError where error.code == "PLATFORM_BINDING_REQUIRED" {
+          // Not bound yet: the page asks for binding, and the binding code below must still be fetched.
+          currentSummary = summary
+        }
       }
       guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
       playerStateLoaded = true
-      if userId != me.user!.id { assets = []; history = []; historyNextOffset = nil }
       userId = me.user!.id
       summary = currentSummary; user = me.user
       StoreVisitLiveActivityManager.shared.startPushToStartTracking(api: api)
@@ -945,8 +969,8 @@ final class MachineLoginViewModel: ObservableObject {
         if silent, error is URLError || (error as? PrismAPIError)?.isTransientReadFailure == true { return }
         if (error as? PrismAPIError)?.code == "AUTHENTICATION_REQUIRED" || (error as? PrismAPIError)?.notice?.flow == "signin" {
           state = .unauthenticated; user = nil; userId = ""; cards = []; page = nil; closeLiveState(); closeAccountSheet()
-          summary = nil; binding = nil; checkoutPreview = nil; settlement = nil; assets = []; history = []
-          playerStateLoaded = false; billLoaded = false; await api.invalidateReads()
+          summary = nil; binding = nil; settlement = nil
+          playerStateLoaded = false; await api.invalidateReads()
         }
         refreshError = friendlyMessage(error)
         errorMessage = refreshError
@@ -1044,9 +1068,8 @@ final class MachineLoginViewModel: ObservableObject {
   /// Does what the page offered: the same operation id each try, so it happens once however often
   /// the answer is lost, and the page it answers with is shown. A refusal is an answer, with `ok` false.
   private func pageAction(_ action: String, payload: [String: Any], location position: LocationSample?, ticket: String) async throws -> PrismActionAnswer {
-    let key = action + ":" + payload.keys.sorted().map { "\($0)=\(payload[$0] ?? "")" }.joined(separator: "&")
-    let operationId = unansweredActions[key] ?? UUID().uuidString
-    unansweredActions[key] = operationId
+    let key = "ticket:\(ticket):" + action + ":" + payload.keys.sorted().map { "\($0)=\(payload[$0] ?? "")" }.joined(separator: "&")
+    let operationId = takeOperationId(key)
     var body: [String: Any] = ["ticket": ticket, "operationId": operationId, "action": action, "payload": payload]
     if let position { body["location"] = ["lat": position.latitude, "lng": position.longitude, "accuracy": position.accuracy] }
     let version = invocationVersion
@@ -1057,17 +1080,18 @@ final class MachineLoginViewModel: ObservableObject {
         let answer: PrismActionAnswer = try await api.request("/api/v1/devices/session/action", body: body)
         guard version == invocationVersion else { throw CancellationError() }
         if !answer.notices.contains(where: { $0.code == "OPERATION_PENDING" }) {
-          unansweredActions[key] = nil
+          settleOperation(key)
           pageReadAt = Date()
           // The bill and the Live Activity follow what this changed.
           if let page, answer.page.movedBilling(from: page) { refreshPending = true; syncLiveActivity() }
-          show(answer.page)
+          if !(answer.ok && answer.celebration != nil) { show(answer.page) }
           return answer
         }
       } catch let error as URLError where error.code != .cancelled {
         guard attempt < 5 else { throw PrismAPIError.api(code: "DEVICE_RESULT_UNKNOWN", message: "网络异常，请重试") }
       } catch {
-        if error is PrismAPIError { unansweredActions[key] = nil }
+        // Answered only when the server says it was not done: a 4xx other than "still running".
+        if let error = error as? PrismAPIError, let status = error.status, status < 500, error.code != "OPERATION_PENDING" { settleOperation(key) }
         if (error as? PrismAPIError)?.isSessionExpired == true { expire() }
         throw error
       }
@@ -1085,9 +1109,9 @@ final class MachineLoginViewModel: ObservableObject {
     location position: LocationSample?
   ) async throws -> PrismActionAnswer {
     guard let shopCode else { throw PrismAPIError.invalidURL }
-    let key = "shop:\(view):" + action + ":" + payload.keys.sorted().map { "\($0)=\(payload[$0] ?? "")" }.joined(separator: "&")
-    let operationId = unansweredActions[key] ?? UUID().uuidString
-    unansweredActions[key] = operationId
+    // The same action is one operation whichever view it was pressed on.
+    let key = "shop:\(shopCode):" + action + ":" + payload.keys.sorted().map { "\($0)=\(payload[$0] ?? "")" }.joined(separator: "&")
+    let operationId = takeOperationId(key)
     let loc = position.map { ["lat": $0.latitude, "lng": $0.longitude, "accuracy": $0.accuracy] }
     let version = invocationVersion
     defer { slowNetwork = false }
@@ -1104,14 +1128,15 @@ final class MachineLoginViewModel: ObservableObject {
         )
         guard version == invocationVersion else { throw CancellationError() }
         if !answer.notices.contains(where: { $0.code == "OPERATION_PENDING" }) {
-          unansweredActions[key] = nil
+          settleOperation(key)
           if view == "shop" { pageReadAt = Date() }
           return answer
         }
       } catch let error as URLError where error.code != .cancelled {
         guard attempt < 5 else { throw PrismAPIError.api(code: "DEVICE_RESULT_UNKNOWN", message: "网络异常，请重试") }
       } catch {
-        if error is PrismAPIError { unansweredActions[key] = nil }
+        // Answered only when the server says it was not done: a 4xx other than "still running".
+        if let error = error as? PrismAPIError, let status = error.status, status < 500, error.code != "OPERATION_PENDING" { settleOperation(key) }
         if (error as? PrismAPIError)?.isSessionExpired == true { expire() }
         throw error
       }
@@ -1239,7 +1264,6 @@ final class MachineLoginViewModel: ObservableObject {
         binding = value
       }
       await refreshVisit(silent: true)
-      if !sheetStack.isEmpty { await reloadAccountSheet() }
     }
   }
 
@@ -1305,16 +1329,16 @@ final class MachineLoginViewModel: ObservableObject {
       if let code = answer.code { showCode(code) }
       showNotices(answer.notices, anchor: button.id)
       if answer.ok, let celebration = answer.celebration {
-        if let receipt = answer.receipt, let shopCode {
-          settlement = receipt
-          await StoreVisitLiveActivityManager.shared.finishCheckout(receipt: receipt, shopCode: shopCode, api: api)
-        } else if isShopOnly, page?.billingActive == true, !answer.page.billingActive {
-          syncLiveActivity()
-        }
+        if let receipt = answer.receipt { settlement = receipt }
         pendingCelebrationPage = answer.page
         pendingCelebrationFromShop = isShopOnly
         self.celebration = celebration
         checkoutCelebrating = true
+        if let receipt = answer.receipt, let shopCode {
+          await StoreVisitLiveActivityManager.shared.finishCheckout(receipt: receipt, shopCode: shopCode, api: api)
+        } else if isShopOnly, page?.billingActive == true, !answer.page.billingActive {
+          syncLiveActivity()
+        }
       } else if isShopOnly {
         let previous = page
         show(answer.page)
@@ -1327,7 +1351,7 @@ final class MachineLoginViewModel: ObservableObject {
           }
         }
       }
-      if let wait = button.wait, answer.ok, answer.page.hasButton(id: button.id) {
+      if let wait = button.wait, answer.ok, answer.celebration == nil, answer.page.hasButton(id: button.id) {
         waitForButton(id: button.id, wait: wait)
       }
     }
@@ -1368,6 +1392,9 @@ final class MachineLoginViewModel: ObservableObject {
 
   func openAccountSheet(view: String) async {
     sheetStack = [PrismPageTarget(view: view)]
+    sheetKeptPages = []
+    sheetReturnAnchor = nil
+    sheetLoadMoreError = nil
     sheetPage = nil
     sheetError = nil
     sheetInlineNotice = nil
@@ -1383,6 +1410,9 @@ final class MachineLoginViewModel: ObservableObject {
     sheetWaitTask?.cancel(); sheetWaitTask = nil
     sheetInlineNoticeTask?.cancel(); sheetInlineNoticeTask = nil
     sheetStack = []
+    sheetKeptPages = []
+    sheetReturnAnchor = nil
+    sheetLoadMoreError = nil
     sheetPage = nil
     sheetLoading = false
     sheetBusy = false
@@ -1400,6 +1430,9 @@ final class MachineLoginViewModel: ObservableObject {
 
   func openSheetTarget(_ target: PrismPageTarget) async {
     guard !sheetBusy else { return }
+    sheetKeptPages.append(sheetPage)
+    sheetReturnAnchor = nil
+    sheetLoadMoreError = nil
     sheetError = nil
     sheetPage = nil
     sheetInlineNotice = nil
@@ -1411,11 +1444,32 @@ final class MachineLoginViewModel: ObservableObject {
   func popSheetTarget() async {
     guard !sheetBusy, sheetStack.count > 1 else { return }
     sheetError = nil
-    sheetPage = nil
+    sheetLoadMoreError = nil
     sheetInlineNotice = nil
     sheetInlineNoticeAnchor = ""
-    sheetStack.removeLast()
+    let left = sheetStack.removeLast()
+    if let kept = sheetKeptPages.popLast() ?? nil {
+      // Shown as it was left: the pages loaded so far, and the row it was left from.
+      sheetVersion += 1
+      sheetLoading = false
+      sheetPage = kept
+      sheetReturnAnchor = left.item
+      return
+    }
+    sheetPage = nil
     await loadCurrentSheetPage()
+  }
+
+  private func syncBillSheetState(_ loaded: PrismPage) {
+    let mainBillingActive = page?.billingActive ?? (summary?.activeSession != nil)
+    guard loaded.billingActive != mainBillingActive else { return }
+    if !loaded.billingActive { summary = nil }
+    syncLiveActivity()
+    Task { [weak self] in
+      guard let self else { return }
+      await self.api.invalidateReads()
+      await self.refreshVisit(silent: true)
+    }
   }
 
   private func loadCurrentSheetPage() async {
@@ -1434,22 +1488,16 @@ final class MachineLoginViewModel: ObservableObject {
       let loaded = try await api.shopPage(shopCode: shopCode, view: current.view, item: current.item, cursor: current.cursor)
       guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
       sheetPage = loaded
-      if loaded.needsBinding, binding.flatMap({ prismParsedDate($0.expiresAt) }) ?? .distantPast <= Date() {
-        binding = nil
-        do {
-          let bound: PrismBinding = try await api.request(shopPath("platform-binding"), body: [:])
-          guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
-          binding = bound
-        } catch {
-          guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
-          errorMessage = friendlyMessage(error)
-        }
-      }
+      if current.view == "bill" { syncBillSheetState(loaded) }
     } catch {
       guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
       if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled { return }
       if let notice = (error as? PrismAPIError)?.notice {
         applyNoticeFlow(notice.flow)
+        if notice.flow == "refresh" {
+          closeAccountSheet()
+          return
+        }
         if state == .expired || state == .unauthenticated { return }
         sheetError = notice.body
       } else if (error as? PrismAPIError)?.isSessionExpired == true {
@@ -1468,7 +1516,7 @@ final class MachineLoginViewModel: ObservableObject {
     let sVersion = sheetVersion
     let iVersion = invocationVersion
     sheetLoadingMoreId = blockId
-    sheetError = nil
+    sheetLoadMoreError = nil
     defer {
       if sheetVersion == sVersion && invocationVersion == iVersion {
         sheetLoadingMoreId = nil
@@ -1481,7 +1529,7 @@ final class MachineLoginViewModel: ObservableObject {
     } catch {
       guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
       if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled { return }
-      sheetError = friendlyMessage(error)
+      sheetLoadMoreError = (blockId, friendlyMessage(error))
     }
   }
 
@@ -1509,7 +1557,8 @@ final class MachineLoginViewModel: ObservableObject {
       guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
       let answer = try await shopPageAction(view: current.view, action: button.action, payload: payload, location: position)
       guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
-      sheetPage = answer.page
+      let celebrating = answer.ok && answer.celebration != nil
+      if !celebrating { sheetPage = answer.page }
       if let waiting = sheetWaitingButtonId, !answer.page.hasButton(id: waiting) {
         sheetWaitingButtonId = nil
         sheetWaitTask?.cancel()
@@ -1521,32 +1570,33 @@ final class MachineLoginViewModel: ObservableObject {
         else if notice.display == "dialog" { sheetError = notice.body }
       }
       if answer.ok, let celebration = answer.celebration {
-        if let receipt = answer.receipt {
-          settlement = receipt
-          await StoreVisitLiveActivityManager.shared.finishCheckout(receipt: receipt, shopCode: shopCode, api: api)
-        } else if page?.billingActive == true && !answer.page.billingActive {
-          syncLiveActivity()
-        }
+        if let receipt = answer.receipt { settlement = receipt }
         pendingCelebrationPage = nil
         pendingCelebrationFromShop = false
         self.celebration = celebration
         checkoutCelebrating = true
+        if let receipt = answer.receipt {
+          await StoreVisitLiveActivityManager.shared.finishCheckout(receipt: receipt, shopCode: shopCode, api: api)
+        } else if page?.billingActive == true && !answer.page.billingActive {
+          syncLiveActivity()
+        }
       } else if answer.ok && current.view == "redeem" {
         Task { [weak self] in await self?.refreshVisit(silent: true) }
-      } else if current.view == "bill" && answer.ok && !answer.page.billingActive {
-        syncLiveActivity()
+      } else if current.view == "bill" && answer.ok {
+        syncBillSheetState(answer.page)
       }
-      if answer.page.needsBinding, binding.flatMap({ prismParsedDate($0.expiresAt) }) ?? .distantPast <= Date() {
-        if let bound: PrismBinding = try? await api.request(shopPath("platform-binding"), body: [:]) {
-          binding = bound
+      if !celebrating {
+        if let wait = button.wait, answer.ok, answer.page.hasButton(id: button.id) {
+          waitForSheetButton(id: button.id, wait: wait)
         }
-      }
-      if let wait = button.wait, answer.ok, answer.page.hasButton(id: button.id) {
-        waitForSheetButton(id: button.id, wait: wait)
       }
     } catch {
       guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
       if let notice = present(error) {
+        if notice.flow == "refresh" {
+          closeAccountSheet()
+          return
+        }
         if notice.display == "inline" { showSheetInline(notice, anchor: button.id) }
         else if notice.display == "dialog" {
           dialogNotice = nil
@@ -1608,93 +1658,8 @@ final class MachineLoginViewModel: ObservableObject {
       await refreshVisit(silent: true)
     }
   }
-  func loadAccountSection(_ section: Int) async throws {
-    guard !deviceBusy else { return }
-    let api = self.api
-    let version = invocationVersion
-    visitRevision += 1
-    polling?.cancel()
-    deviceBusy = true
-    errorMessage = nil
-    defer {
-      if version == invocationVersion {
-        deviceBusy = false
-        if refreshPending && sceneActive {
-          refreshPending = false
-          Task { [weak self] in await self?.refreshVisit(silent: true) }
-        } else { scheduleRefresh() }
-      }
-    }
-    if section == 0 {
-      // The preview is replaced once the read returns, never cleared up front: an empty value
-      // is what the page shows as "暂无待结账单", so clearing it first made the bill blank out
-      // and then reappear whenever this ran twice in a row.
-      let current: PrismSummary = try await api.request(shopPath("player/me"))
-      let preview: PrismCheckout? = current.activeSession == nil ? nil : try await api.checkoutPreview(shopPath: shopPath())
-      guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }
-      summary = current; checkoutPreview = preview
-      billLoaded = true
-    } else if section == 2 {
-      let records: PrismHistory = try await api.request(shopPath("player/checkouts/history"))
-      guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }
-      history = records.records; historyNextOffset = records.nextOffset
-    } else if section == 3 {
-      let holdings: PrismAssets = try await api.request(shopPath("player/assets"))
-      guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }
-      assets = holdings.holdings
-    }
-  }
-
-  func previewCheckout() async {
-    let api = self.api
-    await perform("checkout") {
-      let version = invocationVersion
-      let value = try await api.checkoutPreview(shopPath: shopPath())
-      guard version == invocationVersion else { return }
-      checkoutPreview = value
-    }
-  }
-  func loadMoreHistory() async {
-    guard let offset = historyNextOffset else { return }
-    let version = invocationVersion
-    await perform("history") {
-      let records: PrismHistory = try await api.request(shopPath("player/checkouts/history?offset=\(offset)"))
-      guard version == invocationVersion, !Task.isCancelled else { return }
-      let existing = Set(history.map(\.id))
-      history.append(contentsOf: records.records.filter { !existing.contains($0.id) })
-      historyNextOffset = records.nextOffset
-    }
-  }
-  func loadCheckoutReceipt(_ id: String) async throws -> PrismCheckoutResult {
-    let version = invocationVersion
-    let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/?#%"))) ?? ""
-    let result: PrismLatestCheckout = try await api.request(shopPath("player/checkouts/\(encoded)"))
-    guard version == invocationVersion, !Task.isCancelled else { throw CancellationError() }
-    guard let receipt = result.receipt else { throw PrismAPIError.invalidResponse }
-    return receipt
-  }
-  func checkout() async {
-    guard !checkoutCelebrating else { return }
-    let version = invocationVersion
-    await perform("checkout") {
-      let data = try await operation("checkout", path: shopPath("player/checkout/confirm"), body: [:], requiresLocation: (visit?.shop.locationEnabled ?? visit?.shop.checkoutGeo) == true)
-      // Keep the receipt before refreshing: the active session disappears on refresh, which
-      // is exactly what used to drop the player straight back to the admission view.
-      guard version == invocationVersion else { return }
-      let receipt = try JSONDecoder().decode(PrismCheckoutResult.self, from: data)
-      settlement = receipt
-      if let shopCode {
-        await StoreVisitLiveActivityManager.shared.finishCheckout(receipt: receipt, shopCode: shopCode, api: api)
-      }
-      guard version == invocationVersion else { return }
-      checkoutPreview = nil; notice = String(localized: "结账成功，计费已结束")
-      summary = nil
-      checkoutCelebrating = true
-    }
-  }
-  /// Called after the shared success animation and sheet dismissal.
-  func finishCheckout() async {
-    guard checkoutCelebrating, let shopCode else { return }
+  private func transitionAfterCheckout() -> Bool {
+    guard checkoutCelebrating, let shopCode else { return false }
     checkoutCelebrating = false
     celebration = nil
     let settledPage = pendingCelebrationFromShop ? pendingCelebrationPage : nil
@@ -1705,15 +1670,35 @@ final class MachineLoginViewModel: ObservableObject {
       show(settledPage)
       playerStateLoaded = true
       scheduleRefresh()
-      return
+      return false
+    }
+    if let name = page?.shop ?? machine?.shop.name ?? visit?.shop.name {
+      lastShopHero = (name, page?.heroUrl ?? machine?.shop.heroUrl ?? visit?.shop.heroUrl)
     }
     invocationVersion += 1
     closeLiveState()
     polling?.cancel()
     currentInvocation = api.baseURL.appendingPathComponent("t").appendingPathComponent(shopCode)
-    isShopOnly = true; machine = nil; ticket = nil; publicId = nil; page = nil; pageCode = nil; cards = []
+    isShopOnly = true; machine = nil; ticket = nil; publicId = nil; page = nil; pageCode = nil; cards = []; summary = nil
+    playerStateLoaded = false
     state = .ready
-    await refreshVisit()
+    return true
+  }
+
+  /// Completes checkout after the celebration view without coupling the shop refresh to the
+  /// caller's task (SwiftUI's `.task(id: checkoutCelebrating)` cancels as soon as
+  /// `checkoutCelebrating` flips back to `false`).
+  @discardableResult
+  func finishCheckoutInBackground() -> Task<Void, Never> {
+    guard transitionAfterCheckout() else { return Task {} }
+    return Task { [weak self] in await self?.refreshVisit() }
+  }
+
+  /// Called after the shared success animation and sheet dismissal.
+  func finishCheckout() async {
+    if transitionAfterCheckout() {
+      await refreshVisit()
+    }
   }
   /// Whether the code was accepted; a rejection is shown under the code field.
   func redeem(_ code: String) async -> Bool {

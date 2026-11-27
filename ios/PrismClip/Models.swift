@@ -339,17 +339,6 @@ struct PrismSummary: Decodable {
   struct Session: Decodable { let id: String; let startedAt: String }
   struct Wallet: Decodable { let assetCode: String; let quantity: Double }
 }
-struct PrismAssets: Decodable {
-  let holdings: [Holding]
-  struct Holding: Decodable, Identifiable { let id: String; let assetCode: String; let assetName: String?; let quantity: Double }
-}
-struct PrismHistory: Decodable {
-  let records: [Record]
-  let nextOffset: Int?
-  struct Record: Decodable, Identifiable {
-    let id: String; let settledAt: String; let startedAt: String?; let endedAt: String?; let total: Double; let sessionCount: Int
-  }
-}
 struct PrismCheckout: Decodable {
   let timeline: PrismBillTimeline?
   let settlementPreview: Settlement
@@ -390,7 +379,6 @@ struct PrismCheckoutResult: Decodable {
       adjustments: adjustments.map { .init(id: $0.id, label: $0.label, amount: $0.amount) })
   }
 }
-struct PrismLatestCheckout: Decodable { let receipt: PrismCheckoutResult? }
 struct PrismDevices: Decodable {
   let devices: [Device]
   struct Device: Decodable, Identifiable {

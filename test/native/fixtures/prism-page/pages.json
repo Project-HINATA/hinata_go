@@ -58,7 +58,7 @@
       "resource": "Device",
       "publicId": "device",
       "billingActive": false,
-      "offerPasskeySetup": true,
+      "offerPasskeySetup": false,
       "accountMenu": {
         "tabs": [],
         "logoutLabel": "退出登录"
@@ -79,7 +79,7 @@
       "resource": "Device",
       "publicId": "device",
       "billingActive": false,
-      "offerPasskeySetup": true,
+      "offerPasskeySetup": false,
       "accountMenu": {
         "tabs": [],
         "logoutLabel": "退出登录"
@@ -1092,24 +1092,7 @@
       "billingActive": false,
       "offerPasskeySetup": false,
       "accountMenu": {
-        "tabs": [
-          {
-            "id": "redeem",
-            "label": "兑换"
-          },
-          {
-            "id": "history",
-            "label": "记录"
-          },
-          {
-            "id": "wallet",
-            "label": "钱包"
-          },
-          {
-            "id": "bindings",
-            "label": "身份"
-          }
-        ],
+        "tabs": [],
         "logoutLabel": "退出登录"
       },
       "blocks": [

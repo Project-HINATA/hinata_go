@@ -25,6 +25,10 @@ struct ClipPageContext {
   let openTarget: ((PrismPageTarget) -> Void)?
   let loadMore: ((String, PrismPageTarget) -> Void)?
   let loadingMoreId: String?
+  /// Loading more of a list failed: shown at that list's button, where the player is looking.
+  let loadMoreError: (blockId: String, message: String)?
+  /// Reads the page again.
+  let refresh: () -> Void
   /// While set, the page is that block alone and every other one stays off it.
   let soleBlockId: String?
 
@@ -125,6 +129,10 @@ private func makeClipPageContext(
     openTarget: sheetMode ? { target in Task { await model.openSheetTarget(target) } } : nil,
     loadMore: sheetMode ? { id, target in Task { await model.loadMoreSheetList(blockId: id, target: target) } } : nil,
     loadingMoreId: sheetMode ? model.sheetLoadingMoreId : nil,
+    loadMoreError: sheetMode ? model.sheetLoadMoreError : nil,
+    refresh: sheetMode
+      ? { _ = Task { await model.reloadAccountSheet() } }
+      : { _ = Task { await model.refreshVisit(silent: true) } },
     soleBlockId: (!sheetMode && model.cardsLoadFailed) ? page.cards?.id : nil
   )
 }
@@ -178,7 +186,7 @@ struct ClipPageBlockView: View {
         AnchoredNotice([climate.id])
       }
     case .table(let table): ClipTableBlock(table: table)
-    case .bill(let bill): ClipBillBlock(block: bill)
+    case .bill(let bill): ClipBillBlock(block: bill, refresh: context.refresh)
     case .list(let list): ClipListBlock(list: list, context: context)
     case .cards(let cards): ClipCardsBlock(block: cards)
     // A kind this build does not know yet.

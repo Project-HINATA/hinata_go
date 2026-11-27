@@ -59,7 +59,7 @@ struct ClipListBlock: View {
               VStack(spacing: 0) {
                 ForEach(Array(group.items.enumerated()), id: \.element.id) { index, item in
                   if index > 0 { Divider() }
-                  row(for: item, grouped: true)
+                  row(for: item, grouped: true).id(item.id)
                 }
               }
               .background(prismCardFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -69,7 +69,7 @@ struct ClipListBlock: View {
         }
       } else {
         ForEach(list.items) { item in
-          row(for: item, grouped: false)
+          row(for: item, grouped: false).id(item.id)
         }
       }
       if let moreTarget = list.moreTarget, let moreLabel = list.moreLabel {
@@ -87,6 +87,12 @@ struct ClipListBlock: View {
         .clipActionStyle()
         .disabled(loadingMore || context.busy)
         .padding(.top, 20)
+      }
+      if let failure = context.loadMoreError, failure.blockId == list.id {
+        Text(verbatim: failure.message)
+          .font(.subheadline)
+          .foregroundStyle(.red)
+          .frame(maxWidth: .infinity, alignment: .leading)
       }
     }
   }

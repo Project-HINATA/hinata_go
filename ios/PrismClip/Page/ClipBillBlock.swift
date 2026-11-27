@@ -5,8 +5,10 @@ import SwiftUI
 /// `settled` mode it draws the settled status, total, post-checkout balance, and timeline.
 struct ClipBillBlock: View {
   let block: PrismPageBill
-  @State private var computed: PrismCheckout? = nil
-  @State private var failed = false
+  /// Reads the page again, for fresh billing inputs when estimating failed.
+  var refresh: () -> Void = {}
+  /// The estimate and the inputs it was made from: one made from older inputs is never shown.
+  @State private var computed: (key: String, preview: PrismCheckout?, failed: Bool)? = nil
   @State private var attempt = 0
 
   private var displayZone: TimeZone {
@@ -20,13 +22,19 @@ struct ClipBillBlock: View {
     return "\(block.id):\(block.mode):\(block.timeZone ?? ""):\(block.billingInputs?.playerId ?? ""):\(snapshotStamp):\(playerCount):\(previewTotal):\(block.settledAt ?? ""):\(attempt)"
   }
 
+  private var current: (preview: PrismCheckout?, failed: Bool)? {
+    if block.billingInputs == nil { return (block.preview, false) }
+    guard let computed, computed.key == taskKey else { return nil }
+    return (computed.preview, computed.failed)
+  }
+
   var body: some View {
     Group {
       if block.mode == "settled" {
         settledView
-      } else if failed {
+      } else if current?.failed == true {
         errorView
-      } else if let preview = computed ?? (block.billingInputs == nil ? block.preview : nil) {
+      } else if let preview = current?.preview {
         liveView(preview)
       } else {
         ProgressView().frame(maxWidth: .infinity)
@@ -86,6 +94,7 @@ struct ClipBillBlock: View {
         .foregroundStyle(.red)
       Button {
         attempt += 1
+        refresh()
       } label: {
         Text(verbatim: block.labels.retryLabel)
           .frame(maxWidth: .infinity)
@@ -121,44 +130,22 @@ struct ClipBillBlock: View {
   }
 
   private func resolvePreview() async {
-    guard block.mode != "settled" else {
-      computed = block.preview
-      failed = false
-      return
-    }
-    guard let inputs = block.billingInputs else {
-      computed = block.preview
-      failed = false
-      return
-    }
+    let key = taskKey
+    guard block.mode != "settled", let inputs = block.billingInputs else { return }
     guard let snapshot = inputs.billingSnapshot else {
-      if let fallback = block.preview {
-        computed = fallback
-        failed = false
-      } else {
-        computed = nil
-        failed = true
-      }
+      computed = (key, block.preview, block.preview == nil)
       return
     }
-    failed = false
     do {
       let playerId = inputs.playerId
       let result = try await Task.detached(priority: .userInitiated) {
         PrismCheckout(try PrismCheckoutEngine.preview(snapshot: snapshot, playerId: playerId).view())
       }.value
       guard !Task.isCancelled else { return }
-      computed = result
-      failed = false
+      computed = (key, result, false)
     } catch {
       guard !Task.isCancelled else { return }
-      if let fallback = block.preview {
-        computed = fallback
-        failed = false
-      } else {
-        computed = nil
-        failed = true
-      }
+      computed = (key, block.preview, block.preview == nil)
     }
   }
 }

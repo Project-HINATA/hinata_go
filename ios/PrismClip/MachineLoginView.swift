@@ -30,18 +30,21 @@ struct MachineLoginView: View {
       }
     }
     // A problem raised inside the sheet was shown there; it must not pop up once the sheet is gone.
-    .sheet(isPresented: Binding(get: { activeTab != nil }, set: { if !$0 { activeTab = nil; model.closeAccountSheet(); model.dismissNotice(retrying: false) } })) {
-      if let activeTab {
-        if #available(iOS 16.0, *) { ClipAccountSheet(tab: activeTab).environmentObject(model).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) }
-        else { ClipAccountSheet(tab: activeTab).environmentObject(model) }
+    .sheet(item: $activeTab, onDismiss: {
+      if activeTab == nil {
+        model.closeAccountSheet()
+        model.dismissNotice(retrying: false)
       }
+    }) { tab in
+      if #available(iOS 16.0, *) { ClipAccountSheet(tab: tab).environmentObject(model).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) }
+      else { ClipAccountSheet(tab: tab).environmentObject(model) }
     }
     .overlay { if model.checkoutCelebrating && activeTab == nil { ClipCheckoutSuccess(celebration: model.celebration) } }
     .task(id: model.checkoutCelebrating) {
       guard model.checkoutCelebrating else { return }
       do { try await Task.sleep(nanoseconds: 1_700_000_000) } catch { return }
       activeTab = nil
-      await model.finishCheckout()
+      model.finishCheckoutInBackground()
     }
     .alert("PRiSM", isPresented: $showingError) {
       Button("知道了") { model.clearError() }
@@ -161,7 +164,7 @@ struct MachineLoginView: View {
 
   private func accountMenu(_ user: PrismUser) -> some View {
     let menu = model.page?.accountMenu
-    let badge = menu?.billingBadge ?? (model.summary?.activeSession != nil ? String(localized: "计费中") : nil)
+    let badge = menu != nil ? menu?.billingBadge : (model.summary?.activeSession != nil ? String(localized: "计费中") : nil)
     let tabs: [PrismPageAccountTab] = menu?.tabs ?? (
       model.visit?.shop.billingEnabled == true
         ? (model.isShopOnly
@@ -475,6 +478,8 @@ private struct ClipAccountSheet: View {
   @Environment(\.dismiss) private var dismiss
   let tab: PrismPageAccountTab
   @StateObject private var sheetForm = ClipPageFormState()
+  /// Kept across the dismissal transition so the celebration stays solid while the sheet slides down.
+  @State private var frozenCelebration: PrismPageCelebration? = nil
 
   @ViewBuilder private var closeButton: some View {
     if #available(iOS 26.0, *) {
@@ -509,7 +514,25 @@ private struct ClipAccountSheet: View {
 
   private var content: some View {
     ClipAccountContent(tab: tab, form: sheetForm)
-      .overlay { if model.checkoutCelebrating { ClipCheckoutSuccess(celebration: model.celebration) } }
+      .overlay {
+        if model.checkoutCelebrating || frozenCelebration != nil {
+          ClipCheckoutSuccess(celebration: model.celebration ?? frozenCelebration)
+        }
+      }
+      .onChange(of: model.checkoutCelebrating, initial: true) {
+        if model.checkoutCelebrating {
+          frozenCelebration = model.celebration ?? PrismPageCelebration(
+            title: String(localized: "结账成功"),
+            subtitle: String(localized: "计费已结束，离店前无需再做其他操作。"),
+            effect: "checkout"
+          )
+        }
+      }
+      .onChange(of: model.sheetStack.isEmpty) { wasEmpty, isEmpty in
+        if !wasEmpty && isEmpty && !model.checkoutCelebrating && frozenCelebration == nil {
+          dismiss()
+        }
+      }
       .interactiveDismissDisabled(model.sheetBusy || model.deviceBusy || model.checkoutCelebrating)
       .navigationTitle(sheetTitle)
       .navigationBarTitleDisplayMode(.inline)
@@ -552,13 +575,14 @@ private struct ClipAccountContent: View {
 
   var body: some View {
     VStack(spacing: 0) {
+      ScrollViewReader { scroller in
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
           if !hasFooter, let error = model.sheetError {
             VStack(alignment: .leading, spacing: 8) {
               Text(verbatim: error).font(.subheadline).foregroundStyle(.red)
               if model.sheetPage == nil {
-                Button("重新加载") { Task { await model.reloadAccountSheet() } }
+                Button("重试") { Task { await model.reloadAccountSheet() } }
               }
             }
           }
@@ -576,14 +600,24 @@ private struct ClipAccountContent: View {
         .frame(maxWidth: 480)
         .frame(maxWidth: .infinity)
       }
+      // Back from a record: the list as it was left, scrolled to that record.
+      .onChange(of: model.sheetReturnAnchor) { _, anchor in
+        guard let anchor else { return }
+        DispatchQueue.main.async { scroller.scrollTo(anchor, anchor: .center) }
+      }
+      }
       .overlay(alignment: .bottom) {
         if hasFooter, let sheetPage = model.sheetPage {
           VStack(spacing: 12) {
             if let error = model.sheetError {
+              // On its own card, like the web's inline notice, so it never sits on the bill under it.
               Text(verbatim: error)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.red)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .task(id: error) {
                   do { try await Task.sleep(nanoseconds: 5_000_000_000) } catch { return }
                   model.clearSheetError()
