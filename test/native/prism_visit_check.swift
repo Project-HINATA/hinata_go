@@ -43,6 +43,11 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
 @main struct PrismVisitCheck {
   @MainActor static func main() async throws {
     refuseKeychainDialogs()
+    var timedNotice = try JSONDecoder().decode(PrismNotice.self, from: JSONSerialization.data(withJSONObject: PageFixtures.notice("COIN_SENT")))
+    timedNotice.durationMs = 731
+    timedNotice.controlDurationMs = 947
+    precondition(noticeDuration(timedNotice, onControl: false) == 731_000_000)
+    precondition(noticeDuration(timedNotice, onControl: true) == 947_000_000)
     let wholeSeconds = prismParsedDate("2026-09-12T00:00:00Z")!
     let milliseconds = prismParsedDate("2026-09-12T00:00:00.123Z")!
     precondition(abs(milliseconds.timeIntervalSince(wholeSeconds) - 0.123) < 0.00001)
@@ -690,6 +695,17 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     precondition(model.inlineNotice?.code == "COIN_SENT" && sent("coin").allSatisfy { $0["location"] == nil })
     await model.refreshVisit(); precondition(sessionStarts == 1)
 
+    model.dismissNotice(retrying: false)
+    pendingReplies = 5
+    let beforePending = operationIds("coin").count
+    await model.press(button("coin"))
+    precondition(model.inlineNotice?.code == "OPERATION_PENDING" && model.dialogNotice == nil)
+    precondition(Set(operationIds("coin").dropFirst(beforePending)).count == 1)
+    await model.press(button("coin"))
+    precondition(model.inlineNotice?.code == "COIN_SENT")
+    precondition(Set(operationIds("coin").dropFirst(beforePending)).count == 1)
+    let offline = model.present(URLError(.notConnectedToInternet))
+    precondition(offline == model.page?.clientNotices?["CLIENT_NETWORK_ERROR"])
     // A card swipe is the page's own action, and its outcome goes on the card's row.
     await model.start(shopCode: "store", publicId: "device")
     await model.login(card: model.cards[0])

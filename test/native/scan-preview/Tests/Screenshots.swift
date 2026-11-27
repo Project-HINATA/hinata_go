@@ -68,6 +68,66 @@ final class ScanScreenshots: XCTestCase {
     attach(app, name: "alert-balance")
   }
 
+  func testAllServerNotices() {
+    let url = Bundle(for: Self.self).url(forResource: "pages", withExtension: "json")!
+    let fixture = try! JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+    let selected = ProcessInfo.processInfo.environment["PRISM_NOTICE_CODES"].map { Set($0.split(separator: ",").map(String.init)) }
+    for item in fixture["screenshots"] as! [[String: Any]] {
+      if let selected, !selected.contains(item["code"] as! String) { continue }
+      let code = item["code"] as! String
+      let app = XCUIApplication()
+      app.launchArguments = ["audit-code=\(code)", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      app.launch()
+      let action = item["action"] as! String
+      if action == "none" {
+        XCTAssertTrue(app.staticTexts["测试店铺"].waitForExistence(timeout: 20), code)
+      } else {
+        let target: XCUIElement
+        switch action {
+        case "card": target = app.buttons.containing(.staticText, identifier: "测试 Aime").firstMatch
+        case "coin": target = app.buttons["投币"]
+        case "capture": target = app.buttons["添加卡片"].firstMatch
+        case "redeem":
+          let input = app.textFields["兑换码"]
+          XCTAssertTrue(input.waitForExistence(timeout: 20), code)
+          input.tap()
+          input.typeText("BAD")
+          target = app.buttons["兑换"]
+        default: target = app.buttons["获取开门密码"]
+        }
+        XCTAssertTrue(target.waitForExistence(timeout: 20), code)
+        if action == "capture" {
+          expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: target)
+          waitForExpectations(timeout: 10)
+        }
+        target.tap()
+        if code == "CAPTURE_WAITING", !app.buttons["取消"].waitForExistence(timeout: 3) {
+          // The simulator can drop the first tap while the launch layout settles.
+          target.tap()
+        }
+        if code == "CAPTURE_LEFT_PAGE" {
+          XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "读卡器")).firstMatch.waitForExistence(timeout: 10))
+          XCUIDevice.shared.press(.home)
+          app.activate()
+        }
+        if code == "TICKET_EXPIRED" {
+          XCTAssertTrue(app.staticTexts["本次会话已失效"].waitForExistence(timeout: 10), code)
+        } else {
+          XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", item["body"] as! String)).firstMatch.waitForExistence(timeout: 10), code)
+          XCTAssertEqual(app.alerts.firstMatch.exists, item["display"] as? String == "dialog", code)
+        }
+      }
+      if item["presentation"] as? String == "page", let body = item["body"] as? String, !body.isEmpty {
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", body)).firstMatch.waitForExistence(timeout: 10), code)
+      }
+      if code == "PLATFORM_BINDING_REQUIRED" {
+        XCTAssertTrue(app.staticTexts["bind ABC12345"].waitForExistence(timeout: 10))
+      }
+      attach(app, name: "all-\(code)")
+      app.terminate()
+    }
+  }
+
   func testToastSwipeDismissal() {
     for direction in ["left", "right", "up", "down"] {
       let app = XCUIApplication()

@@ -36,6 +36,7 @@
 		A90D9254B67825798178B33E /* CheckoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77358AA83AB243CF85DB2D02 /* CheckoutEngine.swift */; };
 		AFCF0F87628D3722809FB095 /* MachineLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B589DB5E6A505BAFC1093594 /* MachineLoginView.swift */; };
 		B6A1F8B73B251F26CFBD880A /* PrismPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26F557D5F8B29C0C6593B343 /* PrismPage.swift */; };
+		C61D3B2B6589E7616BD38121 /* pages.json in Resources */ = {isa = PBXBuildFile; fileRef = BA3FB295A21E7C9E8EDE2D25 /* pages.json */; };
 		C91058D67D95B0AE45A44B2B /* ClipSignInButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E4AD9273D1DCD5A6ECADA7 /* ClipSignInButtons.swift */; };
 		CADE5008CD693017E019F23B /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F51E67DC024C99140CA02DD2 /* Localizable.xcstrings */; };
 		D09A45C5E5A546F285B16748 /* ClipBillBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F130D3D0BE17618942C5EA /* ClipBillBlock.swift */; };
@@ -245,6 +246,7 @@
 			buildConfigurationList = DFA0DFC96D4932267B94EE95 /* Build configuration list for PBXNativeTarget "ScanPreviewTests" */;
 			buildPhases = (
 				2A0B36D4C3D32198FF4DD0E3 /* Sources */,
+				5F03C56D860ECC6D99EFBBBB /* Resources */,
 			);
 			buildRules = (
 			);
@@ -293,6 +295,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		5F03C56D860ECC6D99EFBBBB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C61D3B2B6589E7616BD38121 /* pages.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FD2D20EEE42EA35E3000C9D4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;

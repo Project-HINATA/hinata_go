@@ -140,6 +140,7 @@ enum PageFixtures {
   }()
   private static var pages: [String: Any] { file["pages"] as! [String: Any] }
   private static var shopPages: [String: Any] { file["shopPages"] as! [String: Any] }
+  static var noticeScreenshots: [[String: Any]] { file["screenshots"] as! [[String: Any]] }
   static var names: [String] { pages.keys.sorted() }
   static var shopPageNames: [String] { shopPages.keys.sorted() }
   static func page(_ name: String) -> [String: Any] {
@@ -150,6 +151,7 @@ enum PageFixtures {
     guard let page = shopPages[name] as? [String: Any] else { preconditionFailure("No shopPage fixture named \(name)") }
     return page
   }
+  static var binding: [String: Any] { file["binding"] as! [String: Any] }
   static var code: [String: Any] { file["code"] as! [String: Any] }
   static func notice(_ code: String) -> [String: Any] {
     (file[Locale.preferredLanguages.first?.hasPrefix("en") == true ? "noticesEn" : "notices"] as! [String: Any])[code] as! [String: Any]

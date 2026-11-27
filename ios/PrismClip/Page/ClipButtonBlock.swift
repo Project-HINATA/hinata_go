@@ -19,10 +19,18 @@ struct ClipButtonBlock: View {
     "arrow-right": "arrow.right",
   ]
 
+  private var anchoredNotice: PrismNotice? {
+    context.inlineNoticeAnchor == button.id ? context.inlineNotice : nil
+  }
+
+  private var answersOnButton: Bool {
+    button.answerOnButton == true && (anchoredNotice?.presentation == nil || anchoredNotice?.presentation == "control")
+  }
+
   var body: some View {
     // Adding a card takes the place of what is done with one.
     if !(model.cardCapture != nil && button.hideDuringCapture == true) {
-      let inline = button.answerOnButton != true && context.inlineNoticeAnchor == button.id ? context.inlineNotice : nil
+      let inline = answersOnButton ? nil : anchoredNotice
       VStack(spacing: 12) {
         if button.againLabel != nil, let code = model.pageCode { doorCode(code) }
         if context.noticeAboveButton, let inline { InlineNotice(notice: inline) }
@@ -42,7 +50,7 @@ struct ClipButtonBlock: View {
   }
 
   private var control: some View {
-    let note = button.answerOnButton == true && button.enabled && context.inlineNoticeAnchor == button.id ? context.inlineNotice : nil
+    let note = answersOnButton && button.enabled ? anchoredNotice : nil
     let waiting = context.pressingId == button.id || context.waitingButtonId == button.id
     let off = context.busy || waiting || note != nil || !context.page.canSubmit(button, values: context.values)
     let isPrimary = button.style == "primary"

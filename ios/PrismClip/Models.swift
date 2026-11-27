@@ -191,6 +191,8 @@ struct PrismNotice: Codable, Equatable {
   let level: String
   let display: String
   var presentation: String? = nil
+  var durationMs: Int? = nil
+  var controlDurationMs: Int? = nil
   let flow: String
   var title: String? = nil
   let body: String
@@ -215,6 +217,8 @@ func noticeLasts(_ level: String, onControl: Bool = false) -> UInt64? {
 
 /// Controls briefly hold their result; field and status feedback lasts until replaced.
 func noticeDuration(_ notice: PrismNotice, onControl: Bool) -> UInt64? {
+  if onControl, let ms = notice.controlDurationMs { return UInt64(max(0, ms)) * 1_000_000 }
+  if !onControl, let ms = notice.durationMs { return UInt64(max(0, ms)) * 1_000_000 }
   if onControl { return noticeLasts(notice.level, onControl: true) }
   if notice.presentation == "status" || notice.presentation == "field" { return nil }
   return noticeLasts(notice.level, onControl: notice.presentation == "toast")
@@ -225,7 +229,7 @@ func noticeDuration(_ notice: PrismNotice, onControl: Bool) -> UInt64? {
 struct CardFeedback: Equatable {
   let cardId: String
   let parts: [Part]
-  struct Part: Equatable { let level: String; let text: String }
+  struct Part: Equatable { let level: String; let text: String; var durationMs: Int? = nil }
   /// The row reads as its worst part: an error, else news, else a success.
   var level: String {
     if parts.contains(where: { noticeIsError($0.level) }) { return "error" }

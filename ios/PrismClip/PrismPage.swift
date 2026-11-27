@@ -48,6 +48,7 @@ struct PrismPageButton: Decodable {
   struct Wait: Decodable {
     let ms: Int
     let timeoutMessage: String
+    var notice: PrismNotice? = nil
   }
 
   struct Confirm: Decodable {
@@ -572,6 +573,7 @@ struct PrismPage: Decodable {
   var title: String? = nil
   var backLabel: String? = nil
   var accountMenu: PrismPageAccountMenu? = nil
+  var clientNotices: [String: PrismNotice]? = nil
   var blocks: [PrismPageBlock]
   var footer: [PrismPageBlock]? = nil
 

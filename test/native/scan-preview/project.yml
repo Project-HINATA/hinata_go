@@ -38,7 +38,10 @@ targets:
   ScanPreviewTests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [Tests]
+    sources:
+      - Tests
+      - path: ../fixtures/prism-page/pages.json
+        buildPhase: resources
     dependencies:
       - target: ScanPreview
     settings:

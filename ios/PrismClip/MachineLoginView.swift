@@ -237,8 +237,13 @@ private struct ClipFailurePage: View {
 }
 
 private struct ClipExpiredPage: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
   var body: some View {
-    ClipStatusMessage(title: "本次会话已失效", message: String(localized: "请重新碰一下 NFC 或重新扫描二维码。"), symbol: "clock.badge.exclamationmark")
+    ClipStatusMessage(
+      titleText: model.expiredNotice?.title.map { Text(verbatim: $0) } ?? Text("本次会话已失效"),
+      message: model.expiredNotice?.body ?? String(localized: "请重新碰一下 NFC 或重新扫描二维码。"),
+      symbol: "clock.badge.exclamationmark"
+    )
       .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }

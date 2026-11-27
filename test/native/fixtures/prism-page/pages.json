@@ -6,6 +6,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": false,
       "blocks": [
@@ -37,6 +166,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": false,
       "accountMenu": {
@@ -60,6 +318,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": false,
       "accountMenu": {
@@ -84,6 +471,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": false,
       "accountMenu": {
@@ -108,6 +624,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -212,6 +857,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -236,6 +1010,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": true,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -284,6 +1187,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": true,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -377,6 +1409,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -426,6 +1587,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -506,6 +1796,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -532,6 +1951,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -554,6 +2102,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -588,6 +2265,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -626,6 +2432,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -728,6 +2663,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -830,6 +2894,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -872,6 +3065,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -894,7 +3216,19 @@
           "style": "primary",
           "wait": {
             "ms": 15000,
-            "timeoutMessage": "未检测到开机，请重试"
+            "timeoutMessage": "未检测到开机，请重试",
+            "notice": {
+              "code": "POWER_WAIT_TIMEOUT",
+              "level": "error",
+              "durationMs": 5000,
+              "controlDurationMs": 5000,
+              "display": "inline",
+              "presentation": "toast",
+              "flow": "none",
+              "title": null,
+              "body": "未检测到开机，请重试",
+              "actions": []
+            }
           },
           "needsLocation": false,
           "enabled": true
@@ -907,6 +3241,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": false,
       "accountMenu": {
@@ -930,6 +3393,135 @@
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
       "resource": "Device",
       "publicId": "device",
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "billingActive": false,
       "offerPasskeySetup": true,
       "accountMenu": {
@@ -1060,6 +3652,135 @@
   },
   "shopPages": {
     "shopSignIn": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1091,6 +3812,135 @@
       ]
     },
     "shopBinding": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1115,6 +3965,135 @@
       ]
     },
     "shopLive": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1195,6 +4174,135 @@
       ]
     },
     "shopLivePreview": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1281,6 +4389,135 @@
       ]
     },
     "shopSettled": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1376,6 +4613,135 @@
       ]
     },
     "shopEmpty": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1415,6 +4781,135 @@
       ]
     },
     "billSheet": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1480,6 +4975,135 @@
       ]
     },
     "redeemForm": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1511,6 +5135,135 @@
       ]
     },
     "redeemDone": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1529,6 +5282,135 @@
       ]
     },
     "historyList": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1580,6 +5462,135 @@
       ]
     },
     "historyDetail": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1655,6 +5666,135 @@
       ]
     },
     "wallet": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1713,6 +5853,135 @@
       ]
     },
     "bindings": {
+      "clientNotices": {
+        "TICKET_EXPIRED": {
+          "code": "TICKET_EXPIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "none",
+          "flow": "expired",
+          "title": "本次会话已失效",
+          "body": "请重新碰一下 NFC 或重新扫描二维码。",
+          "actions": []
+        },
+        "LOCATION_REQUIRED": {
+          "code": "LOCATION_REQUIRED",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "需要定位",
+          "body": "此操作需要获取当前位置，请允许定位",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            },
+            {
+              "kind": "retry",
+              "label": "重试"
+            }
+          ]
+        },
+        "LOCATION_UNAVAILABLE": {
+          "code": "LOCATION_UNAVAILABLE",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "定位获取失败，请重试",
+          "actions": []
+        },
+        "CLIENT_NETWORK_ERROR": {
+          "code": "CLIENT_NETWORK_ERROR",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "网络连接失败，请检查网络后重试",
+          "actions": []
+        },
+        "CLIENT_OPERATION_FAILED": {
+          "code": "CLIENT_OPERATION_FAILED",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "操作失败，请稍后重试",
+          "actions": []
+        },
+        "DEVICE_RESULT_UNKNOWN": {
+          "code": "DEVICE_RESULT_UNKNOWN",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作结果尚未确认",
+          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "INSUFFICIENT_BALANCE": {
+          "code": "INSUFFICIENT_BALANCE",
+          "level": "error",
+          "durationMs": null,
+          "controlDurationMs": 5000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "余额不足",
+          "body": "余额不足，请充值后再结账，计费会继续",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "RATE_LIMITED": {
+          "code": "RATE_LIMITED",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "dialog",
+          "flow": "none",
+          "title": "操作过于频繁",
+          "body": "操作过于频繁，请稍后再试",
+          "actions": [
+            {
+              "kind": "dismiss",
+              "label": "知道了"
+            }
+          ]
+        },
+        "POWER_WAIT_TIMEOUT": {
+          "code": "POWER_WAIT_TIMEOUT",
+          "level": "error",
+          "durationMs": 5000,
+          "controlDurationMs": 5000,
+          "display": "inline",
+          "presentation": "toast",
+          "flow": "none",
+          "title": null,
+          "body": "未检测到开机，请重试",
+          "actions": []
+        }
+      },
       "shop": "Store",
       "shopCode": "store",
       "heroUrl": "/api/v1/shops/store/hero?v=abc123",
@@ -1749,23 +6018,162 @@
     "effect": "checkout"
   },
   "notices": {
-    "RATE_LIMITED": {
-      "code": "RATE_LIMITED",
-      "level": "info",
-      "display": "dialog",
+    "LOCATION_UNAVAILABLE": {
+      "code": "LOCATION_UNAVAILABLE",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
       "flow": "none",
-      "title": "操作过于频繁",
-      "body": "操作过于频繁，请稍后再试",
-      "actions": [
-        {
-          "kind": "dismiss",
-          "label": "知道了"
-        }
-      ]
+      "title": null,
+      "body": "定位获取失败，请重试",
+      "actions": []
+    },
+    "CLIENT_NETWORK_ERROR": {
+      "code": "CLIENT_NETWORK_ERROR",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "网络连接失败，请检查网络后重试",
+      "actions": []
+    },
+    "CLIENT_OPERATION_FAILED": {
+      "code": "CLIENT_OPERATION_FAILED",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "操作失败，请稍后重试",
+      "actions": []
+    },
+    "POWER_WAIT_TIMEOUT": {
+      "code": "POWER_WAIT_TIMEOUT",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "未检测到开机，请重试",
+      "actions": []
+    },
+    "TICKET_EXPIRED": {
+      "code": "TICKET_EXPIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "expired",
+      "title": "本次会话已失效",
+      "body": "请重新碰一下 NFC 或重新扫描二维码。",
+      "actions": []
+    },
+    "PLATFORM_BINDING_REQUIRED": {
+      "code": "PLATFORM_BINDING_REQUIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "refresh",
+      "title": null,
+      "body": "请先绑定平台身份",
+      "actions": []
+    },
+    "CHECKIN_REQUIRED": {
+      "code": "CHECKIN_REQUIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "refresh",
+      "title": null,
+      "body": "请先确认入场",
+      "actions": []
+    },
+    "AUTHENTICATION_REQUIRED": {
+      "code": "AUTHENTICATION_REQUIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "signin",
+      "title": null,
+      "body": "请先登录",
+      "actions": []
+    },
+    "UNAUTHORIZED": {
+      "code": "UNAUTHORIZED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "signin",
+      "title": null,
+      "body": "请先登录",
+      "actions": []
+    },
+    "ACCOUNT_BANNED": {
+      "code": "ACCOUNT_BANNED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": "账号已停用",
+      "body": "这个账号暂时无法使用，如有疑问请联系店员",
+      "actions": []
+    },
+    "ACCESS_RESTRICTED": {
+      "code": "ACCESS_RESTRICTED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "当前无法进行此操作，如有疑问请联系店员",
+      "actions": []
+    },
+    "PLAYER_DISABLED": {
+      "code": "PLAYER_DISABLED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": "无法使用",
+      "body": "你在本店的玩家资格已停用，请联系店员",
+      "actions": []
+    },
+    "PLAYER_NOT_ACTIVE": {
+      "code": "PLAYER_NOT_ACTIVE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": "无法使用",
+      "body": "你在本店的玩家资格已停用，请联系店员",
+      "actions": []
     },
     "INSUFFICIENT_BALANCE": {
       "code": "INSUFFICIENT_BALANCE",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "dialog",
       "flow": "none",
       "title": "余额不足",
@@ -1780,6 +6188,8 @@
     "DEVICE_UNAVAILABLE": {
       "code": "DEVICE_UNAVAILABLE",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "inline",
       "presentation": "status",
       "flow": "none",
@@ -1787,19 +6197,107 @@
       "body": "设备连接失败，请联系店员",
       "actions": []
     },
-    "DOOR_CODE_FAILED": {
-      "code": "DOOR_CODE_FAILED",
+    "DEVICE_DISABLED": {
+      "code": "DEVICE_DISABLED",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "inline",
-      "presentation": "toast",
+      "presentation": "status",
       "flow": "none",
       "title": null,
-      "body": "开门密码获取失败，请重试",
+      "body": "这个资源已停用",
+      "actions": []
+    },
+    "DEVICE_NOT_FOUND": {
+      "code": "DEVICE_NOT_FOUND",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "没有找到这个资源",
+      "actions": []
+    },
+    "DEVICE_ACTION_UNSUPPORTED": {
+      "code": "DEVICE_ACTION_UNSUPPORTED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "这里不支持此操作",
+      "actions": []
+    },
+    "RESOURCE_NOT_BILLED": {
+      "code": "RESOURCE_NOT_BILLED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "这里不计费，无需确认",
+      "actions": []
+    },
+    "DEVICE_RESULT_UNKNOWN": {
+      "code": "DEVICE_RESULT_UNKNOWN",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "dialog",
+      "flow": "none",
+      "title": "操作结果尚未确认",
+      "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "知道了"
+        }
+      ]
+    },
+    "LOCATION_REQUIRED": {
+      "code": "LOCATION_REQUIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "dialog",
+      "flow": "none",
+      "title": "需要定位",
+      "body": "此操作需要获取当前位置，请允许定位",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "知道了"
+        },
+        {
+          "kind": "retry",
+          "label": "重试"
+        }
+      ]
+    },
+    "DEVICE_POWER_OFF": {
+      "code": "DEVICE_POWER_OFF",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "请先开机",
       "actions": []
     },
     "COIN_COOLDOWN": {
       "code": "COIN_COOLDOWN",
       "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
       "display": "inline",
       "presentation": "control",
       "flow": "none",
@@ -1807,39 +6305,123 @@
       "body": "请稍后再投币",
       "actions": []
     },
-    "COIN_SENT": {
-      "code": "COIN_SENT",
-      "level": "success",
+    "COIN_CABINET_FULL": {
+      "code": "COIN_CABINET_FULL",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
       "display": "inline",
       "presentation": "control",
       "flow": "none",
       "title": null,
-      "body": "已投币",
+      "body": "达到机台投币上限",
       "actions": []
     },
-    "COIN_FAILED": {
-      "code": "COIN_FAILED",
+    "RATE_LIMITED": {
+      "code": "RATE_LIMITED",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "dialog",
+      "flow": "none",
+      "title": "操作过于频繁",
+      "body": "操作过于频繁，请稍后再试",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "知道了"
+        }
+      ]
+    },
+    "OPERATION_PENDING": {
+      "code": "OPERATION_PENDING",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "上一次操作还在处理中",
+      "actions": []
+    },
+    "OPERATION_IN_PROGRESS": {
+      "code": "OPERATION_IN_PROGRESS",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "上一次操作还在处理中",
+      "actions": []
+    },
+    "CARD_NOT_FOUND": {
+      "code": "CARD_NOT_FOUND",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "inline",
       "presentation": "control",
       "flow": "none",
       "title": null,
-      "body": "投币失败",
+      "body": "卡片不可用",
       "actions": []
     },
-    "CARD_SENT": {
-      "code": "CARD_SENT",
-      "level": "success",
+    "MANUAL_CARD_ADD_DISABLED": {
+      "code": "MANUAL_CARD_ADD_DISABLED",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
       "display": "inline",
-      "presentation": "control",
+      "presentation": "status",
       "flow": "none",
       "title": null,
-      "body": "已刷卡",
+      "body": "已关闭手动输入卡号添加卡片，请去 MuNET 添加卡片或在店铺内使用读卡器添加卡片",
+      "actions": []
+    },
+    "CHECKIN_CONSENT_REQUIRED": {
+      "code": "CHECKIN_CONSENT_REQUIRED",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "请确认入场计费规则",
+      "actions": []
+    },
+    "LOCATION_LOW_ACCURACY": {
+      "code": "LOCATION_LOW_ACCURACY",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "定位精度不足，请重试",
+      "actions": []
+    },
+    "LOCATION_OUT_OF_RANGE": {
+      "code": "LOCATION_OUT_OF_RANGE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "不在店铺范围内",
       "actions": []
     },
     "LOCATION_STILL_INSIDE": {
       "code": "LOCATION_STILL_INSIDE",
       "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
       "display": "inline",
       "presentation": "status",
       "flow": "none",
@@ -1850,6 +6432,8 @@
     "REDEEM_CODE_NOT_FOUND": {
       "code": "REDEEM_CODE_NOT_FOUND",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "dialog",
       "flow": "none",
       "title": null,
@@ -1861,9 +6445,347 @@
         }
       ]
     },
+    "REDEEM_CODE_EXPIRED": {
+      "code": "REDEEM_CODE_EXPIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "兑换码已过期",
+      "actions": []
+    },
+    "REDEEM_CODE_NOT_ACTIVE": {
+      "code": "REDEEM_CODE_NOT_ACTIVE",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "兑换码尚未生效",
+      "actions": []
+    },
+    "REDEEM_CODE_MAX_USE_REACHED": {
+      "code": "REDEEM_CODE_MAX_USE_REACHED",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "兑换码已被领完",
+      "actions": []
+    },
+    "REDEEM_CODE_ALREADY_EXISTS": {
+      "code": "REDEEM_CODE_ALREADY_EXISTS",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "该兑换码已存在，请换一个",
+      "actions": []
+    },
+    "INVALID_REDEEM_CODE": {
+      "code": "INVALID_REDEEM_CODE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "兑换码需为 1–64 个字符且不能包含空格",
+      "actions": []
+    },
+    "INVALID_REDEEM_CODE_PREFIX": {
+      "code": "INVALID_REDEEM_CODE_PREFIX",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "前缀最多 24 个字符且不能包含空格",
+      "actions": []
+    },
+    "INVALID_REDEEM_CODE_WINDOW": {
+      "code": "INVALID_REDEEM_CODE_WINDOW",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "到期时间必须晚于生效时间",
+      "actions": []
+    },
+    "INVALID_REDEEM_CODE_MAX_USE_COUNT": {
+      "code": "INVALID_REDEEM_CODE_MAX_USE_COUNT",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "可用次数必须是大于 0 的整数",
+      "actions": []
+    },
+    "PRESENT_ONCE_PER_PLAYER_REDEEMED": {
+      "code": "PRESENT_ONCE_PER_PLAYER_REDEEMED",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "您已经领取过这份礼物",
+      "actions": []
+    },
+    "PRESENT_GRANT_LIMIT_REACHED": {
+      "code": "PRESENT_GRANT_LIMIT_REACHED",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "您已达到这份礼物的领取上限",
+      "actions": []
+    },
+    "PRESENT_NOT_ACTIVE": {
+      "code": "PRESENT_NOT_ACTIVE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "兑换码已失效",
+      "actions": []
+    },
+    "PRESENT_EXPIRED": {
+      "code": "PRESENT_EXPIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "兑换码已过期",
+      "actions": []
+    },
+    "PLAYER_HAS_NO_UNSETTLED_SESSIONS": {
+      "code": "PLAYER_HAS_NO_UNSETTLED_SESSIONS",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "没有需要结账的场次",
+      "actions": []
+    },
+    "ACTIVE_SESSION_NOT_FOUND": {
+      "code": "ACTIVE_SESSION_NOT_FOUND",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "没有进行中的场次",
+      "actions": []
+    },
+    "SESSION_NOT_ACTIVE": {
+      "code": "SESSION_NOT_ACTIVE",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "这个场次已经结束",
+      "actions": []
+    },
+    "PRICING_PLAN_NOT_FOUND": {
+      "code": "PRICING_PLAN_NOT_FOUND",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "这里的计费方案已不存在，请联系店员",
+      "actions": []
+    },
+    "PRICING_PLAN_NOT_STARTABLE": {
+      "code": "PRICING_PLAN_NOT_STARTABLE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "这里的计费方案不能用来计时，请联系店员",
+      "actions": []
+    },
+    "PRICING_REQUIREMENT_UNAVAILABLE": {
+      "code": "PRICING_REQUIREMENT_UNAVAILABLE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "这里依赖的计费方案已停用，请联系店员",
+      "actions": []
+    },
+    "PRICING_RELATION_UNKNOWN_TARGET": {
+      "code": "PRICING_RELATION_UNKNOWN_TARGET",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "这里依赖的计费方案已不存在，请联系店员",
+      "actions": []
+    },
+    "PRICING_RELATION_CONTRADICTION": {
+      "code": "PRICING_RELATION_CONTRADICTION",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "这里的计费方案设置互相冲突，请联系店员",
+      "actions": []
+    },
+    "PRICING_RELATION_CYCLE": {
+      "code": "PRICING_RELATION_CYCLE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "这里的计费方案设置互相依赖成环，请联系店员",
+      "actions": []
+    },
+    "CARD_NOT_READ": {
+      "code": "CARD_NOT_READ",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "登录失败",
+      "actions": []
+    },
+    "CARD_SENT": {
+      "code": "CARD_SENT",
+      "level": "success",
+      "durationMs": 3000,
+      "controlDurationMs": 3000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "已刷卡",
+      "actions": []
+    },
+    "COIN_SENT": {
+      "code": "COIN_SENT",
+      "level": "success",
+      "durationMs": 3000,
+      "controlDurationMs": 3000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "已投币",
+      "actions": []
+    },
+    "COIN_SKIPPED": {
+      "code": "COIN_SKIPPED",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "投币冷却中",
+      "actions": []
+    },
+    "COIN_FAILED": {
+      "code": "COIN_FAILED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "投币失败",
+      "actions": []
+    },
+    "COIN_UNKNOWN": {
+      "code": "COIN_UNKNOWN",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "投币未确认",
+      "actions": []
+    },
+    "DOOR_CODE_FAILED": {
+      "code": "DOOR_CODE_FAILED",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "开门密码获取失败，请重试",
+      "actions": []
+    },
     "PLAYER_OPTIONS_SAVED": {
       "code": "PLAYER_OPTIONS_SAVED",
       "level": "success",
+      "durationMs": 3000,
+      "controlDurationMs": 3000,
       "display": "inline",
       "presentation": "toast",
       "flow": "none",
@@ -1871,39 +6793,188 @@
       "body": "已保存选项",
       "actions": []
     },
-    "DEVICE_RESULT_UNKNOWN": {
-      "code": "DEVICE_RESULT_UNKNOWN",
+    "PLAYER_OPTION_FORBIDDEN": {
+      "code": "PLAYER_OPTION_FORBIDDEN",
       "level": "error",
-      "display": "dialog",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
       "flow": "none",
-      "title": "操作结果尚未确认",
-      "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-      "actions": [
-        {
-          "kind": "dismiss",
-          "label": "知道了"
-        }
-      ]
+      "title": null,
+      "body": "无权修改该玩家选项",
+      "actions": []
+    },
+    "PRIVACY_MODE_DISABLED": {
+      "code": "PRIVACY_MODE_DISABLED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "店铺未启用隐私模式",
+      "actions": []
     }
   },
   "noticesEn": {
-    "RATE_LIMITED": {
-      "code": "RATE_LIMITED",
-      "level": "info",
-      "display": "dialog",
+    "LOCATION_UNAVAILABLE": {
+      "code": "LOCATION_UNAVAILABLE",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
       "flow": "none",
-      "title": "Too many attempts",
-      "body": "Too many attempts. Please wait a moment.",
-      "actions": [
-        {
-          "kind": "dismiss",
-          "label": "OK"
-        }
-      ]
+      "title": null,
+      "body": "Could not get location. Retry.",
+      "actions": []
+    },
+    "CLIENT_NETWORK_ERROR": {
+      "code": "CLIENT_NETWORK_ERROR",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "Network connection failed. Check your connection and try again.",
+      "actions": []
+    },
+    "CLIENT_OPERATION_FAILED": {
+      "code": "CLIENT_OPERATION_FAILED",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "Something went wrong. Please try again.",
+      "actions": []
+    },
+    "POWER_WAIT_TIMEOUT": {
+      "code": "POWER_WAIT_TIMEOUT",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "Power-on was not detected. Please try again.",
+      "actions": []
+    },
+    "TICKET_EXPIRED": {
+      "code": "TICKET_EXPIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "expired",
+      "title": "This session has expired",
+      "body": "Tap the NFC tag or scan the QR code again.",
+      "actions": []
+    },
+    "PLATFORM_BINDING_REQUIRED": {
+      "code": "PLATFORM_BINDING_REQUIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "refresh",
+      "title": null,
+      "body": "Please link your platform account first.",
+      "actions": []
+    },
+    "CHECKIN_REQUIRED": {
+      "code": "CHECKIN_REQUIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "refresh",
+      "title": null,
+      "body": "Please check in first.",
+      "actions": []
+    },
+    "AUTHENTICATION_REQUIRED": {
+      "code": "AUTHENTICATION_REQUIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "signin",
+      "title": null,
+      "body": "Please sign in.",
+      "actions": []
+    },
+    "UNAUTHORIZED": {
+      "code": "UNAUTHORIZED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "none",
+      "flow": "signin",
+      "title": null,
+      "body": "Please sign in.",
+      "actions": []
+    },
+    "ACCOUNT_BANNED": {
+      "code": "ACCOUNT_BANNED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": "Account suspended",
+      "body": "This account cannot be used for now. Please ask the staff.",
+      "actions": []
+    },
+    "ACCESS_RESTRICTED": {
+      "code": "ACCESS_RESTRICTED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "This cannot be done right now. Please ask the staff.",
+      "actions": []
+    },
+    "PLAYER_DISABLED": {
+      "code": "PLAYER_DISABLED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": "Not available",
+      "body": "Your membership at this shop is suspended. Please ask the staff.",
+      "actions": []
+    },
+    "PLAYER_NOT_ACTIVE": {
+      "code": "PLAYER_NOT_ACTIVE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": "Not available",
+      "body": "Your membership at this shop is suspended. Please ask the staff.",
+      "actions": []
     },
     "INSUFFICIENT_BALANCE": {
       "code": "INSUFFICIENT_BALANCE",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "dialog",
       "flow": "none",
       "title": "Insufficient balance",
@@ -1918,6 +6989,8 @@
     "DEVICE_UNAVAILABLE": {
       "code": "DEVICE_UNAVAILABLE",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "inline",
       "presentation": "status",
       "flow": "none",
@@ -1925,19 +6998,107 @@
       "body": "Could not reach the device. Please ask the staff.",
       "actions": []
     },
-    "DOOR_CODE_FAILED": {
-      "code": "DOOR_CODE_FAILED",
+    "DEVICE_DISABLED": {
+      "code": "DEVICE_DISABLED",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "inline",
-      "presentation": "toast",
+      "presentation": "status",
       "flow": "none",
       "title": null,
-      "body": "Could not get the door code. Retry.",
+      "body": "This is disabled.",
+      "actions": []
+    },
+    "DEVICE_NOT_FOUND": {
+      "code": "DEVICE_NOT_FOUND",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "Not found.",
+      "actions": []
+    },
+    "DEVICE_ACTION_UNSUPPORTED": {
+      "code": "DEVICE_ACTION_UNSUPPORTED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "This cannot be done here.",
+      "actions": []
+    },
+    "RESOURCE_NOT_BILLED": {
+      "code": "RESOURCE_NOT_BILLED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "This is free to use; there is nothing to confirm.",
+      "actions": []
+    },
+    "DEVICE_RESULT_UNKNOWN": {
+      "code": "DEVICE_RESULT_UNKNOWN",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "dialog",
+      "flow": "none",
+      "title": "Result not confirmed",
+      "body": "The result is not confirmed. Refresh the status before repeating the action.",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "OK"
+        }
+      ]
+    },
+    "LOCATION_REQUIRED": {
+      "code": "LOCATION_REQUIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "dialog",
+      "flow": "none",
+      "title": "Location needed",
+      "body": "This needs your location. Please allow location access.",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "OK"
+        },
+        {
+          "kind": "retry",
+          "label": "Retry"
+        }
+      ]
+    },
+    "DEVICE_POWER_OFF": {
+      "code": "DEVICE_POWER_OFF",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Turn the machine on first.",
       "actions": []
     },
     "COIN_COOLDOWN": {
       "code": "COIN_COOLDOWN",
       "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
       "display": "inline",
       "presentation": "control",
       "flow": "none",
@@ -1945,39 +7106,123 @@
       "body": "Please wait before adding another coin.",
       "actions": []
     },
-    "COIN_SENT": {
-      "code": "COIN_SENT",
-      "level": "success",
+    "COIN_CABINET_FULL": {
+      "code": "COIN_CABINET_FULL",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
       "display": "inline",
       "presentation": "control",
       "flow": "none",
       "title": null,
-      "body": "Coin added",
+      "body": "Coin limit reached",
       "actions": []
     },
-    "COIN_FAILED": {
-      "code": "COIN_FAILED",
+    "RATE_LIMITED": {
+      "code": "RATE_LIMITED",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "dialog",
+      "flow": "none",
+      "title": "Too many attempts",
+      "body": "Too many attempts. Please wait a moment.",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "OK"
+        }
+      ]
+    },
+    "OPERATION_PENDING": {
+      "code": "OPERATION_PENDING",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "The last request is still being processed.",
+      "actions": []
+    },
+    "OPERATION_IN_PROGRESS": {
+      "code": "OPERATION_IN_PROGRESS",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "The last request is still being processed.",
+      "actions": []
+    },
+    "CARD_NOT_FOUND": {
+      "code": "CARD_NOT_FOUND",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "inline",
       "presentation": "control",
       "flow": "none",
       "title": null,
-      "body": "Coin failed",
+      "body": "Card unavailable.",
       "actions": []
     },
-    "CARD_SENT": {
-      "code": "CARD_SENT",
-      "level": "success",
+    "MANUAL_CARD_ADD_DISABLED": {
+      "code": "MANUAL_CARD_ADD_DISABLED",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
       "display": "inline",
-      "presentation": "control",
+      "presentation": "status",
       "flow": "none",
       "title": null,
-      "body": "Card sent",
+      "body": "Manual card entry is disabled. Add a card in MuNET or tap a card on a store card reader.",
+      "actions": []
+    },
+    "CHECKIN_CONSENT_REQUIRED": {
+      "code": "CHECKIN_CONSENT_REQUIRED",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "Please accept the billing rules first.",
+      "actions": []
+    },
+    "LOCATION_LOW_ACCURACY": {
+      "code": "LOCATION_LOW_ACCURACY",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "Location not precise enough. Retry.",
+      "actions": []
+    },
+    "LOCATION_OUT_OF_RANGE": {
+      "code": "LOCATION_OUT_OF_RANGE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "Not within the shop area.",
       "actions": []
     },
     "LOCATION_STILL_INSIDE": {
       "code": "LOCATION_STILL_INSIDE",
       "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
       "display": "inline",
       "presentation": "status",
       "flow": "none",
@@ -1988,6 +7233,8 @@
     "REDEEM_CODE_NOT_FOUND": {
       "code": "REDEEM_CODE_NOT_FOUND",
       "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
       "display": "dialog",
       "flow": "none",
       "title": null,
@@ -1999,9 +7246,347 @@
         }
       ]
     },
+    "REDEEM_CODE_EXPIRED": {
+      "code": "REDEEM_CODE_EXPIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "This code has expired.",
+      "actions": []
+    },
+    "REDEEM_CODE_NOT_ACTIVE": {
+      "code": "REDEEM_CODE_NOT_ACTIVE",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "This code is not active yet.",
+      "actions": []
+    },
+    "REDEEM_CODE_MAX_USE_REACHED": {
+      "code": "REDEEM_CODE_MAX_USE_REACHED",
+      "level": "info",
+      "durationMs": null,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "This code has reached its redemption limit.",
+      "actions": []
+    },
+    "REDEEM_CODE_ALREADY_EXISTS": {
+      "code": "REDEEM_CODE_ALREADY_EXISTS",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "This redeem code already exists.",
+      "actions": []
+    },
+    "INVALID_REDEEM_CODE": {
+      "code": "INVALID_REDEEM_CODE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "Redeem code must be 1–64 characters with no spaces.",
+      "actions": []
+    },
+    "INVALID_REDEEM_CODE_PREFIX": {
+      "code": "INVALID_REDEEM_CODE_PREFIX",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "Prefix must be up to 24 characters with no spaces.",
+      "actions": []
+    },
+    "INVALID_REDEEM_CODE_WINDOW": {
+      "code": "INVALID_REDEEM_CODE_WINDOW",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "Expiry time must be after activation time.",
+      "actions": []
+    },
+    "INVALID_REDEEM_CODE_MAX_USE_COUNT": {
+      "code": "INVALID_REDEEM_CODE_MAX_USE_COUNT",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "Max uses must be a positive integer.",
+      "actions": []
+    },
+    "PRESENT_ONCE_PER_PLAYER_REDEEMED": {
+      "code": "PRESENT_ONCE_PER_PLAYER_REDEEMED",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "You have already claimed this gift.",
+      "actions": []
+    },
+    "PRESENT_GRANT_LIMIT_REACHED": {
+      "code": "PRESENT_GRANT_LIMIT_REACHED",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "You have reached this gift's per-player limit.",
+      "actions": []
+    },
+    "PRESENT_NOT_ACTIVE": {
+      "code": "PRESENT_NOT_ACTIVE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "This code is no longer valid.",
+      "actions": []
+    },
+    "PRESENT_EXPIRED": {
+      "code": "PRESENT_EXPIRED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "field",
+      "flow": "none",
+      "title": null,
+      "body": "This code has expired.",
+      "actions": []
+    },
+    "PLAYER_HAS_NO_UNSETTLED_SESSIONS": {
+      "code": "PLAYER_HAS_NO_UNSETTLED_SESSIONS",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "Nothing to check out.",
+      "actions": []
+    },
+    "ACTIVE_SESSION_NOT_FOUND": {
+      "code": "ACTIVE_SESSION_NOT_FOUND",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "No visit in progress.",
+      "actions": []
+    },
+    "SESSION_NOT_ACTIVE": {
+      "code": "SESSION_NOT_ACTIVE",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "This visit has ended.",
+      "actions": []
+    },
+    "PRICING_PLAN_NOT_FOUND": {
+      "code": "PRICING_PLAN_NOT_FOUND",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "This place's pricing plan no longer exists. Please ask the staff.",
+      "actions": []
+    },
+    "PRICING_PLAN_NOT_STARTABLE": {
+      "code": "PRICING_PLAN_NOT_STARTABLE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "This place's pricing plan cannot time a visit. Please ask the staff.",
+      "actions": []
+    },
+    "PRICING_REQUIREMENT_UNAVAILABLE": {
+      "code": "PRICING_REQUIREMENT_UNAVAILABLE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "A pricing plan this place depends on is disabled. Please ask the staff.",
+      "actions": []
+    },
+    "PRICING_RELATION_UNKNOWN_TARGET": {
+      "code": "PRICING_RELATION_UNKNOWN_TARGET",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "A pricing plan this place depends on no longer exists. Please ask the staff.",
+      "actions": []
+    },
+    "PRICING_RELATION_CONTRADICTION": {
+      "code": "PRICING_RELATION_CONTRADICTION",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "This place's pricing plans conflict with each other. Please ask the staff.",
+      "actions": []
+    },
+    "PRICING_RELATION_CYCLE": {
+      "code": "PRICING_RELATION_CYCLE",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "This place's pricing plans depend on each other in a loop. Please ask the staff.",
+      "actions": []
+    },
+    "CARD_NOT_READ": {
+      "code": "CARD_NOT_READ",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Sign-in failed",
+      "actions": []
+    },
+    "CARD_SENT": {
+      "code": "CARD_SENT",
+      "level": "success",
+      "durationMs": 3000,
+      "controlDurationMs": 3000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Card sent",
+      "actions": []
+    },
+    "COIN_SENT": {
+      "code": "COIN_SENT",
+      "level": "success",
+      "durationMs": 3000,
+      "controlDurationMs": 3000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Coin added",
+      "actions": []
+    },
+    "COIN_SKIPPED": {
+      "code": "COIN_SKIPPED",
+      "level": "info",
+      "durationMs": 4000,
+      "controlDurationMs": 4000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Coin cooling down",
+      "actions": []
+    },
+    "COIN_FAILED": {
+      "code": "COIN_FAILED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Coin failed",
+      "actions": []
+    },
+    "COIN_UNKNOWN": {
+      "code": "COIN_UNKNOWN",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Coin not confirmed",
+      "actions": []
+    },
+    "DOOR_CODE_FAILED": {
+      "code": "DOOR_CODE_FAILED",
+      "level": "error",
+      "durationMs": 5000,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "Could not get the door code. Retry.",
+      "actions": []
+    },
     "PLAYER_OPTIONS_SAVED": {
       "code": "PLAYER_OPTIONS_SAVED",
       "level": "success",
+      "durationMs": 3000,
+      "controlDurationMs": 3000,
       "display": "inline",
       "presentation": "toast",
       "flow": "none",
@@ -2009,19 +7594,914 @@
       "body": "Options saved",
       "actions": []
     },
-    "DEVICE_RESULT_UNKNOWN": {
-      "code": "DEVICE_RESULT_UNKNOWN",
+    "PLAYER_OPTION_FORBIDDEN": {
+      "code": "PLAYER_OPTION_FORBIDDEN",
       "level": "error",
-      "display": "dialog",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
       "flow": "none",
-      "title": "Result not confirmed",
-      "body": "The result is not confirmed. Refresh the status before repeating the action.",
-      "actions": [
-        {
-          "kind": "dismiss",
-          "label": "OK"
-        }
-      ]
+      "title": null,
+      "body": "You cannot access or change that player option.",
+      "actions": []
+    },
+    "PRIVACY_MODE_DISABLED": {
+      "code": "PRIVACY_MODE_DISABLED",
+      "level": "error",
+      "durationMs": null,
+      "controlDurationMs": 5000,
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "Privacy mode is disabled for this shop.",
+      "actions": []
     }
+  },
+  "screenshots": [
+    {
+      "code": "LOCATION_UNAVAILABLE",
+      "body": "定位获取失败，请重试",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "LOCATION_UNAVAILABLE"
+      ]
+    },
+    {
+      "code": "CLIENT_NETWORK_ERROR",
+      "body": "网络连接失败，请检查网络后重试",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "CLIENT_NETWORK_ERROR"
+      ]
+    },
+    {
+      "code": "CLIENT_OPERATION_FAILED",
+      "body": "操作失败，请稍后重试",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "CLIENT_OPERATION_FAILED"
+      ]
+    },
+    {
+      "code": "POWER_WAIT_TIMEOUT",
+      "body": "未检测到开机，请重试",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "POWER_WAIT_TIMEOUT"
+      ]
+    },
+    {
+      "code": "TICKET_EXPIRED",
+      "body": "请重新碰一下 NFC 或重新扫描二维码。",
+      "display": "none",
+      "presentation": "flow",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "TICKET_EXPIRED"
+      ]
+    },
+    {
+      "code": "PLATFORM_BINDING_REQUIRED",
+      "body": "请先绑定平台身份",
+      "display": "none",
+      "presentation": "flow",
+      "page": "binding",
+      "action": "none",
+      "notices": [
+        "PLATFORM_BINDING_REQUIRED"
+      ]
+    },
+    {
+      "code": "CHECKIN_REQUIRED",
+      "body": "请先确认入场",
+      "display": "none",
+      "presentation": "flow",
+      "page": "entryDoor",
+      "action": "none",
+      "notices": [
+        "CHECKIN_REQUIRED"
+      ]
+    },
+    {
+      "code": "AUTHENTICATION_REQUIRED",
+      "body": "请先登录",
+      "display": "none",
+      "presentation": "flow",
+      "page": "signin",
+      "action": "none",
+      "notices": [
+        "AUTHENTICATION_REQUIRED"
+      ]
+    },
+    {
+      "code": "UNAUTHORIZED",
+      "body": "请先登录",
+      "display": "none",
+      "presentation": "flow",
+      "page": "signin",
+      "action": "none",
+      "notices": [
+        "UNAUTHORIZED"
+      ]
+    },
+    {
+      "code": "ACCOUNT_BANNED",
+      "body": "这个账号暂时无法使用，如有疑问请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "ACCOUNT_BANNED"
+      ]
+    },
+    {
+      "code": "ACCESS_RESTRICTED",
+      "body": "当前无法进行此操作，如有疑问请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "ACCESS_RESTRICTED"
+      ]
+    },
+    {
+      "code": "PLAYER_DISABLED",
+      "body": "你在本店的玩家资格已停用，请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PLAYER_DISABLED"
+      ]
+    },
+    {
+      "code": "PLAYER_NOT_ACTIVE",
+      "body": "你在本店的玩家资格已停用，请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PLAYER_NOT_ACTIVE"
+      ]
+    },
+    {
+      "code": "INSUFFICIENT_BALANCE",
+      "body": "余额不足，请充值后再结账，计费会继续",
+      "display": "dialog",
+      "presentation": "flow",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "INSUFFICIENT_BALANCE"
+      ]
+    },
+    {
+      "code": "DEVICE_UNAVAILABLE",
+      "body": "设备连接失败，请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "DEVICE_UNAVAILABLE"
+      ]
+    },
+    {
+      "code": "DEVICE_DISABLED",
+      "body": "这个资源已停用",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "DEVICE_DISABLED"
+      ]
+    },
+    {
+      "code": "DEVICE_NOT_FOUND",
+      "body": "没有找到这个资源",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "DEVICE_NOT_FOUND"
+      ]
+    },
+    {
+      "code": "DEVICE_ACTION_UNSUPPORTED",
+      "body": "这里不支持此操作",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "DEVICE_ACTION_UNSUPPORTED"
+      ]
+    },
+    {
+      "code": "RESOURCE_NOT_BILLED",
+      "body": "这里不计费，无需确认",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "RESOURCE_NOT_BILLED"
+      ]
+    },
+    {
+      "code": "DEVICE_RESULT_UNKNOWN",
+      "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+      "display": "dialog",
+      "presentation": "flow",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "DEVICE_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "code": "LOCATION_REQUIRED",
+      "body": "此操作需要获取当前位置，请允许定位",
+      "display": "dialog",
+      "presentation": "flow",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "LOCATION_REQUIRED"
+      ]
+    },
+    {
+      "code": "DEVICE_POWER_OFF",
+      "body": "请先开机",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "coin",
+      "notices": [
+        "DEVICE_POWER_OFF"
+      ]
+    },
+    {
+      "code": "COIN_COOLDOWN",
+      "body": "请稍后再投币",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "coin",
+      "notices": [
+        "COIN_COOLDOWN"
+      ]
+    },
+    {
+      "code": "COIN_CABINET_FULL",
+      "body": "达到机台投币上限",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "coin",
+      "notices": [
+        "COIN_CABINET_FULL"
+      ]
+    },
+    {
+      "code": "RATE_LIMITED",
+      "body": "操作过于频繁，请稍后再试",
+      "display": "dialog",
+      "presentation": "flow",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "RATE_LIMITED"
+      ]
+    },
+    {
+      "code": "OPERATION_PENDING",
+      "body": "上一次操作还在处理中",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "OPERATION_PENDING"
+      ]
+    },
+    {
+      "code": "OPERATION_IN_PROGRESS",
+      "body": "上一次操作还在处理中",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "OPERATION_IN_PROGRESS"
+      ]
+    },
+    {
+      "code": "CARD_NOT_FOUND",
+      "body": "卡片不可用",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "card",
+      "notices": [
+        "CARD_NOT_FOUND"
+      ]
+    },
+    {
+      "code": "MANUAL_CARD_ADD_DISABLED",
+      "body": "已关闭手动输入卡号添加卡片，请去 MuNET 添加卡片或在店铺内使用读卡器添加卡片",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "MANUAL_CARD_ADD_DISABLED"
+      ]
+    },
+    {
+      "code": "CHECKIN_CONSENT_REQUIRED",
+      "body": "请确认入场计费规则",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "CHECKIN_CONSENT_REQUIRED"
+      ]
+    },
+    {
+      "code": "LOCATION_LOW_ACCURACY",
+      "body": "定位精度不足，请重试",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "LOCATION_LOW_ACCURACY"
+      ]
+    },
+    {
+      "code": "LOCATION_OUT_OF_RANGE",
+      "body": "不在店铺范围内",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "LOCATION_OUT_OF_RANGE"
+      ]
+    },
+    {
+      "code": "LOCATION_STILL_INSIDE",
+      "body": "请离开店铺定位范围后再结账",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "LOCATION_STILL_INSIDE"
+      ]
+    },
+    {
+      "code": "REDEEM_CODE_NOT_FOUND",
+      "body": "兑换码无效",
+      "display": "dialog",
+      "presentation": "flow",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "REDEEM_CODE_NOT_FOUND"
+      ]
+    },
+    {
+      "code": "REDEEM_CODE_EXPIRED",
+      "body": "兑换码已过期",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "REDEEM_CODE_EXPIRED"
+      ]
+    },
+    {
+      "code": "REDEEM_CODE_NOT_ACTIVE",
+      "body": "兑换码尚未生效",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "REDEEM_CODE_NOT_ACTIVE"
+      ]
+    },
+    {
+      "code": "REDEEM_CODE_MAX_USE_REACHED",
+      "body": "兑换码已被领完",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "REDEEM_CODE_MAX_USE_REACHED"
+      ]
+    },
+    {
+      "code": "REDEEM_CODE_ALREADY_EXISTS",
+      "body": "该兑换码已存在，请换一个",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "REDEEM_CODE_ALREADY_EXISTS"
+      ]
+    },
+    {
+      "code": "INVALID_REDEEM_CODE",
+      "body": "兑换码需为 1–64 个字符且不能包含空格",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "INVALID_REDEEM_CODE"
+      ]
+    },
+    {
+      "code": "INVALID_REDEEM_CODE_PREFIX",
+      "body": "前缀最多 24 个字符且不能包含空格",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "INVALID_REDEEM_CODE_PREFIX"
+      ]
+    },
+    {
+      "code": "INVALID_REDEEM_CODE_WINDOW",
+      "body": "到期时间必须晚于生效时间",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "INVALID_REDEEM_CODE_WINDOW"
+      ]
+    },
+    {
+      "code": "INVALID_REDEEM_CODE_MAX_USE_COUNT",
+      "body": "可用次数必须是大于 0 的整数",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "INVALID_REDEEM_CODE_MAX_USE_COUNT"
+      ]
+    },
+    {
+      "code": "PRESENT_ONCE_PER_PLAYER_REDEEMED",
+      "body": "您已经领取过这份礼物",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PRESENT_ONCE_PER_PLAYER_REDEEMED"
+      ]
+    },
+    {
+      "code": "PRESENT_GRANT_LIMIT_REACHED",
+      "body": "您已达到这份礼物的领取上限",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PRESENT_GRANT_LIMIT_REACHED"
+      ]
+    },
+    {
+      "code": "PRESENT_NOT_ACTIVE",
+      "body": "兑换码已失效",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "PRESENT_NOT_ACTIVE"
+      ]
+    },
+    {
+      "code": "PRESENT_EXPIRED",
+      "body": "兑换码已过期",
+      "display": "inline",
+      "presentation": "field",
+      "page": "redeemForm",
+      "action": "redeem",
+      "notices": [
+        "PRESENT_EXPIRED"
+      ]
+    },
+    {
+      "code": "PLAYER_HAS_NO_UNSETTLED_SESSIONS",
+      "body": "没有需要结账的场次",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PLAYER_HAS_NO_UNSETTLED_SESSIONS"
+      ]
+    },
+    {
+      "code": "ACTIVE_SESSION_NOT_FOUND",
+      "body": "没有进行中的场次",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "ACTIVE_SESSION_NOT_FOUND"
+      ]
+    },
+    {
+      "code": "SESSION_NOT_ACTIVE",
+      "body": "这个场次已经结束",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "SESSION_NOT_ACTIVE"
+      ]
+    },
+    {
+      "code": "PRICING_PLAN_NOT_FOUND",
+      "body": "这里的计费方案已不存在，请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PRICING_PLAN_NOT_FOUND"
+      ]
+    },
+    {
+      "code": "PRICING_PLAN_NOT_STARTABLE",
+      "body": "这里的计费方案不能用来计时，请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PRICING_PLAN_NOT_STARTABLE"
+      ]
+    },
+    {
+      "code": "PRICING_REQUIREMENT_UNAVAILABLE",
+      "body": "这里依赖的计费方案已停用，请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PRICING_REQUIREMENT_UNAVAILABLE"
+      ]
+    },
+    {
+      "code": "PRICING_RELATION_UNKNOWN_TARGET",
+      "body": "这里依赖的计费方案已不存在，请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PRICING_RELATION_UNKNOWN_TARGET"
+      ]
+    },
+    {
+      "code": "PRICING_RELATION_CONTRADICTION",
+      "body": "这里的计费方案设置互相冲突，请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PRICING_RELATION_CONTRADICTION"
+      ]
+    },
+    {
+      "code": "PRICING_RELATION_CYCLE",
+      "body": "这里的计费方案设置互相依赖成环，请联系店员",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PRICING_RELATION_CYCLE"
+      ]
+    },
+    {
+      "code": "CARD_NOT_READ",
+      "body": "登录失败",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "card",
+      "notices": [
+        "CARD_NOT_READ"
+      ]
+    },
+    {
+      "code": "CARD_SENT",
+      "body": "已刷卡",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "card",
+      "notices": [
+        "CARD_SENT"
+      ]
+    },
+    {
+      "code": "COIN_SENT",
+      "body": "已投币",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "coin",
+      "notices": [
+        "COIN_SENT"
+      ]
+    },
+    {
+      "code": "COIN_SKIPPED",
+      "body": "投币冷却中",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "card",
+      "notices": [
+        "CARD_SENT",
+        "COIN_SKIPPED"
+      ]
+    },
+    {
+      "code": "COIN_FAILED",
+      "body": "投币失败",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "card",
+      "notices": [
+        "CARD_SENT",
+        "COIN_FAILED"
+      ]
+    },
+    {
+      "code": "COIN_UNKNOWN",
+      "body": "投币未确认",
+      "display": "inline",
+      "presentation": "control",
+      "page": "cardsCapture",
+      "action": "card",
+      "notices": [
+        "CARD_SENT",
+        "COIN_UNKNOWN"
+      ]
+    },
+    {
+      "code": "DOOR_CODE_FAILED",
+      "body": "开门密码获取失败，请重试",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "DOOR_CODE_FAILED"
+      ]
+    },
+    {
+      "code": "PLAYER_OPTIONS_SAVED",
+      "body": "已保存选项",
+      "display": "inline",
+      "presentation": "toast",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PLAYER_OPTIONS_SAVED"
+      ]
+    },
+    {
+      "code": "PLAYER_OPTION_FORBIDDEN",
+      "body": "无权修改该玩家选项",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PLAYER_OPTION_FORBIDDEN"
+      ]
+    },
+    {
+      "code": "PRIVACY_MODE_DISABLED",
+      "body": "店铺未启用隐私模式",
+      "display": "inline",
+      "presentation": "status",
+      "page": "door",
+      "action": "door",
+      "notices": [
+        "PRIVACY_MODE_DISABLED"
+      ]
+    },
+    {
+      "code": "CAPTURE_STARTING",
+      "body": "正在连接机台…",
+      "captureStatus": "starting",
+      "page": "cardsCapture",
+      "action": "capture",
+      "display": "inline",
+      "presentation": "capture",
+      "notices": []
+    },
+    {
+      "code": "CAPTURE_WAITING",
+      "body": "请把卡片放在「Device」的读卡器上",
+      "captureStatus": "waiting",
+      "page": "cardsCapture",
+      "action": "capture",
+      "display": "inline",
+      "presentation": "capture",
+      "notices": []
+    },
+    {
+      "code": "CAPTURE_ADDED",
+      "body": "已添加卡片",
+      "captureStatus": "added",
+      "page": "cardsCapture",
+      "action": "capture",
+      "display": "inline",
+      "presentation": "capture",
+      "notices": []
+    },
+    {
+      "code": "CAPTURE_TAKEN",
+      "body": "这张卡已绑定到本店的其他玩家",
+      "captureStatus": "taken",
+      "page": "cardsCapture",
+      "action": "capture",
+      "display": "inline",
+      "presentation": "capture",
+      "notices": []
+    },
+    {
+      "code": "CAPTURE_UNSUPPORTED",
+      "body": "不支持这种卡片",
+      "captureStatus": "unsupported",
+      "page": "cardsCapture",
+      "action": "capture",
+      "display": "inline",
+      "presentation": "capture",
+      "notices": []
+    },
+    {
+      "code": "CAPTURE_EXPIRED",
+      "body": "没有读到卡片",
+      "captureStatus": "expired",
+      "page": "cardsCapture",
+      "action": "capture",
+      "display": "inline",
+      "presentation": "capture",
+      "notices": []
+    },
+    {
+      "code": "CAPTURE_LEFT_PAGE",
+      "body": "离开页面后已取消添加，请重新添加",
+      "captureStatus": "left",
+      "page": "cardsCapture",
+      "action": "capture",
+      "display": "inline",
+      "presentation": "capture",
+      "notices": []
+    },
+    {
+      "code": "STATE_EMPTY",
+      "page": "empty",
+      "action": "none",
+      "display": "none",
+      "presentation": "page",
+      "notices": [],
+      "body": ""
+    },
+    {
+      "code": "STATE_DISABLED",
+      "page": "disabled",
+      "action": "none",
+      "display": "none",
+      "presentation": "page",
+      "notices": [],
+      "body": ""
+    },
+    {
+      "code": "STATE_ENTRY",
+      "page": "entryDoor",
+      "action": "none",
+      "display": "none",
+      "presentation": "page",
+      "notices": [],
+      "body": ""
+    },
+    {
+      "code": "STATE_ENTRY_ERROR",
+      "page": "entryError",
+      "action": "none",
+      "display": "none",
+      "presentation": "page",
+      "notices": [],
+      "body": ""
+    },
+    {
+      "code": "STATE_IO_WAITING",
+      "page": "ioWaiting",
+      "action": "none",
+      "display": "none",
+      "presentation": "page",
+      "notices": [],
+      "body": ""
+    },
+    {
+      "code": "STATE_POWER_OFF",
+      "page": "powerOff",
+      "action": "none",
+      "display": "none",
+      "presentation": "page",
+      "notices": [],
+      "body": ""
+    },
+    {
+      "code": "STATE_NO_CARDS",
+      "page": "cardsCapture",
+      "action": "none",
+      "display": "none",
+      "presentation": "page",
+      "notices": [],
+      "body": "还没有可用卡片，请先添加卡片"
+    },
+    {
+      "code": "STATE_CARDS_LOADING",
+      "page": "cardsCapture",
+      "action": "none",
+      "display": "none",
+      "presentation": "page",
+      "notices": [],
+      "body": "正在加载卡片"
+    },
+    {
+      "code": "STATE_CARDS_ERROR",
+      "page": "cardsCapture",
+      "action": "none",
+      "display": "none",
+      "presentation": "page",
+      "notices": [],
+      "body": "无法加载卡片"
+    }
+  ],
+  "binding": {
+    "code": "ABC12345",
+    "expiresAt": "2026-11-27T19:19:01.247Z",
+    "lines": [
+      {
+        "text": "向店铺 Bot 发送",
+        "command": false
+      },
+      {
+        "text": "bind ABC12345",
+        "command": true
+      }
+    ]
   }
 }
