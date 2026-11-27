@@ -183,21 +183,6 @@ final class PrismAPI {
     return try await request("/api/v1/devices/session/cards/capture/\(id)?ticket=\(query)")
   }
 
-  /// The player's bill, computed on the phone from the server's read-only billing inputs with the
-  /// same engine the web page runs; the server only decides at checkout. A shop whose billing
-  /// cannot be computed off the server (custom runtime plugins) gets the server's preview instead.
-  func checkoutPreview(shopPath: String) async throws -> PrismCheckout {
-    struct Inputs: Decodable { let playerId: String; let billingSnapshot: PrismBillingSnapshot }
-    let inputs: Inputs
-    do { inputs = try await request(shopPath + "/player/billing-inputs") }
-    catch let error as PrismAPIError where error.code == "CLIENT_BILLING_UNAVAILABLE" {
-      return try await request(shopPath + "/player/checkout/preview", body: [:])
-    }
-    return try await Task.detached(priority: .userInitiated) {
-      PrismCheckout(try PrismCheckoutEngine.preview(snapshot: inputs.billingSnapshot, playerId: inputs.playerId).view())
-    }.value
-  }
-
   func webFallbackURL(ticket: String) -> URL? {
     guard var parts = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else { return nil }
     parts.path = "/m"; parts.query = nil

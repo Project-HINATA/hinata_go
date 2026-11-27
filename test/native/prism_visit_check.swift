@@ -165,12 +165,6 @@ enum PersistentCookieCheck {
         if let lastReceipt { return makeSettledBillPage(receipt: lastReceipt) }
         return PageFixtures.shopPage("shopEmpty")
       case "bill":
-        if needsBinding && !active {
-          var page = PageFixtures.shopPage("shopBinding")
-          page["title"] = "账单"
-          page.removeValue(forKey: "accountMenu")
-          return page
-        }
         if active {
           var page = PageFixtures.shopPage("billSheet")
           if !clientBillingUnavailable {
@@ -421,6 +415,13 @@ enum PersistentCookieCheck {
         if previewStatus != 200 && (view == "shop" || view == "bill") {
           return (previewStatus, ["error": ["code": "PREVIEW_UNAVAILABLE", "message": "账单暂不可用"]])
         }
+        if view != "shop" && billing && identityBindingRequired && (!member || !identityBound) {
+          return (403, ["error": [
+            "code": "PLATFORM_BINDING_REQUIRED",
+            "message": "请先绑定平台身份",
+            "notice": ["code": "PLATFORM_BINDING_REQUIRED", "level": "info", "display": "none", "flow": "refresh", "body": "请先绑定平台身份", "actions": []],
+          ]])
+        }
         if failNextStatusRead && view == "shop" { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
         return ok(makeShopViewPage(view: view, item: item, cursor: cursor))
       case "/api/v1/shops/store/player/action":
@@ -503,6 +504,11 @@ enum PersistentCookieCheck {
     precondition(decodedDoor.accountMenu?.tabs.map(\.id) == ["bill", "redeem", "history", "wallet", "bindings"])
     precondition(decodedDoor.accountMenu?.tabs.last?.label == "身份")
     precondition(decodedDoor.accountMenu?.logoutLabel == "退出登录")
+
+    let decodedBinding = try decodePage(PageFixtures.page("binding"))
+    precondition(decodedBinding.accountMenu?.tabs.isEmpty == true && decodedBinding.accountMenu?.billingBadge == nil)
+    let decodedShopBinding = try decodePage(PageFixtures.shopPage("shopBinding"))
+    precondition(decodedShopBinding.accountMenu?.tabs.isEmpty == true && decodedShopBinding.accountMenu?.billingBadge == nil)
 
     let decodedShopLive = try decodePage(PageFixtures.shopPage("shopLive"))
     precondition(decodedShopLive.accountMenu?.billingBadge == "计费中")
@@ -739,12 +745,59 @@ enum PersistentCookieCheck {
     let sheetCheckoutIds = shopActions.filter { $0["action"] as? String == "checkout.confirm" }.map { $0["operationId"] as! String }
     precondition(sheetCheckoutIds.count == 8 && sheetCheckoutIds[0] != sheetCheckoutIds[1] && Set(sheetCheckoutIds.dropFirst()).count == 1)
     precondition(model.checkoutCelebrating && model.celebration?.title == "结账成功")
+    precondition(model.sheetPage?.bill()?.mode == "live", "Checkout celebration must not flash the settled bill inside the sheet")
     precondition(StoreVisitLiveActivityManager.shared.finishedReceipt?.playerSettlement.total == 12)
-    await model.finishCheckout()
+    var postCheckoutRefresh: Task<Void, Never>?
+    let celebrationCaller = Task { @MainActor in
+      postCheckoutRefresh = model.finishCheckoutInBackground()
+      try? await Task.sleep(nanoseconds: 5_000_000_000)
+    }
+    while postCheckoutRefresh == nil { await Task.yield() }
+    celebrationCaller.cancel()
+    await celebrationCaller.value
+    await postCheckoutRefresh?.value
     precondition(model.isShopOnly && model.machine == nil && model.ticket == nil && !model.checkoutCelebrating && model.celebration == nil)
+    precondition(model.playerStateLoaded && model.page?.bill()?.mode == "settled",
+                 "Post-checkout shop refresh must survive celebration task cancellation and render the settled receipt")
+    precondition(model.lastShopHero?.name == "Store", "Post-checkout transition must retain shop hero metadata")
     precondition(StoreVisitLiveActivityManager.shared.session == nil)
     // Confirming a checkout checks that the player is there, once per try, and so did entering.
     precondition(LocationService.calls == 4, "location calls: \(LocationService.calls)")
+
+    // Unbound accounts cannot use shop sheets; hitting a sheet route closes it and refreshes to host binding.
+    do {
+      identityBindingRequired = true; identityBound = false
+      await model.openAccountSheet(view: "wallet")
+      await waitUntil {
+        model.sheetStack.isEmpty
+          && model.needsPlatformBinding
+          && model.binding != nil
+          && model.page?.accountMenu?.tabs.isEmpty == true
+      }
+      precondition(model.sheetError == nil && model.sheetPage == nil && model.binding?.code == "ABC12345",
+                   "PLATFORM_BINDING_REQUIRED in a sheet must close the sheet and refresh the host binding block")
+      identityBound = true
+    }
+
+    // Opening the bill sheet on a scanned machine page syncs billingActive back to the main page and Live Activity.
+    do {
+      identityBindingRequired = false; active = true
+      await scan("doorCardsCoin")
+      await waitUntil { model.summary?.activeSession != nil }
+      active = false
+      let syncedBeforeSheet = StoreVisitLiveActivityManager.shared.synced.count
+      let readsBeforeSheet = statusReads
+      await model.openAccountSheet(view: "bill")
+      await waitUntil {
+        model.summary?.activeSession == nil
+          && StoreVisitLiveActivityManager.shared.synced.dropFirst(syncedBeforeSheet).contains("store")
+          && statusReads > readsBeforeSheet
+      }
+      precondition(model.summary?.activeSession == nil && StoreVisitLiveActivityManager.shared.synced.dropFirst(syncedBeforeSheet).contains("store"),
+                   "Opening bill sheet after an external checkout must sync main summary and Live Activity")
+      model.closeAccountSheet()
+      identityBindingRequired = true
+    }
     // A page with only cards, and a shop that bills nothing: no visit card, no other controls.
     billing = false; member = false
     await scan("cards")
@@ -910,6 +963,7 @@ enum PersistentCookieCheck {
     member = false
     await shopOnly.refreshVisit()
     precondition(shopOnly.needsPlatformBinding && !shopOnly.canUseShopSurface)
+    precondition(shopOnly.page?.accountMenu?.tabs.isEmpty == true && shopOnly.page?.accountMenu?.billingBadge == nil)
     precondition(shopOnly.playerStateLoaded, "Binding page is a completed read, not a spinner")
     precondition(shopOnly.binding?.code == "ABC12345", "Shop platform binding must reuse the machine flow")
     // A registered player may still be unbound after optional admission.
@@ -1005,6 +1059,7 @@ enum PersistentCookieCheck {
     let shopCheckoutButton = shopOnly.page!.allBlocks().compactMap { if case .button(let b) = $0, b.id == "checkout" { return b }; return nil }.first!
     await shopOnly.press(shopCheckoutButton)
     precondition(shopOnly.checkoutCelebrating && shopOnly.celebration?.title == "结账成功")
+    precondition(shopOnly.page?.bill()?.mode == "live", "Checkout celebration must not flash the settled bill before the overlay hides")
     precondition(shopOnly.settlement?.playerSettlement.total == 12 && shopOnly.settlement?.wallet?.balanceAfter == 88)
     await shopOnly.finishCheckout()
     precondition(!shopOnly.checkoutCelebrating && shopOnly.shopBillingState == "结账成功")
