@@ -420,8 +420,19 @@ struct PrismPageCelebration: Decodable, Equatable {
 
 /// One block of the page. A block this build cannot read, a new kind or a changed one, is `unknown`
 /// and is skipped: the platform can add to the page without breaking a released App Clip.
+/// A `text` block with `style: "status"`: the page's one state (disabled, waiting for the machine,
+/// scan to start, nothing here yet), drawn like the App Clip's own expired and failed pages.
+struct PrismPageStatus {
+  let id: String
+  let text: String
+  let icon: String?
+  let detail: String?
+  let level: String?
+}
+
 indirect enum PrismPageBlock: Decodable, Identifiable {
   case text(id: String, text: String, style: String?, level: String?)
+  case status(PrismPageStatus)
   case section(PrismPageSection)
   case row(PrismPageRow)
   case kv(PrismPageKeyValue)
@@ -443,7 +454,7 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
   case button(PrismPageButton)
   case unknown(id: String)
 
-  private enum Keys: String, CodingKey { case kind, id, text, style, level }
+  private enum Keys: String, CodingKey { case kind, id, text, style, level, icon, detail }
 
   init(from decoder: Decoder) throws {
     let keyed = try decoder.container(keyedBy: Keys.self)
@@ -451,6 +462,14 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
     let kind = (try? keyed.decode(String.self, forKey: .kind)) ?? ""
     do {
       switch kind {
+      case "text" where (try? keyed.decode(String.self, forKey: .style)) == "status":
+        self = .status(PrismPageStatus(
+          id: id,
+          text: try keyed.decode(String.self, forKey: .text),
+          icon: try? keyed.decode(String.self, forKey: .icon),
+          detail: try? keyed.decode(String.self, forKey: .detail),
+          level: try? keyed.decode(String.self, forKey: .level)
+        ))
       case "text":
         self = .text(
           id: id,
@@ -515,6 +534,7 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
     switch self {
     case .text(let id, _, _, _), .divider(let id), .consent(let id, _), .unknown(let id):
       return id
+    case .status(let status): return status.id
     case .section(let section): return section.id
     case .row(let row): return row.id
     case .kv(let kv): return kv.id
@@ -601,8 +621,10 @@ struct PrismPage: Decodable {
   var asksToSignIn: Bool { allBlocks().contains { if case .signin = $0 { return true }; return false } }
   var needsBinding: Bool { allBlocks().contains { if case .binding = $0 { return true }; return false } }
   var asksConsent: Bool { allBlocks().contains { if case .consent = $0 { return true }; return false } }
-  func hasButton(id: String) -> Bool {
-    allBlocks().contains { if case .button(let button) = $0 { return button.id == id }; return false }
+  func hasButton(id: String) -> Bool { button(id: id) != nil }
+  func button(id: String) -> PrismPageButton? {
+    for block in allBlocks() { if case .button(let button) = block, button.id == id { return button } }
+    return nil
   }
   var buttonIds: [String] {
     allBlocks().compactMap { if case .button(let button) = $0 { return button.id }; return nil }

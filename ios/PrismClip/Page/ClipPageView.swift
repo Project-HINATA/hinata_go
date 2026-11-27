@@ -111,6 +111,7 @@ private func makeClipPageContext(
       var updated = values
       updated[id] = value
       form.values = updated
+      model.dropInlineError(sheet: sheetMode)
     },
     confirm: { form.pendingConfirm = $0 },
     press: { button, collected in
@@ -162,6 +163,7 @@ struct ClipPageBlockView: View {
   @ViewBuilder private var content: some View {
     switch block {
     case .text(_, let text, let style, let level): ClipTextBlock(text: text, style: style, level: level)
+    case .status(let status): ClipStatusBlock(status: status)
     case .section(let section): ClipSectionBlock(section: section, depth: depth, context: context)
     case .row(let row): ClipRowBlock(row: row, depth: depth, context: context)
     case .kv(let kv): ClipKeyValueBlock(kv: kv)

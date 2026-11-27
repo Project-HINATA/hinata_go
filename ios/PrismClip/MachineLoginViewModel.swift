@@ -572,8 +572,10 @@ final class MachineLoginViewModel: ObservableObject {
   private func showCardFeedback(_ feedback: CardFeedback) {
     cardFeedback = feedback
     cardFeedbackTask?.cancel()
+    // News fades; a row with an error keeps it until the next swipe.
+    guard let lasts = noticeLasts(feedback.level) else { cardFeedbackTask = nil; return }
     cardFeedbackTask = Task { [weak self] in
-      try? await Task.sleep(nanoseconds: feedback.level == "success" ? 3_000_000_000 : 5_000_000_000)
+      try? await Task.sleep(nanoseconds: lasts)
       guard !Task.isCancelled else { return }
       self?.cardFeedback = nil
     }
@@ -617,9 +619,9 @@ final class MachineLoginViewModel: ObservableObject {
     func inline(_ code: String, _ level: String, _ body: String) -> PrismNotice {
       PrismNotice(code: code, level: level, display: "inline", flow: "none", body: body)
     }
-    if case LocationError.unavailable = error { return inline("LOCATION_UNAVAILABLE", "warning", String(localized: "定位获取失败，请重试")) }
+    if case LocationError.unavailable = error { return inline("LOCATION_UNAVAILABLE", "error", String(localized: "定位获取失败，请重试")) }
     if (error as? PrismAPIError)?.code == "DEVICE_RESULT_UNKNOWN" {
-      return inline("DEVICE_RESULT_UNKNOWN", "warning", String(localized: "网络异常，请重试"))
+      return inline("DEVICE_RESULT_UNKNOWN", "error", String(localized: "网络异常，请重试"))
     }
     return nil
   }
@@ -637,11 +639,24 @@ final class MachineLoginViewModel: ObservableObject {
     inlineNotice = notice
     inlineNoticeAnchor = anchor
     inlineNoticeTask?.cancel()
+    guard let lasts = noticeLasts(notice.level, onControl: answersOnButton(anchor, in: page)) else { inlineNoticeTask = nil; return }
     inlineNoticeTask = Task { [weak self] in
-      try? await Task.sleep(nanoseconds: notice.level == "success" ? 3_000_000_000 : 5_000_000_000)
+      try? await Task.sleep(nanoseconds: lasts)
       guard !Task.isCancelled else { return }
       self?.inlineNotice = nil
     }
+  }
+
+  /// A button that answers on its own label, which has to come back.
+  private func answersOnButton(_ id: String, in page: PrismPage?) -> Bool {
+    page?.button(id: id)?.answerOnButton == true
+  }
+
+  /// The player changed an input: an error about the old value no longer applies.
+  func dropInlineError(sheet: Bool) {
+    if sheet {
+      if let note = sheetInlineNotice, noticeIsError(note.level) { sheetInlineNotice = nil }
+    } else if let note = inlineNotice, noticeIsError(note.level) { inlineNotice = nil }
   }
 
   private func shopPath(_ suffix: String = "") -> String {
@@ -1369,8 +1384,9 @@ final class MachineLoginViewModel: ObservableObject {
     sheetInlineNotice = notice
     sheetInlineNoticeAnchor = anchor
     sheetInlineNoticeTask?.cancel()
+    guard let lasts = noticeLasts(notice.level, onControl: answersOnButton(anchor, in: sheetPage)) else { sheetInlineNoticeTask = nil; return }
     sheetInlineNoticeTask = Task { [weak self] in
-      try? await Task.sleep(nanoseconds: notice.level == "success" ? 3_000_000_000 : 5_000_000_000)
+      try? await Task.sleep(nanoseconds: lasts)
       guard !Task.isCancelled else { return }
       self?.sheetInlineNotice = nil
     }
@@ -1384,7 +1400,7 @@ final class MachineLoginViewModel: ObservableObject {
       guard let self, !Task.isCancelled, self.sheetWaitingButtonId == id else { return }
       self.sheetWaitingButtonId = nil
       self.showSheetInline(
-        PrismNotice(code: "BUTTON_WAIT_TIMEOUT", level: "warning", display: "inline", flow: "none", body: wait.timeoutMessage),
+        PrismNotice(code: "BUTTON_WAIT_TIMEOUT", level: "error", display: "inline", flow: "none", body: wait.timeoutMessage),
         anchor: id
       )
     }
@@ -1631,7 +1647,7 @@ final class MachineLoginViewModel: ObservableObject {
       guard let self, !Task.isCancelled, self.waitingButtonId == id else { return }
       self.waitingButtonId = nil
       self.showInline(
-        PrismNotice(code: "BUTTON_WAIT_TIMEOUT", level: "warning", display: "inline", flow: "none", body: wait.timeoutMessage),
+        PrismNotice(code: "BUTTON_WAIT_TIMEOUT", level: "error", display: "inline", flow: "none", body: wait.timeoutMessage),
         anchor: id
       )
     }

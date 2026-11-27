@@ -197,14 +197,32 @@ struct PrismNotice: Codable, Equatable {
   struct Action: Codable, Equatable, Hashable { let kind: String; let label: String }
 }
 
+/// A notice has two natures: news (`info`, and `success`, which is news with a tick) and
+/// `error`, meaning what the player asked for did not happen. Anything else (an older
+/// server's `warning`) reads as an error.
+func noticeIsError(_ level: String) -> Bool { level != "success" && level != "info" }
+
+/// How long an inline notice stays: news fades by itself; an error stays until the player
+/// acts again (`nil`), unless it sits on a control whose own label has to come back.
+func noticeLasts(_ level: String, onControl: Bool = false) -> UInt64? {
+  switch level {
+  case "success": return 3_000_000_000
+  case "info": return 4_000_000_000
+  default: return onControl ? 5_000_000_000 : nil
+  }
+}
+
 /// A swipe's outcome on the row of the card it came from: the card's part, then the coin's,
 /// each coloured by its own level.
 struct CardFeedback: Equatable {
   let cardId: String
   let parts: [Part]
   struct Part: Equatable { let level: String; let text: String }
-  /// The card's own outcome decides the row's icon.
-  var level: String { parts.first?.level ?? "success" }
+  /// The row reads as its worst part: an error, else news, else a success.
+  var level: String {
+    if parts.contains(where: { noticeIsError($0.level) }) { return "error" }
+    return parts.contains(where: { $0.level == "info" }) ? "info" : "success"
+  }
 }
 
 /// What confirming this resource would do to the player's billing, or why it cannot bill.

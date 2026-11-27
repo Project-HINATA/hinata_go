@@ -47,7 +47,10 @@
         {
           "kind": "text",
           "id": "empty",
-          "text": "这里没有可操作的设备"
+          "text": "这里没有可操作的设备",
+          "style": "status",
+          "icon": "empty",
+          "level": "muted"
         }
       ]
     },
@@ -67,7 +70,10 @@
         {
           "kind": "text",
           "id": "disabled",
-          "text": "你在本店的玩家资格已停用，请联系店员",
+          "text": "玩家资格已停用",
+          "style": "status",
+          "icon": "blocked",
+          "detail": "请联系店员恢复后再使用",
           "level": "error"
         }
       ]
@@ -215,14 +221,11 @@
       "blocks": [
         {
           "kind": "text",
-          "id": "entry-title",
-          "text": "暂时无法使用",
-          "style": "heading"
-        },
-        {
-          "kind": "text",
           "id": "entry-error",
-          "text": "没有配置计费",
+          "text": "暂时无法使用",
+          "style": "status",
+          "icon": "unavailable",
+          "detail": "没有配置计费",
           "level": "error"
         }
       ]
@@ -540,7 +543,8 @@
           "kind": "text",
           "id": "io-waiting",
           "text": "等待机台连接",
-          "style": "heading"
+          "style": "status",
+          "icon": "waiting"
         }
       ]
     },
@@ -913,7 +917,10 @@
         {
           "kind": "text",
           "id": "empty",
-          "text": "这里没有可操作的设备"
+          "text": "这里没有可操作的设备",
+          "style": "status",
+          "icon": "empty",
+          "level": "muted"
         }
       ]
     },
@@ -1402,8 +1409,8 @@
           "kind": "text",
           "id": "shop-empty",
           "text": "请碰一下 NFC 或扫描机台上的二维码",
-          "style": "body",
-          "level": "muted"
+          "style": "status",
+          "icon": "scan"
         }
       ]
     },

@@ -185,7 +185,7 @@ enum PersistentCookieCheck {
         empty["title"] = "账单"
         empty["resource"] = ""
         empty.removeValue(forKey: "accountMenu")
-        empty["blocks"] = [["kind": "text", "id": "bill-empty", "text": "暂无待结账单", "style": "body", "level": "muted"]]
+        empty["blocks"] = [["kind": "text", "id": "bill-empty", "text": "暂无待结账单", "style": "status", "icon": "receipt", "level": "muted"]]
         return empty
       case "redeem":
         return PageFixtures.shopPage(redeemed ? "redeemDone" : "redeemForm")
@@ -484,7 +484,12 @@ enum PersistentCookieCheck {
       try JSONDecoder().decode(PrismPage.self, from: JSONSerialization.data(withJSONObject: value))
     }
     func kinds(_ blocks: [[String: Any]]) -> [String] {
-      blocks.flatMap { [$0["kind"] as! String] + kinds(($0["blocks"] as? [[String: Any]]) ?? []) }
+      // A `status` text is its own case here: the page's one state, drawn as a whole-page message.
+      blocks.flatMap { block -> [String] in
+        let kind = block["kind"] as! String
+        let name = kind == "text" && block["style"] as? String == "status" ? "status" : kind
+        return [name] + kinds((block["blocks"] as? [[String: Any]]) ?? [])
+      }
     }
     func name(of block: PrismPageBlock) -> String { String(describing: Mirror(reflecting: block).children.first?.label ?? "\(block)") }
     for fixture in PageFixtures.names {
@@ -597,7 +602,10 @@ enum PersistentCookieCheck {
       preconditionFailure("No button \(id) among \(model.page?.buttonIds ?? [])")
     }
     func text(_ id: String) -> String? {
-      for block in model.page?.allBlocks() ?? [] { if case .text(let found, let value, _, _) = block, found == id { return value } }
+      for block in model.page?.allBlocks() ?? [] {
+        if case .text(let found, let value, _, _) = block, found == id { return value }
+        if case .status(let status) = block, status.id == id { return status.text }
+      }
       return nil
     }
     func table() -> PrismPageTable? {

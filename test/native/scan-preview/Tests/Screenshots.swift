@@ -19,6 +19,49 @@ final class ScanScreenshots: XCTestCase {
     XCTAssertFalse(app.alerts.firstMatch.exists)
     attach(app, name: "scan-page")
   }
+  /// A page whose only content is its state: drawn as a whole-page message with its icon.
+  func testStatusPages() {
+    for (fixture, title) in [("disabled", "玩家资格已停用"), ("ioWaiting", "等待机台连接"), ("entryError", "暂时无法使用"), ("empty", "这里没有可操作的设备")] {
+      let app = XCUIApplication()
+      app.launchArguments = ["page=\(fixture)", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      app.launch()
+      XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 20), fixture)
+      attach(app, name: "status-\(fixture)")
+      app.terminate()
+    }
+  }
+  /// An action's outcome where the player acted, one of each nature: news fades, an error stays.
+  func testInlineNotices() {
+    let cases: [(name: String, page: String, notices: String, tap: (XCUIApplication) -> XCUIElement, shows: String)] = [
+      ("door-error", "doorCardsCoin", "error:开门密码获取失败，请重试", { $0.buttons["获取开门密码"] }, "开门密码获取失败，请重试"),
+      ("door-info", "doorCardsCoin", "info:操作过于频繁，请稍后再试", { $0.buttons["获取开门密码"] }, "操作过于频繁，请稍后再试"),
+      ("coin-info", "doorCardsCoin", "info:请稍后再投币", { $0.buttons["投币"] }, "请稍后再投币"),
+      ("coin-success", "doorCardsCoin", "success:已投币", { $0.buttons["投币"] }, "已投币"),
+      ("card-mixed", "doorCardsCoin", "success:已刷卡;error:投币失败", { $0.buttons.containing(.staticText, identifier: "测试 Aime").firstMatch }, "投币失败"),
+    ]
+    for item in cases {
+      let app = XCUIApplication()
+      app.launchArguments = ["page=\(item.page)", "notices=\(item.notices)", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      app.launch()
+      let target = item.tap(app)
+      XCTAssertTrue(target.waitForExistence(timeout: 20), item.name)
+      target.tap()
+      XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", item.shows)).firstMatch.waitForExistence(timeout: 10), item.name)
+      // The coin and the cards sit below the fold.
+      if !item.name.hasPrefix("door") { app.swipeUp(velocity: .slow) }
+      attach(app, name: "notice-\(item.name)")
+      app.terminate()
+    }
+    let app = XCUIApplication()
+    app.launchArguments = ["checkout-insufficient", "notices=info:请离开店铺定位范围后再结账", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    let checkout = app.buttons["结账"]
+    XCTAssertTrue(checkout.waitForExistence(timeout: 20))
+    checkout.tap()
+    XCTAssertTrue(app.staticTexts["请离开店铺定位范围后再结账"].waitForExistence(timeout: 10))
+    XCTAssertFalse(app.alerts.firstMatch.exists)
+    attach(app, name: "notice-checkout-info")
+  }
   func testInsufficientBalanceChinese() {
     checkBalance(language: "zh-Hans", locale: "zh_CN", button: "结账", copy: "余额不足，请充值后重试", dismiss: "知道了")
   }

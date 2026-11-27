@@ -17,6 +17,14 @@ import SwiftUI
       return
     }
     let checkout = ProcessInfo.processInfo.arguments.contains("checkout-insufficient")
+    // `notices=<level>:<text>;…` makes every page action answer with those inline notices, so
+    // Screenshots.swift can show how each nature looks where the player acted.
+    let answerNotices: [[String: Any]]? = ProcessInfo.processInfo.arguments.first { $0.hasPrefix("notices=") }.map { argument in
+      argument.dropFirst(8).split(separator: ";").map { item in
+        let pair = item.split(separator: ":", maxSplits: 1).map(String.init)
+        return ["code": "PREVIEW", "level": pair[0], "display": "inline", "flow": "none", "title": NSNull(), "body": pair[1], "actions": []]
+      }
+    }
     let authHeld = ProcessInfo.processInfo.arguments.contains("auth-held")
     FixtureProtocol.holdNextIdentityResponse = authHeld
     FixtureProtocol.handler = { request in
@@ -28,18 +36,9 @@ import SwiftUI
         case "/api/v1/shops/store/player/me": return ok(["wallet": [], "activeSession": ["id": "visit", "startedAt": "2026-10-05T06:00:00Z"]])
         // The shop page the server draws: a live bill the phone computes from these read-only
         // inputs (an entry fee of 12), with checkout in the footer.
-        case "/api/v1/shops/store/player/page":
-          var page = PageFixtures.shopPage("shopLive")
-          var blocks = page["blocks"] as! [[String: Any]]
-          blocks[0]["billingInputs"] = Self.billingInputs
-          page["blocks"] = blocks
-          // The server words its page in the phone's language; checking out needs no location here.
-          var footer = page["footer"] as! [[String: Any]]
-          footer[0]["needsLocation"] = false
-          if Locale.preferredLanguages.first?.hasPrefix("en") == true { footer[0]["label"] = "Check out" }
-          page["footer"] = footer
-          return ok(page)
+        case "/api/v1/shops/store/player/page": return ok(Self.checkoutPage)
         case "/api/v1/shops/store/player/action":
+          if let answerNotices { return ok(["ok": false, "page": Self.checkoutPage, "notices": answerNotices]) }
           return (409, ["error": ["code": "INSUFFICIENT_BALANCE", "message": "Insufficient currency holdings for this operation."]])
         case "/api/v1/shops/store/player/billing-inputs": return ok(Self.billingInputs)
         case "/api/v1/shops/store/player/checkout/preview": return ok(["settlementPreview": ["total": 12], "chargeItems": [], "adjustments": []])
@@ -54,9 +53,16 @@ import SwiftUI
       case "/api/v1/cards": return ok(["cards": [["id": "card", "label": "测试 Aime", "accessCode": "01234567890123456789"]]])
       // The page names the shop as this preview's server does everywhere else.
       case "/api/v1/devices/session/page":
-        var page = PageFixtures.page("cardsCapture")
+        // `page=<fixture>` among the launch arguments shows that page instead (see Screenshots.swift).
+        let chosen = ProcessInfo.processInfo.arguments.first { $0.hasPrefix("page=") }.map { String($0.dropFirst(5)) }
+        var page = PageFixtures.page(chosen ?? "cardsCapture")
         page["shop"] = "测试店铺"
         return ok(page)
+      case "/api/v1/devices/session/action" where answerNotices != nil:
+        let chosen = ProcessInfo.processInfo.arguments.first { $0.hasPrefix("page=") }.map { String($0.dropFirst(5)) }
+        var page = PageFixtures.page(chosen ?? "cardsCapture")
+        page["shop"] = "测试店铺"
+        return ok(["ok": true, "page": page, "notices": answerNotices!])
       case "/api/v1/devices/session/ws": return (404, ["error": ["code": "NOT_FOUND", "message": "Not found"]])
       case "/api/v1/devices/report": return ok([:])
       case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": false, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": NSNull(), "entryPricing": []])
@@ -66,6 +72,20 @@ import SwiftUI
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [FixtureProtocol.self]
     _model = StateObject(wrappedValue: MachineLoginViewModel(api: PrismAPI(configuration: configuration)))
+  }
+  /// The shop page the server draws: a live bill the phone computes from these read-only
+  /// inputs (an entry fee of 12), with checkout in the footer.
+  private static var checkoutPage: [String: Any] {
+    var page = PageFixtures.shopPage("shopLive")
+    var blocks = page["blocks"] as! [[String: Any]]
+    blocks[0]["billingInputs"] = billingInputs
+    page["blocks"] = blocks
+    // The server words its page in the phone's language; checking out needs no location here.
+    var footer = page["footer"] as! [[String: Any]]
+    footer[0]["needsLocation"] = false
+    if Locale.preferredLanguages.first?.hasPrefix("en") == true { footer[0]["label"] = "Check out" }
+    page["footer"] = footer
+    return page
   }
   /// What the server hands the phone to price the visit: one entry fee of 12.
   private static let billingInputs: [String: Any] = ["playerId": "p", "billingSnapshot": [

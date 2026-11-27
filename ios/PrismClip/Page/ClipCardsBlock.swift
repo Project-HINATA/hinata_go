@@ -73,7 +73,7 @@ struct ClipCardsBlock: View {
             Spacer(minLength: 0)
             if let feedback {
               Image(systemName: noticeSymbol(feedback.level))
-                .font(.title2).foregroundStyle(noticeColor(feedback.level))
+                .font(.title2).foregroundStyle(noticeTint(feedback.level))
             } else if active && [.locating, .sending].contains(model.state) {
               ProgressView()
             } else {
@@ -155,7 +155,7 @@ struct ClipCardCapture: View {
           Text(verbatim: ui.cancelLabel).frame(maxWidth: .infinity).padding(.vertical, 12)
         }.clipActionStyle()
       case .done(let level, let message):
-        Image(systemName: noticeSymbol(level)).font(.largeTitle).foregroundStyle(noticeColor(level))
+        Image(systemName: noticeSymbol(level)).font(.largeTitle).foregroundStyle(noticeTint(level))
         Text(verbatim: message).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
         Button { model.dismissCardCapture() } label: {
           Text(verbatim: ui.doneLabel).frame(maxWidth: .infinity).padding(.vertical, 12)

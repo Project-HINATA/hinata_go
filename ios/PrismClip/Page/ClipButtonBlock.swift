@@ -25,13 +25,7 @@ struct ClipButtonBlock: View {
       let inline = button.answerOnButton != true && context.inlineNoticeAnchor == button.id ? context.inlineNotice : nil
       VStack(spacing: 12) {
         if button.againLabel != nil, let code = model.pageCode { doorCode(code) }
-        if context.noticeAboveButton, let inline {
-          InlineNotice(notice: inline)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
-        }
+        if context.noticeAboveButton, let inline { InlineNotice(notice: inline, lifted: true) }
         control
         if !context.noticeAboveButton, let inline { InlineNotice(notice: inline) }
       }
@@ -63,7 +57,7 @@ struct ClipButtonBlock: View {
     } label: {
       HStack(spacing: 10) {
         if waiting { ProgressView() }
-        else if let note { Image(systemName: noticeSymbol(note.level)) }
+        else if let note { Image(systemName: noticeSymbol(note.level)).foregroundStyle(noticeTint(note.level)) }
         else if let symbol = button.icon.flatMap({ Self.symbols[$0] }) { Image(systemName: symbol) }
         Text(verbatim: note?.body ?? (model.pageCode != nil ? button.againLabel : nil) ?? button.label)
       }
@@ -72,6 +66,9 @@ struct ClipButtonBlock: View {
       .frame(maxWidth: .infinity).padding(.vertical, 12)
     }
     .clipActionStyle(primary: isPrimary, destructive: isDestructive)
+    // An answer on the button is tinted by its nature, so it never reads as a disabled button.
+    .background { if let note { Capsule().fill(noticeTint(note.level).opacity(0.1)) } }
+    .overlay { if let note { Capsule().strokeBorder(noticeTint(note.level).opacity(0.22)) } }
     .disabled(off)
   }
 }
