@@ -9,7 +9,6 @@ struct MachineLoginView: View {
   @Environment(\.dismiss) private var dismiss
   @EnvironmentObject private var model: MachineLoginViewModel
   @StateObject private var pageForm = ClipPageFormState()
-  @State private var showingError = false
   @State private var activeTab: PrismPageAccountTab?
 
   var body: some View {
@@ -29,6 +28,17 @@ struct MachineLoginView: View {
         }
       }
     }
+    .overlay(alignment: .top) {
+      if activeTab == nil {
+        ClipToast(notice: model.inlineNotice?.presentation == "toast" ? model.inlineNotice : model.errorMessage.map {
+          PrismNotice(code: "CLIENT", level: "error", display: "inline", presentation: "toast", flow: "none", body: $0)
+        }) {
+          model.dismissToast()
+        }
+          .padding(.top, 8)
+          .animation(.easeInOut(duration: 0.2), value: model.inlineNotice)
+      }
+    }
     // A problem raised inside the sheet was shown there; it must not pop up once the sheet is gone.
     .sheet(item: $activeTab, onDismiss: {
       if activeTab == nil {
@@ -46,17 +56,13 @@ struct MachineLoginView: View {
       activeTab = nil
       model.finishCheckoutInBackground()
     }
-    .alert("PRiSM", isPresented: $showingError) {
-      Button("知道了") { model.clearError() }
-
-    } message: {
-      Text(model.errorMessage ?? "")
+    .task(id: model.errorMessage) {
+      guard model.errorMessage != nil else { return }
+      do { try await Task.sleep(nanoseconds: 5_000_000_000) } catch { return }
+      model.clearError()
     }
     .onAppear { Task { await model.setSceneActive(true) } }
     .onDisappear { Task { await model.setSceneActive(false) } }
-    .onChange(of: model.errorMessage) {
-      showingError = model.errorMessage != nil && activeTab == nil
-    }
     .onChange(of: model.user?.id) {
       if model.user == nil { activeTab = nil }
     }
@@ -96,22 +102,22 @@ struct MachineLoginView: View {
         .frame(maxWidth: 480)
         .frame(minHeight: max(0, geometry.size.height - 168), alignment: .top)
         .padding(.horizontal, 20)
-        // The sticky footer is an overlay, so leave enough scrollable tail behind it
-        // without reserving an opaque safe-area strip.
-        .padding(.bottom, hasMainFooter ? 120 : 28)
+        .padding(.bottom, 28)
         // In the App Clip the content has to clear the provider notice; in a sheet the toolbar
         // already reserves that space.
         .padding(.top, presentsAppClipNotice ? 140 : 12)
         .frame(maxWidth: .infinity)
       }
     }
-    .overlay(alignment: .bottom) {
+    .safeAreaInset(edge: .bottom, spacing: 0) {
       if hasMainFooter, let page = model.page {
         ClipPageFooter(page: page, form: pageForm)
           .padding(.horizontal, 24)
           .padding(.bottom, 12)
           .frame(maxWidth: 520)
           .frame(maxWidth: .infinity)
+          .padding(.top, 12)
+          .background(Color(.systemGroupedBackground))
       }
     }
     .background(Color(.systemGroupedBackground).ignoresSafeArea())
@@ -596,7 +602,6 @@ private struct ClipAccountContent: View {
         .disabled(model.sheetBusy)
         .padding(.vertical, 28)
         .padding(.horizontal, horizontalPadding)
-        .padding(.bottom, hasFooter ? 100 : 0)
         .frame(maxWidth: 480)
         .frame(maxWidth: .infinity)
       }
@@ -606,18 +611,14 @@ private struct ClipAccountContent: View {
         DispatchQueue.main.async { scroller.scrollTo(anchor, anchor: .center) }
       }
       }
-      .overlay(alignment: .bottom) {
+      .safeAreaInset(edge: .bottom, spacing: 0) {
         if hasFooter, let sheetPage = model.sheetPage {
           VStack(spacing: 12) {
             if let error = model.sheetError {
-              // On its own card, like the web's inline notice, so it never sits on the bill under it.
               Text(verbatim: error)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.red)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .task(id: error) {
                   do { try await Task.sleep(nanoseconds: 5_000_000_000) } catch { return }
                   model.clearSheetError()
@@ -629,9 +630,19 @@ private struct ClipAccountContent: View {
           .padding(.bottom, 12)
           .frame(maxWidth: 480)
           .frame(maxWidth: .infinity)
+          .padding(.top, 12)
+          .background(Color(.systemGroupedBackground))
         }
       }
     }
+    .overlay(alignment: .top) {
+      ClipToast(notice: model.sheetInlineNotice) {
+        model.dismissToast(sheet: true)
+      }
+        .padding(.top, 12)
+        .animation(.easeInOut(duration: 0.2), value: model.sheetInlineNotice)
+    }
+    .modifier(NoticeAlert(model: model, hidden: false))
     .task(id: tab.id) {
       await model.openAccountSheet(view: tab.id)
     }

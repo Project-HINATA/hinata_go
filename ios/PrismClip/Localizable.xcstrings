@@ -1,6 +1,57 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "余额不足，请充值后再结账，计费会继续": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough balance. Top up and check out again; billing continues."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "余额不足，请充值后再结账，计费会继续"
+          }
+        }
+      }
+    },
+    "操作结果尚未确认，请先刷新状态，避免重复操作": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The result is not confirmed. Refresh the status before repeating the action."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作结果尚未确认，请先刷新状态，避免重复操作"
+          }
+        }
+      }
+    },
+    "此操作需要获取当前位置，请允许定位": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This needs your location. Please allow location access."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此操作需要获取当前位置，请允许定位"
+          }
+        }
+      }
+    },
     "/ %@" : {
 
     },

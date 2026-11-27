@@ -1747,5 +1747,281 @@
     "title": "结账成功",
     "subtitle": "计费已结束，离店前无需再做其他操作。",
     "effect": "checkout"
+  },
+  "notices": {
+    "RATE_LIMITED": {
+      "code": "RATE_LIMITED",
+      "level": "info",
+      "display": "dialog",
+      "flow": "none",
+      "title": "操作过于频繁",
+      "body": "操作过于频繁，请稍后再试",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "知道了"
+        }
+      ]
+    },
+    "INSUFFICIENT_BALANCE": {
+      "code": "INSUFFICIENT_BALANCE",
+      "level": "error",
+      "display": "dialog",
+      "flow": "none",
+      "title": "余额不足",
+      "body": "余额不足，请充值后再结账，计费会继续",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "知道了"
+        }
+      ]
+    },
+    "DEVICE_UNAVAILABLE": {
+      "code": "DEVICE_UNAVAILABLE",
+      "level": "error",
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "设备连接失败，请联系店员",
+      "actions": []
+    },
+    "DOOR_CODE_FAILED": {
+      "code": "DOOR_CODE_FAILED",
+      "level": "error",
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "开门密码获取失败，请重试",
+      "actions": []
+    },
+    "COIN_COOLDOWN": {
+      "code": "COIN_COOLDOWN",
+      "level": "info",
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "请稍后再投币",
+      "actions": []
+    },
+    "COIN_SENT": {
+      "code": "COIN_SENT",
+      "level": "success",
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "已投币",
+      "actions": []
+    },
+    "COIN_FAILED": {
+      "code": "COIN_FAILED",
+      "level": "error",
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "投币失败",
+      "actions": []
+    },
+    "CARD_SENT": {
+      "code": "CARD_SENT",
+      "level": "success",
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "已刷卡",
+      "actions": []
+    },
+    "LOCATION_STILL_INSIDE": {
+      "code": "LOCATION_STILL_INSIDE",
+      "level": "info",
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "请离开店铺定位范围后再结账",
+      "actions": []
+    },
+    "REDEEM_CODE_NOT_FOUND": {
+      "code": "REDEEM_CODE_NOT_FOUND",
+      "level": "error",
+      "display": "dialog",
+      "flow": "none",
+      "title": null,
+      "body": "兑换码无效",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "知道了"
+        }
+      ]
+    },
+    "PLAYER_OPTIONS_SAVED": {
+      "code": "PLAYER_OPTIONS_SAVED",
+      "level": "success",
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "已保存选项",
+      "actions": []
+    },
+    "DEVICE_RESULT_UNKNOWN": {
+      "code": "DEVICE_RESULT_UNKNOWN",
+      "level": "error",
+      "display": "dialog",
+      "flow": "none",
+      "title": "操作结果尚未确认",
+      "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "知道了"
+        }
+      ]
+    }
+  },
+  "noticesEn": {
+    "RATE_LIMITED": {
+      "code": "RATE_LIMITED",
+      "level": "info",
+      "display": "dialog",
+      "flow": "none",
+      "title": "Too many attempts",
+      "body": "Too many attempts. Please wait a moment.",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "OK"
+        }
+      ]
+    },
+    "INSUFFICIENT_BALANCE": {
+      "code": "INSUFFICIENT_BALANCE",
+      "level": "error",
+      "display": "dialog",
+      "flow": "none",
+      "title": "Insufficient balance",
+      "body": "Not enough balance. Top up and check out again; billing continues.",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "OK"
+        }
+      ]
+    },
+    "DEVICE_UNAVAILABLE": {
+      "code": "DEVICE_UNAVAILABLE",
+      "level": "error",
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "Could not reach the device. Please ask the staff.",
+      "actions": []
+    },
+    "DOOR_CODE_FAILED": {
+      "code": "DOOR_CODE_FAILED",
+      "level": "error",
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "Could not get the door code. Retry.",
+      "actions": []
+    },
+    "COIN_COOLDOWN": {
+      "code": "COIN_COOLDOWN",
+      "level": "info",
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Please wait before adding another coin.",
+      "actions": []
+    },
+    "COIN_SENT": {
+      "code": "COIN_SENT",
+      "level": "success",
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Coin added",
+      "actions": []
+    },
+    "COIN_FAILED": {
+      "code": "COIN_FAILED",
+      "level": "error",
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Coin failed",
+      "actions": []
+    },
+    "CARD_SENT": {
+      "code": "CARD_SENT",
+      "level": "success",
+      "display": "inline",
+      "presentation": "control",
+      "flow": "none",
+      "title": null,
+      "body": "Card sent",
+      "actions": []
+    },
+    "LOCATION_STILL_INSIDE": {
+      "code": "LOCATION_STILL_INSIDE",
+      "level": "info",
+      "display": "inline",
+      "presentation": "status",
+      "flow": "none",
+      "title": null,
+      "body": "Please leave the shop before checking out.",
+      "actions": []
+    },
+    "REDEEM_CODE_NOT_FOUND": {
+      "code": "REDEEM_CODE_NOT_FOUND",
+      "level": "error",
+      "display": "dialog",
+      "flow": "none",
+      "title": null,
+      "body": "This code is not valid.",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "OK"
+        }
+      ]
+    },
+    "PLAYER_OPTIONS_SAVED": {
+      "code": "PLAYER_OPTIONS_SAVED",
+      "level": "success",
+      "display": "inline",
+      "presentation": "toast",
+      "flow": "none",
+      "title": null,
+      "body": "Options saved",
+      "actions": []
+    },
+    "DEVICE_RESULT_UNKNOWN": {
+      "code": "DEVICE_RESULT_UNKNOWN",
+      "level": "error",
+      "display": "dialog",
+      "flow": "none",
+      "title": "Result not confirmed",
+      "body": "The result is not confirmed. Refresh the status before repeating the action.",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "OK"
+        }
+      ]
+    }
   }
 }

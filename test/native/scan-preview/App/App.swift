@@ -19,11 +19,14 @@ import SwiftUI
     let checkout = ProcessInfo.processInfo.arguments.contains("checkout-insufficient")
     // `notices=<level>:<text>;…` makes every page action answer with those inline notices, so
     // Screenshots.swift can show how each nature looks where the player acted.
-    let answerNotices: [[String: Any]]? = ProcessInfo.processInfo.arguments.first { $0.hasPrefix("notices=") }.map { argument in
+    var answerNotices: [[String: Any]]? = ProcessInfo.processInfo.arguments.first { $0.hasPrefix("notices=") }.map { argument in
       argument.dropFirst(8).split(separator: ";").map { item in
         let pair = item.split(separator: ":", maxSplits: 1).map(String.init)
         return ["code": "PREVIEW", "level": pair[0], "display": "inline", "flow": "none", "title": NSNull(), "body": pair[1], "actions": []]
       }
+    }
+    if let codes = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("notice-codes=") }) {
+      answerNotices = codes.dropFirst(13).split(separator: ",").map { PageFixtures.notice(String($0)) }
     }
     let authHeld = ProcessInfo.processInfo.arguments.contains("auth-held")
     FixtureProtocol.holdNextIdentityResponse = authHeld
@@ -39,10 +42,10 @@ import SwiftUI
         case "/api/v1/shops/store/player/page": return ok(Self.checkoutPage)
         case "/api/v1/shops/store/player/action":
           if let answerNotices { return ok(["ok": false, "page": Self.checkoutPage, "notices": answerNotices]) }
-          return (409, ["error": ["code": "INSUFFICIENT_BALANCE", "message": "Insufficient currency holdings for this operation."]])
+          return (409, ["error": ["code": "INSUFFICIENT_BALANCE", "message": "Insufficient currency holdings for this operation.", "notice": PageFixtures.notice("INSUFFICIENT_BALANCE")]])
         case "/api/v1/shops/store/player/billing-inputs": return ok(Self.billingInputs)
         case "/api/v1/shops/store/player/checkout/preview": return ok(["settlementPreview": ["total": 12], "chargeItems": [], "adjustments": []])
-        case "/api/v1/shops/store/player/checkout/confirm": return (409, ["error": ["code": "INSUFFICIENT_BALANCE", "message": "Insufficient currency holdings for this operation."]])
+        case "/api/v1/shops/store/player/checkout/confirm": return (409, ["error": ["code": "INSUFFICIENT_BALANCE", "message": "Insufficient currency holdings for this operation.", "notice": PageFixtures.notice("INSUFFICIENT_BALANCE")]])
         default: return ok([:])
         }
       }
@@ -63,6 +66,12 @@ import SwiftUI
         var page = PageFixtures.page(chosen ?? "cardsCapture")
         page["shop"] = "测试店铺"
         return ok(["ok": true, "page": page, "notices": answerNotices!])
+      case "/api/v1/shops/store/player/page":
+        let view = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "view" }?.value
+        return ok(PageFixtures.shopPage(view == "redeem" ? "redeemForm" : "billSheet"))
+      case "/api/v1/shops/store/player/action":
+        let redeem = ProcessInfo.processInfo.arguments.contains("sheet-preview=redeem")
+        return ok(["ok": false, "page": PageFixtures.shopPage(redeem ? "redeemForm" : "billSheet"), "notices": [PageFixtures.notice(redeem ? "REDEEM_CODE_NOT_FOUND" : "INSUFFICIENT_BALANCE")]])
       case "/api/v1/devices/session/ws": return (404, ["error": ["code": "NOT_FOUND", "message": "Not found"]])
       case "/api/v1/devices/report": return ok([:])
       case "/api/v1/shops/store": return ok(["shop": ["name": "测试店铺", "billingEnabled": false, "checkinGeo": false, "checkoutGeo": false, "autoRegister": false, "botContact": "", "timeZone": "Asia/Tokyo"], "membership": NSNull(), "entryPricing": []])

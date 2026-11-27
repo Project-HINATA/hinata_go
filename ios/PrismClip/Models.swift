@@ -190,6 +190,7 @@ struct PrismNotice: Codable, Equatable {
   let code: String
   let level: String
   let display: String
+  var presentation: String? = nil
   let flow: String
   var title: String? = nil
   let body: String
@@ -210,6 +211,13 @@ func noticeLasts(_ level: String, onControl: Bool = false) -> UInt64? {
   case "info": return 4_000_000_000
   default: return onControl ? 5_000_000_000 : nil
   }
+}
+
+/// Controls briefly hold their result; field and status feedback lasts until replaced.
+func noticeDuration(_ notice: PrismNotice, onControl: Bool) -> UInt64? {
+  if onControl { return noticeLasts(notice.level, onControl: true) }
+  if notice.presentation == "status" || notice.presentation == "field" { return nil }
+  return noticeLasts(notice.level, onControl: notice.presentation == "toast")
 }
 
 /// A swipe's outcome on the row of the card it came from: the card's part, then the coin's,

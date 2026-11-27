@@ -88,7 +88,7 @@ struct LocationSample { let latitude: Double; let longitude: Double; let accurac
   static var calls = 0
   func currentLocation() async throws -> LocationSample { Self.calls += 1; return LocationSample(latitude: 35, longitude: 139, accuracy: 5) }
 }
-enum LocationError: LocalizedError { case unavailable }
+enum LocationError: LocalizedError { case denied, unavailable }
 func isAuthenticationCancellation(_ error: Error) -> Bool { error is CancellationError }
 
 final class FixtureProtocol: URLProtocol {
@@ -151,6 +151,9 @@ enum PageFixtures {
     return page
   }
   static var code: [String: Any] { file["code"] as! [String: Any] }
+  static func notice(_ code: String) -> [String: Any] {
+    (file[Locale.preferredLanguages.first?.hasPrefix("en") == true ? "noticesEn" : "notices"] as! [String: Any])[code] as! [String: Any]
+  }
   static var celebration: [String: Any] { file["celebration"] as! [String: Any] }
   /// `page` with the first block of `kind` changed, for a state the platform would send next.
   static func changing(_ page: [String: Any], kind: String, _ change: (inout [String: Any]) -> Void) -> [String: Any] {

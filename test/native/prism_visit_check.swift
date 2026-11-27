@@ -32,6 +32,14 @@ enum PersistentCookieCheck {
   while !done() && Date() < deadline { try? await Task.sleep(nanoseconds: 1_000_000) }
 }
 
+// Print the failed check for command-line runs where Swift's crash report is unavailable.
+private func precondition(_ condition: @autoclosure () -> Bool, _ message: @autoclosure () -> String = "", file: StaticString = #file, line: UInt = #line) {
+  if !condition() {
+    fputs("\(file):\(line): \(message())\n", stderr)
+    exit(1)
+  }
+}
+
 @main struct PrismVisitCheck {
   @MainActor static func main() async throws {
     refuseKeychainDialogs()
@@ -671,7 +679,7 @@ enum PersistentCookieCheck {
     await model.press(button("coin"))
     precondition(sent("coin").count == 5 && Set(operationIds("coin")).count == 1)
     precondition(model.state == .ready && model.ticket != nil && model.errorMessage == nil && !model.slowNetwork)
-    precondition(model.inlineNotice?.code == "DEVICE_RESULT_UNKNOWN" && model.inlineNoticeAnchor == "coin")
+    precondition(model.dialogNotice?.code == "DEVICE_RESULT_UNKNOWN")
     await model.press(button("coin"))
     precondition(sent("coin").count == 6 && Set(operationIds("coin")).count == 1, "A press with no answer is sent again as itself")
     precondition(model.inlineNotice?.code == "COIN_SENT" && model.inlineNoticeAnchor == "coin")
@@ -744,11 +752,11 @@ enum PersistentCookieCheck {
     await model.openAccountSheet(view: "bill")
     let sheetCheckout = model.sheetPage!.allBlocks().compactMap { if case .button(let b) = $0, b.id == "checkout" { return b }; return nil }.first!
     await model.pressSheet(sheetCheckout)
-    precondition(model.sheetError == "余额不足，请充值后重试")
+    precondition(model.dialogNotice?.body == "余额不足，请充值后再结账，计费会继续")
     precondition(model.sheetPage?.billingActive == true && checkoutCalls == 1, "Balance rejection must retain the bill without retrying checkout")
     lostReplies = 5
     await model.pressSheet(sheetCheckout)
-    precondition(model.sheetInlineNotice?.code == "DEVICE_RESULT_UNKNOWN" && model.sheetInlineNoticeAnchor == "checkout")
+    precondition(model.dialogNotice?.code == "DEVICE_RESULT_UNKNOWN")
     await model.pressSheet(sheetCheckout)
     let sheetCheckoutIds = shopActions.filter { $0["action"] as? String == "checkout.confirm" }.map { $0["operationId"] as! String }
     precondition(sheetCheckoutIds.count == 8 && sheetCheckoutIds[0] != sheetCheckoutIds[1] && Set(sheetCheckoutIds.dropFirst()).count == 1)

@@ -31,13 +31,107 @@ final class ScanScreenshots: XCTestCase {
     }
   }
   /// An action's outcome where the player acted, one of each nature: news fades, an error stays.
+  func testNoticeClassification() {
+    let cases = [
+      ("alert-rate", "door", "RATE_LIMITED", "获取开门密码", "操作过于频繁，请稍后再试", true),
+      ("status-device", "door", "DEVICE_UNAVAILABLE", "获取开门密码", "设备连接失败，请联系店员", false),
+      ("toast-door", "door", "DOOR_CODE_FAILED", "获取开门密码", "开门密码获取失败，请重试", false),
+      ("coin-disabled", "cardsCapture", "COIN_COOLDOWN", "投币", "请稍后再投币", false),
+    ]
+    for (name, page, code, label, body, alert) in cases {
+      let app = XCUIApplication()
+      app.launchArguments = ["page=\(page)", "notice-codes=\(code)", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      app.launch()
+      XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 20))
+      app.buttons[label].tap()
+      XCTAssertTrue(app.staticTexts[body].waitForExistence(timeout: 10))
+      XCTAssertEqual(app.alerts.firstMatch.exists, alert)
+      if code == "COIN_COOLDOWN" {
+        XCTAssertFalse(app.buttons.containing(.staticText, identifier: body).firstMatch.isEnabled)
+      }
+      if code == "DOOR_CODE_FAILED" {
+        XCTAssertLessThan(app.staticTexts[body].frame.minY, app.frame.height * 0.15)
+      }
+      attach(app, name: name)
+      if code == "DEVICE_UNAVAILABLE" || code == "REDEEM_CODE_NOT_FOUND" {
+        Thread.sleep(forTimeInterval: 5)
+        XCTAssertTrue(app.staticTexts[body].exists)
+      }
+      app.terminate()
+    }
+    let app = XCUIApplication()
+    app.launchArguments = ["checkout-insufficient", "notice-codes=INSUFFICIENT_BALANCE", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    XCTAssertTrue(app.buttons["结账"].waitForExistence(timeout: 20))
+    app.buttons["结账"].tap()
+    XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 10))
+    attach(app, name: "alert-balance")
+  }
+
+  func testToastSwipeDismissal() {
+    for direction in ["left", "right", "up", "down"] {
+      let app = XCUIApplication()
+      app.launchArguments = ["page=door", "notice-codes=DOOR_CODE_FAILED", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      app.launch()
+      XCTAssertTrue(app.buttons["获取开门密码"].waitForExistence(timeout: 20))
+      app.buttons["获取开门密码"].tap()
+      let toast = app.descendants(matching: .any)["page-toast"].firstMatch
+      XCTAssertTrue(toast.waitForExistence(timeout: 5))
+      XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "测试玩家")).firstMatch.exists)
+      switch direction {
+      case "left": toast.swipeLeft()
+      case "right": toast.swipeRight()
+      case "up": toast.swipeUp()
+      default: toast.swipeDown()
+      }
+      if direction == "down" {
+        XCTAssertTrue(toast.exists)
+        attach(app, name: "toast-over-controls")
+      } else {
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: toast)
+        waitForExpectations(timeout: 2)
+      }
+      app.terminate()
+    }
+  }
+
+  func testSheetNoticeClassification() {
+    for view in ["兑换", "账单"] {
+      let app = XCUIApplication()
+      app.launchArguments = ["page=door", "sheet-preview=\(view == "兑换" ? "redeem" : "bill")", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      app.launch()
+      let menu = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "测试玩家")).firstMatch
+      XCTAssertTrue(menu.waitForExistence(timeout: 20))
+      menu.tap()
+      app.buttons[view].tap()
+      if view == "兑换" {
+        let input = app.textFields["兑换码"]
+        XCTAssertTrue(input.waitForExistence(timeout: 10))
+        input.tap()
+        input.typeText("BAD")
+        app.buttons["兑换"].tap()
+        XCTAssertTrue(app.staticTexts["兑换码无效"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.alerts.firstMatch.exists)
+        attach(app, name: "alert-redeem")
+        app.alerts.buttons["知道了"].tap()
+        XCTAssertEqual(input.value as? String, "BAD")
+      } else {
+        XCTAssertTrue(app.buttons["结账"].waitForExistence(timeout: 10))
+        app.buttons["结账"].tap()
+        XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 10))
+        attach(app, name: "sheet-alert-balance")
+      }
+      app.terminate()
+    }
+  }
+
   func testInlineNotices() {
     let cases: [(name: String, page: String, notices: String, tap: (XCUIApplication) -> XCUIElement, shows: String)] = [
-      ("door-error", "doorCardsCoin", "error:开门密码获取失败，请重试", { $0.buttons["获取开门密码"] }, "开门密码获取失败，请重试"),
-      ("door-info", "doorCardsCoin", "info:操作过于频繁，请稍后再试", { $0.buttons["获取开门密码"] }, "操作过于频繁，请稍后再试"),
-      ("coin-info", "doorCardsCoin", "info:请稍后再投币", { $0.buttons["投币"] }, "请稍后再投币"),
-      ("coin-success", "doorCardsCoin", "success:已投币", { $0.buttons["投币"] }, "已投币"),
-      ("card-mixed", "doorCardsCoin", "success:已刷卡;error:投币失败", { $0.buttons.containing(.staticText, identifier: "测试 Aime").firstMatch }, "投币失败"),
+      ("door-error", "door", "error:开门密码获取失败，请重试", { $0.buttons["获取开门密码"] }, "开门密码获取失败，请重试"),
+      ("door-info", "door", "info:操作过于频繁，请稍后再试", { $0.buttons["获取开门密码"] }, "操作过于频繁，请稍后再试"),
+      ("coin-info", "cardsCapture", "info:请稍后再投币", { $0.buttons["投币"] }, "请稍后再投币"),
+      ("coin-success", "cardsCapture", "success:已投币", { $0.buttons["投币"] }, "已投币"),
+      ("card-mixed", "cardsCapture", "success:已刷卡;error:投币失败", { $0.buttons.containing(.staticText, identifier: "测试 Aime").firstMatch }, "投币失败"),
     ]
     for item in cases {
       let app = XCUIApplication()
@@ -47,9 +141,17 @@ final class ScanScreenshots: XCTestCase {
       XCTAssertTrue(target.waitForExistence(timeout: 20), item.name)
       target.tap()
       XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", item.shows)).firstMatch.waitForExistence(timeout: 10), item.name)
+      if item.name.hasPrefix("coin") {
+        XCTAssertFalse(app.buttons.containing(.staticText, identifier: item.shows).firstMatch.isEnabled)
+      }
       // The coin and the cards sit below the fold.
       if !item.name.hasPrefix("door") { app.swipeUp(velocity: .slow) }
       attach(app, name: "notice-\(item.name)")
+      if item.name.hasPrefix("coin") {
+        let ready = NSPredicate(format: "enabled == true")
+        expectation(for: ready, evaluatedWith: app.buttons["投币"])
+        waitForExpectations(timeout: 7)
+      }
       app.terminate()
     }
     let app = XCUIApplication()
@@ -63,10 +165,10 @@ final class ScanScreenshots: XCTestCase {
     attach(app, name: "notice-checkout-info")
   }
   func testInsufficientBalanceChinese() {
-    checkBalance(language: "zh-Hans", locale: "zh_CN", button: "结账", copy: "余额不足，请充值后重试", dismiss: "知道了")
+    checkBalance(language: "zh-Hans", locale: "zh_CN", button: "结账", copy: "余额不足，请充值后再结账，计费会继续", dismiss: "知道了")
   }
   func testInsufficientBalanceEnglish() {
-    checkBalance(language: "en", locale: "en_US", button: "Check out", copy: "Insufficient balance. Please top up and try again.", dismiss: "OK")
+    checkBalance(language: "en", locale: "en_US", button: "Check out", copy: "Not enough balance. Top up and check out again; billing continues.", dismiss: "OK")
   }
   private func checkBalance(language: String, locale: String, button: String, copy: String, dismiss: String) {
     let app = XCUIApplication()

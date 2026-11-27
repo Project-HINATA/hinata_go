@@ -586,6 +586,11 @@ final class MachineLoginViewModel: ObservableObject {
   /// network, no location) the local message is shown as before.
   @discardableResult
   func present(_ error: Error, retry: (() async -> Void)? = nil) -> PrismNotice? {
+    if error is CancellationError || (error as? URLError)?.code == .cancelled { return nil }
+    if let apiError = error as? PrismAPIError, apiError.notice == nil {
+      if apiError.isSessionExpired { expire(); return nil }
+      if apiError.code == "AUTHENTICATION_REQUIRED" { applyNoticeFlow("signin"); return nil }
+    }
     guard let notice = (error as? PrismAPIError)?.notice ?? localNotice(error) else {
       if (error as? PrismAPIError)?.isSessionExpired == true { expire() }
       else if (error as? PrismAPIError)?.code == "AUTHENTICATION_REQUIRED" {
@@ -617,13 +622,22 @@ final class MachineLoginViewModel: ObservableObject {
   /// Problems found on the phone that are part of normal use, worded like the server's.
   private func localNotice(_ error: Error) -> PrismNotice? {
     func inline(_ code: String, _ level: String, _ body: String) -> PrismNotice {
-      PrismNotice(code: code, level: level, display: "inline", flow: "none", body: body)
+      PrismNotice(code: code, level: level, display: "inline", presentation: "toast", flow: "none", body: body)
+    }
+    if (error as? PrismAPIError)?.code == "INSUFFICIENT_BALANCE" {
+      return PrismNotice(code: "INSUFFICIENT_BALANCE", level: "error", display: "dialog", flow: "none", body: String(localized: "余额不足，请充值后再结账，计费会继续"))
+    }
+    if (error as? PrismAPIError)?.code == "RATE_LIMITED" {
+      return PrismNotice(code: "RATE_LIMITED", level: "info", display: "dialog", flow: "none", body: String(localized: "操作过于频繁，请稍后再试"))
+    }
+    if case LocationError.denied = error {
+      return PrismNotice(code: "LOCATION_REQUIRED", level: "error", display: "dialog", flow: "none", body: String(localized: "此操作需要获取当前位置，请允许定位"))
     }
     if case LocationError.unavailable = error { return inline("LOCATION_UNAVAILABLE", "error", String(localized: "定位获取失败，请重试")) }
     if (error as? PrismAPIError)?.code == "DEVICE_RESULT_UNKNOWN" {
-      return inline("DEVICE_RESULT_UNKNOWN", "error", String(localized: "网络异常，请重试"))
+      return PrismNotice(code: "DEVICE_RESULT_UNKNOWN", level: "error", display: "dialog", flow: "none", body: String(localized: "操作结果尚未确认，请先刷新状态，避免重复操作"))
     }
-    return nil
+    return inline("CLIENT", "error", friendlyMessage(error))
   }
 
   var canRetryNotice: Bool { dialogRetry != nil }
@@ -635,11 +649,28 @@ final class MachineLoginViewModel: ObservableObject {
     if let retry { Task { await retry() } }
   }
 
+  func dismissToast(sheet: Bool = false) {
+    if sheet {
+      guard sheetInlineNotice?.presentation == "toast" else { return }
+      sheetInlineNoticeTask?.cancel()
+      sheetInlineNotice = nil
+    } else {
+      if inlineNotice?.presentation == "toast" {
+        inlineNoticeTask?.cancel()
+        inlineNotice = nil
+      }
+      errorMessage = nil
+    }
+  }
+
   private func showInline(_ notice: PrismNotice, anchor: String) {
+    var notice = notice
+    let onControl = answersOnButton(anchor, in: page)
+    if onControl { notice.presentation = "control" }
     inlineNotice = notice
     inlineNoticeAnchor = anchor
     inlineNoticeTask?.cancel()
-    guard let lasts = noticeLasts(notice.level, onControl: answersOnButton(anchor, in: page)) else { inlineNoticeTask = nil; return }
+    guard let lasts = noticeDuration(notice, onControl: onControl) else { inlineNoticeTask = nil; return }
     inlineNoticeTask = Task { [weak self] in
       try? await Task.sleep(nanoseconds: lasts)
       guard !Task.isCancelled else { return }
@@ -655,8 +686,8 @@ final class MachineLoginViewModel: ObservableObject {
   /// The player changed an input: an error about the old value no longer applies.
   func dropInlineError(sheet: Bool) {
     if sheet {
-      if let note = sheetInlineNotice, noticeIsError(note.level) { sheetInlineNotice = nil }
-    } else if let note = inlineNotice, noticeIsError(note.level) { inlineNotice = nil }
+      if let note = sheetInlineNotice, noticeIsError(note.level) || note.presentation == "field" { sheetInlineNotice = nil }
+    } else if let note = inlineNotice, noticeIsError(note.level) || note.presentation == "field" { inlineNotice = nil }
   }
 
   private func shopPath(_ suffix: String = "") -> String {
@@ -1381,10 +1412,13 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   private func showSheetInline(_ notice: PrismNotice, anchor: String) {
+    var notice = notice
+    let onControl = answersOnButton(anchor, in: sheetPage)
+    if onControl { notice.presentation = "control" }
     sheetInlineNotice = notice
     sheetInlineNoticeAnchor = anchor
     sheetInlineNoticeTask?.cancel()
-    guard let lasts = noticeLasts(notice.level, onControl: answersOnButton(anchor, in: sheetPage)) else { sheetInlineNoticeTask = nil; return }
+    guard let lasts = noticeDuration(notice, onControl: onControl) else { sheetInlineNoticeTask = nil; return }
     sheetInlineNoticeTask = Task { [weak self] in
       try? await Task.sleep(nanoseconds: lasts)
       guard !Task.isCancelled else { return }
@@ -1400,7 +1434,7 @@ final class MachineLoginViewModel: ObservableObject {
       guard let self, !Task.isCancelled, self.sheetWaitingButtonId == id else { return }
       self.sheetWaitingButtonId = nil
       self.showSheetInline(
-        PrismNotice(code: "BUTTON_WAIT_TIMEOUT", level: "error", display: "inline", flow: "none", body: wait.timeoutMessage),
+        PrismNotice(code: "BUTTON_WAIT_TIMEOUT", level: "error", display: "inline", presentation: "toast", flow: "none", body: wait.timeoutMessage),
         anchor: id
       )
     }
@@ -1583,7 +1617,7 @@ final class MachineLoginViewModel: ObservableObject {
       for notice in answer.notices {
         applyNoticeFlow(notice.flow)
         if notice.display == "inline" { showSheetInline(notice, anchor: button.id) }
-        else if notice.display == "dialog" { sheetError = notice.body }
+        else if notice.display == "dialog" { dialogNotice = notice }
       }
       if answer.ok, let celebration = answer.celebration {
         if let receipt = answer.receipt { settlement = receipt }
@@ -1614,11 +1648,7 @@ final class MachineLoginViewModel: ObservableObject {
           return
         }
         if notice.display == "inline" { showSheetInline(notice, anchor: button.id) }
-        else if notice.display == "dialog" {
-          dialogNotice = nil
-          dialogRetry = nil
-          sheetError = notice.body
-        }
+
       } else if state != .expired && state != .unauthenticated {
         sheetError = errorMessage ?? friendlyMessage(error)
         errorMessage = nil
@@ -1647,7 +1677,7 @@ final class MachineLoginViewModel: ObservableObject {
       guard let self, !Task.isCancelled, self.waitingButtonId == id else { return }
       self.waitingButtonId = nil
       self.showInline(
-        PrismNotice(code: "BUTTON_WAIT_TIMEOUT", level: "error", display: "inline", flow: "none", body: wait.timeoutMessage),
+        PrismNotice(code: "BUTTON_WAIT_TIMEOUT", level: "error", display: "inline", presentation: "toast", flow: "none", body: wait.timeoutMessage),
         anchor: id
       )
     }

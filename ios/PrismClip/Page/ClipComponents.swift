@@ -110,18 +110,18 @@ extension View {
 /// The symbol of a notice level, shared by the card row, the coin button and the controls.
 func noticeSymbol(_ level: String) -> String {
   switch level {
-  case "success": return "checkmark.circle.fill"
-  case "info": return "info.circle.fill"
-  default: return "exclamationmark.circle.fill"
+  case "success": return "checkmark.circle"
+  case "info": return "info.circle"
+  case "error": return "xmark.circle"
+  default: return "exclamationmark.circle"
   }
 }
 
-/// The colour of a notice's words. Success takes the app's accent blue; news reads as
-/// plain text, so it never looks like a disabled control.
+/// Feedback uses accent blue for success, secondary text for information and red for errors.
 func noticeColor(_ level: String) -> Color {
   switch level {
   case "success": return .blue
-  case "info": return .primary
+  case "info": return .secondary
   default: return .red
   }
 }
@@ -129,31 +129,58 @@ func noticeColor(_ level: String) -> Color {
 /// The colour of a notice's icon and tint: blue for news, red for an error.
 func noticeTint(_ level: String) -> Color { noticeIsError(level) ? .red : .blue }
 
-/// An action's outcome, shown where the player acted instead of in an alert: one tinted
-/// strip with the nature's icon, the same under a button, in a sheet and above a footer button.
+/// Persistent conditions and input feedback stay beside the relevant control.
 struct InlineNotice: View {
   let notice: PrismNotice
-  /// Over scrolling content (a footer button): lifted off the page with a shadow.
-  var lifted = false
   var body: some View {
-    let tint = noticeTint(notice.level)
-    HStack(alignment: .firstTextBaseline, spacing: 8) {
-      Image(systemName: noticeSymbol(notice.level)).foregroundStyle(tint)
-      Text(notice.body).foregroundStyle(noticeColor(notice.level))
+    Label(notice.body, systemImage: noticeSymbol(notice.level))
+      .font(.subheadline)
+      .foregroundStyle(noticeIsError(notice.level) ? Color.red : Color.secondary)
+      .fixedSize(horizontal: false, vertical: true)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .accessibilityElement(children: .combine)
+      .accessibilityAddTraits(.updatesFrequently)
+  }
+}
+
+/// A transient result floats at the top of the currently presented screen.
+struct ClipToast: View {
+  let notice: PrismNotice?
+  let dismiss: () -> Void
+  @GestureState private var drag = CGSize.zero
+
+  var body: some View {
+    if let notice, notice.presentation == "toast" {
+      Label(notice.body, systemImage: noticeSymbol(notice.level))
+        .font(.subheadline.weight(.medium))
+        .foregroundStyle(.primary)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+        .fixedSize(horizontal: false, vertical: true)
+        .offset(x: drag.width, y: drag.height)
+        .gesture(
+          DragGesture(minimumDistance: 10)
+            .updating($drag) { value, state, _ in
+              state = CGSize(width: value.translation.width, height: min(0, value.translation.height))
+            }
+            .onEnded { value in
+              let horizontal = abs(value.translation.width) > 60 || abs(value.predictedEndTranslation.width) > 140
+              let upward = value.translation.height < -40 || value.predictedEndTranslation.height < -100
+              if horizontal || upward {
+                withAnimation(.easeOut(duration: 0.2)) { dismiss() }
+              }
+            }
+        )
+        .frame(maxWidth: 440)
+        .padding(.horizontal, 20)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.updatesFrequently)
+        .accessibilityIdentifier("page-toast")
+        .accessibilityAction(.escape) { dismiss() }
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
-    .font(.subheadline.weight(.semibold))
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.horizontal, 14)
-    .padding(.vertical, 11)
-    .background {
-      RoundedRectangle(cornerRadius: 14, style: .continuous)
-        .fill(Color(.secondarySystemGroupedBackground))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(tint.opacity(0.09)))
-        .shadow(color: .black.opacity(lifted ? 0.08 : 0), radius: 5, y: 2)
-    }
-    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(tint.opacity(0.2)))
-    .transition(.opacity.combined(with: .move(edge: .top)))
-    .accessibilityAddTraits(.updatesFrequently)
   }
 }
 
@@ -165,6 +192,6 @@ struct AnchoredNotice: View {
   /// Every control on the page itself; the account sheet shows its own.
   static let page: Set<String> = ["entry", "binding"]
   var body: some View {
-    if let note = model.inlineNotice, anchors.contains(model.inlineNoticeAnchor) { InlineNotice(notice: note) }
+    if let note = model.inlineNotice, note.presentation != "toast", anchors.contains(model.inlineNoticeAnchor) { InlineNotice(notice: note) }
   }
 }
