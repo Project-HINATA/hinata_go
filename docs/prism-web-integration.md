@@ -214,3 +214,5 @@ Player copy stays brief. Code-format rejection uses the same invalid-code alert 
 Automatic retries retain the loading indicator without an extra slow-network/retrying message.
 
 Screenshot checks for silent notices assert the absence of an alert, rather than searching the accessibility tree for an empty message.
+
+The main page and account sheet footers float as transparent overlays; scroll content reserves a tail for the button without an opaque safe-area background. Account drill-down uses the native NavigationStack and back gesture. Each level retains its own server page, form state and scroll view, so returning to history restores the existing list without a reload or content replacement flash. Only the active level presents notices. Native checks cover retained pages; the UI harness covers bill footer rendering and history push/back.

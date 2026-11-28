@@ -1499,6 +1499,13 @@ final class MachineLoginViewModel: ObservableObject {
     await loadCurrentSheetPage()
   }
 
+  /// Navigation keeps each underlying screen mounted with its saved page and scroll position.
+  func sheetPage(for target: PrismPageTarget) -> PrismPage? {
+    guard let index = sheetStack.firstIndex(of: target) else { return nil }
+    if index == sheetStack.count - 1 { return sheetPage }
+    return index < sheetKeptPages.count ? sheetKeptPages[index] : nil
+  }
+
   func openSheetTarget(_ target: PrismPageTarget) async {
     guard !sheetBusy else { return }
     sheetKeptPages.append(sheetPage)

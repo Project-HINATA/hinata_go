@@ -168,6 +168,31 @@ final class ScanScreenshots: XCTestCase {
     }
   }
 
+  func testAccountNavigationAndFloatingFooters() {
+    let app = XCUIApplication()
+    app.launchArguments = ["page=door", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    let menu = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "测试玩家")).firstMatch
+    XCTAssertTrue(menu.waitForExistence(timeout: 20))
+    menu.tap()
+    app.buttons["账单"].tap()
+    XCTAssertTrue(app.buttons["结账"].waitForExistence(timeout: 10))
+    attach(app, name: "bill-floating-footer")
+    app.navigationBars.buttons.matching(NSPredicate(format: "label IN %@", ["关闭", "Close"])).firstMatch.tap()
+    menu.tap()
+    app.buttons["记录"].tap()
+    let record = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "11:00 – 12:00")).firstMatch
+    XCTAssertTrue(record.waitForExistence(timeout: 10))
+    record.tap()
+    XCTAssertTrue(app.navigationBars["账单详情"].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.navigationBars.buttons["记录"].exists)
+    attach(app, name: "history-native-detail")
+    app.navigationBars.buttons["记录"].tap()
+    XCTAssertTrue(record.waitForExistence(timeout: 10))
+    XCTAssertTrue(app.navigationBars["记录"].exists)
+    attach(app, name: "history-native-return")
+  }
+
   func testSheetNoticeClassification() {
     for view in ["兑换", "账单"] {
       let app = XCUIApplication()

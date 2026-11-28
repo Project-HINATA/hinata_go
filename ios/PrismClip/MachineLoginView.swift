@@ -76,6 +76,7 @@ struct MachineLoginView: View {
     !model.checkoutCelebrating
       && !model.suggestPasskey
       && !model.cardsLoadFailed
+      && model.inlineNotice?.presentation != "page"
       && [.ready, .locating, .sending].contains(model.state)
       && !(model.page?.footer ?? []).isEmpty
   }
@@ -102,22 +103,20 @@ struct MachineLoginView: View {
         .frame(maxWidth: 480)
         .frame(minHeight: max(0, geometry.size.height - 168), alignment: .top)
         .padding(.horizontal, 20)
-        .padding(.bottom, 28)
+        .padding(.bottom, hasMainFooter ? 120 : 28)
         // In the App Clip the content has to clear the provider notice; in a sheet the toolbar
         // already reserves that space.
         .padding(.top, presentsAppClipNotice ? 140 : 12)
         .frame(maxWidth: .infinity)
       }
     }
-    .safeAreaInset(edge: .bottom, spacing: 0) {
+    .overlay(alignment: .bottom) {
       if hasMainFooter, let page = model.page {
         ClipPageFooter(page: page, form: pageForm)
           .padding(.horizontal, 24)
           .padding(.bottom, 12)
           .frame(maxWidth: 520)
           .frame(maxWidth: .infinity)
-          .padding(.top, 12)
-          .background(Color(.systemGroupedBackground))
       }
     }
     .background(Color(.systemGroupedBackground).ignoresSafeArea())
@@ -479,7 +478,7 @@ private struct ClipAccountSheet: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   @Environment(\.dismiss) private var dismiss
   let tab: PrismPageAccountTab
-  @StateObject private var sheetForm = ClipPageFormState()
+  @State private var navigationPath: [PrismPageTarget] = []
   /// Kept across the dismissal transition so the celebration stays solid while the sheet slides down.
   @State private var frozenCelebration: PrismPageCelebration? = nil
 
@@ -497,25 +496,36 @@ private struct ClipAccountSheet: View {
 
   var body: some View {
     Group {
-      if #available(iOS 26.0, *) {
-        NavigationStack { content }
-          .presentationCornerRadius(nil)
-      } else if #available(iOS 16.0, *) {
-        NavigationStack { content }
+      if #available(iOS 16.0, *) {
+        NavigationStack(path: $navigationPath) {
+          content(for: PrismPageTarget(view: tab.id))
+            .navigationDestination(for: PrismPageTarget.self) { target in content(for: target) }
+        }
       } else {
-        NavigationView { content }.navigationViewStyle(.stack)
+        NavigationView { content(for: model.sheetStack.last ?? PrismPageTarget(view: tab.id)) }
+          .navigationViewStyle(.stack)
       }
     }
     .environment(\.prismInSheet, true)
+    .onChange(of: model.sheetStack) { _, stack in
+      let next = Array(stack.dropFirst())
+      if next != navigationPath { withAnimation { navigationPath = next } }
+    }
+    .onChange(of: navigationPath) { _, path in
+      let levels = model.sheetStack.count - 1 - path.count
+      guard levels > 0 else { return }
+      Task { for _ in 0..<levels { await model.popSheetTarget() } }
+    }
+    .task(id: tab.id) { await model.openAccountSheet(view: tab.id) }
   }
 
-  private var sheetTitle: String {
-    if let title = model.sheetPage?.title, !title.isEmpty { return title }
-    return tab.label
+  private func sheetTitle(for target: PrismPageTarget) -> String {
+    guard let title = model.sheetPage(for: target)?.title, !title.isEmpty else { return tab.label }
+    return title
   }
 
-  private var content: some View {
-    ClipAccountContent(tab: tab, form: sheetForm)
+  private func content(for target: PrismPageTarget) -> some View {
+    ClipAccountContent(target: target)
       .overlay {
         if model.checkoutCelebrating || frozenCelebration != nil {
           ClipCheckoutSuccess(celebration: model.celebration ?? frozenCelebration)
@@ -536,10 +546,10 @@ private struct ClipAccountSheet: View {
         }
       }
       .interactiveDismissDisabled(model.sheetBusy || model.deviceBusy || model.checkoutCelebrating)
-      .navigationTitle(sheetTitle)
+      .navigationTitle(sheetTitle(for: target))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        if model.sheetStack.count > 1 {
+        if #unavailable(iOS 16.0), model.sheetStack.count > 1 {
           let backLabel = model.sheetPage?.backLabel.flatMap { $0.isEmpty ? nil : $0 }
           ToolbarItem(placement: .topBarLeading) {
             Button {
@@ -567,48 +577,44 @@ private struct ClipAccountSheet: View {
 
 private struct ClipAccountContent: View {
   @EnvironmentObject private var model: MachineLoginViewModel
-  let tab: PrismPageAccountTab
-  @ObservedObject var form: ClipPageFormState
+  let target: PrismPageTarget
+  @StateObject private var form = ClipPageFormState()
   private let horizontalPadding: CGFloat = 24
 
+  private var page: PrismPage? { model.sheetPage(for: target) }
+
   private var hasFooter: Bool {
-    !model.checkoutCelebrating && !(model.sheetPage?.footer ?? []).isEmpty
+    !model.checkoutCelebrating && model.sheetInlineNotice?.presentation != "page" && !(page?.footer ?? []).isEmpty
   }
 
   var body: some View {
     VStack(spacing: 0) {
-      ScrollViewReader { scroller in
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
           if !hasFooter, let error = model.sheetError {
             VStack(alignment: .leading, spacing: 8) {
               Text(verbatim: error).font(.subheadline).foregroundStyle(.red)
-              if model.sheetPage == nil {
+              if page == nil {
                 Button("重试") { Task { await model.reloadAccountSheet() } }
               }
             }
           }
-          if model.sheetLoading && model.sheetPage == nil {
+          if model.sheetLoading && page == nil {
             ProgressView().frame(maxWidth: .infinity).accessibilityLabel("正在加载")
           }
-          if let sheetPage = model.sheetPage {
+          if let sheetPage = page {
             ClipPage(page: sheetPage, form: form, sheetMode: true)
           }
         }
-        .disabled(model.sheetBusy)
+        .disabled(model.sheetBusy || model.sheetLoading)
         .padding(.vertical, 28)
         .padding(.horizontal, horizontalPadding)
+        .padding(.bottom, hasFooter ? 100 : 0)
         .frame(maxWidth: 480)
         .frame(maxWidth: .infinity)
       }
-      // Back from a record: the list as it was left, scrolled to that record.
-      .onChange(of: model.sheetReturnAnchor) { _, anchor in
-        guard let anchor else { return }
-        DispatchQueue.main.async { scroller.scrollTo(anchor, anchor: .center) }
-      }
-      }
-      .safeAreaInset(edge: .bottom, spacing: 0) {
-        if hasFooter, let sheetPage = model.sheetPage {
+      .overlay(alignment: .bottom) {
+        if hasFooter, let sheetPage = page {
           VStack(spacing: 12) {
             if let error = model.sheetError {
               Text(verbatim: error)
@@ -626,22 +632,17 @@ private struct ClipAccountContent: View {
           .padding(.bottom, 12)
           .frame(maxWidth: 480)
           .frame(maxWidth: .infinity)
-          .padding(.top, 12)
-          .background(Color(.systemGroupedBackground))
         }
       }
     }
     .overlay(alignment: .top) {
-      ClipToast(notice: model.sheetInlineNotice) {
+      ClipToast(notice: model.sheetStack.last == target ? model.sheetInlineNotice : nil) {
         model.dismissToast(sheet: true)
       }
         .padding(.top, 12)
         .animation(.easeInOut(duration: 0.2), value: model.sheetInlineNotice)
     }
-    .modifier(NoticeAlert(model: model, hidden: false))
-    .task(id: tab.id) {
-      await model.openAccountSheet(view: tab.id)
-    }
+    .modifier(NoticeAlert(model: model, hidden: model.sheetStack.last != target))
   }
 }
 

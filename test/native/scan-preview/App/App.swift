@@ -94,6 +94,8 @@ import SwiftUI
       case "/api/v1/shops/store/platform-binding": return ok(PageFixtures.binding)
       case "/api/v1/shops/store/player/page":
         let view = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "view" }?.value
+        let item = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "item" }?.value
+        if view == "history" { return ok(PageFixtures.shopPage(item == nil ? "historyList" : "historyDetail")) }
         return ok(PageFixtures.shopPage(view == "redeem" ? "redeemForm" : "billSheet"))
       case "/api/v1/shops/store/player/action":
         let redeem = ProcessInfo.processInfo.arguments.contains("sheet-preview=redeem")

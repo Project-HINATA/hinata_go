@@ -130,7 +130,7 @@ private func makeClipPageContext(
         Task { await model.press(button, collected: collected) }
       }
     },
-    busy: sheetMode ? model.sheetBusy : model.pageBusy,
+    busy: sheetMode ? (model.sheetBusy || model.sheetLoading) : model.pageBusy,
     pressingId: sheetMode ? model.sheetPressing : model.pressing,
     waitingButtonId: sheetMode ? model.sheetWaitingButtonId : model.waitingButtonId,
     inlineNotice: (sheetMode ? model.sheetInlineNotice : model.inlineNotice).flatMap { $0.presentation == "toast" ? nil : $0 },
