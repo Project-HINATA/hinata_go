@@ -92,6 +92,7 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     var htmlOutage = false
     var statusReads = 0, pageReads = 0, identityReads = 0, bindingStatusReads = 0
     var failNextStatusRead = false
+    var failStoreTab = false
     var checkoutCalls = 0, sessionStarts = 0
     var checkoutIds: [String] = []
     var lastReceipt: [String: Any]?
@@ -204,6 +205,8 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
         empty["blocks"] = [["kind": "text", "id": "bill-empty", "text": "暂无待结账单", "style": "status", "icon": "receipt", "level": "muted"]]
         return empty
       case "redeem":
+        if item == "store" { return PageFixtures.shopPage("rechargeStore") }
+        if item == "offer:p50" { return PageFixtures.shopPage("rechargeConfirm") }
         return PageFixtures.shopPage(redeemed ? "redeemDone" : "redeemForm")
       case "history":
         if let item {
@@ -442,6 +445,9 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
           ]])
         }
         if failNextStatusRead && view == "shop" { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
+        if failStoreTab && view == "redeem" && item == "store" {
+          return (503, ["error": ["code": "UNAVAILABLE", "message": "暂时无法读取"]])
+        }
         return ok(makeShopViewPage(view: view, item: item, cursor: cursor))
       case "/api/v1/shops/store/player/action":
         precondition(UUID(uuidString: body["operationId"] as? String ?? "") != nil, "Every shop action carries an operation id")
@@ -467,6 +473,8 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
           }
           redeemed = true
           return ok(["ok": true, "page": makeShopViewPage(view: view), "notices": []])
+        case "gift.purchase":
+          return ok(["ok": true, "page": PageFixtures.shopPage("rechargeDone"), "notices": []])
         case "checkout.confirm":
           checkoutIds.append(body["operationId"] as! String); checkoutCalls += 1
           if checkoutCalls == 1 {
@@ -573,6 +581,27 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     } else {
       preconditionFailure("wallet fixture must decode as kv")
     }
+
+    // The recharge sheet is made of preset blocks; a product's receipt field must work as a form field.
+    let decodedStore = try decodePage(PageFixtures.shopPage("rechargeStore"))
+    precondition(decodedStore.list(id: "store-products")?.layout == "grid")
+    let decodedConfirm = try decodePage(PageFixtures.shopPage("rechargeConfirm"))
+    let purchase = decodedConfirm.button(id: "gift-purchase")!
+    let unpicked = decodedConfirm.reconciledValues(from: [:])
+    precondition(decodedConfirm.fieldIds == ["proof:p50"] && !decodedConfirm.canSubmit(purchase, values: unpicked))
+    let picked: [String: PrismPageValue] = ["proof:p50": .string("data:image/png;base64,YQ==")]
+    precondition(decodedConfirm.canSubmit(purchase, values: picked))
+    precondition(decodedConfirm.collectedPayload(for: purchase, values: picked)["proof"] as? String == "data:image/png;base64,YQ==")
+    let decodedDone = try decodePage(PageFixtures.shopPage("rechargeDone"))
+    precondition(decodedDone.button(id: "receipt-close")?.action == "sheet.close")
+    // Redeeming and buying end on one receipt: the same blocks, whichever way it was paid for.
+    let decodedRedeemed = try decodePage(PageFixtures.shopPage("redeemDone"))
+    precondition(decodedRedeemed.allBlocks().map(\.id) == decodedDone.allBlocks().map(\.id) && decodedRedeemed.needsFullSheet)
+    precondition(decodedDone.hidesBack == true && decodedConfirm.hidesBack == nil)
+    // Only a bill's footer may sit over a half-height sheet.
+    precondition(decodedConfirm.needsFullSheet && decodedDone.needsFullSheet && !decodedStore.needsFullSheet)
+    let billSheet = try decodePage(PageFixtures.shopPage("billSheet"))
+    precondition(billSheet.footer?.isEmpty == false && !billSheet.needsFullSheet)
 
     let decodedCelebration = try JSONDecoder().decode(PrismPageCelebration.self, from: JSONSerialization.data(withJSONObject: PageFixtures.celebration))
     precondition(decodedCelebration == PrismPageCelebration(title: "结账成功", subtitle: "计费已结束，离店前无需再做其他操作。", effect: "checkout"))
@@ -771,8 +800,50 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     await model.pressSheet(redeemBtn, collected: ["code": "BAD"])
     precondition(model.sheetInlineNotice?.body == "兑换码无效" && model.sheetInlineNoticeAnchor == "redeem-submit")
     await model.pressSheet(redeemBtn, collected: ["code": "GOOD"])
-    precondition(redeemCalls == 2 && model.sheetPage?.allBlocks().contains { if case .banner(let b) = $0 { return b.id == "redeem-done" }; return false } == true)
+    precondition(redeemCalls == 2 && model.sheetPage?.button(id: "receipt-close")?.action == "sheet.close")
     redeemed = false
+    // A tab replaces what the level shows; a product drills in; coming back keeps the tab.
+    await model.openAccountSheet(view: "redeem")
+    await model.replaceSheetTarget(PrismPageTarget(view: "redeem", item: "store"))
+    precondition(model.sheetStack == [PrismPageTarget(view: "redeem")], "A tab must not drill into the sheet")
+    precondition(model.sheetPage?.list(id: "store-products") != nil && model.sheetPage(for: PrismPageTarget(view: "redeem")) != nil)
+    await model.openSheetTarget(PrismPageTarget(view: "redeem", item: "offer:p50"))
+    precondition(model.sheetStack.count == 2 && model.sheetPage?.title == "确认购买")
+    await model.popSheetTarget()
+    precondition(model.sheetPage?.list(id: "store-products") != nil)
+    await model.reloadAccountSheet()
+    precondition(model.sheetPage?.list(id: "store-products") != nil, "Reading again must read the tab picked")
+    await model.openSheetTarget(PrismPageTarget(view: "redeem", item: "offer:p50"))
+    // A picture far longer than any defaults key still submits once, under one operation id.
+    let picture = "data:image/png;base64," + String(repeating: "A", count: 1_000_000)
+    await model.pressSheet(model.sheetPage!.button(id: "gift-purchase")!, collected: ["proof": picture])
+    precondition(model.sheetPage?.button(id: "receipt-close") != nil)
+    let purchaseSent = shopActions.last!
+    let purchasePayload = purchaseSent["payload"] as? [String: Any]
+    precondition(purchaseSent["action"] as? String == "gift.purchase" && purchasePayload?["presentId"] as? String == "p50")
+    precondition(purchasePayload?["proof"] as? String == picture)
+    precondition(UserDefaults.standard.dictionaryRepresentation().keys.allSatisfy { $0.count < 1_000 })
+    await model.openAccountSheet(view: "redeem")
+    precondition(model.sheetPage?.list(id: "store-products") == nil, "Reopening starts at the first tab")
+    // A tab is the picked one at once, the page is never put into loading under it, and a read that
+    // fails leaves the level on the tab it shows.
+    var dimmed = false
+    var tabsPicked: [PrismPageTarget] = []
+    let watchLoading = model.$sheetLoading.dropFirst().sink { if $0 { dimmed = true } }
+    let watchPending = model.$sheetPendingTab.dropFirst().sink { if let tab = $0 { tabsPicked.append(tab) } }
+    let storeTab = PrismPageTarget(view: "redeem", item: "store")
+    failStoreTab = true
+    await model.replaceSheetTarget(storeTab)
+    precondition(model.sheetPendingTab == nil && model.sheetPage?.list(id: "store-products") == nil && model.sheetError != nil)
+    failStoreTab = false
+    await model.reloadAccountSheet()
+    precondition(model.sheetPage?.list(id: "store-products") == nil && model.sheetPage?.button(id: "redeem-submit") != nil,
+                 "A refused tab must not be what reading again reads")
+    dimmed = false
+    await model.replaceSheetTarget(storeTab)
+    precondition(!dimmed && tabsPicked == [storeTab, storeTab] && model.sheetPendingTab == nil)
+    precondition(model.sheetPage?.list(id: "store-products") != nil && model.sheetError == nil)
+    watchLoading.cancel(); watchPending.cancel()
     await model.openAccountSheet(view: "bill")
     let sheetCheckout = model.sheetPage!.allBlocks().compactMap { if case .button(let b) = $0, b.id == "checkout" { return b }; return nil }.first!
     await model.pressSheet(sheetCheckout)

@@ -46,7 +46,7 @@ struct MachineLoginView: View {
         model.dismissNotice(retrying: false)
       }
     }) { tab in
-      if #available(iOS 16.0, *) { ClipAccountSheet(tab: tab).environmentObject(model).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) }
+      if #available(iOS 16.0, *) { ClipSizedAccountSheet(tab: tab).environmentObject(model) }
       else { ClipAccountSheet(tab: tab).environmentObject(model) }
     }
     .overlay { if model.checkoutCelebrating && activeTab == nil { ClipCheckoutSuccess(celebration: model.celebration) } }
@@ -468,6 +468,23 @@ private struct ClipPasskeySetup: View {
   }
 }
 
+/// Half height to start with, and full height once a page needs the room. The player can still drag it.
+@available(iOS 16.0, *)
+private struct ClipSizedAccountSheet: View {
+  @EnvironmentObject private var model: MachineLoginViewModel
+  let tab: PrismPageAccountTab
+  @State private var detent = PresentationDetent.medium
+
+  var body: some View {
+    ClipAccountSheet(tab: tab)
+      .presentationDetents([.medium, .large], selection: $detent)
+      .presentationDragIndicator(.visible)
+      .onChange(of: model.sheetPage?.needsFullSheet == true, initial: true) { _, needsRoom in
+        if needsRoom { detent = .large }
+      }
+  }
+}
+
 private struct ClipAccountSheet: View {
   @EnvironmentObject private var model: MachineLoginViewModel
   @Environment(\.dismiss) private var dismiss
@@ -540,10 +557,11 @@ private struct ClipAccountSheet: View {
         }
       }
       .interactiveDismissDisabled(model.sheetBusy || model.deviceBusy || model.checkoutCelebrating)
+      .navigationBarBackButtonHidden(model.sheetPage(for: target)?.hidesBack == true)
       .navigationTitle(sheetTitle(for: target))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        if #unavailable(iOS 16.0), model.sheetStack.count > 1 {
+        if #unavailable(iOS 16.0), model.sheetStack.count > 1, model.sheetPage?.hidesBack != true {
           let backLabel = model.sheetPage?.backLabel.flatMap { $0.isEmpty ? nil : $0 }
           ToolbarItem(placement: .topBarLeading) {
             Button {

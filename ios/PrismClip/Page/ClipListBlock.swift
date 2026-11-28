@@ -46,6 +46,8 @@ struct ClipListBlock: View {
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
+      } else if list.layout == "grid" {
+        grid
       } else if hasGroups {
         VStack(alignment: .leading, spacing: 18) {
           ForEach(groupedItems) { group in
@@ -95,6 +97,57 @@ struct ClipListBlock: View {
           .frame(maxWidth: .infinity, alignment: .leading)
       }
     }
+  }
+
+  private var grid: some View {
+    VStack(alignment: .leading, spacing: 18) {
+      ForEach(groupedItems) { group in
+        VStack(alignment: .leading, spacing: 8) {
+          if !group.label.isEmpty {
+            Text(verbatim: group.label)
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(.secondary)
+              .padding(.horizontal, 4)
+          }
+          LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: 2), spacing: 10) {
+            ForEach(group.items) { item in
+              card(for: item).id(item.id)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private func card(for item: PrismPageListItem) -> some View {
+    Button {
+      if let target = item.open { context.openTarget?(target) }
+    } label: {
+      VStack(alignment: .leading, spacing: 8) {
+        Text(verbatim: item.title)
+          .font(.subheadline.weight(.semibold))
+          .foregroundStyle(.primary)
+          .multilineTextAlignment(.leading)
+        if let subtitle = item.subtitle {
+          Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+        }
+        Spacer(minLength: 0)
+        if let trailing = item.trailing {
+          Text(verbatim: trailing)
+            .font(.title3.weight(.semibold))
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .foregroundStyle(.primary)
+        }
+      }
+      .frame(maxWidth: .infinity, minHeight: 72, maxHeight: .infinity, alignment: .topLeading)
+      .padding(14)
+      .background(prismCardFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .disabled(context.busy || item.open == nil)
   }
 
   @ViewBuilder private func row(for item: PrismPageListItem, grouped: Bool) -> some View {

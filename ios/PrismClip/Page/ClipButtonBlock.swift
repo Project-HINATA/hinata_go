@@ -56,7 +56,10 @@ struct ClipButtonBlock: View {
     let isPrimary = button.style == "primary"
     let isDestructive = button.style == "destructive"
     return Button {
-      if button.confirm != nil {
+      // The one action the client runs itself.
+      if button.action == "sheet.close" {
+        context.closeSheet?()
+      } else if button.confirm != nil {
         context.confirm(button)
       } else {
         let collected = context.page.collectedPayload(for: button, values: context.values)

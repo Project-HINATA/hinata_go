@@ -10,6 +10,7 @@ extension PrismPage {
       case .input(let input): ids.insert(input.id)
       case .select(let select): ids.insert(select.id)
       case .toggle(let toggle): ids.insert(toggle.id)
+      case .upload(let upload): ids.insert(upload.id)
       case .consent(let id, _): ids.insert(id)
       default: break
       }
@@ -33,6 +34,10 @@ extension PrismPage {
         guard next[toggle.id] == nil else { continue }
         if case .bool(let b) = existing[toggle.id] { next[toggle.id] = .bool(b) }
         else { next[toggle.id] = .bool(toggle.defaultValue ?? false) }
+      case .upload(let upload):
+        guard next[upload.id] == nil else { continue }
+        if case .string(let s) = existing[upload.id] { next[upload.id] = .string(s) }
+        else { next[upload.id] = .string("") }
       case .consent(let id, _):
         guard next[id] == nil else { continue }
         if case .bool(let b) = existing[id] { next[id] = .bool(b) }
@@ -75,6 +80,10 @@ extension PrismPage {
           guard case .string(let text) = values[input.id],
                 !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
         }
+      case .upload(let upload):
+        if upload.required == true {
+          guard case .string(let picture) = values[upload.id], !picture.isEmpty else { return false }
+        }
       case .select(let select):
         if select.required == true {
           guard case .string(let selected) = values[select.id],
@@ -107,6 +116,10 @@ extension PrismPage {
         let key = toggle.name.flatMap { $0.isEmpty ? nil : $0 } ?? toggle.id
         if case .bool(let b) = values[toggle.id] { out[key] = b }
         else { out[key] = toggle.defaultValue ?? false }
+      case .upload(let upload):
+        let key = upload.name.flatMap { $0.isEmpty ? nil : $0 } ?? upload.id
+        if case .string(let s) = values[upload.id] { out[key] = s }
+        else { out[key] = "" }
       case .consent(let cid, _):
         if case .bool(let b) = values[cid] { out[cid] = b }
         else { out[cid] = false }
