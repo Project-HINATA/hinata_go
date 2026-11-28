@@ -122,7 +122,7 @@ final class ScanCounts {
     try await Task.sleep(nanoseconds: 6_500_000_000)
     precondition(counts.read("/api/v1/devices/session/ws") >= 2, "The channel is tried again: \(counts.read("/api/v1/devices/session/ws"))")
     precondition(counts.read("/api/v1/devices/session/page") == 1, "Page reads: \(counts.read("/api/v1/devices/session/page"))")
-    precondition(counts.read("/api/v1/shops/store") == 1, "Shop reads: \(counts.read("/api/v1/shops/store"))")
+    precondition(counts.read("/api/v1/shops/store") == 0, "Scanned pages must not call legacy GET /api/v1/shops/:code: \(counts.read("/api/v1/shops/store"))")
     precondition(counts.read("/api/v1/me") == 1, "Identity reads: \(counts.read("/api/v1/me"))")
     precondition(counts.read("/api/v1/devices/session/state") == 0 && counts.read("/api/v1/devices/session/device") == 0,
                  "Only the page says what the device shows")

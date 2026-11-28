@@ -169,14 +169,8 @@ struct MachineLoginView: View {
 
   private func accountMenu(_ user: PrismUser) -> some View {
     let menu = model.page?.accountMenu
-    let badge = menu != nil ? menu?.billingBadge : (model.summary?.activeSession != nil ? String(localized: "计费中") : nil)
-    let tabs: [PrismPageAccountTab] = menu?.tabs ?? (
-      model.visit?.shop.billingEnabled == true
-        ? (model.isShopOnly
-            ? [.init(id: "redeem", label: String(localized: "兑换")), .init(id: "history", label: String(localized: "记录")), .init(id: "wallet", label: String(localized: "钱包"))]
-            : [.init(id: "bill", label: String(localized: "账单")), .init(id: "redeem", label: String(localized: "兑换")), .init(id: "history", label: String(localized: "记录")), .init(id: "wallet", label: String(localized: "钱包"))])
-        : []
-    )
+    let badge = menu?.billingBadge
+    let tabs = menu?.tabs ?? []
     let logoutLabel = menu?.logoutLabel ?? String(localized: "退出登录")
     return Menu {
       ForEach(tabs) { tab in
@@ -247,9 +241,9 @@ private struct ClipSessionPage: View {
 
   var body: some View {
     VStack(spacing: 52) {
-      if model.machine != nil || model.visit != nil || model.page != nil || model.lastShopHero != nil {
-        let name = model.page?.shop ?? model.machine?.shop.name ?? model.lastShopHero?.name ?? model.visit?.shop.name ?? "PRiSM"
-        let heroUrl = model.page?.heroUrl ?? model.machine?.shop.heroUrl ?? model.lastShopHero?.heroUrl ?? model.visit?.shop.heroUrl
+      if model.machine != nil || model.page != nil || model.lastShopHero != nil {
+        let name = model.page?.shop ?? model.machine?.shop.name ?? model.lastShopHero?.name ?? "PRiSM"
+        let heroUrl = model.page?.heroUrl ?? model.machine?.shop.heroUrl ?? model.lastShopHero?.heroUrl
         let subtitle = model.isShopOnly
           ? (model.page?.resource ?? model.shopBillingState)
           : (model.machine?.name ?? model.page?.resource ?? "")

@@ -62,6 +62,11 @@ final class StoreVisitLiveActivityManager {
     let endedAtUnix: Double?
   }
 
+  private struct ShopNameResponse: Decodable {
+    let shop: Shop
+    struct Shop: Decodable { let name: String? }
+  }
+
   /// One reconcile at a time per shop: two at once would each find no activity and start one.
   private var reconciling: [String: Task<Void, Never>] = [:]
   private var foregroundObserver: NSObjectProtocol?
@@ -77,7 +82,7 @@ final class StoreVisitLiveActivityManager {
       let summary: PrismSummary = try await api.request("/api/v1/shops/\(shopCode)/player/me")
       var name = shopName
       if summary.activeSession != nil, name == nil {
-        let shop: PrismShopResponse? = try? await api.request("/api/v1/shops/\(shopCode)")
+        let shop: ShopNameResponse? = try? await api.request("/api/v1/shops/\(shopCode)")
         name = shop?.shop.name
       }
       liveActivityTrace("Sync shop \(shopCode): visit \(summary.activeSession?.id ?? "none")")

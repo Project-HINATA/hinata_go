@@ -86,26 +86,11 @@ struct PublicMachine: Decodable {
   let publicId: String
   let name: String
   let shop: Shop
-  let webOnly: Bool?
-  let capabilities: [String: Bool]?
-  /// A card can be added at this cabinet's reader.
-  var cardCapture: Bool? = nil
-  func has(_ capability: String) -> Bool { capabilities == nil ? capability == "card" : capabilities?[capability] == true }
-  var empty: Bool { capabilities != nil && !capabilities!.values.contains(true) }
-  /// Nothing to operate here and nothing to confirm: a resource without hardware still bills in a shop that bills.
-  var idle: Bool { empty && shop.billingEnabled != true }
 }
 
 struct Shop: Decodable {
   let name: String
   let heroUrl: String?
-  var locationEnabled: Bool? = nil
-  let machineGeo: Bool?
-  let billingEnabled: Bool?
-  let webUrl: String?
-  let latitude: Double
-  let longitude: Double
-  let radiusMeters: Double
 }
 
 struct PrismUser: Decodable {
@@ -314,56 +299,6 @@ struct PrismBinding: Decodable {
 }
 
 struct PrismBindingPromptLine: Decodable, Equatable { let text: String; let command: Bool }
-struct PrismShopResponse: Decodable {
-  let shop: Settings
-  let membership: Membership?
-  let entryPricing: [Pricing]
-  var pricingSchedule: PrismPricingSchedule? = nil
-  struct Membership: Decodable {
-    let playerId: String
-    var identityBound: Bool? = nil
-    // Older APIs only created membership after verification; explicit false must win.
-    var hasPlatformIdentity: Bool { identityBound ?? true }
-  }
-  func requiresPlatformBinding(hasActiveSession: Bool) -> Bool {
-    shop.billingEnabled && shop.identityBindingRequired != false
-      && membership?.hasPlatformIdentity != true && !hasActiveSession
-  }
-  struct Settings: Decodable {
-    let name: String?
-    var locationEnabled: Bool? = nil
-    var identityBindingRequired: Bool? = nil
-    let billingEnabled: Bool; let checkinGeo: Bool; let checkoutGeo: Bool
-    let autoRegister: Bool; let botContact: String; let timeZone: String
-    /// Public cover art path, served from the shop page so a shop link can show the same
-    /// card as a device link.
-    var heroUrl: String? = nil
-  }
-  struct Pricing: Decodable, Identifiable {
-    let id: String; let name: String; let kind: String; let provider: Provider
-    struct Provider: Decodable { let timeZone: String?; let amount: Double?; let rules: [Rule]? }
-    struct Rule: Decodable, Identifiable {
-      let id: String; let label: String; let status: String?
-      let timeRange: Range?; let dateTimeRange: Range?; let displayDateTimeRange: Range?; let pricing: Rate?
-      let priceCap: Double?; let weekdays: [Int]?; let specificDates: [String]?
-      struct Range: Decodable { let start: String; let end: String }
-      struct Rate: Decodable { let unitMinutes: Double; let unitPrice: Double; let roundGraceMinutes: Double; let priceCap: Double }
-      var detail: String {
-        var values = [label]
-        if let timeRange { values.append(timeRange.start == timeRange.end ? String(localized: "全天") : "\(timeRange.start)–\(timeRange.end)") }
-        if let pricing {
-          values.append("\(pricing.unitPrice.formatted()) / \(pricing.unitMinutes.formatted()) " + String(localized: "分钟"))
-          if pricing.roundGraceMinutes > 0 { values.append(String(localized: "宽限") + " \(pricing.roundGraceMinutes.formatted()) " + String(localized: "分钟")) }
-        }
-        if let cap = pricing?.priceCap ?? priceCap, cap > 0 { values.append(String(localized: "封顶") + " \(cap.formatted())") }
-        if let dateTimeRange { values.append("\(dateTimeRange.start)–\(dateTimeRange.end)") }
-        if let weekdays { values.append(weekdays.filter { (0...6).contains($0) }.map { DateFormatter().shortWeekdaySymbols[$0] }.joined(separator: "、")) }
-        if let specificDates { values.append(specificDates.joined(separator: ", ")) }
-        return values.joined(separator: " · ")
-      }
-    }
-  }
-}
 struct PrismSummary: Decodable {
   let activeSession: Session?
   let wallet: [Wallet]
@@ -415,19 +350,5 @@ struct PrismDevices: Decodable {
   struct Device: Decodable, Identifiable {
     let publicId: String; let name: String
     var id: String { publicId }
-  }
-}
-
-struct PrismPricingSchedule: Decodable {
-  let localDate: String; let timeZone: String; let groups: [Group]
-  struct Group: Decodable, Identifiable {
-    let id: String; let name: String; let kind: String; let amount: Double?; let timeZone: String?; let segments: [Segment]
-  }
-  struct Segment: Decodable {
-    let startLabel: String; let endLabel: String; let label: String; let isClosed: Bool?; let priceCap: Double?
-    var ruleId: String? = nil
-    var startedAt: String? = nil
-    var endedAt: String? = nil
-    let pricing: PrismShopResponse.Pricing.Rule.Rate?
   }
 }

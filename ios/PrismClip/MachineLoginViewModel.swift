@@ -35,7 +35,6 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var activeCardId: String?
   @Published private(set) var authenticating: String?
 
-  @Published private(set) var visit: PrismShopResponse?
   /// The page as the platform generated it: the only thing that says what a scanned resource or shop shows.
   @Published private(set) var page: PrismPage?
   /// A door code from the last action, until it expires.
@@ -44,7 +43,6 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var pressing: String?
   /// An attempt got no answer and another is under way.
   @Published private(set) var slowNetwork = false
-  @Published private(set) var summary: PrismSummary?
   @Published private(set) var user: PrismUser?
   @Published private(set) var waitingButtonId: String? = nil
   @Published private(set) var cardsLoading = false
@@ -145,7 +143,6 @@ final class MachineLoginViewModel: ObservableObject {
   private var userId = ""
   private var polling: Task<Void, Never>?
   private var readBackoff = PrismReadBackoff()
-  private var metadataReadAt = Date.distantPast
   private var refreshRunning = false
   private var refreshPending = false
   private var refreshError: String?
@@ -156,8 +153,8 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var isShopOnly = false
   var needsPlatformBinding: Bool { page?.needsBinding == true }
   var showVisit: Bool {
-    if let page { return page.billingActive || !(page.accountMenu?.tabs.isEmpty ?? true) }
-    return visit?.shop.billingEnabled == true
+    guard let page else { return false }
+    return page.billingActive || !(page.accountMenu?.tabs.isEmpty ?? true)
   }
   /// Whether the player's own state for this shop has been read.
   @Published private(set) var playerStateLoaded = false
@@ -166,18 +163,13 @@ final class MachineLoginViewModel: ObservableObject {
   var shopBillingState: String {
     guard isShopOnly else { return "" }
     if let resource = page?.resource, !resource.isEmpty { return resource }
-    if summary?.activeSession != nil { return String(localized: "计费中") }
-    if settlement != nil { return String(localized: "结账成功") }
     if state == .unauthenticated { return "" }
-    guard playerStateLoaded else { return String(localized: "正在加载") }
-    return page?.resource ?? String(localized: "未入场")
+    return playerStateLoaded ? "" : String(localized: "正在加载")
   }
   /// A signed-in shop player who may interact with the server-driven shop page.
   var canUseShopSurface: Bool { isShopOnly && user != nil && !needsPlatformBinding }
-  /// The bill is what the device controls turn into once this player has checked in.
-  var shopHasActiveSession: Bool {
-    isShopOnly ? (page?.billingActive == true) : (summary?.activeSession != nil)
-  }
+  /// Whether this player has an active billing session at the shop, as reported by the server page.
+  var shopHasActiveSession: Bool { page?.billingActive == true }
 
   private(set) var api: PrismAPI
   private let passkey = PasskeyAuthenticationService()
@@ -264,12 +256,12 @@ final class MachineLoginViewModel: ObservableObject {
     closeAccountSheet()
     let version = invocationVersion
     polling?.cancel()
-    readBackoff.succeed(); metadataReadAt = .distantPast; pageReadAt = .distantPast; socketFailures = 0; socketOpenedOnce = false
+    readBackoff.succeed(); pageReadAt = .distantPast; socketFailures = 0; socketOpenedOnce = false
     unansweredActions = [:]; slowNetwork = false
     if let publicId { PrismPageReport.shared.start(publicId: publicId) }
     await api.invalidateReads()
     guard version == invocationVersion else { return }
-    visit = nil; page = nil; pageCode = nil; pressing = nil; summary = nil; binding = nil; notice = nil; settlement = nil; celebration = nil; pendingCelebrationPage = nil; pendingCelebrationFromShop = false; checkoutCelebrating = false; lastShopHero = nil; user = nil; waitingButtonId = nil
+    page = nil; pageCode = nil; pressing = nil; binding = nil; notice = nil; settlement = nil; celebration = nil; pendingCelebrationPage = nil; pendingCelebrationFromShop = false; checkoutCelebrating = false; lastShopHero = nil; user = nil; waitingButtonId = nil
     powerWaitTask?.cancel(); inlineNotice = nil; cardFeedbackTask?.cancel(); cardFeedback = nil
     cardsLoading = false; cardsError = nil
     captureRun += 1; cardCapture = nil
@@ -456,7 +448,7 @@ final class MachineLoginViewModel: ObservableObject {
       cardsLoading = false; cardsError = nil
       waitingButtonId = nil; powerWaitTask?.cancel()
       suggestPasskey = false; addingPasskey = false
-      user = nil; userId = ""; summary = nil
+      user = nil; userId = ""
       playerStateLoaded = false; settlement = nil; celebration = nil; pendingCelebrationPage = nil; pendingCelebrationFromShop = false; checkoutCelebrating = false; binding = nil; pageCode = nil
       page = nil; notice = nil
       errorMessage = nil
@@ -745,7 +737,7 @@ final class MachineLoginViewModel: ObservableObject {
   private func syncLiveActivity() {
     guard let shopCode else { return }
     let api = self.api
-    let name = page?.shop ?? visit?.shop.name ?? machine?.shop.name
+    let name = page?.shop ?? machine?.shop.name
     // Only HTTPS origins can carry a universal link; debug loopback origins are skipped.
     let origin = api.baseURL.scheme?.lowercased() == "https" ? api.baseURL : nil
     Task { await StoreVisitLiveActivityManager.shared.sync(shopCode: shopCode, shopName: name, origin: origin, api: api) }
@@ -845,8 +837,8 @@ final class MachineLoginViewModel: ObservableObject {
   func refreshVisit(silent: Bool = false, dynamicOnly: Bool = false, initialIdentity: PrismUser? = nil) async {
     guard !checkoutCelebrating else { liveActivityTrace("Refresh skipped: checkout celebrating"); return }
     let api = self.api
-    // Shop-only mode has no machine, so the machine gate cannot apply there.
-    guard sceneActive || state == .loadingCards, machine?.capabilities != nil || isShopOnly,
+    // Shop-only mode has no machine, so the machine ticket cannot apply there.
+    guard sceneActive || state == .loadingCards, ticket != nil || isShopOnly,
           state != .unauthenticated else { liveActivityTrace("Refresh skipped: scene \(sceneActive) state \(state) shopOnly \(isShopOnly)"); return }
     // Foreground/replayed invocations cannot bypass an outage or Retry-After cooldown.
     if silent && readBackoff.remaining() > 0 { liveActivityTrace("Refresh skipped: backoff"); scheduleRefresh(); return }
@@ -884,7 +876,7 @@ final class MachineLoginViewModel: ObservableObject {
         lastShopHero = (value.shop, value.heroUrl)
         guard let signedInUser = me.user, !value.asksToSignIn else {
           state = .unauthenticated
-          user = nil; userId = ""; cards = []; summary = nil; playerStateLoaded = false
+          user = nil; userId = ""; cards = []; playerStateLoaded = false
           settlement = nil; celebration = nil
           binding = nil; pageCode = nil; closeAccountSheet(); closeLiveState()
           if value.asksToSignIn {
@@ -921,106 +913,67 @@ final class MachineLoginViewModel: ObservableObject {
         readBackoff.succeed()
         return
       }
-      // A scanned page's own read says when the rest is worth reading again.
-      var fullRead = !dynamicOnly || visit == nil
-      if let ticket {
-        do {
-          let value: PrismPage = try await api.request("/api/v1/devices/session/page?ticket=\(ticket)")
-          // A read that was under way when the page was restarted belongs to the old ticket and must
-          // not publish a page for the new one; one an action answered meanwhile is older than its page.
-          guard version == invocationVersion, revision == visitRevision, self.ticket == ticket else { return }
-          if let page, value.movedBilling(from: page) {
-            fullRead = true
-            await api.invalidateReads()
-            guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
-          }
-          pageReadAt = Date()
-          slowNetwork = false
-          if value.asksToSignIn {
-            state = .unauthenticated; user = nil; userId = ""; cards = []; page = value; closeLiveState()
-            closeAccountSheet()
-            return
-          }
-          show(value)
-          PrismPageReport.shared.opened()
-          openPageSocket()
-        } catch {
-          guard (error as? PrismAPIError)?.isSessionExpired == true else { throw error }
-          expire(); return
-        }
-      }
-      var shop: PrismShopResponse
+      guard let ticket else { return }
+      var fullRead = !dynamicOnly || !playerStateLoaded
+      let value: PrismPage
       let me: MeResponse
-      if fullRead {
-        if let initialIdentity {
-          shop = try await api.request(shopPath()); me = MeResponse(user: initialIdentity)
-        } else {
-          async let shopRead: PrismShopResponse = api.request(shopPath())
+      do {
+        if fullRead && initialIdentity == nil {
+          async let pageRead: PrismPage = api.request("/api/v1/devices/session/page?ticket=\(ticket)")
           async let identityRead = api.me()
-          (shop, me) = try await (shopRead, identityRead)
+          (value, me) = try await (pageRead, identityRead)
+        } else {
+          value = try await api.request("/api/v1/devices/session/page?ticket=\(ticket)")
+          me = MeResponse(user: initialIdentity ?? user)
         }
-        metadataReadAt = Date()
-      } else {
-        guard let currentShop = visit else { return }
-        shop = currentShop; me = MeResponse(user: user)
+      } catch {
+        guard (error as? PrismAPIError)?.isSessionExpired == true else { throw error }
+        expire(); return
       }
-      guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
-      if fullRead, me.user?.id != userId {
+      // A read that was under way when the page was restarted belongs to the old ticket and must
+      // not publish a page for the new one; one an action answered meanwhile is older than its page.
+      guard version == invocationVersion, revision == visitRevision, self.ticket == ticket else { superseded(version); return }
+      if let page, value.movedBilling(from: page) {
+        fullRead = true
         await api.invalidateReads()
-        shop = try await api.request(shopPath())
         guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
-        if !userId.isEmpty {
-          cards = []
-          binding = nil; pageCode = nil; settlement = nil; summary = nil; closeAccountSheet()
-          user = me.user; userId = me.user?.id ?? ""
-          if me.user != nil {
-            let currentCards = try await api.cards()
-            guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
-            cards = currentCards.cards.filter { $0.disabledAt == nil }
-          }
-        }
       }
-      visit = shop
-      guard me.user != nil else {
+      pageReadAt = Date()
+      slowNetwork = false
+      guard let signedInUser = me.user, !value.asksToSignIn else {
         state = .unauthenticated
-        user = nil; userId = ""; cards = []; summary = nil; playerStateLoaded = false; settlement = nil
-        binding = nil; pageCode = nil; page = nil; closeLiveState(); closeAccountSheet()
+        user = nil; userId = ""; cards = []; playerStateLoaded = false; settlement = nil
+        binding = nil; pageCode = nil; page = value; closeLiveState(); closeAccountSheet()
         return
       }
-      var currentSummary: PrismSummary? = fullRead ? nil : summary
-      if fullRead && shop.shop.billingEnabled && shop.membership != nil {
-        do {
-          currentSummary = try await api.request(shopPath("player/me"))
-        } catch let error as PrismAPIError where error.code == "PLATFORM_BINDING_REQUIRED" {
-          // Not bound yet: the page asks for binding, and the binding code below must still be fetched.
-          currentSummary = summary
+      if fullRead, signedInUser.id != userId {
+        if !userId.isEmpty {
+          cards = []
+          binding = nil; pageCode = nil; settlement = nil; closeAccountSheet()
+          user = signedInUser; userId = signedInUser.id
+          let currentCards = try await api.cards()
+          guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
+          cards = currentCards.cards.filter { $0.disabledAt == nil }
         }
       }
-      guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
       playerStateLoaded = true
-      userId = me.user!.id
-      summary = currentSummary; user = me.user
+      user = signedInUser
+      userId = signedInUser.id
+      show(value)
+      PrismPageReport.shared.opened()
+      openPageSocket()
       StoreVisitLiveActivityManager.shared.startPushToStartTracking(api: api)
-      liveActivityTrace("Visit read: full \(fullRead), active session \(currentSummary?.activeSession?.id ?? "none"), shop \(self.shopCode ?? "none")")
-      if let shopCode = self.shopCode {
-        await StoreVisitLiveActivityManager.shared.reconcile(
-          session: currentSummary?.activeSession,
-          shopCode: shopCode,
-          shopName: shop.shop.name ?? machine?.shop.name ?? "PRiSM",
-          // Only HTTPS origins can carry a universal link; debug loopback origins are skipped.
-          origin: api.baseURL.scheme?.lowercased() == "https" ? api.baseURL : nil,
-          api: api,
-          receipt: nil
-        )
+      if fullRead {
+        await reconcileShopLiveActivity(for: value)
       }
       guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
       if !needsPlatformBinding { binding = nil }
       polling?.cancel()
       if needsPlatformBinding, binding.flatMap({ prismParsedDate($0.expiresAt) }) ?? .distantPast <= Date() {
         binding = nil
-        let value: PrismBinding = try await api.request(shopPath("platform-binding"), body: [:])
+        let bound: PrismBinding = try await api.request(shopPath("platform-binding"), body: [:])
         guard version == invocationVersion, revision == visitRevision else { superseded(version); return }
-        binding = value
+        binding = bound
       }
       if errorMessage == refreshError { errorMessage = nil }
       refreshError = nil
@@ -1034,7 +987,7 @@ final class MachineLoginViewModel: ObservableObject {
         if silent, error is URLError || (error as? PrismAPIError)?.isTransientReadFailure == true { return }
         if (error as? PrismAPIError)?.code == "AUTHENTICATION_REQUIRED" || (error as? PrismAPIError)?.notice?.flow == "signin" {
           state = .unauthenticated; user = nil; userId = ""; cards = []; page = nil; closeLiveState(); closeAccountSheet()
-          summary = nil; binding = nil; settlement = nil
+          binding = nil; settlement = nil
           playerStateLoaded = false; await api.invalidateReads()
         }
         refreshError = friendlyMessage(error)
@@ -1319,8 +1272,6 @@ final class MachineLoginViewModel: ObservableObject {
     // If this fails, the window closes by itself within seconds.
     Task { try? await api.cancelCardCapture(captureId: open.id, ticket: open.ticket) }
   }
-  func pricingDate(_ date: String) async throws -> PrismShopResponse { try await api.request(shopPath() + "?date=" + date) }
-
   func bindPlatformIdentity() async {
     let api = self.api
     await perform("binding") {
@@ -1331,47 +1282,6 @@ final class MachineLoginViewModel: ObservableObject {
         binding = value
       }
       await refreshVisit(silent: true)
-    }
-  }
-
-  private func operation(_ key: String, path: String, body: [String: Any], requiresLocation: Bool) async throws -> Data {
-    let api = self.api
-    let version = invocationVersion
-    let storageKey = "prism.operation.\(api.baseURL.absoluteString).\(userId).\(shopCode ?? "").\(key)"
-    let legacyKey = "prism.operation.\(userId).\(shopCode ?? "").\(key)"
-    if api.baseURL.absoluteString == "https://link.neri.moe", UserDefaults.standard.data(forKey: storageKey) == nil,
-       let legacy = UserDefaults.standard.data(forKey: legacyKey) {
-      UserDefaults.standard.set(legacy, forKey: storageKey)
-      UserDefaults.standard.removeObject(forKey: legacyKey)
-    }
-    // An operation whose answer was lost is sent again under the same id: the server replays
-    // its result, so a press is never performed twice. A different request (another
-    // temperature, say) starts a new operation.
-    let saved = UserDefaults.standard.data(forKey: storageKey).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
-    var payload: [String: Any]
-    if let saved, !key.hasPrefix("device.") || NSDictionary(dictionary: saved.filter { $0.key != "operationId" && $0.key != "location" }).isEqual(to: body) {
-      payload = saved
-    } else {
-      payload = body
-      payload["operationId"] = UUID().uuidString
-    }
-    if requiresLocation {
-      let sample = try await location.currentLocation()
-      payload["location"] = ["lat": sample.latitude, "lng": sample.longitude, "accuracy": sample.accuracy]
-    }
-    guard version == invocationVersion else { throw CancellationError() }
-    UserDefaults.standard.set(try JSONSerialization.data(withJSONObject: payload), forKey: storageKey)
-    do {
-      let data = try await api.requestJSON(path: path, body: payload)
-      UserDefaults.standard.removeObject(forKey: storageKey)
-      guard version == invocationVersion else { throw CancellationError() }
-      return data
-    } catch {
-      if let error = error as? PrismAPIError, let status = error.status, status < 500, error.code != "OPERATION_PENDING", error.code != "DEVICE_RESULT_UNKNOWN" {
-        UserDefaults.standard.removeObject(forKey: storageKey)
-      }
-      if key.hasPrefix("device."), error is URLError { throw PrismAPIError.api(code: "DEVICE_RESULT_UNKNOWN", message: "网络异常，请重试") }
-      throw error
     }
   }
 
@@ -1539,9 +1449,8 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   private func syncBillSheetState(_ loaded: PrismPage) {
-    let mainBillingActive = page?.billingActive ?? (summary?.activeSession != nil)
+    let mainBillingActive = page?.billingActive ?? false
     guard loaded.billingActive != mainBillingActive else { return }
-    if !loaded.billingActive { summary = nil }
     syncLiveActivity()
     Task { [weak self] in
       guard let self else { return }
@@ -1720,18 +1629,6 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  func enter() async {
-    let requiresLocation = (visit?.shop.locationEnabled ?? visit?.shop.checkinGeo) == true
-    // Only a shop link enters this way, with no ticket: the server accepts a ticket-free entry when the
-    // shop opts in, still requiring consent and (when configured) an on-site fix. A scanned page's
-    // confirmation is one of its buttons.
-    guard isShopOnly else { return }
-    await perform("entry") {
-      _ = try await operation("entry.remote", path: shopPath("player/remote-entry"), body: ["consent": true], requiresLocation: requiresLocation)
-      syncLiveActivity()
-      await refreshVisit(silent: true)
-    }
-  }
   private func transitionAfterCheckout() -> Bool {
     guard checkoutCelebrating, let shopCode else { return false }
     checkoutCelebrating = false
@@ -1746,14 +1643,14 @@ final class MachineLoginViewModel: ObservableObject {
       scheduleRefresh()
       return false
     }
-    if let name = page?.shop ?? machine?.shop.name ?? visit?.shop.name {
-      lastShopHero = (name, page?.heroUrl ?? machine?.shop.heroUrl ?? visit?.shop.heroUrl)
+    if let name = page?.shop ?? machine?.shop.name {
+      lastShopHero = (name, page?.heroUrl ?? machine?.shop.heroUrl)
     }
     invocationVersion += 1
     closeLiveState()
     polling?.cancel()
     currentInvocation = api.baseURL.appendingPathComponent("t").appendingPathComponent(shopCode)
-    isShopOnly = true; machine = nil; ticket = nil; publicId = nil; page = nil; pageCode = nil; cards = []; summary = nil
+    isShopOnly = true; machine = nil; ticket = nil; publicId = nil; page = nil; pageCode = nil; cards = []
     playerStateLoaded = false
     state = .ready
     return true
@@ -1774,18 +1671,6 @@ final class MachineLoginViewModel: ObservableObject {
       await refreshVisit()
     }
   }
-  /// Whether the code was accepted; a rejection is shown under the code field.
-  func redeem(_ code: String) async -> Bool {
-    var redeemed = false
-    await perform("redeem") {
-      _ = try await operation("redeem", path: shopPath("player/redeem"), body: ["code": code], requiresLocation: false)
-      redeemed = true
-      notice = String(localized: "兑换成功")
-      await refreshVisit(silent: true)
-    }
-    return redeemed
-  }
-
   private func fail(_ error: Error) {
     let message = friendlyMessage(error)
     state = (error as? PrismAPIError)?.isSessionExpired == true ? .expired : .failed(message)

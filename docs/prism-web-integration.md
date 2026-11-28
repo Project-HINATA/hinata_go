@@ -64,7 +64,7 @@ Swift player task headings use the Dynamic Type-aware `.title2` style rather tha
 
 Manual coin uses a primary theme-filled Material button with in-button progress. It remains usable after success; the backend enforces the device cooldown.
 
-Native clients prefer the unified `locationEnabled` policy and fall back to legacy flags. They collect fresh coordinates for enabled entry/device/checkout requests; the API requires being inside for venue operations and outside for checkout. Poor or missing fixes retain the active visit.
+Native clients are strictly server-driven by `PrismPage`: every visible block, account menu tab/badge, binding gate, billing state, and per-action `needsLocation` flag comes directly from the server page response. Clients no longer call legacy `GET /api/v1/shops/:code` or inspect shop/machine switches (`locationEnabled`, `checkinGeo`, `checkoutGeo`, `machineGeo`, `billingEnabled`, `identityBindingRequired`, `capabilities`, `webOnly`) on scanned or shop pages, and collect fresh coordinates only for actions where `needsLocation` is `true`. Poor or missing fixes retain the active visit.
 
 Card success does not start a delayed redirect. The close toolbar item also uses an iOS 15-compatible ViewBuilder condition.
 

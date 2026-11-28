@@ -86,7 +86,7 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     var redeemCalls = 0, sheetHistoryReads = 0
     var cardsFail = false
     var shopStatus = 200, previewStatus = 200
-    let checkoutGeo = true
+    var checkoutGeo = true
     /// A shop whose billing only the server can compute: the phone falls back to the server's preview.
     var clientBillingUnavailable = false
     var htmlOutage = false
@@ -111,6 +111,9 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
 
     func currentPage() -> [String: Any] {
         var page = PageFixtures.page(signedIn ? scene : "signin")
+        if signedIn {
+            page["billingActive"] = active
+        }
         if scene.hasPrefix("climate"), signedIn, scene != "climateUnknown" {
             page = PageFixtures.changing(page, kind: "climate") { $0["state"] = climate }
         }
@@ -317,10 +320,12 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
         if htmlOutage { return (503, ["rawHTML": "<html>Service temporarily unavailable</html>"]) }
         if shopStatus != 200 { return (shopStatus, ["error": ["code": "SHOP_NOT_FOUND", "message": "没有找到店铺"]]) }
         if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
-        return ok(["shop":["name":"Store","billingEnabled":billing,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"Store Bot","identityBindingRequired":identityBindingRequired,"timeZone":"Asia/Tokyo","heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p","identityBound":identityBound] : NSNull(),"entryPricing":[]])
+        return ok(["shop":["name":"Store","billingEnabled":billing,"locationEnabled":true,"checkinGeo":true,"checkoutGeo":true,"autoRegister":false,"botContact":"Store Bot","identityBindingRequired":identityBindingRequired,"timeZone":"Asia/Tokyo","heroUrl":heroUrl as Any],"membership":member ? ["playerId":"p","identityBound":identityBound] : NSNull(),"entryPricing":[]])
       case "/api/v1/devices/session/page":
         precondition(request.url!.query?.hasPrefix("ticket=ticket-") == true)
         pageReads += 1
+        if htmlOutage { return (503, ["rawHTML": "<html>Service temporarily unavailable</html>"]) }
+        if failNextStatusRead { failNextStatusRead = false; throw URLError(.networkConnectionLost) }
         return ok(currentPage())
       case "/api/v1/devices/session/action":
         precondition((body["ticket"] as? String)?.hasPrefix("ticket-") == true)
@@ -647,7 +652,7 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     failNextStatusRead = true
     await model.setSceneActive(true)
     precondition(model.errorMessage == nil && model.ticket != nil, "Resume network errors must not show an alert")
-    precondition(pageReads == readsAfterOpening + 1 && sessionStarts == 1 && model.binding?.code == "ABC12345")
+    precondition(pageReads == readsAfterOpening + 2 && sessionStarts == 1 && model.binding?.code == "ABC12345")
     htmlOutage = true
     await model.refreshVisit(silent: true)
     precondition(model.errorMessage == nil, "HTML 503 responses must remain retryable without alerts")
@@ -662,6 +667,7 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     values["consent"] = .bool(true)
     precondition(model.page!.canSubmit(entry, values: values))
     precondition(StoreVisitLiveActivityManager.shared.synced.isEmpty && LocationService.calls == 0)
+    let readsBeforeEntry = pageReads
     await model.press(entry, collected: model.page!.collectedPayload(for: entry, values: values))
     let confirmed = sent("entry")[0]["payload"] as! [String: Any]
     precondition(confirmed["consent"] as? Bool == true && confirmed["openDoor"] as? Bool == true)
@@ -672,10 +678,9 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     await waitUntil { StoreVisitLiveActivityManager.shared.synced.contains("store") }
     precondition(StoreVisitLiveActivityManager.shared.synced.contains("store"))
     // The page is read again in the background after an action; nothing waits on it.
-    await waitUntil { model.summary?.activeSession != nil && StoreVisitLiveActivityManager.shared.session != nil }
-    precondition(model.summary?.activeSession != nil)
-    precondition(StoreVisitLiveActivityManager.shared.session?.id == "entry")
-    precondition(prismParsedDate(StoreVisitLiveActivityManager.shared.session!.startedAt) == milliseconds)
+    await waitUntil { pageReads > readsBeforeEntry && StoreVisitLiveActivityManager.shared.synced.count >= 2 }
+    precondition(pageReads > readsBeforeEntry && model.page?.billingActive == true)
+    precondition(statusReads == 0, "Scanned pages must not call legacy GET /api/v1/shops/:code")
 
     // An action whose replies are lost is tried again under the same id, so it happens once. When every
     // try is lost the player is told beside the button, and pressing again still sends that id.
@@ -823,18 +828,18 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     do {
       identityBindingRequired = false; active = true
       await scan("doorCardsCoin")
-      await waitUntil { model.summary?.activeSession != nil }
+      await waitUntil { model.page?.billingActive == true }
       active = false
       let syncedBeforeSheet = StoreVisitLiveActivityManager.shared.synced.count
-      let readsBeforeSheet = statusReads
+      let readsBeforeSheet = pageReads
       await model.openAccountSheet(view: "bill")
       await waitUntil {
-        model.summary?.activeSession == nil
+        model.page?.billingActive == false
           && StoreVisitLiveActivityManager.shared.synced.dropFirst(syncedBeforeSheet).contains("store")
-          && statusReads > readsBeforeSheet
+          && pageReads > readsBeforeSheet
       }
-      precondition(model.summary?.activeSession == nil && StoreVisitLiveActivityManager.shared.synced.dropFirst(syncedBeforeSheet).contains("store"),
-                   "Opening bill sheet after an external checkout must sync main summary and Live Activity")
+      precondition(model.page?.billingActive == false && StoreVisitLiveActivityManager.shared.synced.dropFirst(syncedBeforeSheet).contains("store"),
+                   "Opening bill sheet after an external checkout must sync main page and Live Activity")
       model.closeAccountSheet()
       identityBindingRequired = true
     }
@@ -1247,7 +1252,7 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     precondition(StoreVisitLiveActivityManager.shared.unregisteredAll, "Logout must trigger unregisterAllPushTokens")
     precondition(StoreVisitLiveActivityManager.shared.lastApi?.baseURL == origin, "Unregister must use origin-scoped API")
     precondition(shopOnly.state == .unauthenticated)
-    precondition(shopOnly.user == nil && shopOnly.summary == nil && shopOnly.settlement == nil, "Logout must clear private account state")
+    precondition(shopOnly.user == nil && shopOnly.settlement == nil, "Logout must clear private account state")
     precondition(shopOnly.lastShopHero?.name == "Store" && shopOnly.page?.asksToSignIn == true, "Sign-out must keep the shop card and show sign-in")
     precondition(shopOnly.lastShopHero?.heroUrl == "/api/v1/shops/store/hero?v=abc123")
 
@@ -1294,6 +1299,23 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     MunetAuthenticationService.result = .init(code: "oauth-code", suggestPasskey: false)
     await onboarding.authenticateWithMunet()
     precondition(!onboarding.suggestPasskey && onboarding.state == .ready)
+
+    // Server-driven per-action location: even while shop metadata advertises locationEnabled/checkoutGeo = true,
+    // a checkout button with needsLocation = false must not request or attach GPS coordinates.
+    active = true; lastReceipt = nil; checkoutGeo = false
+    let noGeoShop = MachineLoginViewModel(api: PrismAPI(configuration: config, origin: origin))
+    await noGeoShop.handleResolvedInvocation(shopB)
+    let locationsBeforeNoGeoCheckout = LocationService.calls
+    let shopActionsBeforeNoGeo = shopActions.count
+    if let checkoutBtn = noGeoShop.page?.button(id: "checkout") {
+      precondition(!checkoutBtn.needsLocation)
+      await noGeoShop.press(checkoutBtn)
+    } else {
+      preconditionFailure("Expected checkout button on active shop page")
+    }
+    precondition(LocationService.calls == locationsBeforeNoGeoCheckout, "Must not request location when button.needsLocation is false")
+    precondition(shopActions.count == shopActionsBeforeNoGeo + 1 && shopActions.last?["location"] == nil, "Checkout payload must omit location when needsLocation is false")
+    checkoutGeo = true; active = false; lastReceipt = nil
 
     // An unusable link clears the shop and fails without touching the previous session.
     await shopOnly.handleResolvedInvocation(URL(string: "https://link-beta.neri.moe/not-a-link")!)
