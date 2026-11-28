@@ -194,15 +194,15 @@ final class ScanScreenshots: XCTestCase {
   }
 
   func testSheetNoticeClassification() {
-    for view in ["兑换", "账单"] {
+    for view in ["充值", "账单"] {
       let app = XCUIApplication()
-      app.launchArguments = ["page=door", "sheet-preview=\(view == "兑换" ? "redeem" : "bill")", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      app.launchArguments = ["page=door", "sheet-preview=\(view == "充值" ? "redeem" : "bill")", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
       app.launch()
       let menu = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "测试玩家")).firstMatch
       XCTAssertTrue(menu.waitForExistence(timeout: 20))
       menu.tap()
       app.buttons[view].tap()
-      if view == "兑换" {
+      if view == "充值" {
         let input = app.textFields["兑换码"]
         XCTAssertTrue(input.waitForExistence(timeout: 10))
         input.tap()
