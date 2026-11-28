@@ -59,7 +59,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -71,28 +71,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -223,7 +236,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -235,28 +248,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -379,7 +405,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -391,28 +417,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -536,7 +575,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -548,28 +587,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -693,7 +745,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -705,28 +757,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -930,7 +995,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -942,28 +1007,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -1087,7 +1165,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -1099,28 +1177,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -1268,7 +1359,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -1280,28 +1371,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -1494,7 +1598,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -1506,28 +1610,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -1676,7 +1793,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -1688,28 +1805,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -1889,7 +2019,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -1901,28 +2031,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -2048,7 +2191,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -2060,28 +2203,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -2203,7 +2359,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -2215,28 +2371,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -2370,7 +2539,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -2382,28 +2551,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -2541,7 +2723,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -2553,28 +2735,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -2776,7 +2971,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -2788,28 +2983,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -3011,7 +3219,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -3023,28 +3231,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -3186,7 +3407,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -3198,28 +3419,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -3366,7 +3600,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -3378,28 +3612,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -3522,7 +3769,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -3534,28 +3781,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -3788,7 +4048,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -3800,28 +4060,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -3945,7 +4218,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -3957,28 +4230,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -4102,7 +4388,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -4114,28 +4400,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -4259,7 +4558,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -4271,28 +4570,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -4416,7 +4728,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -4428,28 +4740,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -4573,7 +4898,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -4585,28 +4910,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -4727,7 +5065,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -4739,28 +5077,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -4891,7 +5242,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -4903,28 +5254,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -5048,7 +5412,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -5060,28 +5424,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -5261,7 +5638,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -5273,28 +5650,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -5480,7 +5870,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -5492,28 +5882,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -5708,7 +6111,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -5720,28 +6123,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -5880,7 +6296,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -5892,28 +6308,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -6078,7 +6507,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -6090,28 +6519,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -6242,7 +6684,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -6254,28 +6696,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -6393,7 +6848,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -6405,28 +6860,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -6577,7 +7045,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -6589,28 +7057,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -6785,7 +7266,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -6797,28 +7278,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -6976,7 +7470,7 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "网络连接失败，请检查网络后重试",
+          "body": "网络连接失败",
           "actions": []
         },
         "CLIENT_OPERATION_FAILED": {
@@ -6988,28 +7482,41 @@
           "presentation": "toast",
           "flow": "none",
           "title": null,
-          "body": "操作失败，请稍后重试",
+          "body": "操作失败",
           "actions": []
         },
         "DEVICE_RESULT_UNKNOWN": {
           "code": "DEVICE_RESULT_UNKNOWN",
-          "level": "error",
+          "level": "info",
           "durationMs": null,
-          "controlDurationMs": 5000,
-          "display": "dialog",
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "refresh",
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_PENDING": {
+          "code": "OPERATION_PENDING",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
           "flow": "none",
-          "title": "操作结果尚未确认",
-          "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-          "actions": [
-            {
-              "kind": "dismiss",
-              "label": "知道了"
-            },
-            {
-              "kind": "refresh",
-              "label": "刷新状态"
-            }
-          ]
+          "title": null,
+          "body": "",
+          "actions": []
+        },
+        "OPERATION_IN_PROGRESS": {
+          "code": "OPERATION_IN_PROGRESS",
+          "level": "info",
+          "durationMs": null,
+          "controlDurationMs": 4000,
+          "display": "none",
+          "flow": "none",
+          "title": null,
+          "body": "",
+          "actions": []
         },
         "INSUFFICIENT_BALANCE": {
           "code": "INSUFFICIENT_BALANCE",
@@ -7113,7 +7620,7 @@
       "presentation": "toast",
       "flow": "none",
       "title": null,
-      "body": "网络连接失败，请检查网络后重试",
+      "body": "网络连接失败",
       "actions": []
     },
     "CLIENT_OPERATION_FAILED": {
@@ -7125,7 +7632,7 @@
       "presentation": "toast",
       "flow": "none",
       "title": null,
-      "body": "操作失败，请稍后重试",
+      "body": "操作失败",
       "actions": []
     },
     "POWER_WAIT_TIMEOUT": {
@@ -7350,23 +7857,14 @@
     },
     "DEVICE_RESULT_UNKNOWN": {
       "code": "DEVICE_RESULT_UNKNOWN",
-      "level": "error",
+      "level": "info",
       "durationMs": null,
-      "controlDurationMs": 5000,
-      "display": "dialog",
-      "flow": "none",
-      "title": "操作结果尚未确认",
-      "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-      "actions": [
-        {
-          "kind": "dismiss",
-          "label": "知道了"
-        },
-        {
-          "kind": "refresh",
-          "label": "刷新状态"
-        }
-      ]
+      "controlDurationMs": 4000,
+      "display": "none",
+      "flow": "refresh",
+      "title": null,
+      "body": "",
+      "actions": []
     },
     "LOCATION_REQUIRED": {
       "code": "LOCATION_REQUIRED",
@@ -7445,11 +7943,10 @@
       "level": "info",
       "durationMs": null,
       "controlDurationMs": 4000,
-      "display": "inline",
-      "presentation": "status",
+      "display": "none",
       "flow": "none",
       "title": null,
-      "body": "上一次操作还在处理中",
+      "body": "",
       "actions": []
     },
     "OPERATION_IN_PROGRESS": {
@@ -7457,11 +7954,10 @@
       "level": "info",
       "durationMs": null,
       "controlDurationMs": 4000,
-      "display": "inline",
-      "presentation": "status",
+      "display": "none",
       "flow": "none",
       "title": null,
-      "body": "上一次操作还在处理中",
+      "body": "",
       "actions": []
     },
     "CARD_NOT_FOUND": {
@@ -7618,13 +8114,16 @@
       "level": "error",
       "durationMs": null,
       "controlDurationMs": 5000,
-      "display": "inline",
-      "presentation": "field",
+      "display": "dialog",
       "flow": "none",
       "title": null,
-      "body": "兑换码需为 1–64 个字符且不能包含空格",
-      "fieldId": "code",
-      "actions": []
+      "body": "兑换码无效",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "知道了"
+        }
+      ]
     },
     "INVALID_REDEEM_CODE_PREFIX": {
       "code": "INVALID_REDEEM_CODE_PREFIX",
@@ -7896,14 +8395,13 @@
     },
     "COIN_UNKNOWN": {
       "code": "COIN_UNKNOWN",
-      "level": "error",
+      "level": "info",
       "durationMs": null,
-      "controlDurationMs": 5000,
-      "display": "inline",
-      "presentation": "control",
+      "controlDurationMs": 4000,
+      "display": "none",
       "flow": "none",
       "title": null,
-      "body": "投币未确认",
+      "body": "",
       "actions": []
     },
     "DOOR_CODE_FAILED": {
@@ -7977,7 +8475,7 @@
       "presentation": "toast",
       "flow": "none",
       "title": null,
-      "body": "Network connection failed. Check your connection and try again.",
+      "body": "Network connection failed.",
       "actions": []
     },
     "CLIENT_OPERATION_FAILED": {
@@ -7989,7 +8487,7 @@
       "presentation": "toast",
       "flow": "none",
       "title": null,
-      "body": "Something went wrong. Please try again.",
+      "body": "Something went wrong.",
       "actions": []
     },
     "POWER_WAIT_TIMEOUT": {
@@ -8214,23 +8712,14 @@
     },
     "DEVICE_RESULT_UNKNOWN": {
       "code": "DEVICE_RESULT_UNKNOWN",
-      "level": "error",
+      "level": "info",
       "durationMs": null,
-      "controlDurationMs": 5000,
-      "display": "dialog",
-      "flow": "none",
-      "title": "Result not confirmed",
-      "body": "The result is not confirmed. Refresh the status before repeating the action.",
-      "actions": [
-        {
-          "kind": "dismiss",
-          "label": "OK"
-        },
-        {
-          "kind": "refresh",
-          "label": "Refresh status"
-        }
-      ]
+      "controlDurationMs": 4000,
+      "display": "none",
+      "flow": "refresh",
+      "title": null,
+      "body": "",
+      "actions": []
     },
     "LOCATION_REQUIRED": {
       "code": "LOCATION_REQUIRED",
@@ -8309,11 +8798,10 @@
       "level": "info",
       "durationMs": null,
       "controlDurationMs": 4000,
-      "display": "inline",
-      "presentation": "status",
+      "display": "none",
       "flow": "none",
       "title": null,
-      "body": "The last request is still being processed.",
+      "body": "",
       "actions": []
     },
     "OPERATION_IN_PROGRESS": {
@@ -8321,11 +8809,10 @@
       "level": "info",
       "durationMs": null,
       "controlDurationMs": 4000,
-      "display": "inline",
-      "presentation": "status",
+      "display": "none",
       "flow": "none",
       "title": null,
-      "body": "The last request is still being processed.",
+      "body": "",
       "actions": []
     },
     "CARD_NOT_FOUND": {
@@ -8482,13 +8969,16 @@
       "level": "error",
       "durationMs": null,
       "controlDurationMs": 5000,
-      "display": "inline",
-      "presentation": "field",
+      "display": "dialog",
       "flow": "none",
       "title": null,
-      "body": "Redeem code must be 1–64 characters with no spaces.",
-      "fieldId": "code",
-      "actions": []
+      "body": "This code is not valid.",
+      "actions": [
+        {
+          "kind": "dismiss",
+          "label": "OK"
+        }
+      ]
     },
     "INVALID_REDEEM_CODE_PREFIX": {
       "code": "INVALID_REDEEM_CODE_PREFIX",
@@ -8760,14 +9250,13 @@
     },
     "COIN_UNKNOWN": {
       "code": "COIN_UNKNOWN",
-      "level": "error",
+      "level": "info",
       "durationMs": null,
-      "controlDurationMs": 5000,
-      "display": "inline",
-      "presentation": "control",
+      "controlDurationMs": 4000,
+      "display": "none",
       "flow": "none",
       "title": null,
-      "body": "Coin not confirmed",
+      "body": "",
       "actions": []
     },
     "DOOR_CODE_FAILED": {
@@ -8833,7 +9322,7 @@
     },
     {
       "code": "CLIENT_NETWORK_ERROR",
-      "body": "网络连接失败，请检查网络后重试",
+      "body": "网络连接失败",
       "display": "inline",
       "presentation": "toast",
       "page": "door",
@@ -8844,7 +9333,7 @@
     },
     {
       "code": "CLIENT_OPERATION_FAILED",
-      "body": "操作失败，请稍后重试",
+      "body": "操作失败",
       "display": "inline",
       "presentation": "toast",
       "page": "door",
@@ -9031,8 +9520,8 @@
     },
     {
       "code": "DEVICE_RESULT_UNKNOWN",
-      "body": "请求结果尚未确认，请先刷新状态，避免重复操作",
-      "display": "dialog",
+      "body": "",
+      "display": "none",
       "presentation": "flow",
       "page": "door",
       "action": "door",
@@ -9097,9 +9586,9 @@
     },
     {
       "code": "OPERATION_PENDING",
-      "body": "上一次操作还在处理中",
-      "display": "inline",
-      "presentation": "status",
+      "body": "",
+      "display": "none",
+      "presentation": "flow",
       "page": "door",
       "action": "door",
       "notices": [
@@ -9108,9 +9597,9 @@
     },
     {
       "code": "OPERATION_IN_PROGRESS",
-      "body": "上一次操作还在处理中",
-      "display": "inline",
-      "presentation": "status",
+      "body": "",
+      "display": "none",
+      "presentation": "flow",
       "page": "door",
       "action": "door",
       "notices": [
@@ -9229,9 +9718,9 @@
     },
     {
       "code": "INVALID_REDEEM_CODE",
-      "body": "兑换码需为 1–64 个字符且不能包含空格",
-      "display": "inline",
-      "presentation": "field",
+      "body": "兑换码无效",
+      "display": "dialog",
+      "presentation": "flow",
       "page": "redeemForm",
       "action": "redeem",
       "notices": [
@@ -9440,10 +9929,10 @@
     },
     {
       "code": "COIN_UNKNOWN",
-      "body": "投币未确认",
-      "display": "inline",
-      "presentation": "control",
-      "page": "cardsCapture",
+      "body": "",
+      "display": "none",
+      "presentation": "flow",
+      "page": "door",
       "action": "card",
       "notices": [
         "CARD_SENT",
@@ -9637,7 +10126,7 @@
   ],
   "binding": {
     "code": "ABC12345",
-    "expiresAt": "2026-11-27T19:53:44.046Z",
+    "expiresAt": "2026-11-28T04:15:40.543Z",
     "lines": [
       {
         "text": "向店铺 Bot 发送",

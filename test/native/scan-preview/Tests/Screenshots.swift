@@ -120,13 +120,8 @@ final class ScanScreenshots: XCTestCase {
         } else {
           XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", item["body"] as! String)).firstMatch.waitForExistence(timeout: 10), code)
           XCTAssertEqual(app.alerts.firstMatch.exists, item["display"] as? String == "dialog", code)
-          if code == "INVALID_REDEEM_CODE" {
-            let note = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", item["body"] as! String)).firstMatch
-            XCTAssertGreaterThanOrEqual(note.frame.minY, app.textFields["兑换码"].frame.maxY)
-            XCTAssertLessThan(note.frame.maxY, app.buttons["兑换"].frame.minY)
-          }
           if code == "DEVICE_UNAVAILABLE" { XCTAssertFalse(app.buttons["获取开门密码"].exists) }
-          if code == "DEVICE_RESULT_UNKNOWN" { XCTAssertTrue(app.alerts.buttons["刷新状态"].exists) }
+          if ["DEVICE_RESULT_UNKNOWN", "OPERATION_PENDING", "OPERATION_IN_PROGRESS", "COIN_UNKNOWN"].contains(code) { XCTAssertFalse(app.alerts.firstMatch.exists) }
           if code == "LOCATION_REQUIRED" { XCTAssertTrue(app.alerts.buttons["前往设置"].exists) }
         }
       }

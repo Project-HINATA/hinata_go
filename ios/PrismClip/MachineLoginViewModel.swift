@@ -649,7 +649,7 @@ final class MachineLoginViewModel: ObservableObject {
     }
     if case LocationError.unavailable = error { return inline("LOCATION_UNAVAILABLE", "error", String(localized: "定位获取失败，请重试")) }
     if (error as? PrismAPIError)?.code == "DEVICE_RESULT_UNKNOWN" {
-      return PrismNotice(code: "DEVICE_RESULT_UNKNOWN", level: "error", display: "dialog", flow: "none", body: String(localized: "操作结果尚未确认，请先刷新状态，避免重复操作"))
+      return PrismNotice(code: "DEVICE_RESULT_UNKNOWN", level: "info", display: "none", flow: "refresh", body: "")
     }
     return inline("CLIENT", "error", friendlyMessage(error))
   }
@@ -1664,7 +1664,7 @@ final class MachineLoginViewModel: ObservableObject {
     } catch {
       guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
       if let notice = present(error) {
-        if notice.flow == "refresh" {
+        if notice.flow == "refresh" && notice.code != "DEVICE_RESULT_UNKNOWN" {
           closeAccountSheet()
           return
         }

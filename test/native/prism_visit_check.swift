@@ -258,7 +258,8 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
       }
     }
     func notice(_ code: String, _ level: String, _ body: String) -> [String: Any] {
-        ["code": code, "level": level, "display": "inline", "flow": "none", "body": body, "actions": []]
+        if ["OPERATION_PENDING", "OPERATION_IN_PROGRESS", "COIN_UNKNOWN"].contains(code) { return PageFixtures.notice(code) }
+        return ["code": code, "level": level, "display": "inline", "flow": "none", "body": body, "actions": []]
     }
 
     FixtureProtocol.handler = { request in
@@ -684,7 +685,7 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     await model.press(button("coin"))
     precondition(sent("coin").count == 5 && Set(operationIds("coin")).count == 1)
     precondition(model.state == .ready && model.ticket != nil && model.errorMessage == nil && !model.slowNetwork)
-    precondition(model.dialogNotice?.code == "DEVICE_RESULT_UNKNOWN")
+    precondition(model.dialogNotice == nil, "Internal delivery state must not interrupt the player")
     await model.press(button("coin"))
     precondition(sent("coin").count == 6 && Set(operationIds("coin")).count == 1, "A press with no answer is sent again as itself")
     precondition(model.inlineNotice?.code == "COIN_SENT" && model.inlineNoticeAnchor == "coin")
@@ -699,7 +700,7 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     pendingReplies = 5
     let beforePending = operationIds("coin").count
     await model.press(button("coin"))
-    precondition(model.inlineNotice?.code == "OPERATION_PENDING" && model.dialogNotice == nil)
+    precondition(model.inlineNotice == nil && model.dialogNotice == nil, "Pending operations stay internal")
     precondition(Set(operationIds("coin").dropFirst(beforePending)).count == 1)
     await model.press(button("coin"))
     precondition(model.inlineNotice?.code == "COIN_SENT")
@@ -770,9 +771,14 @@ private func precondition(_ condition: @autoclosure () -> Bool, _ message: @auto
     await model.pressSheet(sheetCheckout)
     precondition(model.dialogNotice?.body == "余额不足，请充值后再结账，计费会继续")
     precondition(model.sheetPage?.billingActive == true && checkoutCalls == 1, "Balance rejection must retain the bill without retrying checkout")
+    model.dismissNotice(retrying: false)
     lostReplies = 5
     await model.pressSheet(sheetCheckout)
-    precondition(model.dialogNotice?.code == "DEVICE_RESULT_UNKNOWN")
+    precondition(model.dialogNotice == nil, "Internal delivery state must not interrupt the player")
+    precondition(model.sheetPage != nil, "Silent recovery must keep the account sheet open")
+    // The automatic read completes before the UI enables the next action.
+    await Task.yield()
+    await waitUntil { !model.sheetLoading }
     await model.pressSheet(sheetCheckout)
     let sheetCheckoutIds = shopActions.filter { $0["action"] as? String == "checkout.confirm" }.map { $0["operationId"] as! String }
     precondition(sheetCheckoutIds.count == 8 && sheetCheckoutIds[0] != sheetCheckoutIds[1] && Set(sheetCheckoutIds.dropFirst()).count == 1)

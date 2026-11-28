@@ -207,16 +207,8 @@ private struct ClipLoadingPage: View {
   var body: some View {
     VStack(spacing: 16) {
       ProgressView().accessibilityLabel("正在加载")
-      if model.slowNetwork { ClipSlowNetwork() }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-  }
-}
-
-private struct ClipSlowNetwork: View {
-  var body: some View {
-    Text("网络较慢，正在重试").font(.subheadline).foregroundStyle(.secondary)
-      .frame(maxWidth: .infinity).multilineTextAlignment(.center)
   }
 }
 
@@ -275,7 +267,6 @@ private struct ClipSessionPage: View {
       if model.suggestPasskey {
         ClipPasskeySetup()
       } else {
-        if model.slowNetwork { ClipSlowNetwork() }
         if [.ready, .locating, .sending].contains(model.state)
           || (model.state == .unauthenticated && model.page != nil) {
           pageBlocks
