@@ -212,3 +212,5 @@ Notice review: `presentation=page` replaces body operations and footer with a re
 Player copy stays brief. Code-format rejection uses the same invalid-code alert and never explains API length or whitespace constraints. Pending operations and unconfirmed delivery use server display=none; the client keeps operation IDs and retries without an alert or confirmation instructions. Unknown delivery triggers a read of current state instead of asking the player to refresh, keeping the current account sheet open.
 
 Automatic retries retain the loading indicator without an extra slow-network/retrying message.
+
+Screenshot checks for silent notices assert the absence of an alert, rather than searching the accessibility tree for an empty message.
