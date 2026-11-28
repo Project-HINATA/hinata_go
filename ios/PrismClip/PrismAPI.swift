@@ -309,6 +309,8 @@ final class PrismAPI {
   func requestJSON(path: String, body: [String: Any]? = nil) async throws -> Data {
     var request = try makeRequest(path: path, method: body == nil ? "GET" : "POST")
     if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
+    // An action uploading a picture is given long enough to send it.
+    if (request.httpBody?.count ?? 0) > 64_000 { request.timeoutInterval = 60 }
     let (data, response) = try await responseData(for: request)
     guard let http = response as? HTTPURLResponse else { throw PrismAPIError.invalidResponse }
     guard 200..<300 ~= http.statusCode else {

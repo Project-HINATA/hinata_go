@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Combine
 
@@ -89,6 +90,11 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var sheetLoadMoreError: (blockId: String, message: String)?
   /// Each level of the sheet keeps the page it showed, so going back shows it as it was left.
   private var sheetKeptPages: [PrismPage?] = []
+  /// What a level shows once a tab is picked on it. The level keeps its identity, so navigation stays put.
+  private var sheetShown: [PrismPageTarget: PrismPageTarget] = [:]
+  /// A picked tab whose page has not arrived. Its control shows it at once, the page under it stays as
+  /// it was and is not dimmed, and nothing on it can be pressed. With no answer, the control goes back.
+  @Published private(set) var sheetPendingTab: PrismPageTarget?
   /// The row a level was left from, scrolled back into view on returning to it.
   @Published private(set) var sheetReturnAnchor: String?
   @Published private(set) var sheetError: String?
@@ -115,6 +121,13 @@ final class MachineLoginViewModel: ObservableObject {
 
   private func unansweredStorageKey(_ key: String) -> String {
     "prism.page-op.\(api.baseURL.absoluteString).\(userId).\(key)"
+  }
+
+  /// What tells one payload from another. One carrying a picture is far too long for a defaults key, so it is digested.
+  private static func operationPayloadKey(_ payload: [String: Any]) -> String {
+    let text = payload.keys.sorted().map { "\($0)=\(payload[$0] ?? "")" }.joined(separator: "&")
+    guard text.utf8.count > 512 else { return text }
+    return "sha256-" + SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
   }
 
   /// The id still waiting for an answer for this action, or a new one.
@@ -1086,7 +1099,7 @@ final class MachineLoginViewModel: ObservableObject {
   /// Does what the page offered: the same operation id each try, so it happens once however often
   /// the answer is lost, and the page it answers with is shown. A refusal is an answer, with `ok` false.
   private func pageAction(_ action: String, payload: [String: Any], location position: LocationSample?, ticket: String) async throws -> PrismActionAnswer {
-    let key = "ticket:\(ticket):" + action + ":" + payload.keys.sorted().map { "\($0)=\(payload[$0] ?? "")" }.joined(separator: "&")
+    let key = "ticket:\(ticket):" + action + ":" + Self.operationPayloadKey(payload)
     let operationId = takeOperationId(key)
     var body: [String: Any] = ["ticket": ticket, "operationId": operationId, "action": action, "payload": payload]
     if let position { body["location"] = ["lat": position.latitude, "lng": position.longitude, "accuracy": position.accuracy] }
@@ -1129,7 +1142,7 @@ final class MachineLoginViewModel: ObservableObject {
   ) async throws -> PrismActionAnswer {
     guard let shopCode else { throw PrismAPIError.invalidURL }
     // The same action is one operation whichever view it was pressed on.
-    let key = "shop:\(shopCode):" + action + ":" + payload.keys.sorted().map { "\($0)=\(payload[$0] ?? "")" }.joined(separator: "&")
+    let key = "shop:\(shopCode):" + action + ":" + Self.operationPayloadKey(payload)
     let operationId = takeOperationId(key)
     let loc = position.map { ["lat": $0.latitude, "lng": $0.longitude, "accuracy": $0.accuracy] }
     let version = invocationVersion
@@ -1373,6 +1386,8 @@ final class MachineLoginViewModel: ObservableObject {
 
   func openAccountSheet(view: String) async {
     sheetStack = [PrismPageTarget(view: view)]
+    sheetShown = [:]
+    sheetPendingTab = nil
     sheetKeptPages = []
     sheetReturnAnchor = nil
     sheetLoadMoreError = nil
@@ -1391,6 +1406,8 @@ final class MachineLoginViewModel: ObservableObject {
     sheetWaitTask?.cancel(); sheetWaitTask = nil
     sheetInlineNoticeTask?.cancel(); sheetInlineNoticeTask = nil
     sheetStack = []
+    sheetShown = [:]
+    sheetPendingTab = nil
     sheetKeptPages = []
     sheetReturnAnchor = nil
     sheetLoadMoreError = nil
@@ -1417,7 +1434,7 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func openSheetTarget(_ target: PrismPageTarget) async {
-    guard !sheetBusy else { return }
+    guard !sheetBusy, sheetPendingTab == nil else { return }
     sheetKeptPages.append(sheetPage)
     sheetReturnAnchor = nil
     sheetLoadMoreError = nil
@@ -1429,6 +1446,16 @@ final class MachineLoginViewModel: ObservableObject {
     await loadCurrentSheetPage()
   }
 
+  /// A tab: the page on screen stays until the one picked arrives. Picking another meanwhile wins.
+  func replaceSheetTarget(_ target: PrismPageTarget) async {
+    guard !sheetBusy, !sheetLoading, !sheetStack.isEmpty else { return }
+    sheetError = nil
+    sheetLoadMoreError = nil
+    sheetInlineNotice = nil
+    sheetInlineNoticeAnchor = ""
+    await loadCurrentSheetPage(tab: target)
+  }
+
   func popSheetTarget() async {
     guard !sheetBusy, sheetStack.count > 1 else { return }
     sheetError = nil
@@ -1436,10 +1463,12 @@ final class MachineLoginViewModel: ObservableObject {
     sheetInlineNotice = nil
     sheetInlineNoticeAnchor = ""
     let left = sheetStack.removeLast()
+    sheetShown[left] = nil
     if let kept = sheetKeptPages.popLast() ?? nil {
       // Shown as it was left: the pages loaded so far, and the row it was left from.
       sheetVersion += 1
       sheetLoading = false
+      sheetPendingTab = nil
       sheetPage = kept
       sheetReturnAnchor = left.item
       return
@@ -1459,21 +1488,27 @@ final class MachineLoginViewModel: ObservableObject {
     }
   }
 
-  private func loadCurrentSheetPage() async {
-    guard let shopCode, let current = sheetStack.last else { return }
+  private func loadCurrentSheetPage(tab: PrismPageTarget? = nil) async {
+    guard let shopCode, let level = sheetStack.last else { return }
+    let current = tab ?? sheetShown[level] ?? level
     sheetVersion += 1
     let sVersion = sheetVersion
     let iVersion = invocationVersion
-    sheetLoading = true
+    // Only a tab leaves the page usable-looking while it is read.
+    sheetLoading = tab == nil
+    sheetPendingTab = tab
     sheetError = nil
     defer {
       if sheetVersion == sVersion && invocationVersion == iVersion {
         sheetLoading = false
+        sheetPendingTab = nil
       }
     }
     do {
       let loaded = try await api.shopPage(shopCode: shopCode, view: current.view, item: current.item, cursor: current.cursor)
       guard sheetVersion == sVersion, invocationVersion == iVersion else { return }
+      // Kept only once it has answered, so a failed tab leaves the level on the one it shows.
+      if let tab { sheetShown[level] = tab }
       sheetPage = loaded
       if current.view == "bill" { syncBillSheetState(loaded) }
     } catch {
@@ -1499,7 +1534,7 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func loadMoreSheetList(blockId: String, target: PrismPageTarget) async {
-    guard let shopCode, sheetLoadingMoreId == nil, !sheetBusy else { return }
+    guard let shopCode, sheetLoadingMoreId == nil, !sheetBusy, sheetPendingTab == nil else { return }
     let sVersion = sheetVersion
     let iVersion = invocationVersion
     sheetLoadingMoreId = blockId
@@ -1521,7 +1556,7 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func pressSheet(_ button: PrismPageButton, collected: [String: Any] = [:]) async {
-    guard let shopCode, let current = sheetStack.last, !sheetBusy, !checkoutCelebrating else { return }
+    guard let shopCode, let current = sheetStack.last, !sheetBusy, sheetPendingTab == nil, !checkoutCelebrating else { return }
     let sVersion = sheetVersion
     let iVersion = invocationVersion
     sheetBusy = true

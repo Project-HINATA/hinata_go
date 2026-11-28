@@ -66,20 +66,23 @@ struct ClipClimateCard: View {
       } else {
         if let temperature { temperatureRow(temperature) }
         if !block.modes.isEmpty {
-          segments(title: block.modeLabel, options: block.modes, selected: mode, tall: true) { option in
-            if let symbol = option.icon.flatMap({ Self.modeSymbols[$0] }) {
-              Image(systemName: symbol).font(.system(size: 18))
-            }
-            Text(verbatim: option.label)
-          } choose: { option in
-            draftMode = option.value; hold(); send(actions.setMode, ["mode": option.value])
+          segments(
+            title: block.modeLabel,
+            options: block.modes.map { option in
+              ClipSegment(id: option.value, label: option.label, symbol: option.icon.flatMap { Self.modeSymbols[$0] })
+            },
+            selected: mode
+          ) { value in
+            draftMode = value; hold(); send(actions.setMode, ["mode": value])
           }
         }
         if !block.fanModes.isEmpty {
-          segments(title: block.fanLabel, options: block.fanModes, selected: fanMode ?? "", tall: false) { option in
-            Text(verbatim: option.label)
-          } choose: { option in
-            draftFan = option.value; hold(); send(actions.setFanMode, ["fanMode": option.value])
+          segments(
+            title: block.fanLabel,
+            options: block.fanModes.map { ClipSegment(id: $0.value, label: $0.label) },
+            selected: fanMode ?? ""
+          ) { value in
+            draftFan = value; hold(); send(actions.setFanMode, ["fanMode": value])
           }
         }
       }
@@ -144,31 +147,15 @@ struct ClipClimateCard: View {
     .accessibilityLabel(Text(verbatim: label))
   }
 
-  private func segments<Option: Identifiable, Content: View>(
-    title: String, options: [Option], selected: String, tall: Bool,
-    @ViewBuilder label: @escaping (Option) -> Content, choose: @escaping (Option) -> Void
-  ) -> some View where Option.ID == String {
+  private func segments(
+    title: String, options: [ClipSegment], selected: String, choose: @escaping (String) -> Void
+  ) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(verbatim: title).font(.footnote.weight(.medium)).foregroundStyle(.secondary)
-      // Up to six options share one row; a longer list wraps instead of crushing labels.
-      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: min(options.count, 6)), spacing: 4) {
-        ForEach(options) { option in
-          let on = option.id == selected
-          Button { if !on { choose(option) } } label: {
-            VStack(spacing: 4) { label(option) }
-              .font(tall ? .footnote : .subheadline).fontWeight(on ? .semibold : .regular)
-              .lineLimit(1).minimumScaleFactor(0.8)
-              .frame(maxWidth: .infinity, minHeight: tall ? 56 : 42)
-              .foregroundStyle(on ? accent : Color.primary.opacity(0.7))
-              .background(on ? Color(uiColor: .secondarySystemGroupedBackground) : .clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-              .shadow(color: .black.opacity(on ? 0.1 : 0), radius: 3, y: 1)
-          }
-          .buttonStyle(.plain)
-          .accessibilityAddTraits(on ? .isSelected : [])
-        }
+      // Up to six speeds or modes share one row.
+      ClipSegmentedControl(segments: options, selected: selected, accent: accent, fits: 6) { value in
+        if value != selected { choose(value) }
       }
-      .padding(4)
-      .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
       .accessibilityElement(children: .contain)
       .accessibilityLabel(Text(verbatim: title))
     }

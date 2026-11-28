@@ -194,15 +194,15 @@ final class ScanScreenshots: XCTestCase {
   }
 
   func testSheetNoticeClassification() {
-    for view in ["兑换", "账单"] {
+    for view in ["充值", "账单"] {
       let app = XCUIApplication()
-      app.launchArguments = ["page=door", "sheet-preview=\(view == "兑换" ? "redeem" : "bill")", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      app.launchArguments = ["page=door", "sheet-preview=\(view == "充值" ? "redeem" : "bill")", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
       app.launch()
       let menu = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "测试玩家")).firstMatch
       XCTAssertTrue(menu.waitForExistence(timeout: 20))
       menu.tap()
       app.buttons[view].tap()
-      if view == "兑换" {
+      if view == "充值" {
         let input = app.textFields["兑换码"]
         XCTAssertTrue(input.waitForExistence(timeout: 10))
         input.tap()
@@ -306,6 +306,150 @@ final class ScanScreenshots: XCTestCase {
     title.press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.05)))
     sleep(2)
     attach(app, name: "\(name ?? "sheet")-large")
+  }
+  /// The recharge sheet against a local server whose shop sells "50 元余额" and has a photo of a
+  /// receipt as the newest one in the simulator's library (`simctl addmedia`). Grants that product once.
+  /// Run with `PRISM_PREVIEW_WAIT_FOR` set to the shop's name.
+  func testLiveRecharge() throws {
+    guard ProcessInfo.processInfo.environment["PRISM_PREVIEW_RECHARGE"] != nil else { throw XCTSkip("No local store given") }
+    let (app, _) = try launchLive()
+    continueAfterFailure = true
+
+    func text(_ label: String) -> XCUIElement { app.staticTexts[label].firstMatch }
+    func button(containing label: String) -> XCUIElement {
+      app.buttons.matching(NSPredicate(format: "label CONTAINS %@", label)).firstMatch
+    }
+    func settle() { sleep(2) }
+    /// Where the sheet's title sits tells its height: near the top when full, lower half when not.
+    func titleHeight(_ title: String) -> CGFloat { app.navigationBars[title].frame.minY / app.frame.height }
+    func assertClear(_ element: XCUIElement, of footer: XCUIElement, _ what: String) {
+      XCTAssertTrue(element.exists, "\(what) is missing")
+      XCTAssertFalse(element.frame.intersects(footer.frame), "\(what) \(element.frame) is under the footer \(footer.frame)")
+      XCTAssertLessThanOrEqual(element.frame.maxY, app.frame.maxY, "\(what) is off screen")
+    }
+    func openAccount(_ entry: String) {
+      let menu = button(containing: "用户")
+      XCTAssertTrue(menu.waitForExistence(timeout: 15))
+      menu.tap()
+      let item = app.buttons[entry].firstMatch
+      XCTAssertTrue(item.waitForExistence(timeout: 10))
+      item.tap()
+    }
+
+    button(containing: "用户").tap()
+    XCTAssertTrue(app.buttons["充值"].firstMatch.waitForExistence(timeout: 10))
+    attach(app, name: "r1-account-menu")
+    app.buttons["充值"].firstMatch.tap()
+
+    XCTAssertTrue(app.buttons["自助购买"].waitForExistence(timeout: 20))
+    settle()
+    XCTAssertGreaterThan(titleHeight("充值"), 0.35, "The sheet starts at half height")
+    attach(app, name: "r2-code-tab")
+
+    app.buttons["自助购买"].tap()
+    let product = button(containing: "50 元余额")
+    XCTAssertTrue(product.waitForExistence(timeout: 20))
+    settle()
+    attach(app, name: "r3-products")
+
+    // The tabs are a segmented control a finger can drag along.
+    app.buttons["自助购买"].press(forDuration: 0.3, thenDragTo: app.buttons["兑换码"], withVelocity: .slow, thenHoldForDuration: 0.3)
+    XCTAssertTrue(app.buttons["兑换"].waitForExistence(timeout: 10), "Dragging the selection switches tabs")
+    XCTAssertTrue(app.buttons["兑换码"].isSelected)
+    app.buttons["自助购买"].tap()
+    XCTAssertTrue(product.waitForExistence(timeout: 10))
+    settle()
+
+    product.tap()
+    XCTAssertTrue(app.navigationBars["确认购买"].waitForExistence(timeout: 20))
+    settle()
+    attach(app, name: "r4-confirm-empty")
+    XCTAssertLessThan(titleHeight("确认购买"), 0.2, "The confirm step opens the sheet fully")
+    let submit = app.buttons["提交凭证并领取"]
+    XCTAssertFalse(submit.isEnabled)
+    assertClear(text("PNG / JPEG / WebP · ≤ 1 MB"), of: submit, "The upload hint")
+    XCTAssertGreaterThan(app.navigationBars["确认购买"].buttons.count, 1, "The confirm step keeps its way back")
+
+    app.buttons["复制"].tap()
+    XCTAssertTrue(app.buttons["已复制"].waitForExistence(timeout: 3))
+
+    button(containing: "上传转账凭证").tap()
+    // The system picker runs out of process; its photos still answer as elements of this app. Its
+    // first opening on a new simulator takes a while, and only the grid's cells carry this identifier.
+    let photos = app.images.matching(identifier: "PXGGridLayout-Info")
+    XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 90), app.debugDescription)
+    settle()
+    attach(app, name: "r5-photo-picker")
+    // The newest photo, the receipt, is the first in the grid.
+    // Another process's cell is not "hittable" to XCTest; a touch at its centre reaches it.
+    photos.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    XCTAssertTrue(app.buttons["更换"].waitForExistence(timeout: 30), app.debugDescription)
+    settle()
+    attach(app, name: "r6-confirm-picked")
+    XCTAssertTrue(submit.isEnabled)
+    assertClear(app.buttons["更换"], of: submit, "Replace")
+    assertClear(app.buttons["移除"], of: submit, "Remove")
+    assertClear(app.images["转账凭证预览"].exists ? app.images["转账凭证预览"] : button(containing: "转账凭证预览"), of: submit, "The thumbnail")
+
+    submit.tap()
+    XCTAssertTrue(text("充值成功").waitForExistence(timeout: 30), app.debugDescription)
+    settle()
+    attach(app, name: "r7-receipt")
+    XCTAssertLessThan(titleHeight("充值"), 0.2)
+    let done = app.buttons["完成"]
+    for label in ["本次到账", "+50", "项目", "金额", "订单号", "¥50.00"] { assertClear(text(label), of: done, label) }
+    XCTAssertFalse(app.navigationBars["充值"].buttons["BackButton"].exists, "A receipt offers no way back")
+    XCTAssertEqual(app.navigationBars["充值"].buttons.count, 1, "Only closing is offered")
+    app.coordinate(withNormalizedOffset: CGVector(dx: 0.005, dy: 0.6))
+      .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.6)))
+    settle()
+    XCTAssertTrue(text("充值成功").exists, "Swiping from the edge must not leave the receipt")
+
+    done.tap()
+    XCTAssertTrue(text("充值成功").waitForNonExistence(timeout: 10))
+    settle()
+
+    openAccount("充值")
+    XCTAssertTrue(app.buttons["兑换"].waitForExistence(timeout: 20), "Reopening starts at the code tab")
+    settle()
+    XCTAssertGreaterThan(titleHeight("充值"), 0.35, "Reopening starts at half height")
+    app.buttons["自助购买"].tap()
+    XCTAssertTrue(button(containing: "50 元余额").waitForExistence(timeout: 20))
+    button(containing: "50 元余额").tap()
+    XCTAssertTrue(app.navigationBars["确认购买"].waitForExistence(timeout: 20))
+    settle()
+    app.navigationBars["确认购买"].buttons.element(boundBy: 0).tap()
+    XCTAssertTrue(button(containing: "100 元余额").waitForExistence(timeout: 20), "Back returns to the products")
+    XCTAssertTrue(app.buttons["自助购买"].isSelected)
+    settle()
+    attach(app, name: "r8-back-to-products")
+    app.navigationBars["充值"].buttons.firstMatch.tap()
+    settle()
+
+    openAccount("钱包")
+    XCTAssertTrue(app.navigationBars["钱包"].waitForExistence(timeout: 20))
+    settle()
+    attach(app, name: "r9-wallet")
+
+    // A redeemed code ends on the same receipt, with what is held now counting both.
+    guard let code = ProcessInfo.processInfo.environment["PRISM_PREVIEW_REDEEM_CODE"] else { return }
+    app.navigationBars["钱包"].buttons.firstMatch.tap()
+    settle()
+    openAccount("充值")
+    let field = app.textFields.firstMatch
+    XCTAssertTrue(field.waitForExistence(timeout: 20))
+    field.tap()
+    field.typeText(code)
+    app.buttons["兑换"].tap()
+    XCTAssertTrue(text("兑换成功").waitForExistence(timeout: 20), app.debugDescription)
+    settle()
+    attach(app, name: "r10-redeem-receipt")
+    XCTAssertLessThan(titleHeight("充值"), 0.2)
+    for label in ["本次到账", "+50", "项目"] { assertClear(text(label), of: done, label) }
+    XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "现有 100")).firstMatch.exists, app.debugDescription)
+    XCTAssertEqual(app.navigationBars["充值"].buttons.count, 1, "Only closing is offered")
+    done.tap()
+    XCTAssertTrue(text("兑换成功").waitForNonExistence(timeout: 10))
   }
   private func launchLive() throws -> (XCUIApplication, String?) {
     let environment = ProcessInfo.processInfo.environment

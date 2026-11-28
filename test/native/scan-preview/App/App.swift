@@ -5,10 +5,16 @@ import SwiftUI
   @StateObject private var model: MachineLoginViewModel
   /// Set to look at a real (local) server instead of fixtures: `PRISM_API_ORIGIN` (a loopback
   /// origin), `PRISM_PREVIEW_SESSION` (a signed-in session token) and `PRISM_PREVIEW_LINK` (the
-  /// scanned or shop link to open).
+  /// scanned or shop link to open). Each can also be a `NAME=value` launch argument, for launchers
+  /// that cannot set a process's environment.
   private static let live = ProcessInfo.processInfo.environment["PRISM_PREVIEW_LINK"].flatMap(URL.init(string:))
 
   init() {
+    // Before anything reads them: the live link here, the API origin when `PrismAPI` is first used.
+    for argument in ProcessInfo.processInfo.arguments where argument.hasPrefix("PRISM_") {
+      let pair = argument.split(separator: "=", maxSplits: 1).map(String.init)
+      if pair.count == 2 { setenv(pair[0], pair[1], 1) }
+    }
     if let live = Self.live {
       let environment = ProcessInfo.processInfo.environment
       if let token = environment["PRISM_PREVIEW_SESSION"], let host = PrismAPI.defaultOrigin.host {

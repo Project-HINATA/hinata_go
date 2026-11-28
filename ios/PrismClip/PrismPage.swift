@@ -319,6 +319,68 @@ struct PrismPageToggle: Decodable {
   var enabled: Bool? = nil
 }
 
+/// A picture the player picks. Its value is an image data URL no larger than `maxBytes` once decoded.
+struct PrismPageUpload: Decodable {
+  let id: String
+  var name: String? = nil
+  let label: String
+  var hint: String? = nil
+  var required: Bool? = nil
+  var enabled: Bool? = nil
+  let maxBytes: Int
+  let previewLabel: String
+  let replaceLabel: String
+  let removeLabel: String
+  let closeLabel: String
+  let errors: Errors
+
+  struct Errors: Decodable {
+    let unsupported: String
+    let tooLarge: String
+    let unreadable: String
+  }
+}
+
+/// Text the player takes elsewhere, such as where to pay.
+struct PrismPageCopy: Decodable {
+  let id: String
+  var title: String? = nil
+  let text: String
+  let copyLabel: String
+  let copiedLabel: String
+}
+
+/// Pages outside the platform. Only `http(s)` addresses are opened.
+struct PrismPageLinks: Decodable {
+  let id: String
+  var title: String? = nil
+  let items: [Item]
+
+  struct Item: Decodable, Identifiable {
+    let id: String
+    let label: String
+    let url: String
+
+    var web: URL? {
+      guard let address = URL(string: url), ["http", "https"].contains(address.scheme?.lowercased() ?? "") else { return nil }
+      return address
+    }
+  }
+}
+
+/// Tabs: picking one reads `open` in place of the current view, without drilling into it.
+struct PrismPageSegments: Decodable {
+  let id: String
+  let selected: String
+  let items: [Item]
+
+  struct Item: Decodable, Identifiable {
+    let id: String
+    let label: String
+    let open: PrismPageTarget
+  }
+}
+
 struct PrismPageBillLabels: Decodable {
   let totalLabel: String
   let legendLabel: String
@@ -395,6 +457,8 @@ struct PrismPageListItem: Decodable, Identifiable {
 struct PrismPageList: Decodable {
   let id: String
   var items: [PrismPageListItem]
+  /// `grid` is two columns of cards; rows otherwise.
+  var layout: String? = nil
   var timeZone: String? = nil
   var emptyText: String? = nil
   var emptyIcon: String? = nil
@@ -443,6 +507,10 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
   case input(PrismPageInput)
   case select(PrismPageSelect)
   case toggle(PrismPageToggle)
+  case upload(PrismPageUpload)
+  case copy(PrismPageCopy)
+  case links(PrismPageLinks)
+  case segments(PrismPageSegments)
   case signin(PrismPageSignIn)
   case binding(PrismPageBinding)
   case pricing(PrismPagePricing)
@@ -487,6 +555,10 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
       case "input": self = .input(try PrismPageInput(from: decoder))
       case "select": self = .select(try PrismPageSelect(from: decoder))
       case "toggle": self = .toggle(try PrismPageToggle(from: decoder))
+      case "upload": self = .upload(try PrismPageUpload(from: decoder))
+      case "copy": self = .copy(try PrismPageCopy(from: decoder))
+      case "links": self = .links(try PrismPageLinks(from: decoder))
+      case "segments": self = .segments(try PrismPageSegments(from: decoder))
       case "signin": self = .signin(try PrismPageSignIn(from: decoder))
       case "binding": self = .binding(try PrismPageBinding(from: decoder))
       case "pricing": self = .pricing(try PrismPagePricing(from: decoder))
@@ -544,6 +616,10 @@ indirect enum PrismPageBlock: Decodable, Identifiable {
     case .input(let input): return input.id
     case .select(let select): return select.id
     case .toggle(let toggle): return toggle.id
+    case .upload(let upload): return upload.id
+    case .copy(let copy): return copy.id
+    case .links(let links): return links.id
+    case .segments(let segments): return segments.id
     case .signin(let signIn): return signIn.id
     case .binding(let binding): return binding.id
     case .pricing(let pricing): return pricing.id
@@ -572,6 +648,8 @@ struct PrismPage: Decodable {
   var offerPasskeySetup: Bool? = nil
   var title: String? = nil
   var backLabel: String? = nil
+  /// This ends what led here, such as a receipt: no way back to the step before it is offered.
+  var hidesBack: Bool? = nil
   var accountMenu: PrismPageAccountMenu? = nil
   var clientNotices: [String: PrismNotice]? = nil
   var blocks: [PrismPageBlock]
@@ -594,6 +672,10 @@ struct PrismPage: Decodable {
     visit(blocks + (footer ?? []), depth: 0)
     return out
   }
+
+  /// A footer floats over the content. That is meant for a bill's checkout button; any other footer
+  /// needs the sheet at full height, or at half height it covers what the player has to see.
+  var needsFullSheet: Bool { !(footer ?? []).isEmpty && bill() == nil }
 
   var cards: PrismPageCards? {
     for block in allBlocks() { if case .cards(let cards) = block { return cards } }

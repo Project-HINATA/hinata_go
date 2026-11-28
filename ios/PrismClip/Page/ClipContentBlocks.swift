@@ -229,6 +229,7 @@ struct ClipStatusBlock: View {
     case "wallet": "wallet.pass"
     case "identity": "person.text.rectangle"
     case "options": "slider.horizontal.3"
+    case "success": "checkmark.circle"
     default: "info.circle"
     }
   }
@@ -238,9 +239,91 @@ struct ClipStatusBlock: View {
       titleText: Text(verbatim: status.text),
       message: status.detail,
       symbol: symbol,
-      tint: status.level == "error" ? .red : nil,
+      tint: status.level == "error" ? .red : (status.icon == "success" ? .green : nil),
       quiet: status.level == "muted"
     )
     .frame(maxWidth: .infinity)
+  }
+}
+
+/// Tabs over what is shown. Picking one reads it in place of the current level.
+struct ClipSegmentsBlock: View {
+  let segments: PrismPageSegments
+  let context: ClipPageContext
+
+  /// A tab being read is already the picked one; the page under it changes when it arrives.
+  private var shown: String {
+    context.pendingTab.flatMap { target in segments.items.first { $0.open == target }?.id } ?? segments.selected
+  }
+
+  var body: some View {
+    ClipSegmentedControl(
+      segments: segments.items.map { ClipSegment(id: $0.id, label: $0.label) },
+      selected: shown,
+      enabled: !context.busy
+    ) { id in
+      if id != shown, let item = segments.items.first(where: { $0.id == id }) { context.replaceTarget?(item.open) }
+    }
+  }
+}
+
+struct ClipCopyBlock: View {
+  let copy: PrismPageCopy
+  @State private var copied = false
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(spacing: 12) {
+        if let title = copy.title {
+          Text(verbatim: title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+        }
+        Spacer(minLength: 0)
+        Button {
+          UIPasteboard.general.string = copy.text
+          copied = true
+        } label: {
+          Label(copied ? copy.copiedLabel : copy.copyLabel, systemImage: copied ? "checkmark" : "doc.on.doc")
+            .font(.caption.weight(.semibold))
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+      }
+      Text(verbatim: copy.text).font(.subheadline).textSelection(.enabled)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .padding(16)
+    .background(prismCardFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .task(id: copied) {
+      guard copied else { return }
+      do { try await Task.sleep(nanoseconds: 1_800_000_000) } catch { return }
+      copied = false
+    }
+  }
+}
+
+struct ClipLinksBlock: View {
+  let links: PrismPageLinks
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      if let title = links.title {
+        Text(verbatim: title).font(.caption.weight(.semibold)).foregroundStyle(.secondary).padding(.horizontal, 4)
+      }
+      ForEach(links.items) { item in
+        if let address = item.web {
+          Link(destination: address) {
+            HStack(spacing: 12) {
+              Text(verbatim: item.label).font(.subheadline.weight(.medium)).foregroundStyle(.primary)
+                .multilineTextAlignment(.leading)
+              Spacer(minLength: 0)
+              Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .background(prismCardFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+          }
+        }
+      }
+    }
+    .padding(.top, 8)
   }
 }

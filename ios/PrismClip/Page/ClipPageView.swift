@@ -23,6 +23,12 @@ struct ClipPageContext {
   let inlineNoticeAnchor: String
   let noticeAboveButton: Bool
   let openTarget: ((PrismPageTarget) -> Void)?
+  /// Shows a target in place of the current level, for tabs.
+  let replaceTarget: ((PrismPageTarget) -> Void)?
+  /// Closes the sheet the page is in.
+  let closeSheet: (() -> Void)?
+  /// The tab picked and still being read.
+  let pendingTab: PrismPageTarget?
   let loadMore: ((String, PrismPageTarget) -> Void)?
   let loadingMoreId: String?
   /// Loading more of a list failed: shown at that list's button, where the player is looking.
@@ -137,6 +143,9 @@ private func makeClipPageContext(
     inlineNoticeAnchor: sheetMode ? model.sheetInlineNoticeAnchor : model.inlineNoticeAnchor,
     noticeAboveButton: noticeAboveButton,
     openTarget: sheetMode ? { target in Task { await model.openSheetTarget(target) } } : nil,
+    replaceTarget: sheetMode ? { target in Task { await model.replaceSheetTarget(target) } } : nil,
+    closeSheet: sheetMode ? { model.closeAccountSheet() } : nil,
+    pendingTab: sheetMode ? model.sheetPendingTab : nil,
     loadMore: sheetMode ? { id, target in Task { await model.loadMoreSheetList(blockId: id, target: target) } } : nil,
     loadingMoreId: sheetMode ? model.sheetLoadingMoreId : nil,
     loadMoreError: sheetMode ? model.sheetLoadMoreError : nil,
@@ -182,6 +191,11 @@ struct ClipPageBlockView: View {
     case .input(let input): ClipInputBlock(input: input, context: context)
     case .select(let select): ClipSelectBlock(select: select, context: context)
     case .toggle(let toggle): ClipToggleBlock(toggle: toggle, context: context)
+    // Its own identity per field: what one picker read never lands in another.
+    case .upload(let upload): ClipUploadBlock(upload: upload, context: context).id(upload.id)
+    case .copy(let copy): ClipCopyBlock(copy: copy)
+    case .links(let links): ClipLinksBlock(links: links)
+    case .segments(let segments): ClipSegmentsBlock(segments: segments, context: context)
     case .consent(let id, let text): ClipConsentBlock(id: id, text: text, context: context)
     case .button(let button): ClipButtonBlock(button: button, context: context)
     case .signin(let signIn): ClipSignInButtons(methods: signIn.methods)
